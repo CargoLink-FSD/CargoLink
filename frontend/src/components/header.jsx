@@ -1,107 +1,129 @@
 import { useState } from 'react';
-import { useUser } from '../context/userContext';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useHeaderScroll } from '../hooks/useHeaderScroll';
+import { useMobileMenu } from '../hooks/useMobileMenu';
+import  logo from '../assets/images/logo.svg';
+import '../styles/layout.css';
 
 export default function Header() {
-  const { userType, setUserType } = useUser();
+  const { user, userType, isAuthenticated, logout } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const navigate = useNavigate();
+  const { isOpen: isMobileMenuOpen, toggle: toggleMobileMenu, close: closeMobileMenu } = useMobileMenu();
+  
+  // Enable header scroll behavior
+  useHeaderScroll();
+  
 
   const openLoginModal = () => setIsModalOpen(true);
   const closeLoginModal = () => setIsModalOpen(false);
 
-  const logout = () => {
-    setUserType(null);
-    // You can later clear localStorage or call logout API
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const handleLinkClick = () => {
+    closeMobileMenu();
   };
 
   return (
     <>
       <header className="header">
         <div className="header-container">
-          <a href="/" className="logo">
-            <img src="/img/logo.svg" alt="CargoLink Logo" width="75" height="50" />
+          <Link to="/" className="logo">
+            <img src={logo} alt="CargoLink Logo" width="75" height="50" />
             <span>CargoLink</span>
-          </a>
+          </Link>
 
           <nav className="nav-links">
-            {!userType && (
+            {!isAuthenticated && (
               <>
-                <a className="underline-link" href="/static/services">Services</a>
-                <a className="underline-link" href="/static/about">About</a>
-                <a className="underline-link" href="/static/contact">Contact</a>
+                <Link className="underline-link" to="/static/services" onClick={handleLinkClick}>Services</Link>
+                <Link className="underline-link" to="/static/about" onClick={handleLinkClick}>About</Link>
+                <Link className="underline-link" to="/static/contact" onClick={handleLinkClick}>Contact</Link>
                 <button onClick={openLoginModal} className="btn btn-gradient-outline">Login</button>
               </>
             )}
 
-            {userType === 'customer' && (
+            {isAuthenticated && userType === 'customer' && (
               <>
-                <a className="underline-link" href="/customer/orders">My Orders</a>
-                <a className="underline-link" href="/customer/place-order">Place Order</a>
-                <a className="underline-link" href="/customer/profile">Profile</a>
+                <Link className="underline-link" to="/customer/orders" onClick={handleLinkClick}>My Orders</Link>
+                <Link className="underline-link" to="/customer/place-order" onClick={handleLinkClick}>Place Order</Link>
+                <Link className="underline-link" to="/customer/profile" onClick={handleLinkClick}>Profile</Link>
                 <div className="profile-dropdown">
-                  <span className="profile-name">{userType}</span>
+                  <span className="profile-name">{user?.firstName || 'Customer'}</span>
                   <div className="dropdown-content">
-                    <button onClick={logout} className="logout-link">Logout</button>
+                    <button onClick={handleLogout} className="logout-link">Logout</button>
                   </div>
                 </div>
               </>
             )}
 
-            {userType === 'transporter' && (
+            {isAuthenticated && userType === 'transporter' && (
               <>
-                <a className="underline-link" href="/transporter/my-bids">My Bids</a>
-                <a className="underline-link" href="/transporter/bid">Place Bid</a>
-                <a className="underline-link" href="/transporter/orders">My Orders</a>
-                <a className="underline-link" href="/transporter/fleet">Manage Fleet</a>
-                <a className="underline-link" href="/transporter/profile">Profile</a>
+                <Link className="underline-link" to="/transporter/my-bids" onClick={handleLinkClick}>My Bids</Link>
+                <Link className="underline-link" to="/transporter/bid" onClick={handleLinkClick}>Place Bid</Link>
+                <Link className="underline-link" to="/transporter/orders" onClick={handleLinkClick}>My Orders</Link>
+                <Link className="underline-link" to="/transporter/fleet" onClick={handleLinkClick}>Manage Fleet</Link>
+                <Link className="underline-link" to="/transporter/profile" onClick={handleLinkClick}>Profile</Link>
                 <div className="profile-dropdown">
-                  <span className="profile-name">{userType}</span>
+                  <span className="profile-name">{user?.firstName || 'Transporter'}</span>
                   <div className="dropdown-content">
-                    <button onClick={logout} className="logout-link">Logout</button>
+                    <button onClick={handleLogout} className="logout-link">Logout</button>
                   </div>
                 </div>
               </>
             )}
 
-            {userType === 'admin' && (
+            {isAuthenticated && userType === 'admin' && (
               <>
-                <a className="underline-link" href="/admin/dashboard">Dashboard</a>
-                <a className="underline-link" href="/admin/users">User Management</a>
-                <a className="underline-link" href="/admin/orders">Orders List</a>
+                <Link className="underline-link" to="/admin/dashboard" onClick={handleLinkClick}>Dashboard</Link>
+                <Link className="underline-link" to="/admin/users" onClick={handleLinkClick}>User Management</Link>
+                <Link className="underline-link" to="/admin/orders" onClick={handleLinkClick}>Orders List</Link>
                 <div className="profile-dropdown">
-                  <span className="profile-name">{userType}</span>
+                  <span className="profile-name">Admin</span>
                   <div className="dropdown-content">
-                    <button onClick={logout} className="logout-link">Logout</button>
+                    <button onClick={handleLogout} className="logout-link">Logout</button>
                   </div>
                 </div>
               </>
             )}
           </nav>
+          
+          {/* Mobile Menu Toggle Button */}
+          <div className="mobile-menu-btn" onClick={toggleMobileMenu}>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
         </div>
       </header>
 
       {/* Login Modal */}
       {isModalOpen && (
-        <div id="login-modal" className="modal-overlay" onClick={closeLoginModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className={`modal-overlay ${isModalOpen ? 'active' : ''}`} onClick={closeLoginModal}>
+          <div className={`modal ${isModalOpen ? 'active' : ''}`} onClick={(e) => e.stopPropagation()}>
             <button className="modal-close" onClick={closeLoginModal}>
               &times;
             </button>
 
             <div className="login-options">
-              <a href="/customer/login" className="login-card">
+              <Link to="/login?type=customer" className="login-card">
                 <h3>Login as Customer</h3>
                 <p>Access your shipping dashboard and manage your cargo deliveries</p>
-              </a>
+              </Link>
 
-              <a href="/transporter/login" className="login-card">
+              <Link to="/login?type=transporter" className="login-card">
                 <h3>Login as Transporter</h3>
                 <p>Manage your fleet and access available shipping requests</p>
-              </a>
+              </Link>
 
-              <a href="/admin/login" className="login-card">
+              <Link to="/login?type=admin" className="login-card">
                 <h3>Login as Admin</h3>
                 <p>Access administrative controls and manage platform settings.</p>
-              </a>
+              </Link>
             </div>
           </div>
         </div>

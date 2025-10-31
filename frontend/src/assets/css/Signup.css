@@ -1,0 +1,283 @@
+/* Main container styles */
+.main-content {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--background);
+    padding: 20px;
+}
+
+.signup-content {
+    width: 100%;
+    max-width: 1200px;
+}
+
+.card-container {
+    display: flex;
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    height: 90vh;
+}
+
+/* Left side styles */
+.left-side {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.left-side img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+.overlay .logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 20px;
+}
+
+.brand {
+    color: white;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.tagline {
+    color: white;
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+/* Right side styles */
+.right-side {
+    flex: 1;
+    padding: 40px;
+    overflow-y: auto;
+}
+
+.signup-form {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.signup-form h1 {
+    font-size: 2rem;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.subtitle {
+    text-align: center;
+    color: var(--text-secondary);
+    margin-bottom: 30px;
+}
+
+/* Vehicle form specific styles */
+.vehicle-form {
+    background-color: var(--light-gray);
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.vehicle-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.vehicle-header h3 {
+    margin: 0;
+    color: var(--primary);
+}
+
+.add-vehicle-section {
+    margin: 20px 0;
+    text-align: center;
+}
+
+/* Progress steps */
+.progress-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 40px 0;
+    position: relative;
+    padding: 0 40px;
+}
+
+.progress-step {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background-color: white;
+    border: 2px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: var(--text-secondary);
+    position: relative;
+    z-index: 1;
+}
+
+.progress-line {
+    flex: 1;
+    height: 2px;
+    background-color: var(--border-color);
+    margin: 0 10px;
+}
+
+.progress-step.active {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.progress-step.completed {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.progress-line.active {
+    background-color: var(--primary);
+}
+
+/* Form controls */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.input-label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.input-field {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.input-field:focus {
+    border-color: var(--primary);
+    outline: none;
+}
+
+.buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30px;
+}
+
+/* Responsive design */
+@media (max-width: 992px) {
+    .card-container {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .left-side {
+        display: none;
+    }
+
+    .right-side {
+        padding: 30px 20px;
+    }
+
+    .signup-form {
+        padding: 0;
+    }
+}
+
+@media (max-width: 576px) {
+    .main-content {
+        padding: 10px;
+    }
+
+    .progress-container {
+        padding: 0 20px;
+    }
+
+    .buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .buttons button {
+        width: 100%;
+    }
+}
+
+.vehicles-section {
+    margin-bottom: 1.5rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.vehicle-section {
+    background-color: #f9fafb;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid #e5e7eb;
+}
+
+.vehicle-section h4 {
+    margin-bottom: 1rem;
+    color: #374151;
+}
+
+.vehicle-section .form-group {
+    margin-bottom: 1rem;
+}
+
+.remove-vehicle {
+    color: var(--error);
+    border-color: var(--error);
+}
+
+.remove-vehicle:hover {
+    background-color: var(--error);
+    color: white;
+}
+
+.input-help {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 5px;
+}

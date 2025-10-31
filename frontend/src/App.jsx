@@ -1,8 +1,15 @@
+import { AuthProvider } from './context/AuthContext';
+import AppRouter from './router/AppRouter';
+
+/**
+ * Main App Component
+ * Wraps the entire application with AuthProvider for global state management
+ */
 function App() {
   return (
-    <div>
-      <h1>CargoLink React</h1>
-    </div>
+    <AuthProvider>
+      <AppRouter />
+    </AuthProvider>
   );
 }
 
