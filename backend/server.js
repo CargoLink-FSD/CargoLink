@@ -1,65 +1,49 @@
-const connectDatabase = require("./database/db")
-const errorMiddleware = require('./middleware/errorMiddleware')
-const express = require('express');
-const session = require("express-session");
-const {asyncHandler} = require('./controller/utils');
-const authController = require('./controller/authController')
+import express from "express";
+import mongoose from "mongoose";
+import router from "./routes/index.js";
+import { errorHandler, logger } from "./utils/misc.js";
+import { requestLogger } from "./middlewares/requestLogger.js";
+
+
+const PORT = 3000;
+const MONGO_URI = 'mongodb://127.0.0.1:27017/CargoLink';
 
 const app = express();
-
-app.set('view engine', 'ejs');
-app.use(express.static('public'));     // Serves static files from public folder (like css, images etc)
-app.use(express.json())
-
-// Session Middleware
-app.use(session({  
-  name: 'cargolink',
-  secret: 'mysecretkey',
-  resave: false,
-  saveUninitialized: false,  
-  cookie: { 
-    maxAge: 24*60*60000
-  } 
-}));
-
-// // //================= This is only for testing disable later ==================
-// app.use((req, res, next) => {
-//   if(req.path.startsWith('/transporter')){
-//         req.session.user = {
-//           id: "681dcf65262faca9bcbc3343", // fill with one local  transporter id
-//           role: 'transporter',
-//         };
-//   }else if(req.path.startsWith('/customer')){
-//         req.session.user = {
-//           id: "681dcf65262faca9bcbc333d", // fill with one local customer id
-//           role: 'customer',
-//         };
-//   } else { 
-//     req.session.admin = {id: "1"};
-//     return next();
-//   }
-//   next();
-// });
-// // //============================================================================
-
-
-app.use((req, res, next)=> {
-    res.locals.userType = req.session.user?.role;    
-    next();
-});
+app.use(express.json());
+app.use(requestLogger);
 
 // Set up Routes
-app.use('/customer', require('./routes/customer'));
-app.use('/transporter', require('./routes/transporter'));
-app.use('/transporter/assignment', require('./routes/assignment'));
-app.use('/admin', require('./routes/admin'));
-app.use('/chat', require('./routes/chat'));
-app.use('/static', require('./routes/static'));
+app.use(router);
 
-// Home route
-app.get('/', (req, res) => res.render('index'));
-app.get('/logout', authController.logout);
+
+// Express error-handling middleware
+app.use((err, req, res, next) => {
+  const errorResponse = errorHandler.handleError(err, { request: req, source: 'http' });
+  res.status(errorResponse.statusCode || 500).json(errorResponse);
+});
+
+// Handle uncaught exceptions (synchronous errors outside request cycle)
+process.on('uncaughtException', (err) => {
+  errorHandler.handleError(err, 'uncaughtException');
+});
+
+// Handle unhandled promise rejections (async errors outside request cycle)
+process.on('unhandledRejection', (reason, promise) => {
+  errorHandler.handleError(reason, 'unhandledRejection');
+});
+
+
+// Start Database
+(async () => {
+  try {
+    await mongoose.connect(MONGO_URI);
+    logger.info('MongoDB connected');
+  } catch (err) {
+    errorHandler.handleError(err, 'startup');
+  }
+})();
 
 // Start server
-app.listen(3000, '0.0.0.0', () => console.log('Server running on http://localhost:3000'));
-connectDatabase()
+app.listen(PORT, "0.0.0.0", () =>
+  logger.info(`Server running on http://localhost:${PORT}`),
+);
