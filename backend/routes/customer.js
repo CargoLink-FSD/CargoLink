@@ -29,6 +29,7 @@ router.get('/login', (req, res) => {
 
 router.post('/login', validateLogin, authController.loginCustomer);
 
+router.post('/forgot-password', authController.forgotPassword);
 
 router.use(authMiddleware.isCustomer)
 

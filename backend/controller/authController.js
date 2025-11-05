@@ -1,4 +1,4 @@
-const {asyncHandler} = require('./utils');
+const {asyncHandler, sendMail, generatePassword} = require('./utils');
 const Customer = require('../models/customer');
 const Transporter = require("../models/transporter");
 const ADMIN_EMAIL = "admin@cargolink.com";
@@ -87,6 +87,33 @@ const getUserId = (req) => {
     return req.session.user.id;   
 }
 
+const forgotPassword = asyncHandler(async (req, res) => {
+    const {email, userType} = req.body;
+
+    const password = generatePassword()
+
+    console.log("Password generated: ", password, {userType, email});
+    if (!email || !userType){
+        return res.status(400).json({ ok: false, message: "Email and userType required" });
+    }
+
+    let user = null;
+    if (userType == 'customer'){
+        user = await Customer.findOne({ email: email });
+    } else if (userType == 'transporter'){
+        user = await Transporter.findOne({ email: email });
+    }
+    
+    if (!user) {
+        return res.status(400).json({ ok: false, error: 'Email not found' });
+    }
+    
+    await sendMail(email, "Forgot Password", `Here is your temporary Password: ${password}`);
+    await user.updatePassword(password);
+
+    return res.json({ ok: true, success: true, message: "Temporary Password sent to the email" });
+});
+
 module.exports = { 
     loginCustomer, 
     loginTransporter, 
@@ -95,5 +122,6 @@ module.exports = {
     getCurrentUser,
     getCustomerId, 
     getTransporterId,
-    getUserId
+    getUserId,
+    forgotPassword
 };

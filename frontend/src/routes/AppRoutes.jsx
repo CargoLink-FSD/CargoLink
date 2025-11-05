@@ -7,6 +7,7 @@ import { Routes, Route } from 'react-router-dom';
 import Home from '../pages/common/Home';
 import Login from '../pages/common/login';
 import Signup from '../pages/common/signup';
+import ForgotPassword from '../pages/common/ForgotPassword';
 import NotFound from '../pages/common/NotFound';
 import ProtectedRoute from './ProtectedRoute';
 
@@ -23,6 +24,7 @@ export default function AppRoutes() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
 
       {/* -------------------------------------------------------------------------- */}
       {/* Static Pages */}

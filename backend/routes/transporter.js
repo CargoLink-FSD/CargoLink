@@ -19,6 +19,7 @@ router.get('/login', (req, res) => {
 
 router.post('/login', authController.loginTransporter);
 
+router.post('/forgot-password', authController.forgotPassword);
 
 router.use(authMiddleware.isTransporter);
 

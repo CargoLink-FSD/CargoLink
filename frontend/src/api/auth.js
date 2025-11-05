@@ -26,5 +26,11 @@ export const logout = async () => {
   return null;
 };
 
-export default { getCurrentUser, login, signup, logout };
+export const forgotPassword = async ({ email, userType }) => {
+  const endpoint = `/${userType}/forgot-password`;
+  const data = await http.post(endpoint, { email, userType });
+  return data;
+};
+
+export default { getCurrentUser, login, signup, logout, forgotPassword };
 

@@ -83,7 +83,7 @@ function Login() {
             onChange={handleChange}
             label="Remember me"
           />
-          <Link to="/forgot-password" className="link">Forgot password?</Link>
+          <Link to={`/forgot-password?type=${userType}`} className="link">Forgot password?</Link>
         </div>
 
         {/* Buttons */}
