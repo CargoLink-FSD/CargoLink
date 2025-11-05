@@ -1,3 +1,6 @@
+import { Link } from 'react-router-dom';
+import '../../styles/layout.css';
+
 export default function Footer() {
   return (
     <footer className="footer">
@@ -11,18 +14,18 @@ export default function Footer() {
           <div className="footer-section">
             <h4>Quick Links</h4>
             <ul>
-              <li><a href="/static/about">About Us</a></li>
-              <li><a href="/static/services">Services</a></li>
-              <li><a href="/static/contact">Contact</a></li>
-              <li><a href="/static/careers">Careers</a></li>
+              <li><Link to="/static/about">About Us</Link></li>
+              <li><Link to="/static/services">Services</Link></li>
+              <li><Link to="/static/contact">Contact</Link></li>
+              <li><Link to="/static/careers">Careers</Link></li>
             </ul>
           </div>
 
           <div className="footer-section">
             <h4>Legal</h4>
             <ul>
-              <li><a href="/static/terms">Terms of Service</a></li>
-              <li><a href="/static/privacy">Privacy Policy</a></li>
+              <li><Link to="/static/terms">Terms of Service</Link></li>
+              <li><Link to="/static/privacy">Privacy Policy</Link></li>
             </ul>
           </div>
 
