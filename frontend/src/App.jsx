@@ -1,15 +1,17 @@
-import { AuthProvider } from './context/AuthContext';
-import AppRouter from './router/AppRouter';
+import { BrowserRouter } from 'react-router-dom';
+import AppRoutes from './routes/AppRoutes';
+import { NotificationToast } from './components/common';
 
 /**
  * Main App Component
- * Wraps the entire application with AuthProvider for global state management
+ * Simple routing for home, login, and signup pages
  */
 function App() {
   return (
-    <AuthProvider>
-      <AppRouter />
-    </AuthProvider>
+    <BrowserRouter>
+      <NotificationToast />
+      <AppRoutes />
+    </BrowserRouter>
   );
 }
 

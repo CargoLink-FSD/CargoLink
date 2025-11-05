@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 :root {
    
     --primary: #6366F1;
@@ -137,7 +135,6 @@ body {
     width: 100%;
 }
 
-
 /* Error dialog */
 
 .error-container {
@@ -178,7 +175,6 @@ body {
     width: 100%;
     animation: shrink 5s linear forwards;
 }
-
 
 
 

@@ -1,5 +1,5 @@
 .login-content {
-    background-color : var(--white);
+    background-image: url('../images/login-left.avif');
     background-size: cover;
     background-position: center;
     height: 100vh;

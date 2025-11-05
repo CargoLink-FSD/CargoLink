@@ -1,7 +1,6 @@
 /* Hero Section */
 
 .hero {
-  width: 100%;
     min-height: 100vh;
   background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)),
   url('../assets/images/landing-page.jpg') center/cover;
@@ -27,6 +26,7 @@
     font-weight: 700;
     line-height: 1.2;
     letter-spacing: -0.02em;
+    color: var(--white);
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
   

@@ -1,14 +1,14 @@
-/* Main container styles */
-.main-content {
+/* Main container styles (use AuthLayout class names) */
+.login-main-content {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     background-color: var(--background);
-    padding: 2-px;
+    padding: 20px;
 }
 
-.signup-content {
+.login-content {
     width: 100%;
     max-width: 1200px;
 }
@@ -75,13 +75,13 @@
     overflow-y: auto;
 }
 
-.signup-form {
+.login-form {
     max-width: 500px;
     margin: 0 auto;
     padding: 20px;
 }
 
-.signup-form h1 {
+.login-form h1 {
     font-size: 2rem;
     color: var(--text-primary);
     margin-bottom: 10px;
@@ -213,13 +213,13 @@
         padding: 30px 20px;
     }
 
-    .signup-form {
+    .login-form {
         padding: 0;
     }
 }
 
 @media (max-width: 576px) {
-    .main-content {
+    .login-main-content {
         padding: 10px;
     }
 
