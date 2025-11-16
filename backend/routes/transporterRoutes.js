@@ -6,23 +6,28 @@ import transporterController from "../controllers/transporterController.js";
 
 const transporterRouter = Router();
 
+
+// Registration
+transporterRouter.post("/register", validate(validationSchema.transporter), transporterController.createTransporter);
+
+
 // All routes require authentication as transporter
 transporterRouter.use(authMiddleware(['transporter']));
 
 // Profile
 transporterRouter.get("/profile", transporterController.getTransporterProfile); // Get profile
-transporterRouter.patch("/profile", validate(validationSchema.transporter), transporterController.updateTransporterProfile); // Update profile
+transporterRouter.put("/profile", validate(validationSchema.updateTransporter), transporterController.updateTransporterProfile); // Update profile
 transporterRouter.delete("/profile", transporterController.deleteTransporter); // Soft delete
-transporterRouter.patch("/update-password", transporterController.updatePassword); // Change password
+transporterRouter.patch("/password", validate(validationSchema.password), transporterController.updatePassword); // Change password
 
-// Service Locations
-transporterRouter.get('/service-locations', transporterController.getServiceLocations);
-transporterRouter.post(  '/service-locations',  transporterController.addServiceLocation);
-transporterRouter.delete('/service-locations/:locationId', transporterController.removeServiceLocation);
+// // Service Locations
+// transporterRouter.get('/service-locations', transporterController.getServiceLocations);
+// transporterRouter.post(  '/service-locations',  transporterController.addServiceLocation);
+// transporterRouter.delete('/service-locations/:locationId', transporterController.removeServiceLocation);
 
-// Payment Info
-transporterRouter.get('payment-info', transporterController.getPaymentInfo);
-transporterRouter.put('/payment-info',  transporterController.updatePaymentInfo);
+// // Payment Info
+// transporterRouter.get('payment-info', transporterController.getPaymentInfo);
+// transporterRouter.put('/payment-info',  transporterController.updatePaymentInfo);
 
 // Trucks
 transporterRouter.get("/trucks", transporterController.getTrucks); // List trucks

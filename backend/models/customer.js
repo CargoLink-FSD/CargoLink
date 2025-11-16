@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
+import { logger } from "../utils/misc.js";
 
 const AddressSchema = new mongoose.Schema(
   {
@@ -35,6 +36,7 @@ CustomerSchema.pre("save", async function (next) {
 });
 
 CustomerSchema.methods.verifyPassword = function (password) {
+  logger.debug('Verifying password for customer', { email: this.email, password, hashedPassword: this.password });
   return bcrypt.compare(password, this.password);
 };
 
