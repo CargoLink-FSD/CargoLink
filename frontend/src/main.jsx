@@ -1,22 +1,23 @@
 /**
  * Entry Point
- * Initializes React app with providers (Auth, Notification) and global styles
+ * Initializes React app with Redux and Notification providers
  */
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { AuthProvider } from './context/AuthContext';
+import { Provider } from 'react-redux';
+import { store } from './store';
 import { NotificationProvider } from './context/NotificationContext';
 import App from './App';
 import './styles/styles.css';
 
-// Render app with context providers
+// Render app with Redux and Notification providers
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AuthProvider>
+    <Provider store={store}>
       <NotificationProvider>
         <App />
       </NotificationProvider>
-    </AuthProvider>
+    </Provider>
   </React.StrictMode>
 );

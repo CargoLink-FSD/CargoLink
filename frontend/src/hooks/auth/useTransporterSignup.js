@@ -5,7 +5,8 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useDispatch } from 'react-redux';
+import { signupUser } from '../../store/slices/authSlice';
 import { useNotification } from '../../context/NotificationContext';
 import { redirectAfterSignup } from '../../utils/redirectUser';
 import { useStepForm } from './useStepForm';
@@ -100,7 +101,7 @@ const validateManufactureYear = (value) => {
 
 export const useTransporterSignup = () => {
   const navigate = useNavigate();
-  const { signup } = useAuth();
+  const dispatch = useDispatch();
   const { showError: notifyError, showSuccess: notifySuccess } = useNotification();
 
   const [formData, setFormData] = useState(TRANSPORTER_DEFAULT_VALUES);
@@ -285,7 +286,7 @@ export const useTransporterSignup = () => {
         })),
       };
 
-      await signup({ signupData: payload, userType: 'transporter' });
+      await dispatch(signupUser({ signupData: payload, userType: 'transporter' })).unwrap();
       notifySuccess('Registration successful!');
       redirectAfterSignup('transporter', navigate);
     } catch (error) {

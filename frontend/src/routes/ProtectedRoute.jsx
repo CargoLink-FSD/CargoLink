@@ -1,20 +1,15 @@
-/**
- * Protected Route Component
- * Guards routes and redirects based on auth state and user role
- */
-
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useSelector } from 'react-redux';
 import { getRedirectPath } from '../utils/redirectUser';
 
 const LOADING_PLACEHOLDER_STYLE = { padding: '2rem', fontSize: '1.1rem' };
 
 export default function ProtectedRoute({ allowedRoles = [] }) {
   const location = useLocation();
-  const { isAuthenticated, user, loading, initialised } = useAuth();
+  const { isAuthenticated, user, loading } = useSelector((state) => state.auth);
 
   // Show loading state while checking auth
-  if (!initialised || loading) {
+  if (loading) {
     return <div style={LOADING_PLACEHOLDER_STYLE}>Loading...</div>;
   }
 

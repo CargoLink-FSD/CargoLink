@@ -1,4 +1,3 @@
-import { validate } from "../middlewares/validator.js";
 import customerService from "../services/customerService.js";
 import { AppError, logger } from "../utils/misc.js";
 

@@ -1,9 +1,17 @@
 import express from 'express';
+import cors from 'cors';
 import router from '../routes/index.js';
 import { requestLogger } from '../middlewares/requestLogger.js';
 import { errorHandler } from '../utils/misc.js';
 
 const app = express();
+
+// CORS configuration
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true,
+}));
+
 app.use(express.json());
 app.use(requestLogger);
 

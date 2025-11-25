@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { logoutUser } from '../../store/slices/authSlice';
 import { useHeaderScroll } from '../../hooks/home/useHeaderScroll';
 import { useMobileMenu } from '../../hooks/home/useMobileMenu';
 import logo from '../../assets/images/logo.svg';
@@ -8,7 +9,8 @@ import '../../styles/layout.css';
 import Modal from './Modal';
 
 export default function Header() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const dispatch = useDispatch();
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
   const userType = user?.role || user?.type;
 
   
@@ -24,7 +26,7 @@ export default function Header() {
   const closeLoginModal = () => setIsModalOpen(false);
 
   const handleLogout = async () => {
-    await logout();
+    await dispatch(logoutUser());
     navigate('/');
   };
 

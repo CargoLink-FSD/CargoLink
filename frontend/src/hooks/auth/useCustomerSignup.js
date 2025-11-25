@@ -5,7 +5,8 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useDispatch } from 'react-redux';
+import { signupUser } from '../../store/slices/authSlice';
 import { useNotification } from '../../context/NotificationContext';
 import { redirectAfterSignup } from '../../utils/redirectUser';
 import { useStepForm } from './useStepForm';
@@ -63,7 +64,7 @@ const FIELD_VALIDATORS = {
 
 export const useCustomerSignup = () => {
   const navigate = useNavigate();
-  const { signup } = useAuth();
+  const dispatch = useDispatch();
   const { showError: notifyError, showSuccess: notifySuccess } = useNotification();
 
   const [formData, setFormData] = useState({ ...CUSTOMER_DEFAULT_VALUES });
@@ -160,13 +161,13 @@ export const useCustomerSignup = () => {
         phone: formData.phone,
         password: formData.password,
         address: {
-          street_address: formData.street_address,
+          street: formData.street_address,
           city: formData.city,
           state: formData.state,
           pin: formData.pin,
         },
       };
-      await signup({ signupData: payload, userType: 'customer' });
+      await dispatch(signupUser({ signupData: payload, userType: 'customer' })).unwrap();
       notifySuccess('Registration successful!');
       redirectAfterSignup('customer', navigate);
     } catch (error) {

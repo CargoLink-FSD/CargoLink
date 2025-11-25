@@ -5,14 +5,14 @@
 
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useSelector } from 'react-redux';
 import { useCustomerSignup } from './useCustomerSignup';
 import { useTransporterSignup } from './useTransporterSignup';
 
 export const useAuthSignup = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { isAuthenticated, initialised } = useAuth();
+  const { isAuthenticated } = useSelector((state) => state.auth);
 
   const customerSignup = useCustomerSignup();
   const transporterSignup = useTransporterSignup();
@@ -25,10 +25,10 @@ export const useAuthSignup = () => {
 
   // Redirect authenticated users to home
   useEffect(() => {
-    if (initialised && isAuthenticated) {
+    if (isAuthenticated) {
       navigate('/');
     }
-  }, [initialised, isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate]);
 
   // Reset form when switching between signup types
   useEffect(() => {

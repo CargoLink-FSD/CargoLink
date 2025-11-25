@@ -1,12 +1,13 @@
-/**
- * App Routes
- * Defines all routes for customers, transporters, admins, and static pages
- */
+
+//App Routes
+//Defines all routes for customers, transporters, admins, and static pages
+
 
 import { Routes, Route } from 'react-router-dom';
 import Home from '../pages/common/Home';
 import Login from '../pages/common/login';
 import Signup from '../pages/common/signup';
+import ForgotPassword from '../pages/common/ForgotPassword';
 import NotFound from '../pages/common/NotFound';
 import ProtectedRoute from './ProtectedRoute';
 
@@ -16,17 +17,17 @@ export default function AppRoutes() {
 
   return (
     <Routes>
-      {/* -------------------------------------------------------------------------- */}
+
       {/* Public Routes */}
-      {/* -------------------------------------------------------------------------- */}
       
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
 
-      {/* -------------------------------------------------------------------------- */}
+
       {/* Static Pages */}
-      {/* -------------------------------------------------------------------------- */}
+
       
       <Route path="/static/about" element={placeholder('Static: About')} />
       <Route path="/static/services" element={placeholder('Static: Services')} />
@@ -35,9 +36,9 @@ export default function AppRoutes() {
       <Route path="/static/privacy" element={placeholder('Static: Privacy Policy')} />
       <Route path="/static/careers" element={placeholder('Static: Careers')} />
 
-      {/* -------------------------------------------------------------------------- */}
+
       {/* Customer Routes */}
-      {/* -------------------------------------------------------------------------- */}
+
       
       <Route path="/customer/login" element={placeholder('Customer Login')} />
       <Route path="/customer/signup" element={placeholder('Customer Signup')} />
@@ -53,9 +54,9 @@ export default function AppRoutes() {
         <Route path="/customer/track/:id" element={placeholder('Customer Track Order')} />
       </Route>
 
-      {/* -------------------------------------------------------------------------- */}
+
       {/* Transporter Routes */}
-      {/* -------------------------------------------------------------------------- */}
+
       
       <Route path="/transporter/login" element={placeholder('Transporter Login')} />
       <Route path="/transporter/signup" element={placeholder('Transporter Signup')} />
@@ -76,9 +77,9 @@ export default function AppRoutes() {
         <Route path="/transporter/assignment/vehicles/by-type" element={placeholder('Assignment: Vehicles By Type')} />
       </Route>
 
-      {/* -------------------------------------------------------------------------- */}
+
       {/* Admin Routes */}
-      {/* -------------------------------------------------------------------------- */}
+
       
       <Route path="/admin/login" element={placeholder('Admin Login')} />
 
@@ -89,17 +90,17 @@ export default function AppRoutes() {
         <Route path="/admin/users" element={placeholder('Admin Users')} />
       </Route>
 
-      {/* -------------------------------------------------------------------------- */}
+
       {/* Shared Routes */}
-      {/* -------------------------------------------------------------------------- */}
+
       
       <Route element={<ProtectedRoute allowedRoles={['customer', 'transporter']} />}>
         <Route path="/chat/orders/:orderId" element={placeholder('Chat: Order Conversation')} />
       </Route>
 
-      {/* -------------------------------------------------------------------------- */}
+
       {/* 404 Fallback */}
-      {/* -------------------------------------------------------------------------- */}
+
       
       <Route path="*" element={<NotFound />} />
     </Routes>

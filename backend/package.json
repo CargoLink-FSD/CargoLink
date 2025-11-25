@@ -14,13 +14,14 @@
   "dependencies": {
     "@testcontainers/mongodb": "^11.8.1",
     "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
     "express": "^5.1.0",
     "express-session": "^1.18.2",
     "express-validator": "^7.2.1",
+    "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.3",
-    "ws": "^8.13.0",
-    "dotenv": "^16.0.0",
-    "jsonwebtoken": "^9.0.2"
+    "ws": "^8.13.0"
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",
