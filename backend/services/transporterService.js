@@ -1,6 +1,7 @@
 import transporterRepo from "../repositories/transporterRepo.js";
 import orderRepo from "../repositories/orderRepo.js";
 import { AppError, logger } from "../utils/misc.js";
+import { get } from "mongoose";
 
 const registerTransporter = async (transporterData) => {
   
@@ -52,7 +53,6 @@ const updateTransporterProfile = async (transporterId, updates) => {
 };
 
 
-
 const changePassword = async (transporterId, oldPassword, newPassword) => {
 
   logger.debug('Changing password for transporter', { transporterId, oldPassword, newPassword });
@@ -71,9 +71,55 @@ const changePassword = async (transporterId, oldPassword, newPassword) => {
 };
 
 
+const getTransporterFleet = async (transporterId)  => {
+
+  const fleet = await transporterRepo.getFleet(transporterId);
+  if (!fleet) {
+    throw new AppError(404, 'NotFoundError', 'Customer not found', 'ERR_NOT_FOUND');
+  }
+  return {fleet};
+};
+
+const addFleet = async (transporterId, truckInfo) => {
+
+  const truck = await transporterRepo.addTruck(transporterId, truckInfo);
+
+  return truck;
+};
+
+const getTruckDetails = async (transporterId, truckId) => {
+
+  const truck = await transporterRepo.getTruck(transporterId, truckId);
+  logger.debug('Fetched truck details', {truck});
+  if (!truck){
+    throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
+  }
+  return truck;
+};
+
+const removeTruck = async (transporterId, truckId) => {
+  const fleet = await transporterRepo.deleteTruck(transporterId, truckId);
+  return fleet;
+};
+
+const updateTruck = async (transporterId, truckId, updates) => {
+  const truck = await transporterRepo.getTruck(transporterId, truckId);
+  if (!truck){
+    throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
+  }
+  const updatedTruck = transporterRepo.updateTruckInFleet(transporterId, truckId, updates);
+  return updatedTruck;
+}
+
+
 export default {
   registerTransporter,
   getTransporterProfile,
   updateTransporterProfile,
   changePassword,
+  getTransporterFleet,
+  getTruckDetails,
+  addFleet,
+  removeTruck,
+  updateTruck,
 };

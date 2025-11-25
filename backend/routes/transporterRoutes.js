@@ -30,12 +30,11 @@ transporterRouter.patch("/password", validate(validationSchema.password), transp
 // transporterRouter.put('/payment-info',  transporterController.updatePaymentInfo);
 
 // Trucks
-transporterRouter.get("/trucks", transporterController.getTrucks); // List trucks
-transporterRouter.post("/trucks", validate(validationSchema.truck), transporterController.addTruck); // Add truck
-transporterRouter.get("/trucks/:truckId", transporterController.getTruckDetails); // Get truck details
-transporterRouter.put("/trucks/:truckId", validate(validationSchema.truck), transporterController.updateTruck); // Update truck
-transporterRouter.delete("/trucks/:truckId", transporterController.removeTruck); // Delete truck
-transporterRouter.post("/trucks/:truckId/maintenance", validate(validationSchema.maintenance), transporterController.scheduleMaintenance); // Schedule maintenance
+transporterRouter.get("/fleet", transporterController.getTrucks); // List trucks
+transporterRouter.post("/fleet", validate(validationSchema.truck), transporterController.addTruck); // Add truck
+transporterRouter.get("/fleet/:truckId", transporterController.getTruckDetails); // Get truck details
+transporterRouter.put("/fleet/:truckId", validate(validationSchema.updateTruck), transporterController.updateTruck); // Update truck
+transporterRouter.delete("/fleet/:truckId", transporterController.removeTruck); // Delete truck
 
 
 // transporterRouter.get("/drivers", transporterController.getDrivers); // List drivers

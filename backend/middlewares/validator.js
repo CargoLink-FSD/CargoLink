@@ -243,6 +243,34 @@ const updateTransporter = [
 ];
 
 
+const truck = [
+  ...vehicleSchema('')
+]
+
+const updateTruck = [
+
+  body('name')
+    .optional()
+    .trim().notEmpty().withMessage('Vehicle cannot be empty'),
+
+    body('truck_type')
+    .optional()
+    .trim().notEmpty().withMessage('Vehicle cannot be empty'),
+
+  body('registration')
+    .optional()
+    .trim().notEmpty().withMessage('Registration cannot be empty')
+    .matches(/^[A-Z]{2}[0-9]{1,2}[A-Z]{0,2}[0-9]{4}$/).withMessage('Invalid registration number'),
+
+  body('capacity')
+    .optional()
+    .toFloat().isFloat({ gt: 0 }).withMessage('Capacity must be a positive number'),
+
+  body('manufacture_year')
+    .optional()
+    .isInt({ min: 1900, max: new Date().getFullYear() }).withMessage('Invalid manufacture year')
+    .toInt()
+]
 
 // Auth related schemas
 const login =  [
@@ -275,6 +303,8 @@ export const validationSchema = {
     address,
     transporter,
     updateTransporter,
+    truck,
+    updateTruck,
     login,
     forgotPassword,
     resetPassword,
