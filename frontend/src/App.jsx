@@ -1,8 +1,17 @@
+import { BrowserRouter } from 'react-router-dom';
+import AppRoutes from './routes/AppRoutes';
+import { NotificationToast } from './components/common';
+
+/**
+ * Main App Component
+ * Simple routing for home, login, and signup pages
+ */
 function App() {
   return (
-    <div>
-      <h1>CargoLink React</h1>
-    </div>
+    <BrowserRouter>
+      <NotificationToast />
+      <AppRoutes />
+    </BrowserRouter>
   );
 }
 
