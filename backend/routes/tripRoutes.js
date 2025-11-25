@@ -1,11 +1,11 @@
 import { Router } from "express";
-// import { tripController } from "../controllers/tripController.js";
-import { authMiddleware } from "../middlewares/auth.js";
-// import { validate } from "../middlewares/validator.js";
+// // import { tripController } from "../controllers/tripController.js";
+// import { authMiddleware } from "../middlewares/auth.js";
+// // import { validate } from "../middlewares/validator.js";
 
 const tripRouter = Router();
 
-tripRouter.use(authMiddleware);
+// tripRouter.use(authMiddleware);
 
 // // ===== Transporter Routes =====
 // // Create trip
@@ -51,30 +51,30 @@ tripRouter.use(authMiddleware);
 
 
 
-import { Router } from "express";
-import { authMiddleware } from "../middlewares/auth.js";
-import { validate } from "../middlewares/validate.js";
-import { tripSchema, assignmentSchema } from "../utils/validation.schemas.js";
-import * as tripController from "../controllers/tripController.js";
+// import { Router } from "express";
+// import { authMiddleware } from "../middlewares/auth.js";
+// import { validate } from "../middlewares/validate.js";
+// import { tripSchema, assignmentSchema } from "../utils/validation.schemas.js";
+// import * as tripController from "../controllers/tripController.js";
 
-const router = Router();
+// // const router = Router();
 
-// Transporter routes
-router.post("/", authMiddleware(["transporter"]), validate(tripSchema), tripController.createTrip); // Manual trip creation
-router.post("/suggest", authMiddleware(["transporter"]), tripController.suggestTripAssignments); // Suggest automated assignments
-router.patch("/:tripId", authMiddleware(["transporter"]), validate(assignmentSchema), tripController.editTripAssignment); // Edit trip (truck/driver/orders)
-router.delete("/:tripId", authMiddleware(["transporter"]), tripController.deleteTrip); // Delete trip
-router.post("/:tripId/pickups", authMiddleware(["transporter"]), tripController.addPickup); // Add pickup location
-router.post("/:tripId/dropoffs", authMiddleware(["transporter"]), tripController.addDropoff); // Add dropoff location
-router.patch("/:tripId/status", authMiddleware(["transporter"]), tripController.updateTripStatus); // Update status (e.g., started, completed)
+// // Transporter routes
+// router.post("/", authMiddleware(["transporter"]), validate(tripSchema), tripController.createTrip); // Manual trip creation
+// router.post("/suggest", authMiddleware(["transporter"]), tripController.suggestTripAssignments); // Suggest automated assignments
+// router.patch("/:tripId", authMiddleware(["transporter"]), validate(assignmentSchema), tripController.editTripAssignment); // Edit trip (truck/driver/orders)
+// router.delete("/:tripId", authMiddleware(["transporter"]), tripController.deleteTrip); // Delete trip
+// router.post("/:tripId/pickups", authMiddleware(["transporter"]), tripController.addPickup); // Add pickup location
+// router.post("/:tripId/dropoffs", authMiddleware(["transporter"]), tripController.addDropoff); // Add dropoff location
+// router.patch("/:tripId/status", authMiddleware(["transporter"]), tripController.updateTripStatus); // Update status (e.g., started, completed)
 
-// Customer routes
-router.get("/my-orders/:orderId/trip", authMiddleware(["customer"]), tripController.getTripForOrder); // Get trip details for customer's order (filtered)
-router.post("/my-orders/:orderId/trip/confirm-pickup", authMiddleware(["customer"]), tripController.confirmPickup); // Confirm pickup
-router.post("/my-orders/:orderId/trip/confirm-delivery", authMiddleware(["customer"]), tripController.confirmDelivery); // Confirm delivery (or rental arrival)
+// // Customer routes
+// router.get("/my-orders/:orderId/trip", authMiddleware(["customer"]), tripController.getTripForOrder); // Get trip details for customer's order (filtered)
+// router.post("/my-orders/:orderId/trip/confirm-pickup", authMiddleware(["customer"]), tripController.confirmPickup); // Confirm pickup
+// router.post("/my-orders/:orderId/trip/confirm-delivery", authMiddleware(["customer"]), tripController.confirmDelivery); // Confirm delivery (or rental arrival)
 
-// // Driver routes moved to driverRoutes.js; location updates via WebSocket
+// // // Driver routes moved to driverRoutes.js; location updates via WebSocket
 
-// // not decided yet .... 
+// // // not decided yet .... 
 
 export default tripRouter;

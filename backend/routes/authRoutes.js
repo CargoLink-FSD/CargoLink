@@ -5,7 +5,6 @@ import { validationSchema } from "../middlewares/validator.js";
 
 const authRouter = Router();
 
-// authRouter.post("/register/transporter", validate(transporterSchema), authController.registerTransporter);
 // Login (same endpoint for both roles)
 authRouter.post("/login", validate(validationSchema.login), authController.login);
 

@@ -33,7 +33,7 @@ export class ErrorHandler {
       errors = errors
     } else if ((error.name === 'MongoServerError' && error.code === 11000) || error.name === 'DuplicateKey'){
       statusCode = 409;
-      message = 'Key arleady exists';
+      message = 'Key already exists';
       errorCode = 'ERR_DUPLICATE_KEY';
       errors = errors? errors: [{ field: Object.keys(error.keyValue)[0], message: 'Already exists' }];
     } else if (error.name === 'MongoNetworkError' || error.name === 'MongooseServerSelectionError') {

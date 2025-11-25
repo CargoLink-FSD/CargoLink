@@ -6,7 +6,7 @@ const registerCustomer = async (customerData) => {
 
   const { address, ...customerInfo } = customerData;
 
-  const emailExists = await customerRepo.checkEmailExists(email);
+  const emailExists = await customerRepo.checkEmailExists(customerInfo.email);
   if (emailExists)
     throw new AppError(409, "DuplicateKey", 'Email already in use', "ERR_DUP_EMAIL", [{field: 'email', message:  'Already exisits'}]);
 
@@ -82,6 +82,19 @@ const removeCustomerAddress = async (customerId, addressIndex) => {
 
 const changePassword = async (customerId, oldPassword, newPassword) => {
 
+  logger.debug('Changing password for customer', { customerId, oldPassword, newPassword });
+  
+  const customer = await customerRepo.findCustomerById(customerId);
+  if (!customer) {
+    throw new AppError(404, 'NotFoundError', 'Customer not found', 'ERR_NOT_FOUND');
+  };
+
+  const isMatch = await customer.verifyPassword(oldPassword);
+  if (!isMatch) {
+    throw new AppError(401, 'AuthenticationError', 'Old password is incorrect', 'ERR_AUTH_INVALID');
+  }
+  logger.debug('Old password verified, updating to new password', {customer});
+  await customer.updatePassword(newPassword);
 };
 
 
