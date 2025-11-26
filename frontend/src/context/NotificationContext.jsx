@@ -1,16 +1,12 @@
-/**
- * Notification Context
- * Provides toast/notification system globally
- */
+//Notification Context
+//Provides toast/notification system globally
+
 
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 
 const NotificationContext = createContext(null);
 
-// --------------------------------------------------------------------------
 // Hook
-// --------------------------------------------------------------------------
-
 export const useNotification = () => {
   const context = useContext(NotificationContext);
   if (!context) {
@@ -19,10 +15,7 @@ export const useNotification = () => {
   return context;
 };
 
-// --------------------------------------------------------------------------
 // Provider
-// --------------------------------------------------------------------------
-
 export const NotificationProvider = ({ children }) => {
   const [notification, setNotification] = useState(null);
   const timeoutRef = useRef(null);
@@ -34,10 +27,7 @@ export const NotificationProvider = ({ children }) => {
     }
   }, []);
 
-  // --------------------------------------------------------------------------
   // Core Notification Methods
-  // --------------------------------------------------------------------------
-
   const showNotification = useCallback(({ message, type = 'info', duration = 3000 }) => {
     if (!message) return;
     if (timeoutRef.current) {
@@ -63,10 +53,9 @@ export const NotificationProvider = ({ children }) => {
     setNotification(null);
   }, []);
 
-  // --------------------------------------------------------------------------
+  
   // Convenience Methods
-  // --------------------------------------------------------------------------
-
+  
   const showSuccess = useCallback((message, duration = 3000) => {
     showNotification({ message, type: 'success', duration });
   }, [showNotification]);
@@ -83,9 +72,9 @@ export const NotificationProvider = ({ children }) => {
     showNotification({ message, type: 'info', duration });
   }, [showNotification]);
 
-  // --------------------------------------------------------------------------
+  
   // Provide Context
-  // --------------------------------------------------------------------------
+  
 
   const value = {
     notification,
