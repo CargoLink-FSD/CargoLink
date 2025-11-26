@@ -13,7 +13,7 @@ orderRouter.get("/:orderId", authMiddleware(["customer", "transporter"]), orderC
 // Orders:
 orderRouter.post("/", authMiddleware(["customer"]), validate(validationSchema.order), orderController.placeOrder); // Place order (shipment/rental)
 orderRouter.delete("/:orderId", authMiddleware(["customer"]), orderController.cancelOrder); // Cancel order
-orderRouter.post("/:orderId/rating", authMiddleware(["customer"]), validate(validationSchema.rating), orderController.submitRating); // Submit rating for order
+// orderRouter.post("/:orderId/rating", authMiddleware(["customer"]), validate(validationSchema.rating), orderController.submitRating); // Submit rating for order
 
 orderRouter.get("/available", authMiddleware(["transporter"]), orderController.getActiveOrders); // List available orders for bidding
 
