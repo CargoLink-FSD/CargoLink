@@ -296,6 +296,65 @@ const password = [
     .matches(/[0-9]/).withMessage('Password must contain at least one number'),
 ]
 
+const bid = [
+  body('bidAmount')
+  .isInt({ min: 1 }).withMessage('Bid amount must be a positive integer'),
+  body('notes')
+  .optional().isString().withMessage('Notes must be a string')
+]
+
+const order = []
+
+const validateOrder = [
+
+  ...addressSchema('pickup'),
+  ...addressSchema('delivery'),
+  body('transit.date')
+    .isISO8601()
+    .withMessage('Pickup date must be in ISO format')
+    .custom((value) => {
+      const pickupDate = new Date(value);
+      const minDate = new Date();
+      minDate.setDate(minDate.getDate() + 4);
+      minDate.setHours(0, 0, 0, 0);
+      pickupDate.setHours(0, 0, 0, 0);
+      if (pickupDate < minDate) {
+        return false;
+      }
+      return true;
+    }).withMessage('Pickup date must be at least 4 days from today'),
+
+  body('transit.time').trim()
+    .notEmpty().withMessage('Pickup time is required'),
+  body('transit.distance')
+    .trim()
+    .notEmpty().withMessage('Distance is required')
+    .isFloat({ gt: 0 }).withMessage('Distance must be a positive number'),
+  body('cargo.type')
+    .trim().notEmpty().withMessage('Goods type is required'),
+  body('cargo.vehicle')
+    .trim().notEmpty().withMessage('Vehicle type is required'),
+  body('cargo.weight')
+    .trim().notEmpty().withMessage('Weight is required')
+    .isFloat({ gt: 0 }).withMessage('Weight must be a positive number'),
+  body('cargo.description')
+    .trim().notEmpty().withMessage('Cargo description is required'),
+  body('cargo.maxPrice')
+    .trim().notEmpty().withMessage('Maximum price is required')
+    .isFloat({ gt: 0 }).withMessage('Maximum price must be a positive number'),
+
+  // Shipment items
+  body('shipments')
+    .isArray({ min: 1 }).withMessage('At least one shipment item is required'),
+  body('shipments.*.name')
+    .trim().notEmpty().withMessage('Item name is required'),
+  body('shipments.*.quantity')
+    .isInt({ gt: 0 }).withMessage('Item quantity must be a positive integer'),
+  body('shipments.*.price')
+    .isFloat({ gt: 0 }).withMessage('Item price must be a positive number'),
+]
+
+
 
 export const validationSchema = {
     customer,
@@ -309,4 +368,6 @@ export const validationSchema = {
     forgotPassword,
     resetPassword,
     password,
+    order,
+    bid,
 }
