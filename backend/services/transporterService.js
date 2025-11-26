@@ -98,6 +98,11 @@ const getTruckDetails = async (transporterId, truckId) => {
 };
 
 const removeTruck = async (transporterId, truckId) => {
+
+  const truck = await transporterRepo.getTruck(transporterId, truckId);
+  if (!truck){
+    throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
+  }
   const fleet = await transporterRepo.deleteTruck(transporterId, truckId);
   return fleet;
 };

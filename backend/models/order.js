@@ -53,7 +53,9 @@ const OrderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Transporter",
     },
+
     final_price: Number, // used in 'Assigned'
+    otp: String, // used in 'In Transit'
 
     shipments: [ShipmentItemSchema], // visible always
   },
