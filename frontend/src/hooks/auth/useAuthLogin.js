@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { loginUser } from '../../store/slices/authSlice';
 import { useNotification } from '../../context/NotificationContext';
 import { validateEmail } from '../../utils/validation';
 import { redirectAfterLogin } from '../../utils/redirectUser';
 
 export const useAuthLogin = () => {
   const navigate = useNavigate();
-  const { login, isAuthenticated, loading: authLoading, initialised } = useAuth();
+  const dispatch = useDispatch();
+  const { isAuthenticated, user, loading: authLoading } = useSelector((state) => state.auth);
   const { showError: notifyError, showSuccess: notifySuccess } = useNotification();
   const [searchParams] = useSearchParams();
 
@@ -26,10 +28,10 @@ export const useAuthLogin = () => {
   const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
-    if (initialised && isAuthenticated) {
+    if (isAuthenticated) {
       navigate('/');
     }
-  }, [initialised, isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate]);
 
   const setFieldError = (field, message) => {
     setErrors((prev) => {
@@ -100,14 +102,14 @@ export const useAuthLogin = () => {
     }
 
     try {
-      const user = await login({
+      const result = await dispatch(loginUser({
         email: formData.email,
         password: formData.password,
-        type: userType,
-      });
+        role: userType,
+      })).unwrap();
 
       setSuccessMessage('Successfully logged in!');
-  notifySuccess('Logged in successfully.');
+      notifySuccess('Logged in successfully.');
 
       const role = user?.role || user?.type || userType;
       if (redirectTo) {

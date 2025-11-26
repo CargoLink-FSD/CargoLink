@@ -22,10 +22,10 @@ customerRouter.get("/addresses", customerController.getAddresses); // List addre
 customerRouter.post("/addresses", validate(validationSchema.address), customerController.addAddress); // Add address
 customerRouter.delete("/addresses/:addressId", customerController.removeAddress); // Delete address
 
-// Payment Methods
-customerRouter.get("/payment-methods", customerController.getPaymentMethods); // List payment methods
-customerRouter.post("/payment-methods", validate(validationSchema.paymentMethod), customerController.addPaymentMethod); // Add payment method
-customerRouter.delete("/payment-methods/:methodId", customerController.removePaymentMethod); // Delete payment method
+// // Payment Methods
+// customerRouter.get("/payment-methods", customerController.getPaymentMethods); // List payment methods
+// customerRouter.post("/payment-methods", validate(validationSchema.paymentMethod), customerController.addPaymentMethod); // Add payment method
+// customerRouter.delete("/payment-methods/:methodId", customerController.removePaymentMethod); // Delete payment method
 
 
 export default customerRouter;

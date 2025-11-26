@@ -4,8 +4,9 @@ import { AppError, logger } from "../utils/misc.js";
 const createCustomer = async (req, res, next) => {
   try {
     const customerData = req.body;
-    logger.debug("Customer creation input", customerData)
+    logger.debug("Customer creation input", customerData);
     const customer = await customerService.registerCustomer(customerData);
+    customer.password = undefined; 
     logger.debug("Customer Created", customer);
     res.status(201).json({
       success: true,
@@ -53,14 +54,13 @@ const getCustomerProfile = async (req, res, next) => {
 const updateCustomerProfile = async (req, res, next) => {
   try {
     const customerId = req.user.id;
-    if (!req.body || req.body == {}){
+    if (!req.body || Object.keys(req.body).length === 0){
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION', 
         {type: "data", msg: "No Fields to update in request Body", location: "body"}
       );
     }
 
     const updates = req.body;
-
     const customer = await customerService.updateCustomerProfile(customerId, updates);
 
     res.status(200).json({
@@ -98,7 +98,7 @@ const addAddress = async (req, res, next) => {
 
     const addresses = await customerService.addCustomerAddress(customerId, addressData);
 
-    res.status(200).json({
+    res.status(201).json({
       success: true,
       data: addresses,
       message: 'Customer address added successfully',
@@ -134,10 +134,11 @@ const removeAddress = async (req, res, next) => {
 
 const updatePassword = async (req, res, next) => {
   try {
+    logger.debug('Update password request received', { user: req.user, body: req.body });
     const customerId = req.user.id;
-    const {oldPassword, newPassword} = req.user.body;
+    const {oldPassword, newPassword} = req.body;
 
-    await customerService.updateCustomerPassword(customerId, oldPassword, newPassword);
+    await customerService.changePassword(customerId, oldPassword, newPassword);
 
     res.status(200).json({
       success: true,
@@ -152,9 +153,6 @@ const updatePassword = async (req, res, next) => {
 
 const deleteCustomer = async (req, res, next) => {};
 
-const getPaymentMethods = async (req, res, next) => {};
-const addPaymentMethod = async (req, res, next) => {};
-const removePaymentMethod = async (req, res, next) => {};
 
 
 export default {
@@ -168,8 +166,4 @@ export default {
     getAddresses,
     addAddress,
     removeAddress,
-    
-    getPaymentMethods,
-    addPaymentMethod,
-    removePaymentMethod,
 }

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useSelector } from 'react-redux';
 import { useParallax } from '../../hooks/home/useParallax';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
@@ -12,7 +12,7 @@ import mrM from '../../assets/images/Mr.M.jpg';
 import mrH from '../../assets/images/profile.webp';
 
 function Home() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
   const userType = user?.role;
   
   useParallax();

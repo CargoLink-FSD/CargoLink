@@ -3,17 +3,25 @@
  * Central place for all API fetch calls
  */
 
+import tokenStorage from '../utils/token';
+
 const API_BASE_URL = 'http://localhost:3000';
 
 export const getBaseUrl = () => API_BASE_URL;
 
 async function request(path, { method = 'GET', headers, body, credentials = 'include' } = {}) {
   const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
+  
+  // Get access token and add to headers if available
+  const accessToken = tokenStorage.getAccessToken();
+  const authHeaders = accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {};
+  
   const opts = {
     method,
     credentials,
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders,
       ...(headers || {}),
     },
     body: body ? JSON.stringify(body) : undefined,
