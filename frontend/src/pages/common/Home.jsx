@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { useParallax } from '../../hooks/home/useParallax';
+import { useParallax } from '../../hooks/useHome';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
 import '../../styles/Home.css';

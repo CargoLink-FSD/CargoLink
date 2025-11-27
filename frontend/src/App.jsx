@@ -1,12 +1,18 @@
+import { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
+import { restoreSession } from './store/slices/authSlice';
 import AppRoutes from './routes/AppRoutes';
 import { NotificationToast } from './components/common';
 
-/**
- * Main App Component
- * Simple routing for home, login, and signup pages
- */
 function App() {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    // Restore auth session from stored tokens on app mount
+    dispatch(restoreSession());
+  }, [dispatch]);
+
   return (
     <BrowserRouter>
       <NotificationToast />

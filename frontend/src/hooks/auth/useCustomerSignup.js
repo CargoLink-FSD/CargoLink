@@ -1,215 +1,110 @@
-/**
- * Customer Signup Hook
- * Manages 4-step customer registration with inline validation
- */
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { signupUser } from '../../store/slices/authSlice';
 import { useNotification } from '../../context/NotificationContext';
 import { redirectAfterSignup } from '../../utils/redirectUser';
 import { useStepForm } from './useStepForm';
-import {
-  validateEmail,
-  validatePhone,
-  validatePIN,
-  validatePassword,
-  validatePasswordMatch,
-  validateRequired,
-  validateDOB,
-} from '../../utils/validation';
+import { customerStep1Schema, customerStep2Schema, customerStep3Schema, customerStep4Schema, customerSignupSchema } from '../../utils/schemas';
 
-// Default form values for customer signup
-const CUSTOMER_DEFAULT_VALUES = {
-  firstName: '',
-  lastName: '',
-  gender: '',
-  dob: '',
-  phone: '',
-  email: '',
-  street_address: '',
-  city: '',
-  state: '',
-  pin: '',
-  password: '',
-  confirmPassword: '',
-  terms: false,
-};
-
-// Step field mappings
-const STEP_FIELDS = {
-  1: ['firstName', 'lastName', 'gender'],
-  2: ['phone', 'email', 'dob'],
-  3: ['street_address', 'city', 'state', 'pin'],
-  4: ['password', 'confirmPassword', 'terms'],
-};
-
-// Field validators
-const FIELD_VALIDATORS = {
-  firstName: (value) => validateRequired(value, 'First name'),
-  lastName: (value) => validateRequired(value, 'Last name'),
-  gender: (value) => validateRequired(value, 'Gender'),
-  dob: validateDOB,
-  phone: validatePhone,
-  email: validateEmail,
-  street_address: (value) => validateRequired(value, 'Street address'),
-  city: (value) => validateRequired(value, 'City'),
-  state: (value) => validateRequired(value, 'State'),
-  pin: validatePIN,
-  password: validatePassword,
-  confirmPassword: (value, data) => validatePasswordMatch(data?.password, value),
-  terms: (value) => (value ? '' : 'You must accept the terms'),
-};
+const steps = [
+  { fields: ['firstName', 'lastName', 'gender'], schema: customerStep1Schema },
+  { fields: ['phone', 'email', 'dob'], schema: customerStep2Schema },
+  { fields: ['street_address', 'city', 'state', 'pin'], schema: customerStep3Schema },
+  { fields: ['password', 'confirmPassword', 'terms'], schema: customerStep4Schema },
+];
 
 export const useCustomerSignup = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { showError: notifyError, showSuccess: notifySuccess } = useNotification();
-
-  const [formData, setFormData] = useState({ ...CUSTOMER_DEFAULT_VALUES });
-  const [errors, setErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
+  const { showError, showSuccess } = useNotification();
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { currentStep, totalSteps, nextStep: goNext, prevStep } = useStepForm(4);
 
-  const {
-    currentStep,
-    totalSteps,
-    nextStep: goNextStep,
-    prevStep: goPrevStep,
-    resetSteps,
-  } = useStepForm(4);
+  const { register, handleSubmit, watch, formState: { errors }, trigger, setError, clearErrors, getValues } = useForm({
+    defaultValues: { firstName: '', lastName: '', gender: '', dob: '', phone: '', email: '', street_address: '', city: '', state: '', pin: '', password: '', confirmPassword: '', terms: false },
+    resolver: zodResolver(customerSignupSchema),
+    mode: 'onChange',
+    reValidateMode: 'onChange',
+  });
 
-  // --------------------------------------------------------------------------
-  // Validation
-  // --------------------------------------------------------------------------
-
-  const setFieldError = (field, message) => {
-    setErrors(prev => {
-      if (!message) {
-        const { [field]: _, ...rest } = prev;
-        return rest;
-      }
-      return { ...prev, [field]: message };
-    });
-  };
-
-  const validateStep = (step, data = formData) => {
-    const fields = STEP_FIELDS[step];
-    if (!fields) return true;
-
-    let valid = true;
-    fields.forEach((field) => {
-      const validator = FIELD_VALIDATORS[field];
-      const message = validator ? validator(data[field], data) : '';
-      setFieldError(field, message);
-      if (message) valid = false;
-    });
-
-    if (!valid) {
-      notifyError('Please fix the highlighted fields before continuing.');
-    }
-    return valid;
-  };
-
-  // --------------------------------------------------------------------------
-  // Event Handlers
-  // --------------------------------------------------------------------------
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    const nextValue = type === 'checkbox' ? checked : value;
-
-    setFormData((prev) => {
-      const nextData = { ...prev, [name]: nextValue };
-      const validator = FIELD_VALIDATORS[name];
-      const message = validator ? validator(nextData[name], nextData) : '';
-      setFieldError(name, message);
-
-      // Re-validate confirmPassword when password changes
-      if (name === 'password' && nextData.confirmPassword) {
-        const confirmValidator = FIELD_VALIDATORS.confirmPassword;
-        const confirmMessage = confirmValidator(nextData.confirmPassword, nextData);
-        setFieldError('confirmPassword', confirmMessage);
-      }
-
-      return nextData;
-    });
-  };
-
-  const handleBlur = (e) => {
-    const { name } = e.target;
-    const validator = FIELD_VALIDATORS[name];
-    const message = validator ? validator(formData[name], formData) : '';
-    setFieldError(name, message);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateStep(4)) return;
-
-    setSubmitting(true);
+  const onSubmit = async (data) => {
+    setLoading(true);
     try {
-      const payload = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        gender: formData.gender,
-        dob: formData.dob,
-        email: formData.email,
-        phone: formData.phone,
-        password: formData.password,
-        address: {
-          street: formData.street_address,
-          city: formData.city,
-          state: formData.state,
-          pin: formData.pin,
-        },
-      };
-      await dispatch(signupUser({ signupData: payload, userType: 'customer' })).unwrap();
-      notifySuccess('Registration successful!');
+      await dispatch(signupUser({ 
+        signupData: { ...data, address: { street: data.street_address, city: data.city, state: data.state, pin: data.pin } },
+        userType: 'customer' 
+      })).unwrap();
+      showSuccess('Registration successful!');
       redirectAfterSignup('customer', navigate);
     } catch (error) {
-      notifyError(error?.message || error || 'Registration failed. Please try again.');
+      const errs = error?.errors || error?.payload?.errors;
+      if (Array.isArray(errs) && errs.length) {
+        errs.forEach(e => {
+          const fieldName = e.field || e.path;
+          if (fieldName) {
+            setError(fieldName, { type: 'server', message: e.message || e.msg || 'Invalid' });
+          }
+        });
+        const msg = errs.map(e => `${e.field || e.path || 'field'}: ${e.message || e.msg || 'Invalid'}`).join(', ');
+        showError(msg);
+      } else {
+        showError(error?.message || 'Registration failed');
+      }
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
-  const resetForm = () => {
-    setFormData({ ...CUSTOMER_DEFAULT_VALUES });
-    setErrors({});
-    setSubmitting(false);
-    setShowPassword(false);
-    setShowConfirmPassword(false);
-    resetSteps();
+  const nextStep = async () => {
+    const step = steps[currentStep - 1];
+    const fields = step.fields;
+
+    // First try built-in RHF validation for current fields
+    const rhfValid = await trigger(fields);
+
+    // Additionally validate with Zod step schema to ensure errors surface before navigation
+    const values = getValues();
+    const subset = Object.fromEntries(fields.map((f) => [f, values[f]]));
+    const zodResult = step.schema.safeParse(subset);
+
+    if (!rhfValid || !zodResult.success) {
+      // Clear previous step field errors and set fresh ones from Zod
+      clearErrors(fields);
+      if (!zodResult.success) {
+        zodResult.error.issues.forEach((issue) => {
+          const pathKey = Array.isArray(issue.path) && issue.path.length ? issue.path[0] : undefined;
+          if (pathKey && fields.includes(pathKey)) {
+            setError(pathKey, { type: 'zod', message: issue.message });
+          }
+        });
+      }
+      showError('Please fix the errors before continuing.');
+      return;
+    }
+
+    goNext();
   };
 
-  // --------------------------------------------------------------------------
-  // Return Hook API
-  // --------------------------------------------------------------------------
-
   return {
-    formData,
+    formData: watch(),
     errors,
-    loading: submitting,
-    handleChange,
-    handleBlur,
-    handleSubmit,
+    loading,
+    register,
+    handleSubmit: handleSubmit(onSubmit),
     currentStep,
     totalSteps,
-    nextStep: () => validateStep(currentStep) && goNextStep(),
-    prevStep: goPrevStep,
+    nextStep,
+    prevStep,
     showPassword,
     showConfirmPassword,
     toggleShowPassword: () => setShowPassword(p => !p),
     toggleShowConfirmPassword: () => setShowConfirmPassword(p => !p),
-    resetForm,
     navigate,
+    setError,
   };
 };
-
-
-//react-hook-forms....
-//profile - 2

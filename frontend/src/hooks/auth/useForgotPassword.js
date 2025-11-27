@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useNotification } from '../../context/NotificationContext';
-import { validateEmail } from '../../utils/validation';
+import { REGEX } from '../../utils/schemas';
 import { forgotPassword } from '../../api/auth';
 
 export const useForgotPassword = () => {
@@ -32,7 +32,7 @@ export const useForgotPassword = () => {
   const validateField = (field, value) => {
     switch (field) {
       case 'email':
-        return validateEmail(value);
+        return REGEX.EMAIL.test(value) ? '' : 'Please enter a valid email address';
       default:
         return '';
     }
