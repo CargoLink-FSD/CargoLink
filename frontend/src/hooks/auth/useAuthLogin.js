@@ -1,3 +1,4 @@
+// Custom hook for user login functionality
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -16,19 +17,23 @@ export const useAuthLogin = () => {
   const [searchParams] = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
 
+  // Get user type and redirect URL from query params
   const userType = searchParams.get('type') || 'customer';
   const redirectTo = searchParams.get('redirect');
 
+  // Initialize form with react-hook-form and Zod validation
   const { register, handleSubmit, formState: { errors }, watch } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '', rememberMe: false },
     mode: 'onBlur',
   });
 
+  // Redirect to home if already authenticated
   useEffect(() => {
     if (isAuthenticated) navigate('/');
   }, [isAuthenticated, navigate]);
 
+  // Handle login form submission
   const onSubmit = async (data) => {
     try {
       await dispatch(loginUser({ ...data, role: userType })).unwrap();

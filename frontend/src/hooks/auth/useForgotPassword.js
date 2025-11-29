@@ -1,3 +1,4 @@
+// Custom hook for forgot password functionality
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useNotification } from '../../context/NotificationContext';
@@ -9,8 +10,10 @@ export const useForgotPassword = () => {
   const { showError: notifyError, showSuccess: notifySuccess } = useNotification();
   const [searchParams] = useSearchParams();
 
+  // Get user type from URL params
   const userType = searchParams.get('type') || 'customer';
   
+  // Initialize form state
   const [formData, setFormData] = useState({
     email: '',
   });
@@ -19,6 +22,7 @@ export const useForgotPassword = () => {
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
+  // Set or clear field error
   const setFieldError = (field, message) => {
     setErrors((prev) => {
       if (message) {
@@ -29,6 +33,7 @@ export const useForgotPassword = () => {
     });
   };
 
+  // Validate individual field
   const validateField = (field, value) => {
     switch (field) {
       case 'email':
@@ -38,6 +43,7 @@ export const useForgotPassword = () => {
     }
   };
 
+  // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -49,6 +55,7 @@ export const useForgotPassword = () => {
     setFieldError(name, errorMessage);
   };
 
+  // Handle input blur for validation
   const handleBlur = (e) => {
     const { name } = e.target;
     setTouched((prev) => ({ ...prev, [name]: true }));
@@ -56,6 +63,7 @@ export const useForgotPassword = () => {
     setFieldError(name, errorMessage);
   };
 
+  // Validate entire form
   const validateForm = () => {
     const emailError = validateField('email', formData.email);
 
@@ -65,6 +73,7 @@ export const useForgotPassword = () => {
     return !emailError;
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSuccessMessage('');
@@ -76,6 +85,7 @@ export const useForgotPassword = () => {
 
     setLoading(true);
     try {
+      // Call forgot password API
       const response = await forgotPassword({
         email: formData.email,
         userType: userType,

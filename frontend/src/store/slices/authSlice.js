@@ -1,4 +1,3 @@
-
 //Auth Redux Slice
 //Manages authentication state and actions
  
@@ -20,6 +19,7 @@ export const loginUser = createAsyncThunk(
   }
 );
 
+// Async thunk for user signup
 export const signupUser = createAsyncThunk(
   'auth/signup',
   async ({ signupData, userType }, { rejectWithValue }) => {
@@ -32,6 +32,7 @@ export const signupUser = createAsyncThunk(
   }
 );
 
+// Async thunk for user logout
 export const logoutUser = createAsyncThunk(
   'auth/logout',
   async (_, { rejectWithValue }) => {
@@ -44,6 +45,7 @@ export const logoutUser = createAsyncThunk(
   }
 );
 
+// Async thunk for refreshing access token
 export const refreshAccessToken = createAsyncThunk(
   'auth/refreshToken',
   async (_, { rejectWithValue }) => {
@@ -69,9 +71,11 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
+    // Clear error state
     clearError: (state) => {
       state.error = null;
     },
+    // Restore user session from stored tokens
     restoreSession: (state) => {
       const user = tokenStorage.getUserFromToken();
       const accessToken = tokenStorage.getAccessToken();
@@ -92,6 +96,7 @@ const authSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
+      // Handle login success
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
         state.isAuthenticated = true;
@@ -99,6 +104,7 @@ const authSlice = createSlice({
         state.user = tokenStorage.getUserFromToken();
         state.error = null;
       })
+      // Handle login failure
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.isAuthenticated = false;
@@ -112,6 +118,7 @@ const authSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
+      // Handle signup success
       .addCase(signupUser.fulfilled, (state, action) => {
         state.loading = false;
         state.isAuthenticated = true;
@@ -119,6 +126,7 @@ const authSlice = createSlice({
         state.user = tokenStorage.getUserFromToken();
         state.error = null;
       })
+      // Handle signup failure
       .addCase(signupUser.rejected, (state, action) => {
         state.loading = false;
         state.isAuthenticated = false;
@@ -131,6 +139,7 @@ const authSlice = createSlice({
       .addCase(logoutUser.pending, (state) => {
         state.loading = true;
       })
+      // Handle logout success
       .addCase(logoutUser.fulfilled, (state) => {
         state.loading = false;
         state.isAuthenticated = false;
@@ -138,6 +147,7 @@ const authSlice = createSlice({
         state.error = null;
         tokenStorage.clearTokens();
       })
+      // Handle logout failure
       .addCase(logoutUser.rejected, (state) => {
         state.loading = false;
         state.isAuthenticated = false;
@@ -150,12 +160,14 @@ const authSlice = createSlice({
       .addCase(refreshAccessToken.pending, (state) => {
         state.loading = true;
       })
+      // Handle token refresh success
       .addCase(refreshAccessToken.fulfilled, (state, action) => {
         state.loading = false;
         tokenStorage.setTokens(action.payload.accessToken, action.payload.refreshToken);
         state.user = tokenStorage.getUserFromToken();
         state.isAuthenticated = true;
       })
+      // Handle token refresh failure
       .addCase(refreshAccessToken.rejected, (state) => {
         state.loading = false;
         state.isAuthenticated = false;
@@ -165,5 +177,6 @@ const authSlice = createSlice({
   },
 });
 
+// Export actions and reducer
 export const { clearError, restoreSession } = authSlice.actions;
 export default authSlice.reducer;

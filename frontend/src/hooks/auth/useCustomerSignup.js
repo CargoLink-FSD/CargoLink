@@ -1,3 +1,4 @@
+// Custom hook for customer signup with multi-step form validation
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
@@ -9,6 +10,7 @@ import { redirectAfterSignup } from '../../utils/redirectUser';
 import { useStepForm } from './useStepForm';
 import { customerStep1Schema, customerStep2Schema, customerStep3Schema, customerStep4Schema, customerSignupSchema } from '../../utils/schemas';
 
+// Define validation schema for each step
 const steps = [
   { fields: ['firstName', 'lastName', 'gender'], schema: customerStep1Schema },
   { fields: ['phone', 'email', 'dob'], schema: customerStep2Schema },
@@ -25,6 +27,7 @@ export const useCustomerSignup = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { currentStep, totalSteps, nextStep: goNext, prevStep } = useStepForm(4);
 
+  // Initialize form with react-hook-form and Zod validation
   const { register, handleSubmit, watch, formState: { errors }, trigger, setError, clearErrors, getValues } = useForm({
     defaultValues: { firstName: '', lastName: '', gender: '', dob: '', phone: '', email: '', street_address: '', city: '', state: '', pin: '', password: '', confirmPassword: '', terms: false },
     resolver: zodResolver(customerSignupSchema),
@@ -32,9 +35,11 @@ export const useCustomerSignup = () => {
     reValidateMode: 'onChange',
   });
 
+  // Handle form submission
   const onSubmit = async (data) => {
     setLoading(true);
     try {
+      // Dispatch signup action with formatted data
       await dispatch(signupUser({ 
         signupData: { ...data, address: { street: data.street_address, city: data.city, state: data.state, pin: data.pin } },
         userType: 'customer' 
@@ -42,6 +47,7 @@ export const useCustomerSignup = () => {
       showSuccess('Registration successful!');
       redirectAfterSignup('customer', navigate);
     } catch (error) {
+      // Handle validation errors from server
       const errs = error?.errors || error?.payload?.errors;
       if (Array.isArray(errs) && errs.length) {
         errs.forEach(e => {
@@ -60,6 +66,7 @@ export const useCustomerSignup = () => {
     }
   };
 
+  // Validate current step before proceeding to next
   const nextStep = async () => {
     const step = steps[currentStep - 1];
     const fields = step.fields;

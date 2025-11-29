@@ -1,8 +1,6 @@
 import PropTypes from 'prop-types';
 
-/**
- * Eye icon for showing password
- */
+// Eye icon component for showing password
 export function EyeIcon() {
   return (
     <svg 
@@ -22,9 +20,7 @@ export function EyeIcon() {
   );
 }
 
-/**
- * Eye off icon for hiding password
- */
+// Eye off icon for hiding password
 export function EyeOffIcon() {
   return (
     <svg 
@@ -44,10 +40,9 @@ export function EyeOffIcon() {
   );
 }
 
-/**
- * Alert/Message Display Component
- */
+// Alert/Message Display Component
 function Alert({ message, type = 'info' }) {
+  // Determine alert styles based on message type
   const getAlertStyles = () => {
     switch (type) {
       case 'success':

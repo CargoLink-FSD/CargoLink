@@ -1,3 +1,4 @@
+// Custom hook for transporter signup with multi-step form validation
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
@@ -9,6 +10,7 @@ import { redirectAfterSignup } from '../../utils/redirectUser';
 import { useStepForm } from './useStepForm';
 import { transporterStep1Schema, transporterStep2Schema, transporterStep3Schema, transporterStep4Schema, transporterSignupSchema } from '../../utils/schemas';
 
+// Define validation schema for each step
 const steps = [
   { fields: ['name', 'primary_contact', 'secondary_contact', 'email'], schema: transporterStep1Schema },
   { fields: ['gst_in', 'pan', 'street_address', 'city', 'state', 'pin'], schema: transporterStep2Schema },
@@ -25,6 +27,7 @@ export const useTransporterSignup = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { currentStep, totalSteps, nextStep: goNext, prevStep } = useStepForm(4);
 
+  // Initialize form with react-hook-form and Zod validation
   const { register, handleSubmit, watch, formState: { errors }, trigger, control, setError, clearErrors, getValues } = useForm({
     defaultValues: { name: '', email: '', password: '', confirmPassword: '', primary_contact: '', secondary_contact: '', pan: '', gst_in: '', street_address: '', city: '', state: '', pin: '', terms: false, vehicles: [{ name: '', type: '', registrationNumber: '', capacity: '', manufacture_year: '' }] },
     resolver: zodResolver(transporterSignupSchema),
@@ -32,11 +35,14 @@ export const useTransporterSignup = () => {
     reValidateMode: 'onChange',
   });
 
+  // Manage dynamic vehicle array fields
   const { fields, append, remove } = useFieldArray({ control, name: 'vehicles' });
 
+  // Handle form submission
   const onSubmit = async (data) => {
     setLoading(true);
     try {
+      // Dispatch signup action with formatted data
       await dispatch(signupUser({ 
         signupData: { 
           ...data,
@@ -55,6 +61,7 @@ export const useTransporterSignup = () => {
       showSuccess('Registration successful!');
       redirectAfterSignup('transporter', navigate);
     } catch (error) {
+      // Handle validation errors from server
       const errs = error?.errors || error?.payload?.errors;
       if (Array.isArray(errs) && errs.length) {
         errs.forEach(e => {
@@ -73,6 +80,7 @@ export const useTransporterSignup = () => {
     }
   };
 
+  // Validate current step before proceeding to next
   const nextStep = async () => {
     const step = steps[currentStep - 1];
     const fields = step.fields;
