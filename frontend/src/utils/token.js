@@ -1,8 +1,3 @@
-/**
- * Token Management Utility
- * Stores, retrieves, and decodes JWT tokens
- */
-
 import { jwtDecode } from 'jwt-decode';
 
 const ACCESS_TOKEN_KEY = 'accessToken';

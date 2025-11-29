@@ -1,5 +1,5 @@
 import React from 'react';
-import { InputField, Select, Button } from '../forms';
+import { Button } from '../forms';
 
 const vehicleTypeOptions = [
   { value: '', label: 'Select vehicle type', disabled: true },
@@ -10,18 +10,19 @@ const vehicleTypeOptions = [
   { value: 'container', label: 'Container Truck' },
 ];
 
-const VehiclesEditor = ({ vehicles = [], errors = {}, onFieldChange, onRemove, onAdd }) => {
+const VehiclesEditor = ({ vehicles = [], errors = {}, onRemove, onAdd, register }) => {
   const getFieldError = (index, key) => {
-    return errors[`vehicles[${index}][${key}]`] || '';
+    const vehicleErrors = errors?.vehicles?.[index];
+    return vehicleErrors?.[key]?.message || '';
   };
 
   return (
     <div className="vehicles-section">
-      {errors.vehicles && <span className="error-message">{errors.vehicles}</span>}
+      {errors.vehicles?.message && <span className="error-message">{errors.vehicles.message}</span>}
 
       {vehicles.map((vehicle, index) => {
         return (
-          <div key={index} className="vehicle-section">
+          <div key={vehicle.id || index} className="vehicle-section">
             <div className="vehicle-header">
               <h4>Vehicle {index + 1}</h4>
               {vehicles.length > 1 && (
@@ -36,56 +37,89 @@ const VehiclesEditor = ({ vehicles = [], errors = {}, onFieldChange, onRemove, o
               )}
             </div>
 
-            <InputField
-              label="Vehicle Name"
-              placeholder="Enter vehicle name"
-              name={`vehicles[${index}][name]`}
-              value={vehicle.name ?? ''}
-              onChange={(e) => onFieldChange(index, 'name', e.target.value)}
-              error={getFieldError(index, 'name')}
-              required
-            />
+            <div className="form-group">
+              <label className="input-label" htmlFor={`vehicles.${index}.name`}>
+                Vehicle Name *
+              </label>
+              <input
+                className="input-field"
+                type="text"
+                id={`vehicles.${index}.name`}
+                placeholder="Enter vehicle name"
+                {...register(`vehicles.${index}.name`)}
+              />
+              {getFieldError(index, 'name') && (
+                <span className="error-message">{getFieldError(index, 'name')}</span>
+              )}
+            </div>
 
-            <Select
-              label="Vehicle Type"
-              name={`vehicles[${index}][type]`}
-              value={vehicle.type ?? ''}
-              onChange={(e) => onFieldChange(index, 'type', e.target.value)}
-              error={getFieldError(index, 'type')}
-              required
-              options={vehicleTypeOptions}
-            />
+            <div className="form-group">
+              <label className="input-label" htmlFor={`vehicles.${index}.type`}>
+                Vehicle Type *
+              </label>
+              <select
+                className="input-field"
+                id={`vehicles.${index}.type`}
+                {...register(`vehicles.${index}.type`)}
+              >
+                {vehicleTypeOptions.map(opt => (
+                  <option key={opt.value} value={opt.value} disabled={opt.disabled}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              {getFieldError(index, 'type') && (
+                <span className="error-message">{getFieldError(index, 'type')}</span>
+              )}
+            </div>
 
-            <InputField
-              label="Vehicle Registration Number"
-              placeholder="Enter vehicle registration number"
-              name={`vehicles[${index}][registrationNumber]`}
-              value={vehicle.registrationNumber ?? ''}
-              onChange={(e) => onFieldChange(index, 'registrationNumber', e.target.value)}
-              error={getFieldError(index, 'registrationNumber')}
-              required
-            />
+            <div className="form-group">
+              <label className="input-label" htmlFor={`vehicles.${index}.registrationNumber`}>
+                Vehicle Registration Number *
+              </label>
+              <input
+                className="input-field"
+                type="text"
+                id={`vehicles.${index}.registrationNumber`}
+                placeholder="Enter vehicle registration number"
+                {...register(`vehicles.${index}.registrationNumber`)}
+              />
+              {getFieldError(index, 'registrationNumber') && (
+                <span className="error-message">{getFieldError(index, 'registrationNumber')}</span>
+              )}
+            </div>
 
-            <InputField
-              type="number"
-              label="Vehicle Capacity (in tons)"
-              placeholder="Enter vehicle capacity"
-              name={`vehicles[${index}][capacity]`}
-              value={vehicle.capacity ?? ''}
-              onChange={(e) => onFieldChange(index, 'capacity', e.target.value)}
-              error={getFieldError(index, 'capacity')}
-              required
-            />
+            <div className="form-group">
+              <label className="input-label" htmlFor={`vehicles.${index}.capacity`}>
+                Vehicle Capacity (in tons) *
+              </label>
+              <input
+                className="input-field"
+                type="number"
+                id={`vehicles.${index}.capacity`}
+                placeholder="Enter vehicle capacity"
+                {...register(`vehicles.${index}.capacity`)}
+              />
+              {getFieldError(index, 'capacity') && (
+                <span className="error-message">{getFieldError(index, 'capacity')}</span>
+              )}
+            </div>
 
-            <InputField
-              label="Manufacture Year"
-              placeholder="Enter manufacture year (YYYY)"
-              name={`vehicles[${index}][manufacture_year]`}
-              value={vehicle.manufacture_year ?? ''}
-              onChange={(e) => onFieldChange(index, 'manufacture_year', e.target.value)}
-              error={getFieldError(index, 'manufacture_year')}
-              required
-            />
+            <div className="form-group">
+              <label className="input-label" htmlFor={`vehicles.${index}.manufacture_year`}>
+                Manufacture Year *
+              </label>
+              <input
+                className="input-field"
+                type="text"
+                id={`vehicles.${index}.manufacture_year`}
+                placeholder="Enter manufacture year (YYYY)"
+                {...register(`vehicles.${index}.manufacture_year`)}
+              />
+              {getFieldError(index, 'manufacture_year') && (
+                <span className="error-message">{getFieldError(index, 'manufacture_year')}</span>
+              )}
+            </div>
           </div>
         );
       })}

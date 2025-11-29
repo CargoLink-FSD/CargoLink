@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useAuthLogin } from '../../hooks/auth/useAuthLogin';
-import Alert, { EyeIcon, EyeOffIcon } from '../../components/auth/AuthUI';
+import { EyeIcon, EyeOffIcon } from '../../components/auth/AuthUI';
 import AuthLayout from '../../components/auth/AuthLayout';
-import { InputField, Checkbox, Button } from '../../components/forms';
+import { Button } from '../../components/forms';
 import '../../styles/Login.css';
 
 
@@ -11,13 +11,9 @@ function Login() {
     formData,
     userType,
     showPassword,
-    successMessage,
     authLoading,
-    error,
     errors,
-    touched,
-    handleChange,
-    handleBlur,
+    register,
     handleSubmit,
     toggleShowPassword,
     navigate,
@@ -28,38 +24,30 @@ function Login() {
       title="Welcome Back"
       subtitle="Sign in to access your account"
     >
-      {error && <Alert message={error} type="error" />}
-      {successMessage && <Alert message={successMessage} type="success" />}
-
       <form onSubmit={handleSubmit} id ="login-form">
-        {/* Email Field */}
-        <InputField
-          type="email"
-          id="email"
-          name="email"
-          label="Email"
-          placeholder="Enter your email"
-          value={formData.email}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          error={touched.email ? errors.email : ''}
-          required
-        />
-
-        {/* Password Field */}
         <div className="form-group">
-          <label className="input-label" htmlFor="password">Password</label>
+          <label className="input-label" htmlFor="email">Email *</label>
+          <input
+            className="input-field"
+            type="email"
+            id="email"
+            placeholder="Enter your email"
+            value={formData.email || ''}
+            {...register('email')}
+          />
+          {errors.email && <span className="error-message">{errors.email.message}</span>}
+        </div>
+
+        <div className="form-group">
+          <label className="input-label" htmlFor="password">Password *</label>
           <div className="password-container">
             <input
               className="input-field"
               type={showPassword ? 'text' : 'password'}
               id="password"
-              name="password"
               placeholder="Enter your password"
-              value={formData.password}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              required
+              value={formData.password || ''}
+              {...register('password')}
             />
             <span 
               className="toggle-password" 
@@ -71,18 +59,19 @@ function Login() {
               {showPassword ? <EyeOffIcon /> : <EyeIcon />}
             </span>
           </div>
-          {touched.password && errors.password && (
-            <span className="error-message">{errors.password}</span>
-          )}
+          {errors.password && <span className="error-message">{errors.password.message}</span>}
         </div>
 
         <div className="form-options">
-          <Checkbox
-            name="rememberMe"
-            checked={formData.rememberMe}
-            onChange={handleChange}
-            label="Remember me"
-          />
+          <div className="remember-me">
+            <input
+              type="checkbox"
+              id="rememberMe"
+              checked={formData.rememberMe || false}
+              {...register('rememberMe')}
+            />
+            <label htmlFor="rememberMe">Remember me</label>
+          </div>
           <Link to={`/forgot-password?type=${userType}`} className="link">Forgot password?</Link>
         </div>
 

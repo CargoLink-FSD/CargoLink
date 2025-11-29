@@ -1,8 +1,3 @@
-/**
- * Navigation Redirect Utilities
- * Handles role-based redirects after login, signup, and role detection
- */
-
 // Redirect user after login based on their role
 export const redirectAfterLogin = (userType, navigate, delay = 1000) => {
   setTimeout(() => {
@@ -23,17 +18,17 @@ export const redirectAfterLogin = (userType, navigate, delay = 1000) => {
 };
 
 // Redirect user after signup based on their role
-export const redirectAfterSignup = (userType, navigate, delay = 1500) => {
+export const redirectAfterSignup = (userType, navigate, delay = 500) => {
   setTimeout(() => {
     switch (userType) {
       case 'customer':
-        navigate('/customer/');
+        navigate('/customer/', { replace: true });
         break;
       case 'transporter':
-        navigate('/transporter/');
+        navigate('/transporter/', { replace: true });
         break;
       default:
-        navigate('/');
+        navigate('/', { replace: true });
     }
   }, delay);
 };

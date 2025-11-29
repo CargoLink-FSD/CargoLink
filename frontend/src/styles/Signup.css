@@ -1,11 +1,13 @@
 /* Main container styles (use AuthLayout class names) */
 .login-main-content {
     min-height: 100vh;
+    width: 100vw;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--background);
-    padding: 20px;
+    padding: 0;
+    margin: 0;
+    background: transparent;
 }
 
 .login-content {
@@ -122,16 +124,17 @@
 /* Progress steps */
 .progress-container {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     margin: 40px 0;
     position: relative;
     padding: 0 40px;
+    gap: 0;
 }
 
 .progress-step {
-    width: 35px;
-    height: 35px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background-color: white;
     border: 2px solid var(--border-color);
@@ -141,25 +144,28 @@
     font-weight: 600;
     color: var(--text-secondary);
     position: relative;
-    z-index: 1;
+    z-index: 2;
+    flex-shrink: 0;
 }
 
 .progress-line {
     flex: 1;
     height: 2px;
     background-color: var(--border-color);
-    margin: 0 10px;
+    position: relative;
+    z-index: 1;
 }
 
 .progress-step.active {
     background-color: var(--primary);
     border-color: var(--primary);
-    color: white;
+    color: var(--white);
 }
 
 .progress-step.completed {
     background-color: var(--primary);
     border-color: var(--primary);
+    color: var(--white)
 }
 
 .progress-line.active {

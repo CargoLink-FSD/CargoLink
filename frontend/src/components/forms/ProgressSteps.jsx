@@ -5,7 +5,7 @@ const ProgressSteps = ({ current, total }) => {
   return (
     <div className="progress-container">
       {steps.map((step, index) => (
-        <div key={step}>
+        <React.Fragment key={step}>
           <div
             className={`progress-step ${current === step ? 'active' : ''} ${current > step ? 'completed' : ''}`}
           >
@@ -14,7 +14,7 @@ const ProgressSteps = ({ current, total }) => {
           {index < total - 1 && (
             <div className={`progress-line ${current > step ? 'active' : ''}`} />
           )}
-        </div>
+        </React.Fragment>
       ))}
     </div>
   );

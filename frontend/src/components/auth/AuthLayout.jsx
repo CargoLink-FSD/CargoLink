@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import loginLeft from '../../assets/images/login-left.avif';
 import logo from '../../assets/images/logo.svg';
 
-
+// Auth layout component with left side branding and right side form area
 function AuthLayout({ title, subtitle, children }) {
   return (
     <div className="login-main-content">

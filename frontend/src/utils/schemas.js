@@ -1,0 +1,106 @@
+import { z } from 'zod';
+
+// Regex patterns
+export const REGEX = {
+  EMAIL: /^[a-zA-Z0-9._%+-]+@([a-zA-Z]+[a-zA-Z0-9-]*\.)+[a-zA-Z]{2,}$/,
+  PHONE: /^(\+91\s)?[6-9]\d{9}$/,
+  GST: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
+  PAN: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
+  PIN: /^[1-9][0-9]{5}$/,
+  VEHICLE_REG: /^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$/,
+  PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+};
+
+// Base schemas
+export const emailSchema = z.string().min(1, 'Email is required').regex(REGEX.EMAIL, 'Please enter a valid email address');
+export const phoneSchema = z.string().min(1, 'Phone number is required').regex(REGEX.PHONE, 'Please enter a valid 10-digit phone number');
+export const passwordSchema = z.string().min(8, 'Password must be at least 8 characters').regex(REGEX.PASSWORD, 'Password must contain uppercase, lowercase, number and special character');
+export const gstSchema = z.string().min(1, 'GST number is required').regex(REGEX.GST, 'Please enter a valid GSTIN (e.g., 22AAAAA0000A1Z5)');
+export const panSchema = z.string().min(1, 'PAN is required').regex(REGEX.PAN, 'Please enter a valid PAN (e.g., ABCDE1234F)');
+export const pinSchema = z.string().min(1, 'PIN code is required').regex(REGEX.PIN, 'Please enter a valid 6-digit PIN code');
+export const vehicleRegSchema = z.string().min(1, 'Registration number is required').regex(REGEX.VEHICLE_REG, 'Please enter a valid registration (e.g., AB12CD3456)');
+export const dobSchema = z.string().min(1, 'Date of birth is required').refine((dob) => {
+  const birthDate = new Date(dob);
+  const today = new Date();
+  const age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    return age - 1 >= 18;
+  }
+  return age >= 18;
+}, 'You must be at least 18 years old');
+
+// Login
+export const loginSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, 'Password is required'),
+  rememberMe: z.boolean().optional(),
+});
+
+// Customer signup
+export const customerSignupSchema = z.object({
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+  gender: z.string().min(1, 'Gender is required'),
+  phone: phoneSchema,
+  email: emailSchema,
+  dob: dobSchema,
+  street_address: z.string().min(1, 'Street address is required'),
+  city: z.string().min(1, 'City is required'),
+  state: z.string().min(1, 'State is required'),
+  pin: pinSchema,
+  password: passwordSchema,
+  confirmPassword: z.string().min(1, 'Please confirm your password'),
+  terms: z.boolean().refine((val) => val === true, 'You must accept the terms'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
+});
+
+export const customerStep1Schema = customerSignupSchema.pick({ firstName: true, lastName: true, gender: true });
+export const customerStep2Schema = customerSignupSchema.pick({ phone: true, email: true, dob: true });
+export const customerStep3Schema = customerSignupSchema.pick({ street_address: true, city: true, state: true, pin: true });
+export const customerStep4Schema = customerSignupSchema.pick({ password: true, confirmPassword: true, terms: true });
+
+// Transporter signup
+export const vehicleSchema = z.object({
+  name: z.string().min(1, 'Vehicle name is required'),
+  type: z.string().min(1, 'Vehicle type is required'),
+  registrationNumber: vehicleRegSchema,
+  capacity: z.string().min(1, 'Vehicle capacity is required').refine((val) => !isNaN(Number(val)) && Number(val) > 0, { message: 'Vehicle capacity must be greater than 0' }),
+  manufacture_year: z.string().min(1, 'Manufacture year is required').refine((val) => val.length === 4 && !isNaN(Number(val)), { message: 'Enter a valid 4 digit year' }).refine((val) => {
+    const year = Number(val);
+    const currentYear = new Date().getFullYear();
+    return year >= 1980 && year <= currentYear;
+  }, `Enter a year between 1980 and ${new Date().getFullYear()}`),
+});
+
+export const transporterSignupSchema = z.object({
+  name: z.string().min(1, 'Full name is required'),
+  primary_contact: phoneSchema,
+  secondary_contact: phoneSchema,
+  email: emailSchema,
+  gst_in: gstSchema,
+  pan: panSchema,
+  street_address: z.string().min(1, 'Street address is required'),
+  city: z.string().min(1, 'City is required'),
+  state: z.string().min(1, 'State is required'),
+  pin: pinSchema,
+  vehicles: z.array(vehicleSchema).min(1, 'At least one vehicle is required'),
+  password: passwordSchema,
+  confirmPassword: z.string().min(1, 'Please confirm your password'),
+  terms: z.boolean().refine((val) => val === true, 'You must accept the terms'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
+});
+
+export const transporterStep1Schema = transporterSignupSchema.pick({ name: true, primary_contact: true, secondary_contact: true, email: true });
+export const transporterStep2Schema = transporterSignupSchema.pick({ gst_in: true, pan: true, street_address: true, city: true, state: true, pin: true });
+export const transporterStep3Schema = transporterSignupSchema.pick({ vehicles: true });
+export const transporterStep4Schema = transporterSignupSchema.pick({ password: true, confirmPassword: true, terms: true });
+
+// Forgot password
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+});

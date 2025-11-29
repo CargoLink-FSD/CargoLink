@@ -2,11 +2,13 @@
     background-image: url('../images/login-left.avif');
     background-size: cover;
     background-position: center;
-    height: 100vh;
+    min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
+    padding: 0;
+    margin: 0;
 }
 
 .login-content::before {
@@ -16,8 +18,18 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(8px);
+}
+
+.login-main-content {
+    min-height: 100vh;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    background: transparent;
 }
 .card-container {
     display: flex;
