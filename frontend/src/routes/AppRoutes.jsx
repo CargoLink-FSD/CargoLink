@@ -9,6 +9,7 @@ import Login from '../pages/common/login';
 import Signup from '../pages/common/signup';
 import ForgotPassword from '../pages/common/ForgotPassword';
 import NotFound from '../pages/common/NotFound';
+import BidPage from '../pages/transporter/Bid';
 import ProtectedRoute from './ProtectedRoute';
 
 export default function AppRoutes() {
@@ -68,7 +69,7 @@ export default function AppRoutes() {
         <Route path="/transporter/fleet/:vehicleId" element={placeholder('Transporter Fleet Details')} />
         <Route path="/transporter/orders" element={placeholder('Transporter Orders')} />
         <Route path="/transporter/order/:orderId" element={placeholder('Transporter Order Details')} />
-        <Route path="/transporter/bid" element={placeholder('Transporter Bid Page')} />
+        <Route path="/transporter/bid" element={<BidPage />} />
         <Route path="/transporter/my-bids" element={placeholder('Transporter My Bids')} />
         <Route path="/transporter/track/:id" element={placeholder('Transporter Track Order')} />
         <Route path="/transporter/assignment" element={placeholder('Assignment: Dashboard')} />
