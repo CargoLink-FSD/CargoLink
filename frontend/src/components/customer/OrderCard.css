@@ -19,6 +19,7 @@
   margin-bottom: 1rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid #f0f0f0;
+  position: relative;
 }
 
 .order-header h3 {
@@ -45,6 +46,9 @@
   font-size: 0.85rem;
   font-weight: 500;
   white-space: nowrap;
+  position: relative;
+  top: -26px;
+  left: -20px;
 }
 
 .status-badge.placed { 
