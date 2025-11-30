@@ -5,9 +5,9 @@ import { AppError, logger } from "../utils/misc.js"
 const getOrdersByUser = async (userId, role) => {
     let orders;
     if (role === 'customer') {
-        orders =  await getOrdersByCustomer(userId);
+        orders =  await orderRepo.getOrdersByCustomer(userId);
     } else if (role === 'transporter') {
-        orders =  await getOrdersByTransporter(userId);
+        orders =  await orderRepo.getOrdersByTransporter(userId);
         orders.forEach(order => {
             delete order.otp;
         });

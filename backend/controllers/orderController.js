@@ -8,7 +8,7 @@ const getUserOrders = async (req, res, next) => {
     const userId = req.user.id;
     const role = req.user.role;
 
-    orders = await orderService.getOrdersByCustomer(userId, role);
+    const orders = await orderService.getOrdersByUser(userId, role);
 
     res.status(200).json({ 
       success: true, 

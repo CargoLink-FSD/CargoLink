@@ -10,6 +10,7 @@ import Signup from '../pages/common/signup';
 import ForgotPassword from '../pages/common/ForgotPassword';
 import NotFound from '../pages/common/NotFound';
 import ProtectedRoute from './ProtectedRoute';
+import TransporterOrders from '../pages/transporter/TransporterOrders';
 
 export default function AppRoutes() {
   const placeholderStyle = { padding: '2rem', fontSize: '1.25rem' };
@@ -66,8 +67,9 @@ export default function AppRoutes() {
         <Route path="/transporter/profile" element={placeholder('Transporter Profile')} />
         <Route path="/transporter/fleet" element={placeholder('Transporter Fleet')} />
         <Route path="/transporter/fleet/:vehicleId" element={placeholder('Transporter Fleet Details')} />
-        <Route path="/transporter/orders" element={placeholder('Transporter Orders')} />
+        <Route path="/transporter/orders" element={<TransporterOrders />} />
         <Route path="/transporter/order/:orderId" element={placeholder('Transporter Order Details')} />
+        <Route path="/transporter/orders/:orderId/track" element={placeholder('Transporter Track Order')} />
         <Route path="/transporter/bid" element={placeholder('Transporter Bid Page')} />
         <Route path="/transporter/my-bids" element={placeholder('Transporter My Bids')} />
         <Route path="/transporter/track/:id" element={placeholder('Transporter Track Order')} />

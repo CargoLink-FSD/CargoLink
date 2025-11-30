@@ -71,6 +71,7 @@ export default function CustomerOrders() {
   return (
     <>
     <Header />
+    <br></br><br></br>
     <div className="orders-container">
       <div className="orders-header">
         <h1>My Orders</h1>
