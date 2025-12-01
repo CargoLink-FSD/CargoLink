@@ -34,10 +34,10 @@ function Home() {
             <div className="button-group">
               {!isAuthenticated ? (
                 <>
-                  <Link to="/signup?type=customer" className="btn btn-gradient">
+                    <Link to="/customer/signup" className="btn btn-gradient">
                     Sign up Now
                   </Link>
-                  <Link to="/signup?type=transporter" className="btn btn-gradient-outline">
+                    <Link to="/transporter/signup" className="btn btn-gradient-outline">
                     Join as Transporter
                   </Link>
                 </>

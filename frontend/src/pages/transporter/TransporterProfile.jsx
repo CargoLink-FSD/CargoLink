@@ -147,7 +147,7 @@ const TransporterProfile = () => {
 
         {activeTab === 'security' && (
           <div className="tab-content active">
-            <SecurityTab dispatch={dispatch} updatePasswordAction={updateTransporterPassword} />
+            <SecurityTab dispatch={dispatch} updatePasswordAction={updateTransporterPassword} userEmail={profile?.email} />
           </div>
         )}
       </div>

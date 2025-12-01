@@ -20,7 +20,7 @@ const deleteBidById = async (bidId) => {
 
 const getBidsByTransporter = async (transporterId) => {
     const bids = await Bid.find({ transporter_id: transporterId })
-        .populate('order_id' , 'pickup_location dropoff_location item_details status createdAt');
+        .populate('order_id' , 'pickup delivery status createdAt'); // these are actual objects not the old one
     return bids;
 };
 

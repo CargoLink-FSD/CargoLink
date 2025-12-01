@@ -140,7 +140,7 @@ const CustomerProfile = () => {
           )}
 
           {activeTab === 'security' && (
-            <SecurityTab dispatch={dispatch} updatePasswordAction={updateCustomerPassword} />
+            <SecurityTab dispatch={dispatch} updatePasswordAction={updateCustomerPassword} userEmail={profile?.email} />
           )}
         </div>
       </div>

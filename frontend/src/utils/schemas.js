@@ -8,7 +8,8 @@ export const REGEX = {
   PAN: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
   PIN: /^[1-9][0-9]{5}$/,
   VEHICLE_REG: /^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$/,
-  PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*,?&])[A-Za-z\d@$!%*?&]{8,}$/,
+  PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*,?&])[A-Za-z\d@$!%*,?&]{8,}$/,
+  NAME: /^[A-Za-z\s'-]+$/,
 };
 
 // Base schemas
@@ -39,8 +40,8 @@ export const loginSchema = z.object({
 
 // Customer signup
 export const customerSignupSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+  firstName: z.string().min(1, 'First name is required').min(2, 'First name must be at least 2 characters').max(50, 'First name is too long').regex(REGEX.NAME, 'First name can only contain letters, spaces, hyphens and apostrophes'),
+  lastName: z.string().min(1, 'Last name is required').min(2, 'Last name must be at least 2 characters').max(50, 'Last name is too long').regex(REGEX.NAME, 'Last name can only contain letters, spaces, hyphens and apostrophes'),
   gender: z.string().min(1, 'Gender is required'),
   phone: phoneSchema,
   email: emailSchema,
@@ -76,7 +77,7 @@ export const vehicleSchema = z.object({
 });
 
 export const transporterSignupSchema = z.object({
-  name: z.string().min(1, 'Full name is required'),
+  name: z.string().min(1, 'Full name is required').min(2, 'Name must be at least 2 characters').max(50, 'Name is too long').regex(REGEX.NAME, 'Name can only contain letters, spaces, hyphens and apostrophes'),
   primary_contact: phoneSchema,
   secondary_contact: phoneSchema,
   email: emailSchema,
@@ -107,8 +108,8 @@ export const forgotPasswordSchema = z.object({
 
 // Profile field update schemas
 export const profileFieldSchemas = {
-  firstName: z.string().min(1, 'First name is required').max(50, 'First name is too long'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters').max(50, 'Last name is too long'),
+  firstName: z.string().min(1, 'First name is required').min(2, 'First name must be at least 2 characters').max(50, 'First name is too long').regex(/^[A-Za-z\s'-]+$/, 'First name can only contain letters, spaces, hyphens and apostrophes'),
+  lastName: z.string().min(2, 'Last name must be at least 2 characters').max(50, 'Last name is too long').regex(/^[A-Za-z\s'-]+$/, 'Last name can only contain letters, spaces, hyphens and apostrophes'),
   email: emailSchema,
   phone: phoneSchema,
   dob: z.string().min(1, 'Date of birth is required').refine((dob) => {
@@ -125,7 +126,7 @@ export const profileFieldSchemas = {
 
 // Transporter profile field update schemas
 export const transporterProfileFieldSchemas = {
-  name: z.string().min(1, 'Company name is required').max(100, 'Company name is too long'),
+  name: z.string().min(1, 'Company name is required').min(2, 'Name must be at least 2 characters').max(100, 'Company name is too long').regex(REGEX.NAME, 'Name can only contain letters, spaces, hyphens and apostrophes'),
   email: emailSchema,
   primary_contact: phoneSchema,
   secondary_contact: phoneSchema.optional().or(z.literal('')),

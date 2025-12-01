@@ -65,5 +65,6 @@ export async function confirmDelivery(orderId) {
  * Place a new order
  */
 export async function placeOrder(orderData) {
-  return await http.post('/api/orders', orderData);
+  const response = await http.post('/api/orders', orderData);
+  return response.data;
 }

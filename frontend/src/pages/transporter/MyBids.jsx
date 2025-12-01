@@ -36,8 +36,16 @@ export default function MyBidsPage() {
                 {myBids.map(bid => (
                   <tr key={bid._id}>
                     <td>{bid.order_id?._id || 'N/A'}</td>
-                    <td>{bid.order_id?.pickup_location || 'N/A'}</td>
-                    <td>{bid.order_id?.dropoff_location || 'N/A'}</td>
+                    <td>
+                      {bid.order_id?.pickup 
+                        ? `${bid.order_id.pickup.city}, ${bid.order_id.pickup.state}` 
+                        : 'N/A'}
+                    </td>
+                    <td>
+                      {bid.order_id?.delivery 
+                        ? `${bid.order_id.delivery.city}, ${bid.order_id.delivery.state}` 
+                        : 'N/A'}
+                    </td>
                     <td>{bid.bid_amount}</td>
                     <td>{new Date(bid.createdAt).toLocaleString()}</td>
                     <td>{bid.notes || 'N/A'}</td>

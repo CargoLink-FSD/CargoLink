@@ -38,12 +38,12 @@ const customer = [
     .trim()
     .notEmpty().withMessage('First name is required')
     .isLength({ min: 2, max: 50 }).withMessage('First name must be 2-50 characters')
-    .matches(/^[A-Za-z\s-]+$/).withMessage('Invalid charachters in first name'),
+    .matches(/^[A-Za-z\s'-]+$/).withMessage('First name can only contain letters, spaces, hyphens and apostrophes'),
   body('lastName')
     .trim()
     .notEmpty().withMessage('Last name is required')
     .isLength({ min: 2, max: 50 }).withMessage('Last name must be 2-50 characters')
-    .matches(/^[A-Za-z\s-]+$/).withMessage('Invalid charachters in first name'),
+    .matches(/^[A-Za-z\s'-]+$/).withMessage('Last name can only contain letters, spaces, hyphens and apostrophes'),
   body('email')
     .isEmail().normalizeEmail().withMessage('Invalid email format'),
   body('phone')
@@ -89,24 +89,24 @@ const customer = [
 // Update profile validation
 const updateCustomer = [
   body('firstName')
-    .optional().trim()
-    .notEmpty().withMessage('Name cannot be empty')
+    .optional({ checkFalsy: true })
+    .trim()
     .isLength({ min: 2, max: 50 }).withMessage('First name must be 2-50 characters')
-    .matches(/^[A-Za-z\s-]+$/).withMessage('Invalid charachters in first name'),
+    .matches(/^[A-Za-z\s'-]+$/).withMessage('First name can only contain letters, spaces, hyphens and apostrophes'),
   body('lastName')
-    .optional().trim()
-    .notEmpty().withMessage('Name cannot be empty')
+    .optional({ checkFalsy: true })
+    .trim()
     .isLength({ min: 2, max: 50 }).withMessage('Last name must be 2-50 characters')
-    .matches(/^[A-Za-z\s-]+$/).withMessage('Invalid charachters in last name'),
+    .matches(/^[A-Za-z\s'-]+$/).withMessage('Last name can only contain letters, spaces, hyphens and apostrophes'),
   body('email')
-    .optional()
-    .isEmail().withMessage('Valid email cannot be empty'),
+    .optional({ checkFalsy: true })
+    .isEmail().withMessage('Invalid email address'),
   body('phone')
-    .optional().trim().replace(' ', '')
-    .notEmpty().withMessage('Phone number cannot be empty')
+    .optional({ checkFalsy: true })
+    .trim()
     .matches(/^(\+?91|0)?[6-9]\d{9}$/).withMessage('Invalid Indian phone number'),
   body('dob')
-    .optional()
+    .optional({ checkFalsy: true })
     .isISO8601().withMessage('Invalid date format (use YYYY-MM-DD)')
     .custom((value) => {
       const inputDate = new Date(value);
@@ -117,7 +117,8 @@ const updateCustomer = [
       return true;
     }).withMessage('Invalid Date of Birth'),
   body('gender')
-    .optional().trim()
+    .optional({ checkFalsy: true })
+    .trim()
     .isIn(['Male', 'Female', 'Other']).withMessage('Gender must be Male, Female or Other')
 ];
 
@@ -162,7 +163,7 @@ const transporter = [
     .trim()
     .notEmpty().withMessage('Name is required')
     .isLength({ min: 2, max: 50 }).withMessage('Name must be 2-50 characters')
-    .matches(/^[A-Za-z0-9\s-]+$/).withMessage('Invalid charachters in name'),
+    .matches(/^[A-Za-z\s'-]+$/).withMessage('Name can only contain letters, spaces, hyphens and apostrophes'),
   body('email')
     .isEmail().normalizeEmail().withMessage('Invalid email format'),
   body('primary_contact')
@@ -205,7 +206,7 @@ const updateTransporter = [
     .optional().trim()
     .notEmpty().withMessage('Name cannot be empty')
     .isLength({ min: 2, max: 50 }).withMessage('Name must be 2-50 characters')
-    .matches(/^[A-Za-z0-9\s-]+$/).withMessage('Invalid charachters in name'),
+    .matches(/^[A-Za-z\s'-]+$/).withMessage('Name can only contain letters, spaces, hyphens and apostrophes'),
   body('email')
     .optional().trim()
     .isEmail().normalizeEmail().withMessage('Invalid email format'),
@@ -303,50 +304,49 @@ const bid = [
   .optional().isString().withMessage('Notes must be a string')
 ]
 
-const order = []
+const order = [
+  ...addressSchema('pickup.'),
+  ...addressSchema('delivery.'),
 
-const validateOrder = [
-
-  ...addressSchema('pickup'),
-  ...addressSchema('delivery'),
-  body('transit.date')
-    .isISO8601()
-    .withMessage('Pickup date must be in ISO format')
+  body('scheduled_at')
+    .notEmpty().withMessage('Scheduled pickup time is required')
+    .isISO8601().withMessage('Scheduled time must be in ISO format')
     .custom((value) => {
-      const pickupDate = new Date(value);
+      const scheduledDate = new Date(value);
       const minDate = new Date();
       minDate.setDate(minDate.getDate() + 4);
-      minDate.setHours(0, 0, 0, 0);
-      pickupDate.setHours(0, 0, 0, 0);
-      if (pickupDate < minDate) {
+      if (scheduledDate < minDate) {
         return false;
       }
       return true;
-    }).withMessage('Pickup date must be at least 4 days from today'),
+    }).withMessage('Pickup must be scheduled at least 4 days from now'),
 
-  body('transit.time').trim()
-    .notEmpty().withMessage('Pickup time is required'),
-  body('transit.distance')
-    .trim()
+  body('distance')
     .notEmpty().withMessage('Distance is required')
     .isFloat({ gt: 0 }).withMessage('Distance must be a positive number'),
-  body('cargo.type')
+
+  body('max_price')
+    .notEmpty().withMessage('Maximum price is required')
+    .isFloat({ min: 2000 }).withMessage('Maximum price must be at least 2000'),
+
+  body('goods_type')
     .trim().notEmpty().withMessage('Goods type is required'),
-  body('cargo.vehicle')
-    .trim().notEmpty().withMessage('Vehicle type is required'),
-  body('cargo.weight')
-    .trim().notEmpty().withMessage('Weight is required')
+
+  body('truck_type')
+    .trim().notEmpty().withMessage('Truck type is required'),
+
+  // Weight
+  body('weight')
+    .notEmpty().withMessage('Weight is required')
     .isFloat({ gt: 0 }).withMessage('Weight must be a positive number'),
-  body('cargo.description')
+ 
+    body('description')
     .trim().notEmpty().withMessage('Cargo description is required'),
-  body('cargo.maxPrice')
-    .trim().notEmpty().withMessage('Maximum price is required')
-    .isFloat({ gt: 0 }).withMessage('Maximum price must be a positive number'),
 
   // Shipment items
   body('shipments')
     .isArray({ min: 1 }).withMessage('At least one shipment item is required'),
-  body('shipments.*.name')
+  body('shipments.*.item_name')
     .trim().notEmpty().withMessage('Item name is required'),
   body('shipments.*.quantity')
     .isInt({ gt: 0 }).withMessage('Item quantity must be a positive integer'),
