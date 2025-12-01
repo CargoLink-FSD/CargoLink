@@ -46,6 +46,18 @@ export default function CustomerOrders() {
     }
   };
 
+  const handleCancelOrder = async (orderId) => {
+    if (window.confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
+      try {
+        await dispatch(deleteCustomerOrder(orderId)).unwrap();
+        showNotification({ message: 'Order cancelled successfully', type: 'success' });
+        dispatch(fetchCustomerOrders());
+      } catch (err) {
+        showNotification({ message: 'Failed to cancel order', type: 'error' });
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="orders-container">
@@ -71,6 +83,7 @@ export default function CustomerOrders() {
   return (
     <>
     <Header />
+    <br></br><br></br>
     <div className="orders-container">
       <div className="orders-header">
         <h1>My Orders</h1>
@@ -116,6 +129,7 @@ export default function CustomerOrders() {
               key={order._id}
               order={order}
               onDelete={handleDeleteOrder}
+              onCancelOrder={handleCancelOrder}
             />
           ))}
         </div>

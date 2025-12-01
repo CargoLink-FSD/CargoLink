@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import './OrderCard.css';
 
-export default function OrderCard({ order, onDelete }) {
+export default function OrderCard({ order, onDelete, onCancelOrder }) {
   const navigate = useNavigate();
 
   const statusClass = order.status?.toLowerCase().replace(' ', '-') || 'unknown';
@@ -21,6 +21,18 @@ export default function OrderCard({ order, onDelete }) {
   const handleTrackOrder = (e) => {
     e.stopPropagation();
     navigate(`/customer/track/${order._id}`);
+  };
+
+  const handleCancelOrder = (e) => {
+    e.stopPropagation();
+    if (onCancelOrder) {
+      onCancelOrder(order._id);
+    }
+  };
+
+  const handleViewBids = (e) => {
+    e.stopPropagation();
+    navigate(`/customer/order/${order._id}/bids`);
   };
 
   const formatDate = (dateString) => {
@@ -105,6 +117,24 @@ export default function OrderCard({ order, onDelete }) {
         >
           View Details
         </button>
+        
+        {order.status && order.status.toLowerCase() === 'placed' && (
+          <>
+            <button 
+              className="btn btn-outline btn-view-bids"
+              onClick={handleViewBids}
+            >
+              View Bids
+            </button>
+            <button 
+              className="btn btn-danger"
+              onClick={handleCancelOrder}
+            >
+              Cancel Order
+            </button>
+          </>
+        )}
+        
         {order.status && order.status.toLowerCase().includes('transit') && (
           <button 
             className="btn btn-outline"
@@ -150,4 +180,5 @@ OrderCard.propTypes = {
     }),
   }).isRequired,
   onDelete: PropTypes.func.isRequired,
+  onCancelOrder: PropTypes.func,
 };
