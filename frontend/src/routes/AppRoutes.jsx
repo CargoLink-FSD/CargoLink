@@ -12,7 +12,12 @@ import CustomerProfile from '../pages/customer/CustomerProfile';
 import CustomerSignupForm from '../pages/customer/CustomerSignupForm';
 import TransporterProfile from '../pages/transporter/TransporterProfile';
 import TransporterSignupForm from '../pages/transporter/TransporterSignupForm';
+import BidPage from '../pages/transporter/Bid';
 import ProtectedRoute from './ProtectedRoute';
+import CustomerOrders from '../pages/customer/CustomerOrders';
+import OrderBids from '../pages/customer/OrderBids';
+import TransporterOrders from '../pages/transporter/TransporterOrders';
+import MyBidsPage from '../pages/transporter/MyBids';
 
 export default function AppRoutes() {
   const placeholderStyle = { padding: '2rem', fontSize: '1.25rem' };
@@ -50,9 +55,9 @@ export default function AppRoutes() {
         <Route path="/customer/profile" element={<CustomerProfile />} />
         <Route path="/customer/place-order" element={placeholder('Customer Place Order')} />
         <Route path="/customer/paynow" element={placeholder('Customer Payment')} />
-        <Route path="/customer/orders" element={placeholder('Customer Orders')} />
+        <Route path="/customer/orders" element={<CustomerOrders />} />
         <Route path="/customer/order/:orderId" element={placeholder('Customer Order Details')} />
-        <Route path="/customer/order/:orderId/bids" element={placeholder('Customer Order Bids')} />
+        <Route path="/customer/order/:orderId/bids" element={<OrderBids />} />
         <Route path="/customer/track/:id" element={placeholder('Customer Track Order')} />
       </Route>
 
@@ -67,10 +72,11 @@ export default function AppRoutes() {
         <Route path="/transporter/profile" element={<TransporterProfile />} />
         <Route path="/transporter/fleet" element={placeholder('Transporter Fleet')} />
         <Route path="/transporter/fleet/:vehicleId" element={placeholder('Transporter Fleet Details')} />
-        <Route path="/transporter/orders" element={placeholder('Transporter Orders')} />
+        <Route path="/transporter/orders" element={<TransporterOrders />} />
         <Route path="/transporter/order/:orderId" element={placeholder('Transporter Order Details')} />
-        <Route path="/transporter/bid" element={placeholder('Transporter Bid Page')} />
-        <Route path="/transporter/my-bids" element={placeholder('Transporter My Bids')} />
+        <Route path="/transporter/orders/:orderId/track" element={placeholder('Transporter Track Order')} />
+        <Route path="/transporter/bid" element={<BidPage />} />
+        <Route path="/transporter/my-bids" element={<MyBidsPage />} />
         <Route path="/transporter/track/:id" element={placeholder('Transporter Track Order')} />
         <Route path="/transporter/assignment" element={placeholder('Assignment: Dashboard')} />
         <Route path="/transporter/assignment/order/:order_id" element={placeholder('Assignment: Order Detail')} />

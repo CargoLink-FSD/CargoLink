@@ -37,7 +37,13 @@ async function request(path, { method = 'GET', headers, body, credentials = 'inc
   }
 
   // Handle 401 Unauthorized - Token expired
-  if (res.status === 401 && !_retry && !path.includes('/auth/refresh-token')) {
+  // Skip refresh logic for auth endpoints (login, signup, refresh-token)
+  const isAuthEndpoint = path.includes('/auth/login') || 
+                         path.includes('/auth/signup') || 
+                         path.includes('/auth/refresh-token') ||
+                         path.includes('/register');
+  
+  if (res.status === 401 && !_retry && !isAuthEndpoint) {
     try {
       await handleTokenRefresh();
       // Retry original request with new token

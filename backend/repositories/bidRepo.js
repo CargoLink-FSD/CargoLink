@@ -1,4 +1,4 @@
-import Bid from '../models/Bid.js';
+import Bid from '../models/bids.js';
 
 const getBidsForOrder = async (orderId) => {
     const bids = await Bid.find({ order_id: orderId })
