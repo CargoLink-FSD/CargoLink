@@ -17,6 +17,7 @@ const ProfileField = ({
   const [isEditing, setIsEditing] = useState(false);
   const [fieldValue, setFieldValue] = useState(value);
   const [originalValue, setOriginalValue] = useState(value);
+  const [validationError, setValidationError] = useState('');
   const { showSuccess, showError } = useNotification();
 
   useEffect(() => {
@@ -31,6 +32,7 @@ const ProfileField = ({
 
   const handleCancel = () => {
     setFieldValue(originalValue);
+    setValidationError('');
     setIsEditing(false);
   };
 
@@ -39,6 +41,7 @@ const ProfileField = ({
     if (optional && !fieldValue) {
       try {
         await dispatch(updateAction({ fieldType: fieldKey, fieldValue })).unwrap();
+        setValidationError('');
         setIsEditing(false);
         showSuccess('Update successful');
       } catch (error) {
@@ -50,12 +53,13 @@ const ProfileField = ({
     // Validate using the provided validation function
     const { valid, msg } = validateFn(fieldValue, fieldKey);
     if (!valid) {
-      showError(msg);
+      setValidationError(msg);
       return;
     }
 
     try {
       await dispatch(updateAction({ fieldType: fieldKey, fieldValue })).unwrap();
+      setValidationError('');
       setIsEditing(false);
       showSuccess('Update successful');
     } catch (error) {
@@ -66,9 +70,29 @@ const ProfileField = ({
   const getDisplayValue = () => {
     if (displayValue !== undefined) return displayValue;
     if (fieldKey === 'dob' && fieldValue) {
-      return new Date(fieldValue).toLocaleDateString('en-IN');
+      const date = new Date(fieldValue);
+      return date.toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric'
+      });
     }
     return fieldValue;
+  };
+
+  const handleFieldChange = (e) => {
+    const newValue = e.target.value;
+    setFieldValue(newValue);
+    
+    // Validate on change when editing
+    if (isEditing && validateFn) {
+      const { valid, msg } = validateFn(newValue, fieldKey);
+      if (!valid) {
+        setValidationError(msg);
+      } else {
+        setValidationError('');
+      }
+    }
   };
 
   return (
@@ -80,9 +104,9 @@ const ProfileField = ({
       <div className="field-input-row">
         {type === 'select' ? (
           <select
-            className="field-input"
+            className={`field-input ${validationError && isEditing ? 'error' : ''}`}
             value={fieldValue}
-            onChange={(e) => setFieldValue(e.target.value)}
+            onChange={handleFieldChange}
             disabled={!isEditing}
           >
             <option value="">Select {label}</option>
@@ -94,10 +118,10 @@ const ProfileField = ({
           </select>
         ) : (
           <input
-            type={type}
-            className="field-input"
-            value={type === 'date' && !isEditing ? getDisplayValue() : fieldValue}
-            onChange={(e) => setFieldValue(e.target.value)}
+            type={isEditing && type === 'date' ? 'date' : (type === 'date' ? 'text' : type)}
+            className={`field-input ${validationError && isEditing ? 'error' : ''}`}
+            value={isEditing && type === 'date' ? (fieldValue ? new Date(fieldValue).toISOString().split('T')[0] : '') : (type === 'date' ? getDisplayValue() : fieldValue)}
+            onChange={handleFieldChange}
             disabled={!isEditing}
             readOnly={!isEditing}
           />
@@ -126,6 +150,16 @@ const ProfileField = ({
           </div>
         )}
       </div>
+      {validationError && isEditing && (
+        <div className="field-error-message">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          {validationError}
+        </div>
+      )}
     </div>
   );
 };

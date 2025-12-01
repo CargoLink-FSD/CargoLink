@@ -49,7 +49,7 @@ const placeOrder = async (req, res, next) => {
     const orderData = req.body;
     orderData.customer_id = req.user.id;
 
-    const order = orderService.placeOrder(orderData);
+    const order = await orderService.placeOrder(orderData);
 
     res.status(201).json({ 
       success: true, 
@@ -199,11 +199,12 @@ const getTransporterBids = async (req, res, next) => {
 const submitBid = async (req, res, next) => {
   try{
     const transporterId = req.user.id;
-    const { orderId, bidAmount, notes } = req.body;
+    const orderId = req.params.orderId; //reads orderid from url params
+    const { bidAmount, notes } = req.body;
 
     if(!mongoose.Types.ObjectId.isValid(orderId)) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
-        { type: "field", value: orderId, msg: "Not a valid order ID", path: "orderId", location: "body" }
+        { type: "field", value: orderId, msg: "Not a valid order ID", path: "orderId", location: "params" } //reads orderid from url params
       );
     }
 

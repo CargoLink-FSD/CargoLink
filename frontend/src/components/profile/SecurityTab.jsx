@@ -63,6 +63,8 @@ const SecurityTab = ({ dispatch, updatePasswordAction }) => {
               <input
                 type={showPassword.current ? "text" : "password"}
                 id="current-password"
+                name="current-password"
+                autoComplete="current-password"
                 className="form-input"
                 placeholder="Enter current password"
                 value={passwordData.oldPassword}
@@ -92,6 +94,8 @@ const SecurityTab = ({ dispatch, updatePasswordAction }) => {
               <input
                 type={showPassword.new ? "text" : "password"}
                 id="new-password"
+                name="new-password"
+                autoComplete="new-password"
                 className="form-input"
                 placeholder="Enter new password (min 8 characters)"
                 value={passwordData.newPassword}
@@ -121,6 +125,8 @@ const SecurityTab = ({ dispatch, updatePasswordAction }) => {
               <input
                 type={showPassword.confirm ? "text" : "password"}
                 id="confirm-password"
+                name="confirm-password"
+                autoComplete="new-password"
                 className="form-input"
                 placeholder="Re-enter new password"
                 value={passwordData.confirmPassword}

@@ -107,8 +107,8 @@ export const forgotPasswordSchema = z.object({
 
 // Profile field update schemas
 export const profileFieldSchemas = {
-  firstName: z.string().min(1, 'First name is required').max(50, 'First name is too long'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters').max(50, 'Last name is too long'),
+  firstName: z.string().min(1, 'First name is required').min(2, 'First name must be at least 2 characters').max(50, 'First name is too long').regex(/^[A-Za-z\s'-]+$/, 'First name can only contain letters, spaces, hyphens and apostrophes'),
+  lastName: z.string().min(2, 'Last name must be at least 2 characters').max(50, 'Last name is too long').regex(/^[A-Za-z\s'-]+$/, 'Last name can only contain letters, spaces, hyphens and apostrophes'),
   email: emailSchema,
   phone: phoneSchema,
   dob: z.string().min(1, 'Date of birth is required').refine((dob) => {

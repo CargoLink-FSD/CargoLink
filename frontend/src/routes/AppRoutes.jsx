@@ -16,6 +16,7 @@ import BidPage from '../pages/transporter/Bid';
 import ProtectedRoute from './ProtectedRoute';
 import CustomerOrders from '../pages/customer/CustomerOrders';
 import OrderBids from '../pages/customer/OrderBids';
+import PlaceOrder from '../pages/customer/PlaceOrder';
 import TransporterOrders from '../pages/transporter/TransporterOrders';
 import MyBidsPage from '../pages/transporter/MyBids';
 
@@ -30,7 +31,7 @@ export default function AppRoutes() {
       
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<CustomerSignupForm />} />
+      {/* <Route path="/signup" element={<CustomerSignupForm />} /> */}
       <Route path="/forgot-password" element={<ForgotPassword />} />
 
 
@@ -53,7 +54,7 @@ export default function AppRoutes() {
       <Route element={<ProtectedRoute allowedRoles={['customer']} />}>
         <Route path="/customer" element={<Home />} />
         <Route path="/customer/profile" element={<CustomerProfile />} />
-        <Route path="/customer/place-order" element={placeholder('Customer Place Order')} />
+        <Route path="/customer/place-order" element={<PlaceOrder />} />
         <Route path="/customer/paynow" element={placeholder('Customer Payment')} />
         <Route path="/customer/orders" element={<CustomerOrders />} />
         <Route path="/customer/order/:orderId" element={placeholder('Customer Order Details')} />
