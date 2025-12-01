@@ -1,4 +1,5 @@
 import transporterService from "../services/transporterService.js";
+import authService from "../services/authService.js";
 import mongoose from "mongoose";
 import { logger, AppError } from "../utils/misc.js";
 
@@ -9,9 +10,11 @@ const createTransporter = async (req, res, next) => {
     const transporter = await transporterService.registerTransporter(transporterData);
     transporter.password = undefined;
     logger.debug("Transporter Created", transporter);
+    const { accessToken, refreshToken } = authService.generateTokens(transporter, 'transporter');
+    
     res.status(201).json({
       success: true,
-      data: transporter,
+      data: { accessToken, refreshToken },
       message: 'Transporter registered successfully',
     });
   } catch (err) {

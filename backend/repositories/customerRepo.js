@@ -41,7 +41,11 @@ const addAddress = async (customerId, addressData) => {
 
 const removeAddress = async (customer, addressIndex) => {
   customer.addresses.splice(addressIndex, 1);
-  const result = await customer.save();
+  const result = await Customer.findByIdAndUpdate(
+    customer._id,
+    { addresses: customer.addresses },
+    { new: true, runValidators: false }
+  ).select('addresses');
   return result;
 };
 

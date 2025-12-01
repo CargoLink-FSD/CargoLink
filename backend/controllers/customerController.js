@@ -1,4 +1,5 @@
 import customerService from "../services/customerService.js";
+import authService from "../services/authService.js";
 import { AppError, logger } from "../utils/misc.js";
 
 const createCustomer = async (req, res, next) => {
@@ -8,9 +9,11 @@ const createCustomer = async (req, res, next) => {
     const customer = await customerService.registerCustomer(customerData);
     customer.password = undefined; 
     logger.debug("Customer Created", customer);
+    const { accessToken, refreshToken } = authService.generateTokens(customer, 'customer'); //tokens for auto login after signup.
+    
     res.status(201).json({
       success: true,
-      data: customer,
+      data: { accessToken, refreshToken },
       message: 'Customer registered successfully',
     });
   } catch (err) {

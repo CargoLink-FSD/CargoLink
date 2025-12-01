@@ -40,7 +40,18 @@ export const useAuthLogin = () => {
       showSuccess('Logged in successfully.');
       redirectTo ? navigate(redirectTo, { replace: true }) : redirectAfterLogin(user?.role || userType, navigate);
     } catch (err) {
-      showError(typeof err === 'string' ? err : err.message);
+      // Map backend error to user-friendly message
+      const rawError = typeof err === 'string' ? err : err?.message || 'Login failed';
+      let errorMessage = rawError;
+      
+      if (rawError.includes('Invalid credentials') || rawError.includes('ERR_INVALID_CREDENTIALS')) {
+        errorMessage = 'Invalid email or password. Please try again.';
+      } else if (rawError.includes('No refresh token')) {
+        // This shouldn't happen anymore, but just in case
+        errorMessage = 'Login failed. Please try again.';
+      }
+      
+      showError(errorMessage);
     }
   };
 
