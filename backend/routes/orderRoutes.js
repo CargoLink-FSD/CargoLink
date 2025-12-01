@@ -8,7 +8,6 @@ const orderRouter = Router();
 
 // Common:
 orderRouter.get("/my-orders", authMiddleware(["customer", "transporter"]), orderController.getUserOrders); // Get user-specific orders
-orderRouter.get("/:orderId", authMiddleware(["customer", "transporter"]), orderController.getOrderDetails); // Get order details (role-filtered)
 
 // Orders:
 orderRouter.post("/", authMiddleware(["customer"]), validate(validationSchema.order), orderController.placeOrder); // Place order (shipment/rental)
@@ -16,6 +15,8 @@ orderRouter.delete("/:orderId", authMiddleware(["customer"]), orderController.ca
 // orderRouter.post("/:orderId/rating", authMiddleware(["customer"]), validate(validationSchema.rating), orderController.submitRating); // Submit rating for order
 
 orderRouter.get("/available", authMiddleware(["transporter"]), orderController.getActiveOrders); // List available orders for bidding
+orderRouter.get("/my-bids", authMiddleware(["transporter"]), orderController.getTransporterBids); // List transporter's bids
+orderRouter.get("/:orderId", authMiddleware(["customer", "transporter"]), orderController.getOrderDetails); // Get order details (role-filtered)
 
 // Trips
 orderRouter.post('/:orderId/confirm-pickup', authMiddleware(['customer']), orderController.confirmPickup); // confirm order pick-up 
@@ -26,7 +27,6 @@ orderRouter.get("/:orderId/bids", authMiddleware(["customer"]), orderController.
 orderRouter.post("/:orderId/bids/:bidId/accept", authMiddleware(["customer"]), orderController.acceptBid); // Accept bid
 orderRouter.delete("/:orderId/bids/:bidId", authMiddleware(["customer"]), orderController.rejectBid); // Reject bid
 
-orderRouter.get("/my-bids", authMiddleware(["transporter"]), orderController.getTransporterBids); // List transporter's bids
 orderRouter.post("/:orderId/bids", authMiddleware(["transporter"]), validate(validationSchema.bid), orderController.submitBid); // Submit bid
 orderRouter.delete( '/:orderId/bids/:bidId', authMiddleware(['transporter']), orderController.withdrawBid); // Withdraw a bid
 

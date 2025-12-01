@@ -1,4 +1,5 @@
 import orderRepo from "../repositories/orderRepo.js"
+import bidRepo from "../repositories/bidRepo.js"
 import { AppError, logger } from "../utils/misc.js"
 
 
