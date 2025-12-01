@@ -12,7 +12,6 @@ export async function fetchMyBids() {
 
 export async function submitBid(orderId, bidAmount, notes = '') {
   const response = await http.post(`/api/orders/${orderId}/bids`, {
-    orderId,
     bidAmount,
     notes,
   });

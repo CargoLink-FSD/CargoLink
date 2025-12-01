@@ -57,8 +57,8 @@ export const deleteCustomerAddress = createAsyncThunk(
   'customer/deleteAddress',
   async (addressId, { rejectWithValue }) => {
     try {
-      await customerApi.deleteCustomerAddress(addressId);
-      return addressId;
+      const response = await customerApi.deleteCustomerAddress(addressId);
+      return response;
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to delete address');
     }

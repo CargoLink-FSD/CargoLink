@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useTransporterOrders } from '../../hooks/useTransporterOrders';
-import TransporterOrderCard from '../../components/transporter/TransporterOrderCard';
+import OrderCard from '../../components/common/OrderCard';
 import './TransporterOrders.css';
 import Header from '../../components/common/Header';
 
@@ -167,14 +167,14 @@ const TransporterOrders = () => {
       {!loading && !error && orders.length > 0 && (
         <div className="orders-grid">
           {orders.map((order) => (
-            <TransporterOrderCard
+            <OrderCard
               key={order._id}
               order={order}
+              variant="transporter"
               onAssign={handleAssign}
               onUnassign={handleUnassign}
               onStartTransit={handleStartTransit}
               onTrackOrder={handleTrackOrder}
-              onViewDetails={handleViewDetails}
             />
           ))}
         </div>

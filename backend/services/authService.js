@@ -5,6 +5,11 @@ import crypto from 'crypto';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 import { AppError, logger } from '../utils/misc.js';
 
+// Admin credentials (hardcoded for now - in production, use environment variables)
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@cargolink.com";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin@123";
+const ADMIN_ID = "admin";
+
 // In-memory store for refresh tokens (prototype). For production use persistent storage or a blacklist strategy.
 const refreshStore = new Map(); // key: jti, value: { userId, role, expiresAt }
 
@@ -13,6 +18,18 @@ function generateJti() {
 }
 
 export async function authenticateUser({ email, password, role }) {
+  // Handle admin authentication separately
+  if (role === 'admin') {
+    if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+      throw new AppError(401, 'AuthError', 'Invalid admin credentials', 'ERR_INVALID_CREDENTIALS');
+    }
+    return {
+      _id: ADMIN_ID,
+      email: ADMIN_EMAIL,
+      role: 'admin'
+    };
+  }
+
   let user, userRepo;
   if (role === 'customer') {
     user = await customerRepo.findByEmail(email);
