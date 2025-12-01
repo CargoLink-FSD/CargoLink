@@ -12,6 +12,9 @@ import NotFound from '../pages/common/NotFound';
 import BidPage from '../pages/transporter/Bid';
 import ProtectedRoute from './ProtectedRoute';
 import MyBidsPage from '../pages/transporter/MyBids';
+import About from '../pages/static/About';
+import Services from '../pages/static/Services';
+import Contact from '../pages/static/Contact';
 
 export default function AppRoutes() {
   const placeholderStyle = { padding: '2rem', fontSize: '1.25rem' };
@@ -31,9 +34,9 @@ export default function AppRoutes() {
       {/* Static Pages */}
 
       
-      <Route path="/static/about" element={placeholder('Static: About')} />
-      <Route path="/static/services" element={placeholder('Static: Services')} />
-      <Route path="/static/contact" element={placeholder('Static: Contact')} />
+      <Route path="/static/about" element={<About />} />
+      <Route path="/static/services" element={<Services />} />
+      <Route path="/static/contact" element={<Contact />} />
       <Route path="/static/terms" element={placeholder('Static: Terms of Service')} />
       <Route path="/static/privacy" element={placeholder('Static: Privacy Policy')} />
       <Route path="/static/careers" element={placeholder('Static: Careers')} />
