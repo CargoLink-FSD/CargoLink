@@ -10,7 +10,7 @@ import {
   selectOrdersError
 } from '../../store/slices/ordersSlice';
 import { useNotification } from '../../context/NotificationContext';
-import OrderCard from '../../components/customer/OrderCard';
+import OrderCard from '../../components/common/OrderCard';
 import './CustomerOrders.css';
 import Header from '../../components/common/Header';
 
@@ -128,6 +128,7 @@ export default function CustomerOrders() {
             <OrderCard
               key={order._id}
               order={order}
+              variant="customer"
               onDelete={handleDeleteOrder}
               onCancelOrder={handleCancelOrder}
             />
