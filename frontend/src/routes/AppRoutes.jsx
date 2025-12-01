@@ -22,6 +22,7 @@ import MyBidsPage from '../pages/transporter/MyBids';
 import UserManagement from '../pages/admin/UserManagement';
 import OrderManagement from '../pages/admin/OrderManagement';
 import Dashboard from '../pages/admin/Dashboard';
+import TrackOrder from '../pages/TrackOrder'
 
 export default function AppRoutes() {
   const placeholderStyle = { padding: '2rem', fontSize: '1.25rem' };
@@ -62,7 +63,7 @@ export default function AppRoutes() {
         <Route path="/customer/orders" element={<CustomerOrders />} />
         <Route path="/customer/order/:orderId" element={placeholder('Customer Order Details')} />
         <Route path="/customer/order/:orderId/bids" element={<OrderBids />} />
-        <Route path="/customer/track/:id" element={placeholder('Customer Track Order')} />
+        <Route path="/customer/orders/:orderId/track" element={<TrackOrder/>} />
       </Route>
 
 
@@ -78,10 +79,9 @@ export default function AppRoutes() {
         <Route path="/transporter/fleet/:vehicleId" element={placeholder('Transporter Fleet Details')} />
         <Route path="/transporter/orders" element={<TransporterOrders />} />
         <Route path="/transporter/order/:orderId" element={placeholder('Transporter Order Details')} />
-        <Route path="/transporter/orders/:orderId/track" element={placeholder('Transporter Track Order')} />
+        <Route path="/transporter/orders/:orderId/track" element={<TrackOrder/>} />
         <Route path="/transporter/bid" element={<BidPage />} />
         <Route path="/transporter/my-bids" element={<MyBidsPage />} />
-        <Route path="/transporter/track/:id" element={placeholder('Transporter Track Order')} />
         <Route path="/transporter/assignment" element={placeholder('Assignment: Dashboard')} />
         <Route path="/transporter/assignment/order/:order_id" element={placeholder('Assignment: Order Detail')} />
         <Route path="/transporter/assignment/vehicles/available" element={placeholder('Assignment: Available Vehicles')} />
