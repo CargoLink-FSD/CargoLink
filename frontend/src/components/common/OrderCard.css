@@ -19,7 +19,6 @@
   margin-bottom: 1rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid #f0f0f0;
-  position: relative;
 }
 
 .order-header h3 {
@@ -46,9 +45,6 @@
   font-size: 0.85rem;
   font-weight: 500;
   white-space: nowrap;
-  position: relative;
-  top: -26px;
-  left: -20px;
 }
 
 .status-badge.placed { 
@@ -66,7 +62,8 @@
   color: #7b1fa2; 
 }
 
-.status-badge.in-transit { 
+.status-badge.in-transit,
+.status-badge.started { 
   background: #e8f5e9; 
   color: #388e3c; 
 }
@@ -74,6 +71,11 @@
 .status-badge.completed { 
   background: #e0f2f1; 
   color: #00796b; 
+}
+
+.status-badge.cancelled {
+  background: #ffebee;
+  color: #c62828;
 }
 
 .status-badge.unknown {
@@ -151,13 +153,16 @@
   font-size: 0.95rem;
 }
 
-.order-actions{display:flex;gap:12px;margin-top:14px;flex-wrap:wrap}
-.order-actions .btn{flex:1;padding:10px 14px;border-radius:10px;border:none;font-weight:700;cursor:pointer;min-width:fit-content;transition:all 0.2s ease}
+.order-actions{display:flex;gap:12px;margin-top:14px}
+.order-actions .btn{flex:1;padding:10px 14px;border-radius:10px;border:none;font-weight:700;cursor:pointer}
 .order-actions .btn-primary{background:linear-gradient(90deg,#6b5bff,#5f46ff);color:#fff}
-.order-actions .btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 8px rgba(107,91,255,0.3)}
 .order-actions .btn-outline{background:#fff;border:2px solid #6b5bff;color:#6b5bff}
 .order-actions .btn-outline:hover{background:#f7f3ff}
-.order-actions .btn-view-bids{background:#fff;border:2px solid #1976d2;color:#1976d2}
-.order-actions .btn-view-bids:hover{background:#e3f2fd}
-.order-actions .btn-danger{background:#fff;border:2px solid #d32f2f;color:#d32f2f}
-.order-actions .btn-danger:hover{background:#ffebee}
+.order-actions .btn-danger{background:#ef4444;color:#fff}
+.order-actions .btn-danger:hover{background:#dc2626}
+.order-actions .btn-success{background:#10b981;color:#fff}
+.order-actions .btn-success:hover{background:#059669}
+.order-actions .btn-info{background:#6366f1;color:#fff}
+.order-actions .btn-info:hover{background:#4f46e5}
+.order-actions .btn-view-bids{background:#fff;border:2px solid #8b5cf6;color:#8b5cf6}
+.order-actions .btn-view-bids:hover{background:#f5f3ff}

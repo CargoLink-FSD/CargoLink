@@ -277,7 +277,7 @@ const updateTruck = [
 const login =  [
   body('email').isEmail().withMessage('Valid email required'),
   body('password').notEmpty().withMessage('Password required'),
-  body('role').isIn(['customer','transporter']).withMessage('Role must be customer or transporter'),
+  body('role').isIn(['customer','transporter','admin']).withMessage('Role must be customer, transporter or admin'),
 ]
 const forgotPassword =  [
   body('email').isEmail().withMessage('Valid email required'),

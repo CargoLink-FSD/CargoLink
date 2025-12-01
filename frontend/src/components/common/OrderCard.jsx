@@ -3,37 +3,19 @@ import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import './OrderCard.css';
 
-export default function OrderCard({ order, onDelete, onCancelOrder }) {
+export default function OrderCard({ 
+  order, 
+  variant = 'customer', // 'customer' or 'transporter'
+  onDelete,
+  onCancelOrder,
+  onAssign,
+  onUnassign,
+  onStartTransit,
+  onTrackOrder
+}) {
   const navigate = useNavigate();
 
-  const statusClass = order.status?.toLowerCase().replace(' ', '-') || 'unknown';
-
-  const handleViewDetails = (e) => {
-    e.stopPropagation();
-    navigate(`/customer/order/${order._id}`);
-  };
-
-  const handleDelete = (e) => {
-    e.stopPropagation();
-    onDelete(order._id);
-  };
-
-  const handleTrackOrder = (e) => {
-    e.stopPropagation();
-    navigate(`/customer/track/${order._id}`);
-  };
-
-  const handleCancelOrder = (e) => {
-    e.stopPropagation();
-    if (onCancelOrder) {
-      onCancelOrder(order._id);
-    }
-  };
-
-  const handleViewBids = (e) => {
-    e.stopPropagation();
-    navigate(`/customer/order/${order._id}/bids`);
-  };
+  const statusClass = order.status?.toLowerCase().replace(/\s+/g, '-') || 'unknown';
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -44,12 +26,72 @@ export default function OrderCard({ order, onDelete, onCancelOrder }) {
     });
   };
 
+  // Customer actions
+  const handleViewDetails = (e) => {
+    e?.stopPropagation();
+    const path = variant === 'customer' 
+      ? `/customer/order/${order._id}`
+      : `/transporter/orders/${order._id}`;
+    navigate(path);
+  };
+
+  const handleDelete = (e) => {
+    e.stopPropagation();
+    if (onDelete) onDelete(order._id);
+  };
+
+  const handleTrackOrderClick = (e) => {
+    e.stopPropagation();
+    if (variant === 'customer') {
+      navigate(`/customer/track/${order._id}`);
+    } else if (onTrackOrder) {
+      onTrackOrder(order._id);
+    }
+  };
+
+  const handleCancelOrder = (e) => {
+    e.stopPropagation();
+    if (onCancelOrder) onCancelOrder(order._id);
+  };
+
+  const handleViewBids = (e) => {
+    e.stopPropagation();
+    navigate(`/customer/order/${order._id}/bids`);
+  };
+
+  // Transporter actions
+  const handleAssign = (e) => {
+    e?.stopPropagation();
+    if (onAssign) onAssign(order);
+  };
+
+  const handleUnassign = (e) => {
+    e?.stopPropagation();
+    if (onUnassign) onUnassign(order);
+  };
+
+  const handleStartTransit = (e) => {
+    e?.stopPropagation();
+    if (onStartTransit) onStartTransit(order);
+  };
+
+  // Transporter checks
+  const canUnassign = order.status?.toLowerCase() === 'assigned' && order.assignment;
+  const canStartTransit = order.status?.toLowerCase() === 'assigned' && order.assignment;
+  const isInTransit = order.status?.toLowerCase() === 'started' || order.status?.toLowerCase() === 'in transit';
+
   return (
-    <div className="order-card" onClick={handleViewDetails} role="button">
+    <div 
+      className={`order-card ${variant}`} 
+      onClick={handleViewDetails}
+      role="button"
+    >
       <div className="order-header">
         <div>
           <h3>Order</h3>
-          <div className="order-id">#{order._id}</div>
+          <div className="order-id">
+            #{variant === 'customer' ? order._id : order._id?.slice(-8).toUpperCase()}
+          </div>
           <span className="date">{formatDate(order.createdAt || order.order_date)}</span>
         </div>
         <span className={`status-badge ${statusClass}`}>
@@ -72,7 +114,7 @@ export default function OrderCard({ order, onDelete, onCancelOrder }) {
           </div>
           <div className="route-right">
             <div className="distance">{order.distance || '—'} km</div>
-            <div className="scheduled">{order.scheduled_at ? new Date(order.scheduled_at).toLocaleDateString() : '—'}</div>
+            <div className="scheduled">{order.scheduled_at ? formatDate(order.scheduled_at) : '—'}</div>
           </div>
         </div>
 
@@ -118,7 +160,8 @@ export default function OrderCard({ order, onDelete, onCancelOrder }) {
           View Details
         </button>
         
-        {order.status && order.status.toLowerCase() === 'placed' && (
+        {/* Customer-specific actions */}
+        {variant === 'customer' && order.status?.toLowerCase() === 'placed' && (
           <>
             <button 
               className="btn btn-outline btn-view-bids"
@@ -135,10 +178,29 @@ export default function OrderCard({ order, onDelete, onCancelOrder }) {
           </>
         )}
         
-        {order.status && order.status.toLowerCase().includes('transit') && (
+        {variant === 'customer' && order.status?.toLowerCase().includes('transit') && (
           <button 
             className="btn btn-outline"
-            onClick={handleTrackOrder}
+            onClick={handleTrackOrderClick}
+          >
+            Track Order
+          </button>
+        )}
+
+        {/* Transporter-specific actions */}
+        {variant === 'transporter' && order.status?.toLowerCase() === 'assigned' && !order.assignment && (
+          <button 
+            className="btn btn-primary"
+            onClick={handleAssign}
+          >
+            Assign Vehicle
+          </button>
+        )}
+
+        {variant === 'transporter' && (order.status?.toLowerCase() === 'started' || order.status?.toLowerCase() === 'in transit') && (
+          <button 
+            className="btn btn-info"
+            onClick={handleTrackOrderClick}
           >
             Track Order
           </button>
@@ -179,6 +241,11 @@ OrderCard.propTypes = {
       vehicle_id: PropTypes.string,
     }),
   }).isRequired,
-  onDelete: PropTypes.func.isRequired,
+  variant: PropTypes.oneOf(['customer', 'transporter']),
+  onDelete: PropTypes.func,
   onCancelOrder: PropTypes.func,
+  onAssign: PropTypes.func,
+  onUnassign: PropTypes.func,
+  onStartTransit: PropTypes.func,
+  onTrackOrder: PropTypes.func,
 };
