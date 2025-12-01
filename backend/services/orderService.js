@@ -1,4 +1,5 @@
 import orderRepo from "../repositories/orderRepo.js"
+import bidRepo from "../repositories/bidRepo.js"
 import { AppError, logger } from "../utils/misc.js"
 
 
@@ -39,7 +40,7 @@ const cancelOrder = async (orderId, customerId) => {
     if (!exist) {
         throw new AppError(404, "NotFound", "Order not found or access denied", "ERR_NOT_FOUND");
     }
-    order = await orderRepo.cancelOrder(orderId);
+    const order = await orderRepo.cancelOrder(orderId);
     if (!order) {
         throw new AppError(400, "InvalidOperation", "Only pending orders can be cancelled", "ERR_INVALID_OPERATION");
     }
@@ -58,7 +59,7 @@ const getActiveOrders = async (transporterId) => {
 };
 
 const getCurrentBids = async (customerId, orderId) => {
-    exist = await orderRepo.existsOrderForCustomer(orderId, customerId);
+    const exist = await orderRepo.existsOrderForCustomer(orderId, customerId);
     if (!exist) {
         throw new AppError(404, "NotFound", "Order not found or access denied", "ERR_NOT_FOUND");
     }
@@ -108,14 +109,19 @@ const getTransporterBids = async (transporterId) => {
     return bids;
 };
 
-const submitBid = async (orderId, transporterId, bidAmount, bidMessage) => {
+const submitBid = async (transporterId, orderId, bidAmount, notes) => {
     // Check if order exists and is open for bidding
     const active = await orderRepo.checkActiveOrder(orderId, transporterId);
     if (!active) {
         throw new AppError(404, "NotFound", "Order not found or not up for bidding", "ERR_NOT_FOUND");
     }
 
-    const bid = await bidRepo.createBid({orderId, transporterId, bidAmount, bidMessage});
+    const bid = await bidRepo.createBid({
+        order_id: orderId, 
+        transporter_id: transporterId, 
+        bid_amount: bidAmount, 
+        notes: notes
+    });
 
     return bid;
 };

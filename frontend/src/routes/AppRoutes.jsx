@@ -11,6 +11,7 @@ import ForgotPassword from '../pages/common/ForgotPassword';
 import NotFound from '../pages/common/NotFound';
 import ProtectedRoute from './ProtectedRoute';
 import CustomerOrders from '../pages/customer/CustomerOrders';
+import OrderBids from '../pages/customer/OrderBids';
 import TransporterOrders from '../pages/transporter/TransporterOrders';
 
 export default function AppRoutes() {
@@ -52,7 +53,7 @@ export default function AppRoutes() {
         <Route path="/customer/paynow" element={placeholder('Customer Payment')} />
         <Route path="/customer/orders" element={<CustomerOrders />} />
         <Route path="/customer/order/:orderId" element={placeholder('Customer Order Details')} />
-        <Route path="/customer/order/:orderId/bids" element={placeholder('Customer Order Bids')} />
+        <Route path="/customer/order/:orderId/bids" element={<OrderBids />} />
         <Route path="/customer/track/:id" element={placeholder('Customer Track Order')} />
       </Route>
 

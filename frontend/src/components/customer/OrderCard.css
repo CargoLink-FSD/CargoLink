@@ -151,8 +151,13 @@
   font-size: 0.95rem;
 }
 
-.order-actions{display:flex;gap:12px;margin-top:14px}
-.order-actions .btn{flex:1;padding:10px 14px;border-radius:10px;border:none;font-weight:700;cursor:pointer}
+.order-actions{display:flex;gap:12px;margin-top:14px;flex-wrap:wrap}
+.order-actions .btn{flex:1;padding:10px 14px;border-radius:10px;border:none;font-weight:700;cursor:pointer;min-width:fit-content;transition:all 0.2s ease}
 .order-actions .btn-primary{background:linear-gradient(90deg,#6b5bff,#5f46ff);color:#fff}
+.order-actions .btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 8px rgba(107,91,255,0.3)}
 .order-actions .btn-outline{background:#fff;border:2px solid #6b5bff;color:#6b5bff}
 .order-actions .btn-outline:hover{background:#f7f3ff}
+.order-actions .btn-view-bids{background:#fff;border:2px solid #1976d2;color:#1976d2}
+.order-actions .btn-view-bids:hover{background:#e3f2fd}
+.order-actions .btn-danger{background:#fff;border:2px solid #d32f2f;color:#d32f2f}
+.order-actions .btn-danger:hover{background:#ffebee}
