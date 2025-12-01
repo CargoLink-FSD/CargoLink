@@ -15,6 +15,9 @@ import CustomerOrders from '../pages/customer/CustomerOrders';
 import OrderBids from '../pages/customer/OrderBids';
 import TransporterOrders from '../pages/transporter/TransporterOrders';
 import MyBidsPage from '../pages/transporter/MyBids';
+import UserManagement from '../pages/admin/UserManagement';
+import OrderManagement from '../pages/admin/OrderManagement';
+import Dashboard from '../pages/admin/Dashboard';
 
 export default function AppRoutes() {
   const placeholderStyle = { padding: '2rem', fontSize: '1.25rem' };
@@ -90,10 +93,10 @@ export default function AppRoutes() {
       <Route path="/admin/login" element={placeholder('Admin Login')} />
 
       <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-        <Route path="/admin" element={placeholder('Admin Dashboard')} />
-        <Route path="/admin/dashboard" element={placeholder('Admin Dashboard')} />
-        <Route path="/admin/orders" element={placeholder('Admin Orders')} />
-        <Route path="/admin/users" element={placeholder('Admin Users')} />
+        <Route path="/admin" element={<Home />} />
+        <Route path="/admin/dashboard" element={<Dashboard />} />
+        <Route path="/admin/orders" element={<OrderManagement />} />
+        <Route path="/admin/users" element={<UserManagement />} />
       </Route>
 
 

@@ -5,6 +5,7 @@ import transporterRoutes from "./transporterRoutes.js";
 import orderRoutes from "./orderRoutes.js";
 import tripRoutes from "./tripRoutes.js";
 import paymentRoutes from "./paymentRoutes.js";
+import adminRoutes from "./adminRoutes.js";
 
 const router = Router();
 
@@ -14,6 +15,7 @@ router.use("/api/transporters", transporterRoutes);
 router.use("/api/orders", orderRoutes);
 router.use("/api/trips", tripRoutes);
 router.use("/api/payments", paymentRoutes);
+router.use("/api/admin", adminRoutes);
 
 router.use((req, res, next) => {
   res.status(404).json({
