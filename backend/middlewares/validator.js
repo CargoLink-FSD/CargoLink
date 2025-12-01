@@ -38,12 +38,12 @@ const customer = [
     .trim()
     .notEmpty().withMessage('First name is required')
     .isLength({ min: 2, max: 50 }).withMessage('First name must be 2-50 characters')
-    .matches(/^[A-Za-z\s-]+$/).withMessage('Invalid charachters in first name'),
+    .matches(/^[A-Za-z\s'-]+$/).withMessage('First name can only contain letters, spaces, hyphens and apostrophes'),
   body('lastName')
     .trim()
     .notEmpty().withMessage('Last name is required')
     .isLength({ min: 2, max: 50 }).withMessage('Last name must be 2-50 characters')
-    .matches(/^[A-Za-z\s-]+$/).withMessage('Invalid charachters in first name'),
+    .matches(/^[A-Za-z\s'-]+$/).withMessage('Last name can only contain letters, spaces, hyphens and apostrophes'),
   body('email')
     .isEmail().normalizeEmail().withMessage('Invalid email format'),
   body('phone')
