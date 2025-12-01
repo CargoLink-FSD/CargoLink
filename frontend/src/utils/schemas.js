@@ -8,7 +8,7 @@ export const REGEX = {
   PAN: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
   PIN: /^[1-9][0-9]{5}$/,
   VEHICLE_REG: /^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$/,
-  PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+  PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*,?&])[A-Za-z\d@$!%*?&]{8,}$/,
 };
 
 // Base schemas
@@ -103,4 +103,56 @@ export const transporterStep4Schema = transporterSignupSchema.pick({ password: t
 // Forgot password
 export const forgotPasswordSchema = z.object({
   email: emailSchema,
+});
+
+// Profile field update schemas
+export const profileFieldSchemas = {
+  firstName: z.string().min(1, 'First name is required').max(50, 'First name is too long'),
+  lastName: z.string().min(2, 'Last name must be at least 2 characters').max(50, 'Last name is too long'),
+  email: emailSchema,
+  phone: phoneSchema,
+  dob: z.string().min(1, 'Date of birth is required').refine((dob) => {
+    const selectedDate = new Date(dob);
+    const today = new Date();
+    const minDate = new Date('1900-01-01');
+    
+    if (selectedDate > today) return false;
+    if (selectedDate < minDate) return false;
+    return true;
+  }, 'Please enter a valid date of birth'),
+  gender: z.enum(['Male', 'Female', 'Other'], { errorMap: () => ({ message: 'Please select a valid gender' }) }),
+};
+
+// Transporter profile field update schemas
+export const transporterProfileFieldSchemas = {
+  name: z.string().min(1, 'Company name is required').max(100, 'Company name is too long'),
+  email: emailSchema,
+  primary_contact: phoneSchema,
+  secondary_contact: phoneSchema.optional().or(z.literal('')),
+  pan: panSchema,
+  gst_in: gstSchema,
+  street: z.string().min(5, 'Street address is too short').max(200, 'Street address is too long'),
+  city: z.string().min(1, 'City is required').regex(/^[a-zA-Z\s-]+$/, 'City name can only contain letters, spaces, and hyphens'),
+  state: z.string().min(1, 'State is required').regex(/^[a-zA-Z\s-]+$/, 'State name can only contain letters, spaces, and hyphens'),
+  pin: pinSchema,
+};
+
+// Address schema
+export const addressSchema = z.object({
+  address_label: z.string().min(1, 'Address label is required').max(20, 'Address label is too long'),
+  street: z.string().min(5, 'Street address is too short').max(200, 'Street address is too long'),
+  city: z.string().min(1, 'City is required').regex(/^[a-zA-Z\s-]+$/, 'City name can only contain letters, spaces, and hyphens'),
+  state: z.string().min(1, 'State is required').regex(/^[a-zA-Z\s-]+$/, 'State name can only contain letters, spaces, and hyphens'),
+  pin: pinSchema,
+  phone: phoneSchema,
+});
+
+// Password update schema
+export const passwordUpdateSchema = z.object({
+  oldPassword: z.string().min(1, 'Current password is required'),
+  newPassword: passwordSchema,
+  confirmPassword: z.string().min(1, 'Please confirm your new password'),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
 });
