@@ -163,7 +163,7 @@ const transporter = [
     .trim()
     .notEmpty().withMessage('Name is required')
     .isLength({ min: 2, max: 50 }).withMessage('Name must be 2-50 characters')
-    .matches(/^[A-Za-z0-9\s-]+$/).withMessage('Invalid charachters in name'),
+    .matches(/^[A-Za-z\s'-]+$/).withMessage('Name can only contain letters, spaces, hyphens and apostrophes'),
   body('email')
     .isEmail().normalizeEmail().withMessage('Invalid email format'),
   body('primary_contact')
@@ -206,7 +206,7 @@ const updateTransporter = [
     .optional().trim()
     .notEmpty().withMessage('Name cannot be empty')
     .isLength({ min: 2, max: 50 }).withMessage('Name must be 2-50 characters')
-    .matches(/^[A-Za-z0-9\s-]+$/).withMessage('Invalid charachters in name'),
+    .matches(/^[A-Za-z\s'-]+$/).withMessage('Name can only contain letters, spaces, hyphens and apostrophes'),
   body('email')
     .optional().trim()
     .isEmail().normalizeEmail().withMessage('Invalid email format'),

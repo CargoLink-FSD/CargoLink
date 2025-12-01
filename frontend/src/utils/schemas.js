@@ -77,7 +77,7 @@ export const vehicleSchema = z.object({
 });
 
 export const transporterSignupSchema = z.object({
-  name: z.string().min(1, 'Full name is required'),
+  name: z.string().min(1, 'Full name is required').min(2, 'Name must be at least 2 characters').max(50, 'Name is too long').regex(REGEX.NAME, 'Name can only contain letters, spaces, hyphens and apostrophes'),
   primary_contact: phoneSchema,
   secondary_contact: phoneSchema,
   email: emailSchema,
@@ -126,7 +126,7 @@ export const profileFieldSchemas = {
 
 // Transporter profile field update schemas
 export const transporterProfileFieldSchemas = {
-  name: z.string().min(1, 'Company name is required').max(100, 'Company name is too long'),
+  name: z.string().min(1, 'Company name is required').min(2, 'Name must be at least 2 characters').max(100, 'Company name is too long').regex(REGEX.NAME, 'Name can only contain letters, spaces, hyphens and apostrophes'),
   email: emailSchema,
   primary_contact: phoneSchema,
   secondary_contact: phoneSchema.optional().or(z.literal('')),
