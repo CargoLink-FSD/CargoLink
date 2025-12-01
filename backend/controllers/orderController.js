@@ -126,7 +126,7 @@ const acceptBid = async (req, res, next) => {
   try{
     const customerId = req.user.id;
     const orderId = req.params.orderId;
-    const bidId = req.body.bidId;
+    const bidId = req.params.bidId;
 
     if(!mongoose.Types.ObjectId.isValid(orderId)) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
@@ -135,7 +135,7 @@ const acceptBid = async (req, res, next) => {
     }
     if(!mongoose.Types.ObjectId.isValid(bidId)) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
-        { type: "field", value: bidId, msg: "Not a valid bid ID", path: "bidId", location: "body" }
+        { type: "field", value: bidId, msg: "Not a valid bid ID", path: "bidId", location: "params" }
       );
     }
 
@@ -155,7 +155,7 @@ const rejectBid = async (req, res, next) => {
   try {
     const customerId = req.user.id;
     const orderId = req.params.orderId;
-    const bidId = req.body.bidId;
+    const bidId = req.params.bidId;
 
     if (!mongoose.Types.ObjectId.isValid(orderId)) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
@@ -164,7 +164,7 @@ const rejectBid = async (req, res, next) => {
     }
     if (!mongoose.Types.ObjectId.isValid(bidId)) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
-        { type: "field", value: bidId, msg: "Not a valid bid ID", path: "bidId", location: "body" }
+        { type: "field", value: bidId, msg: "Not a valid bid ID", path: "bidId", location: "params" }
       );
     }
 
