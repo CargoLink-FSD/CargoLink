@@ -1,0 +1,210 @@
+.container {
+    width: clamp(70%, 1280px, 90%);
+    margin: 0 auto; 
+  }
+  
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+  } 
+  
+  .page-title {
+    color: var(--dark);
+    position: relative;
+  }
+  
+  .page-title::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 0;
+    width: 120px;
+    height: 4px;
+    background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+  }
+  
+  
+  /* Truck Card */
+  .truck-card {
+    margin-top: 20px;
+    background-color: var(--white);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    transition: var(--transition);
+  }
+  .truck-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+  }
+  
+  /* Header */
+  .truck-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .truck-header h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  
+  /* Status Badge */
+  .status-badge {
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    display: inline-block;
+  }
+  
+  /* Example status variants */
+  .status-badge.intransit {
+    background-color: var(--inTransit);
+    color: var(--white);
+  }
+  .status-badge.available {
+    background-color: var(--success-light);
+    color: var(--success);
+  }
+  .status-badge.undermaintenance {
+    background-color: var(--warning-light);
+    color: var(--warning);
+  }
+  .status-badge.offline {
+    background-color: var(--gray-200);
+    color: var(--gray-600);
+  }
+  
+  /* Info Grid */
+  .truck-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  /* Info Item */
+  .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .info-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+  .info-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .order-link {
+    color: var(--primary);
+    text-decoration: none;
+    transition: var(--transition);
+  }
+  .order-link:hover {
+    text-decoration: underline;
+  }
+  
+  /* Maintenance History */
+  .maintenance-history {
+    margin-top: 3rem;
+  }
+  .maintenance-history h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+  .empty-state {
+    background-color: var(--gray-100);
+    color: var(--gray-600);
+    padding: 2rem;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1rem;
+  }
+  
+  /* Truck Actions */
+  .truck-actions {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--gray-200);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  /* Schedule Form */
+  .schedule-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .schedule-form input[type="date"] {
+    padding: 0.6rem 1rem;
+    border: 1px solid var(--gray-300);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    min-width: 160px;
+    transition: var(--transition);
+  }
+  
+  .schedule-form input[type="date"]:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  /* Status badge variations */
+  .status-badge.inmaintenance {
+    background-color: var(--warning);
+    color: var(--white);
+  }
+  
+  .status-badge.assigned {
+    background-color: var(--gray-600);
+    color: var(--white);
+  }
+  
+  .status-badge.unavailable {
+    background-color: var(--gray-400);
+    color: var(--white);
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .truck-info-grid {
+      grid-template-columns: 1fr;
+    }
+    .truck-card {
+      padding: 1rem;
+    }
+    .truck-actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .truck-actions .btn {
+      width: 100%;
+    }
+    .schedule-form {
+      width: 100%;
+      flex-direction: column;
+    }
+    .schedule-form input[type="date"] {
+      width: 100%;
+    }
+  }
+  
