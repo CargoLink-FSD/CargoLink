@@ -1,15 +1,42 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { useEffect, useState } from 'react';
 import { getRedirectPath } from '../utils/redirectUser';
+import { refreshAccessToken } from '../store/slices/authSlice';
+import tokenStorage from '../utils/token';
 
 const LOADING_PLACEHOLDER_STYLE = { padding: '2rem', fontSize: '1.1rem' };
 
 export default function ProtectedRoute({ allowedRoles = [] }) {
   const location = useLocation();
+  const dispatch = useDispatch();
   const { isAuthenticated, user, loading } = useSelector((state) => state.auth);
+  const [isCheckingToken, setIsCheckingToken] = useState(true);
 
-  // Show loading state while checking auth
-  if (loading) {
+  useEffect(() => {
+    const checkAndRefreshToken = async () => {
+      const accessToken = tokenStorage.getAccessToken();
+      
+      if (accessToken && tokenStorage.isTokenExpired(accessToken)) {
+        const refreshToken = tokenStorage.getRefreshToken();
+        
+        if (refreshToken && !tokenStorage.isTokenExpired(refreshToken)) {
+          try {
+            await dispatch(refreshAccessToken()).unwrap();
+          } catch (error) {
+            console.error('Token refresh failed:', error);
+          }
+        }
+      }
+      
+      setIsCheckingToken(false);
+    };
+
+    checkAndRefreshToken();
+  }, [dispatch, location.pathname]);
+
+  // Show loading state while checking auth or refreshing token
+  if (loading || isCheckingToken) {
     return <div style={LOADING_PLACEHOLDER_STYLE}>Loading...</div>;
   }
 

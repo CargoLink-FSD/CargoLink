@@ -4,12 +4,13 @@
  */
 
 import tokenStorage from '../utils/token';
+import { handleTokenRefresh } from '../utils/tokenRefresh';
 
 const API_BASE_URL = 'http://localhost:3000';
 
 export const getBaseUrl = () => API_BASE_URL;
 
-async function request(path, { method = 'GET', headers, body, credentials = 'include' } = {}) {
+async function request(path, { method = 'GET', headers, body, credentials = 'include', _retry = false } = {}) {
   const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
   
   // Get access token and add to headers if available
@@ -33,6 +34,23 @@ async function request(path, { method = 'GET', headers, body, credentials = 'inc
     data = await res.json();
   } catch (_) {
     data = null;
+  }
+
+  // Handle 401 Unauthorized - Token expired
+  // Skip refresh logic for auth endpoints (login, signup, refresh-token)
+  const isAuthEndpoint = path.includes('/auth/login') || 
+                         path.includes('/auth/signup') || 
+                         path.includes('/auth/refresh-token') ||
+                         path.includes('/register');
+  
+  if (res.status === 401 && !_retry && !isAuthEndpoint) {
+    try {
+      await handleTokenRefresh();
+      // Retry original request with new token
+      return request(path, { method, headers, body, credentials, _retry: true });
+    } catch (refreshError) {
+      throw refreshError;
+    }
   }
 
   if (!res.ok) {

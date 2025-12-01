@@ -1,63 +1,85 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import AuthLayout from '../../components/auth/AuthLayout';
+import { useCustomerSignup } from '../../hooks/auth/useCustomerSignup';
 import { Button } from '../../components/forms';
 import ProgressSteps from '../../components/forms/ProgressSteps';
-import VehiclesEditor from '../../components/transporter/VehiclesEditor';
 import { EyeIcon, EyeOffIcon } from '../../components/auth/AuthUI';
+import '../../components/forms/forms.css';
+import '../../styles/Signup.css';
 
 const stepConfigs = [
   [
-    { type: 'text', name: 'name', label: 'Full Name', placeholder: 'Enter your full name', required: true },
-    { type: 'tel', name: 'primary_contact', label: 'Primary Phone Number', placeholder: 'Enter your primary phone number', required: true },
-    { type: 'tel', name: 'secondary_contact', label: 'Secondary Phone Number', placeholder: 'Enter your secondary phone number', required: true },
-    { type: 'email', name: 'email', label: 'Email', placeholder: 'Enter your email', required: true },
+    { label: 'First Name', type: 'text', name: 'firstName', placeholder: 'Enter your first name', required: true },
+    { label: 'Last Name', type: 'text', name: 'lastName', placeholder: 'Enter your last name', required: true },
+    { label: 'Gender', type: 'select', name: 'gender', placeholder: 'Select your gender', required: true, options: [ { value: 'Male', label: 'Male' }, { value: 'Female', label: 'Female' }, { value: 'Other', label: 'Other' } ] },
   ],
   [
-    { heading: 'Business Details' },
-    { type: 'text', name: 'gst_in', label: 'GST Number', placeholder: 'Enter your GSTIN number', required: true, helpText: 'Format: 22AAAAA0000A1Z5' },
-    { type: 'text', name: 'pan', label: 'PAN Number', placeholder: 'Enter your PAN number', required: true, helpText: 'Format: ABCDE1234F' },
-    { heading: 'Address Details' },
-    { type: 'text', name: 'street_address', label: 'Street Address', placeholder: 'Enter street address', required: true },
-    { type: 'text', name: 'city', label: 'City', placeholder: 'Enter city', required: true },
-    { type: 'text', name: 'state', label: 'State', placeholder: 'Enter state', required: true },
-    { type: 'text', name: 'pin', label: 'PIN Code', placeholder: 'Enter PIN code', required: true },
+    { label: 'Phone Number', type: 'tel', name: 'phone', placeholder: 'Enter your phone number', required: true },
+    { label: 'Email', type: 'email', name: 'email', placeholder: 'Enter your email', required: true },
+    { label: 'Date of Birth', type: 'date', name: 'dob', required: true },
+  ],
+  [
+    { label: 'Street Address', type: 'text', name: 'street_address', placeholder: 'Enter your street address', required: true },
+    { label: 'City', type: 'text', name: 'city', placeholder: 'Enter your city', required: true },
+    { label: 'State', type: 'text', name: 'state', placeholder: 'Enter your state', required: true },
+    { label: 'PIN Code', type: 'text', name: 'pin', placeholder: 'Enter your PIN code', required: true },
   ],
 ];
 
-const TransporterSignupForm = ({ state }) => {
+const CustomerSignupForm = () => {
+  const state = useCustomerSignup();
   const {
     handleSubmit,
     currentStep,
     totalSteps,
     showPassword,
     showConfirmPassword,
+    formData,
+    errors,
     loading,
     nextStep,
     prevStep,
     toggleShowPassword,
     toggleShowConfirmPassword,
-    addVehicle,
-    removeVehicle,
-    vehicles,
-    formData,
-    errors,
     register,
     navigate,
   } = state;
 
   return (
-    <>
+    <AuthLayout
+      title="Create Account"
+      subtitle="Sign up to join CargoLink as a Customer"
+    >
       <ProgressSteps current={currentStep} total={totalSteps} />
 
       <form onSubmit={handleSubmit}>
-        {[1, 2].includes(currentStep) && (
+        {[1, 2, 3].includes(currentStep) && (
           <div className="form-step">
             {stepConfigs[currentStep - 1].map((field, idx) => {
-              if (field.heading) {
-                return <h3 key={`${currentStep}-${idx}`} className="form-section-title">{field.heading}</h3>;
-              }
-
               const error = errors?.[field.name]?.message || '';
+              
+              if (field.type === 'select') {
+                return (
+                  <div key={`${currentStep}-${idx}`} className="form-group">
+                    <label className="input-label" htmlFor={field.name}>
+                      {field.label} {field.required && '*'}
+                    </label>
+                    <select
+                      className="input-field"
+                      id={field.name}
+                      value={formData[field.name] || ''}
+                      {...register(field.name)}
+                    >
+                      <option value="">{field.placeholder}</option>
+                      {field.options.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                    {error && <span className="error-message">{error}</span>}
+                  </div>
+                );
+              }
 
               return (
                 <div key={`${currentStep}-${idx}`} className="form-group">
@@ -72,7 +94,6 @@ const TransporterSignupForm = ({ state }) => {
                     value={formData[field.name] || ''}
                     {...register(field.name)}
                   />
-                  {field.helpText && <span className="help-text">{field.helpText}</span>}
                   {error && <span className="error-message">{error}</span>}
                 </div>
               );
@@ -84,22 +105,6 @@ const TransporterSignupForm = ({ state }) => {
               ) : (
                 <Button type="button" variant="outline" onClick={prevStep}>Previous</Button>
               )}
-              <Button type="button" variant="primary" onClick={nextStep}>Next</Button>
-            </div>
-          </div>
-        )}
-
-        {currentStep === 3 && (
-          <div className="form-step">
-            <VehiclesEditor
-              vehicles={vehicles}
-              errors={errors}
-              onRemove={removeVehicle}
-              onAdd={addVehicle}
-              register={register}
-            />
-            <div className="buttons">
-              <Button type="button" variant="outline" onClick={prevStep}>Previous</Button>
               <Button type="button" variant="primary" onClick={nextStep}>Next</Button>
             </div>
           </div>
@@ -167,8 +172,12 @@ const TransporterSignupForm = ({ state }) => {
           </div>
         )}
       </form>
-    </>
+
+      <p className="login-text">
+        Already have an account? <Link className="link" to="/login?type=customer">Sign in</Link>
+      </p>
+    </AuthLayout>
   );
 };
 
-export default TransporterSignupForm;
+export default CustomerSignupForm;

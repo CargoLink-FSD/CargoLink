@@ -6,9 +6,12 @@
 import { Routes, Route } from 'react-router-dom';
 import Home from '../pages/common/Home';
 import Login from '../pages/common/login';
-import Signup from '../pages/common/signup';
 import ForgotPassword from '../pages/common/ForgotPassword';
 import NotFound from '../pages/common/NotFound';
+import CustomerProfile from '../pages/customer/CustomerProfile';
+import CustomerSignupForm from '../pages/customer/CustomerSignupForm';
+import TransporterProfile from '../pages/transporter/TransporterProfile';
+import TransporterSignupForm from '../pages/transporter/TransporterSignupForm';
 import BidPage from '../pages/transporter/Bid';
 import ProtectedRoute from './ProtectedRoute';
 import CustomerOrders from '../pages/customer/CustomerOrders';
@@ -30,7 +33,7 @@ export default function AppRoutes() {
       
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
+      <Route path="/signup" element={<CustomerSignupForm />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
 
 
@@ -48,12 +51,11 @@ export default function AppRoutes() {
       {/* Customer Routes */}
 
       
-      <Route path="/customer/login" element={placeholder('Customer Login')} />
-      <Route path="/customer/signup" element={placeholder('Customer Signup')} />
+      <Route path="/customer/signup" element={<CustomerSignupForm />} />
 
       <Route element={<ProtectedRoute allowedRoles={['customer']} />}>
         <Route path="/customer" element={<Home />} />
-        <Route path="/customer/profile" element={placeholder('Customer Profile')} />
+        <Route path="/customer/profile" element={<CustomerProfile />} />
         <Route path="/customer/place-order" element={placeholder('Customer Place Order')} />
         <Route path="/customer/paynow" element={placeholder('Customer Payment')} />
         <Route path="/customer/orders" element={<CustomerOrders />} />
@@ -66,12 +68,11 @@ export default function AppRoutes() {
       {/* Transporter Routes */}
 
       
-      <Route path="/transporter/login" element={placeholder('Transporter Login')} />
-      <Route path="/transporter/signup" element={placeholder('Transporter Signup')} />
+      <Route path="/transporter/signup" element={<TransporterSignupForm />} />
 
       <Route element={<ProtectedRoute allowedRoles={['transporter']} />}>
         <Route path="/transporter" element={<Home />} />
-        <Route path="/transporter/profile" element={placeholder('Transporter Profile')} />
+        <Route path="/transporter/profile" element={<TransporterProfile />} />
         <Route path="/transporter/fleet" element={placeholder('Transporter Fleet')} />
         <Route path="/transporter/fleet/:vehicleId" element={placeholder('Transporter Fleet Details')} />
         <Route path="/transporter/orders" element={<TransporterOrders />} />
