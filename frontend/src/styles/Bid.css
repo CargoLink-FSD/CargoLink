@@ -1,0 +1,343 @@
+.container {
+  width: clamp(70%, 1280px, 90%);
+  margin: 0 auto;
+    
+}
+
+.page-header {
+  padding-left: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+} 
+
+.page-title {
+  color: var(--dark);
+  position: relative;
+}
+
+.page-title::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 0;
+  width: 120px;
+  height: 4px;
+  background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+}
+
+.filter-section {
+  background-color: var(--white);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);  
+  margin:1.5rem 0 1.5rem 0;
+}
+
+.filter-section h2 {
+  font-size: 22px;
+  margin-bottom: 15px;
+  color: var(--primary);
+}
+
+.filter-controls {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.filter-control {
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-control label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: var(--dark);
+}
+
+.filter-control select,
+.filter-control input {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid var(--light);
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.filter-control select:focus,
+.filter-control input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.main-content-bid {
+    padding-top: 80px;
+    padding-bottom: 80px;
+    margin: 0 auto;
+    padding-left: 20px; 
+    padding-right: 20px;
+    }
+
+.bid-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.bid-card {
+    background-color: var(--white);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s;
+    width: 100%;
+}
+
+.bid-card:hover {
+    transform: translateY(-5px);
+}
+
+.bid-header {
+    background-color: var(--primary);
+    color: var(--white);
+    padding: 15px;
+    position: relative;
+}
+
+.bid-price {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.bid-timer {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background-color: var(--warning);
+    color: var(--dark);
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.bid-body {
+    padding: 15px;
+}
+
+.bid-details {
+    margin-bottom: 15px;
+}
+
+.bid-detail {
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.detail-label {
+    min-width: 120px;
+    font-weight: 500;
+    color: var(--dark);
+}
+
+.bid-form {
+  border-top: 1px solid var(--light);
+  padding-top: 15px;
+}
+
+.bid-form label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: var(--dark);
+}
+
+.bid-form input,
+.bid-form textarea {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid var(--light);
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.bid-form input:focus,
+.bid-form textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.bid-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.bid-history {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.bid-history:hover {
+  color: var(--primary-dark);
+}
+
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.pagination button {
+  margin: 0 5px;
+  padding: 8px 15px;
+  border: 2px solid var(--light);
+  background-color: var(--white);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pagination button.active {
+  background-color: var(--primary);
+  color: var(--white);
+  border-color: var(--primary);
+}
+
+.pagination button:hover {
+  background-color: var(--primary);
+  color: var(--white);
+  border-color: var(--primary);
+}
+
+/* Modal Styles with Blurred Background */
+.bid-history-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+  backdrop-filter: blur(10px); /* Blur effect */
+  z-index: 1000;
+}
+
+.bid-history-modal-content {
+  background-color: var(--white);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  max-width: 600px; /* Adjust width as needed */
+  width: 90%;
+  max-height: 80vh; /* Limit height and make it scrollable */
+  overflow-y: auto;
+}
+
+.bid-history-modal h2 {
+  font-size: 24px;
+  color: var(--primary);
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.bid-history-modal table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.bid-history-modal th,
+.bid-history-modal td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--light);
+}
+
+.bid-history-modal th {
+  background-color: var(--primary);
+  color: var(--white);
+  font-weight: 600;
+}
+
+.bid-history-modal tr:hover {
+  background-color: rgba(0, 0, 0, 0.05); /* Light hover effect */
+}
+
+.bid-history-modal button {
+  display: block;
+  margin: 20px auto 0;
+  padding: 10px 20px;
+  background-color: var(--primary);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.bid-history-modal button:hover {
+  background-color: var(--primary-dark);
+}
+
+/* My Bids Table Styles */
+.my-bids-table {
+  width: 100%;
+  border-collapse: separate;
+  margin-top: 20px;
+  border-radius: 20px;
+  border-spacing: 0;
+  overflow: hidden;
+}
+
+.my-bids-table th, 
+.my-bids-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--light);
+}
+
+.my-bids-table th {
+  background-color: var(--primary);
+  color: var(--white);
+  font-weight: 600;
+}
+
+.my-bids-table tr:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.no-bids-message {
+  text-align: center;
+  padding: 20px;
+  color: var(--dark);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .bid-history-modal-content {
+    max-width: 90%;
+    max-height: 90vh;
+  }
+
+  .bid-history-modal th,
+  .bid-history-modal td {
+    padding: 10px;
+  }
+  
+  .bid-grid {
+    grid-template-columns: 1fr;
+  }
+} 

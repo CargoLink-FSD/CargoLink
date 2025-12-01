@@ -26,7 +26,7 @@ export async function deleteOrder(orderId) {
 }
 
 /**
- * Get bids for a specific order
+ * Get bids for a specific order (customer view)
  */
 export async function getOrderBids(orderId) {
   const response = await http.get(`/api/orders/${orderId}/bids`);
@@ -44,7 +44,7 @@ export async function acceptBid(orderId, bidId) {
  * Reject a bid for an order
  */
 export async function rejectBid(orderId, bidId) {
-  return await http.post(`/api/orders/${orderId}/bids/${bidId}/reject`, { bidId });
+  return await http.del(`/api/orders/${orderId}/bids/${bidId}`);
 }
 
 /**

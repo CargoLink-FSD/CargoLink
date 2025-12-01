@@ -9,10 +9,12 @@ import Login from '../pages/common/login';
 import Signup from '../pages/common/signup';
 import ForgotPassword from '../pages/common/ForgotPassword';
 import NotFound from '../pages/common/NotFound';
+import BidPage from '../pages/transporter/Bid';
 import ProtectedRoute from './ProtectedRoute';
 import CustomerOrders from '../pages/customer/CustomerOrders';
 import OrderBids from '../pages/customer/OrderBids';
 import TransporterOrders from '../pages/transporter/TransporterOrders';
+import MyBidsPage from '../pages/transporter/MyBids';
 
 export default function AppRoutes() {
   const placeholderStyle = { padding: '2rem', fontSize: '1.25rem' };
@@ -72,8 +74,8 @@ export default function AppRoutes() {
         <Route path="/transporter/orders" element={<TransporterOrders />} />
         <Route path="/transporter/order/:orderId" element={placeholder('Transporter Order Details')} />
         <Route path="/transporter/orders/:orderId/track" element={placeholder('Transporter Track Order')} />
-        <Route path="/transporter/bid" element={placeholder('Transporter Bid Page')} />
-        <Route path="/transporter/my-bids" element={placeholder('Transporter My Bids')} />
+        <Route path="/transporter/bid" element={<BidPage />} />
+        <Route path="/transporter/my-bids" element={<MyBidsPage />} />
         <Route path="/transporter/track/:id" element={placeholder('Transporter Track Order')} />
         <Route path="/transporter/assignment" element={placeholder('Assignment: Dashboard')} />
         <Route path="/transporter/assignment/order/:order_id" element={placeholder('Assignment: Order Detail')} />
