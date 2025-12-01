@@ -15,7 +15,9 @@ import MyBidsPage from '../pages/transporter/MyBids';
 import About from '../pages/static/About';
 import Services from '../pages/static/Services';
 import Contact from '../pages/static/Contact';
-
+import Careers from '../pages/static/Careers';
+import Terms from '../pages/static/Terms';
+import Privacy from '../pages/static/Privacy';
 export default function AppRoutes() {
   const placeholderStyle = { padding: '2rem', fontSize: '1.25rem' };
   const placeholder = (label) => <div style={placeholderStyle}>{label}</div>;
