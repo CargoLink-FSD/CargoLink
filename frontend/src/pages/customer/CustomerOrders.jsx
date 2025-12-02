@@ -70,16 +70,16 @@ export default function CustomerOrders() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="orders-container">
-        <div className="error-state">
-          <span className="error-icon">⚠️</span>
-          <p>{error}</p>
-        </div>
-      </div>
-    );
-  }
+  // if (error) {
+  //   return (
+  //     <div className="orders-container">
+  //       <div className="error-state">
+  //         <span className="error-icon">⚠️</span>
+  //         <p>{error}</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <>
