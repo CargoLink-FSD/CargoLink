@@ -188,12 +188,21 @@ export default function OrderCard({
         )}
 
         {/* Transporter-specific actions */}
-        {variant === 'transporter' && order.status?.toLowerCase() === 'assigned' && !order.assignment && (
+        {variant === 'transporter' && order.status?.toLowerCase() === 'assigned' && !order.assignment?.vehicle_id && (
           <button 
             className="btn btn-primary"
             onClick={handleAssign}
           >
             Assign Vehicle
+          </button>
+        )}
+
+        {variant === 'transporter' && order.status?.toLowerCase() === 'assigned' && order.assignment?.vehicle_id && (
+          <button 
+            className="btn btn-outline"
+            onClick={handleStartTransit}
+          >
+            Start Transit
           </button>
         )}
 

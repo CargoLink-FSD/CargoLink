@@ -115,13 +115,8 @@ export default function CustomerOrders() {
 
       {orders.length === 0 ? (
         <div className="empty-state">
-          <span className="empty-icon">📦</span>
+          
           <h3>No Orders Found</h3>
-          <p>
-            {filters.searchTerm || filters.statusFilter !== 'all' 
-              ? 'Try adjusting your filters' 
-              : 'You haven\'t placed any orders yet'}
-          </p>
         </div>
       ) : (
         <div className="orders-grid">

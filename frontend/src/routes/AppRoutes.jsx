@@ -86,7 +86,6 @@ export default function AppRoutes() {
         <Route path="/transporter/fleet" element={<FleetManagement />} />
         <Route path="/transporter/fleet/:vehicleId" element={<VehicleDetails />} />
         <Route path="/transporter/orders" element={<TransporterOrders />} />
-        <Route path="/transporter/order/:orderId" element={placeholder('Transporter Order Details')} />
         <Route path="/transporter/orders/:orderId/track" element={placeholder('Transporter Track Order')} />
         <Route path="/transporter/bid" element={<BidPage />} />
         <Route path="/transporter/my-bids" element={<MyBidsPage />} />

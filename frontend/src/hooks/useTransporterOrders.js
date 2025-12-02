@@ -1,6 +1,7 @@
 // Custom hook for transporter orders using Redux
 
 import { useDispatch, useSelector } from 'react-redux';
+import { useCallback } from 'react';
 import {
   fetchTransporterOrders,
   fetchAvailableOrders,
@@ -8,6 +9,7 @@ import {
   submitOrderBid,
   withdrawOrderBid,
   fetchTransporterBids,
+  fetchTransporterVehicles,
   assignVehicle,
   unassignVehicle,
   startOrderTransit,
@@ -20,6 +22,7 @@ import {
   selectAvailableOrders,
   selectCurrentTransporterOrder,
   selectTransporterBids,
+  selectTransporterVehicles,
   selectTransporterOrdersLoading,
   selectTransporterOrdersError,
 } from '../store/slices/transporterOrdersSlice';
@@ -31,83 +34,89 @@ export const useTransporterOrders = () => {
   const availableOrders = useSelector(selectAvailableOrders);
   const currentOrder = useSelector(selectCurrentTransporterOrder);
   const bids = useSelector(selectTransporterBids);
+  const vehicles = useSelector(selectTransporterVehicles);
   const loading = useSelector(selectTransporterOrdersLoading);
   const error = useSelector(selectTransporterOrdersError);
 
   // Fetch transporter's assigned orders
-  const loadOrders = () => {
+  const loadOrders = useCallback(() => {
     return dispatch(fetchTransporterOrders());
-  };
+  }, [dispatch]);
 
   // Fetch available orders for bidding
-  const loadAvailableOrders = () => {
+  const loadAvailableOrders = useCallback(() => {
     return dispatch(fetchAvailableOrders());
-  };
+  }, [dispatch]);
 
   // Fetch single order details
-  const loadOrderDetails = (orderId) => {
+  const loadOrderDetails = useCallback((orderId) => {
     return dispatch(fetchTransporterOrderDetails(orderId));
-  };
+  }, [dispatch]);
 
   // Submit a bid on an order
-  const placeBid = (orderId, bidData) => {
+  const placeBid = useCallback((orderId, bidData) => {
     return dispatch(submitOrderBid({ orderId, bidData }));
-  };
+  }, [dispatch]);
 
   // Withdraw a bid
-  const removeBid = (orderId, bidId) => {
+  const removeBid = useCallback((orderId, bidId) => {
     return dispatch(withdrawOrderBid({ orderId, bidId }));
-  };
+  }, [dispatch]);
 
   // Fetch transporter's bids
-  const loadBids = () => {
+  const loadBids = useCallback(() => {
     return dispatch(fetchTransporterBids());
-  };
+  }, [dispatch]);
+
+  // Fetch transporter's vehicles
+  const loadVehicles = useCallback(() => {
+    return dispatch(fetchTransporterVehicles());
+  }, [dispatch]);
 
   // Assign vehicle to order
-  const assignVehicleToOrder = (tripId, orderId, truckId) => {
-    return dispatch(assignVehicle({ tripId, orderId, truckId }));
-  };
+  const assignVehicleToOrder = useCallback((orderId, vehicleId) => {
+    return dispatch(assignVehicle({ orderId, vehicleId }));
+  }, [dispatch]);
 
   // Unassign vehicle from order
-  const unassignVehicleFromOrder = (tripId, orderId) => {
+  const unassignVehicleFromOrder = useCallback((tripId, orderId) => {
     return dispatch(unassignVehicle({ tripId, orderId }));
-  };
+  }, [dispatch]);
 
   // Start transit for an order
-  const startTransit = (tripId) => {
-    return dispatch(startOrderTransit(tripId));
-  };
+  const startTransit = useCallback((orderId) => {
+    return dispatch(startOrderTransit(orderId));
+  }, [dispatch]);
 
   // Complete trip
-  const completeTrip = (tripId) => {
+  const completeTrip = useCallback((tripId) => {
     return dispatch(completeOrderTrip(tripId));
-  };
+  }, [dispatch]);
 
   // Filter orders
-  const filterOrders = (searchTerm, statusFilter) => {
+  const filterOrders = useCallback((searchTerm, statusFilter) => {
     if (searchTerm !== undefined) {
       dispatch(setSearchTerm(searchTerm));
     }
     if (statusFilter !== undefined) {
       dispatch(setStatusFilter(statusFilter));
     }
-  };
+  }, [dispatch]);
 
   // Clear current order
-  const clearOrder = () => {
+  const clearOrder = useCallback(() => {
     dispatch(clearCurrentOrder());
-  };
+  }, [dispatch]);
 
   // Clear error
-  const clearErrorState = () => {
+  const clearErrorState = useCallback(() => {
     dispatch(clearError());
-  };
+  }, [dispatch]);
 
   // Refresh orders (re-fetch)
-  const refresh = () => {
+  const refresh = useCallback(() => {
     return dispatch(fetchTransporterOrders());
-  };
+  }, [dispatch]);
 
   return {
     // State
@@ -115,6 +124,7 @@ export const useTransporterOrders = () => {
     availableOrders,
     currentOrder,
     bids,
+    vehicles,
     loading,
     error,
 
@@ -125,6 +135,7 @@ export const useTransporterOrders = () => {
     placeBid,
     removeBid,
     loadBids,
+    loadVehicles,
     assignVehicleToOrder,
     unassignVehicleFromOrder,
     startTransit,
