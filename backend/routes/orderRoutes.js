@@ -8,14 +8,14 @@ const orderRouter = Router();
 
 // Common:
 orderRouter.get("/my-orders", authMiddleware(["customer", "transporter"]), orderController.getUserOrders); // Get user-specific orders
+orderRouter.get("/available", authMiddleware(["transporter"]), orderController.getActiveOrders); // List available orders for bidding
+orderRouter.get("/my-bids", authMiddleware(["transporter"]), orderController.getTransporterBids); // List transporter's bids
 
 // Orders:
 orderRouter.post("/", authMiddleware(["customer"]), validate(validationSchema.order), orderController.placeOrder); // Place order (shipment/rental)
 orderRouter.delete("/:orderId", authMiddleware(["customer"]), orderController.cancelOrder); // Cancel order
 // orderRouter.post("/:orderId/rating", authMiddleware(["customer"]), validate(validationSchema.rating), orderController.submitRating); // Submit rating for order
 
-orderRouter.get("/available", authMiddleware(["transporter"]), orderController.getActiveOrders); // List available orders for bidding
-orderRouter.get("/my-bids", authMiddleware(["transporter"]), orderController.getTransporterBids); // List transporter's bids
 orderRouter.get("/:orderId", authMiddleware(["customer", "transporter"]), orderController.getOrderDetails); // Get order details (role-filtered)
 
 // Trips

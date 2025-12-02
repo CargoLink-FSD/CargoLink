@@ -97,7 +97,10 @@ function Login() {
 
       <p className="register-text">
         Not a user?{' '}
-        <Link className="link" to={`/signup?type=${userType}`}>
+        <Link
+          className="link"
+          to={userType === 'transporter' ? '/transporter/signup' : '/customer/signup'}
+        >
           Register now
         </Link>
       </p>

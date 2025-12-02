@@ -34,10 +34,10 @@ function Home() {
             <div className="button-group">
               {!isAuthenticated ? (
                 <>
-                  <Link to="/signup?type=customer" className="btn btn-gradient">
+                    <Link to="/customer/signup" className="btn btn-gradient">
                     Sign up Now
                   </Link>
-                  <Link to="/signup?type=transporter" className="btn btn-gradient-outline">
+                    <Link to="/transporter/signup" className="btn btn-gradient-outline">
                     Join as Transporter
                   </Link>
                 </>
@@ -59,7 +59,7 @@ function Home() {
         </section>
 
         <section className="features">
-          <h2 className="section-title">Why Choose CargoLink?</h2>
+          <h2 className="home-section-title">Why Choose CargoLink?</h2>
           <div className="feature-grid">
             <div className="feature-card">
               <div className="feature-image">
@@ -102,7 +102,7 @@ function Home() {
         </section>
 
         <section className="testimonials">
-          <h2 className="section-title">What Our Users Say</h2>
+          <h2 className="home-section-title">What Our Users Say</h2>
           <div className="testimonial-grid">
             <div className="testimonial-card">
               <div className="testimonial-header">

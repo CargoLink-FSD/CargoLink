@@ -62,7 +62,8 @@
   color: #7b1fa2; 
 }
 
-.status-badge.in-transit { 
+.status-badge.in-transit,
+.status-badge.started { 
   background: #e8f5e9; 
   color: #388e3c; 
 }
@@ -70,6 +71,11 @@
 .status-badge.completed { 
   background: #e0f2f1; 
   color: #00796b; 
+}
+
+.status-badge.cancelled {
+  background: #ffebee;
+  color: #c62828;
 }
 
 .status-badge.unknown {
@@ -152,3 +158,11 @@
 .order-actions .btn-primary{background:linear-gradient(90deg,#6b5bff,#5f46ff);color:#fff}
 .order-actions .btn-outline{background:#fff;border:2px solid #6b5bff;color:#6b5bff}
 .order-actions .btn-outline:hover{background:#f7f3ff}
+.order-actions .btn-danger{background:#ef4444;color:#fff}
+.order-actions .btn-danger:hover{background:#dc2626}
+.order-actions .btn-success{background:#10b981;color:#fff}
+.order-actions .btn-success:hover{background:#059669}
+.order-actions .btn-info{background:#6366f1;color:#fff}
+.order-actions .btn-info:hover{background:#4f46e5}
+.order-actions .btn-view-bids{background:#fff;border:2px solid #8b5cf6;color:#8b5cf6}
+.order-actions .btn-view-bids:hover{background:#f5f3ff}

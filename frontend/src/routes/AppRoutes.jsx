@@ -6,11 +6,18 @@
 import { Routes, Route } from 'react-router-dom';
 import Home from '../pages/common/Home';
 import Login from '../pages/common/login';
-import Signup from '../pages/common/signup';
 import ForgotPassword from '../pages/common/ForgotPassword';
 import NotFound from '../pages/common/NotFound';
+import CustomerProfile from '../pages/customer/CustomerProfile';
+import CustomerSignupForm from '../pages/customer/CustomerSignupForm';
+import TransporterProfile from '../pages/transporter/TransporterProfile';
+import TransporterSignupForm from '../pages/transporter/TransporterSignupForm';
 import BidPage from '../pages/transporter/Bid';
 import ProtectedRoute from './ProtectedRoute';
+import CustomerOrders from '../pages/customer/CustomerOrders';
+import OrderBids from '../pages/customer/OrderBids';
+import PlaceOrder from '../pages/customer/PlaceOrder';
+import TransporterOrders from '../pages/transporter/TransporterOrders';
 import MyBidsPage from '../pages/transporter/MyBids';
 import About from '../pages/static/About';
 import Services from '../pages/static/Services';
@@ -18,6 +25,13 @@ import Contact from '../pages/static/Contact';
 import Careers from '../pages/static/Careers';
 import Terms from '../pages/static/Terms';
 import Privacy from '../pages/static/Privacy';
+import UserManagement from '../pages/admin/UserManagement';
+import OrderManagement from '../pages/admin/OrderManagement';
+import Dashboard from '../pages/admin/Dashboard';
+
+import FleetManagement from '../pages/transporter/FleetManagement';
+import VehicleDetails from '../pages/transporter/VehicleDetails';
+
 export default function AppRoutes() {
   const placeholderStyle = { padding: '2rem', fontSize: '1.25rem' };
   const placeholder = (label) => <div style={placeholderStyle}>{label}</div>;
@@ -29,7 +43,7 @@ export default function AppRoutes() {
       
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
+      {/* <Route path="/signup" element={<CustomerSignupForm />} /> */}
       <Route path="/forgot-password" element={<ForgotPassword />} />
 
 
@@ -39,25 +53,24 @@ export default function AppRoutes() {
       <Route path="/static/about" element={<About />} />
       <Route path="/static/services" element={<Services />} />
       <Route path="/static/contact" element={<Contact />} />
-      <Route path="/static/terms" element={placeholder('Static: Terms of Service')} />
-      <Route path="/static/privacy" element={placeholder('Static: Privacy Policy')} />
-      <Route path="/static/careers" element={placeholder('Static: Careers')} />
+      <Route path="/static/terms" element={<Terms />} />
+      <Route path="/static/privacy" element={<Privacy />} />
+      <Route path="/static/careers" element={<Careers />} />
 
 
       {/* Customer Routes */}
 
       
-      <Route path="/customer/login" element={placeholder('Customer Login')} />
-      <Route path="/customer/signup" element={placeholder('Customer Signup')} />
+      <Route path="/customer/signup" element={<CustomerSignupForm />} />
 
       <Route element={<ProtectedRoute allowedRoles={['customer']} />}>
         <Route path="/customer" element={<Home />} />
-        <Route path="/customer/profile" element={placeholder('Customer Profile')} />
-        <Route path="/customer/place-order" element={placeholder('Customer Place Order')} />
+        <Route path="/customer/profile" element={<CustomerProfile />} />
+        <Route path="/customer/place-order" element={<PlaceOrder />} />
         <Route path="/customer/paynow" element={placeholder('Customer Payment')} />
-        <Route path="/customer/orders" element={placeholder('Customer Orders')} />
+        <Route path="/customer/orders" element={<CustomerOrders />} />
         <Route path="/customer/order/:orderId" element={placeholder('Customer Order Details')} />
-        <Route path="/customer/order/:orderId/bids" element={placeholder('Customer Order Bids')} />
+        <Route path="/customer/order/:orderId/bids" element={<OrderBids />} />
         <Route path="/customer/track/:id" element={placeholder('Customer Track Order')} />
       </Route>
 
@@ -65,16 +78,16 @@ export default function AppRoutes() {
       {/* Transporter Routes */}
 
       
-      <Route path="/transporter/login" element={placeholder('Transporter Login')} />
-      <Route path="/transporter/signup" element={placeholder('Transporter Signup')} />
+      <Route path="/transporter/signup" element={<TransporterSignupForm />} />
 
       <Route element={<ProtectedRoute allowedRoles={['transporter']} />}>
         <Route path="/transporter" element={<Home />} />
-        <Route path="/transporter/profile" element={placeholder('Transporter Profile')} />
-        <Route path="/transporter/fleet" element={placeholder('Transporter Fleet')} />
-        <Route path="/transporter/fleet/:vehicleId" element={placeholder('Transporter Fleet Details')} />
-        <Route path="/transporter/orders" element={placeholder('Transporter Orders')} />
+        <Route path="/transporter/profile" element={<TransporterProfile />} />
+        <Route path="/transporter/fleet" element={<FleetManagement />} />
+        <Route path="/transporter/fleet/:vehicleId" element={<VehicleDetails />} />
+        <Route path="/transporter/orders" element={<TransporterOrders />} />
         <Route path="/transporter/order/:orderId" element={placeholder('Transporter Order Details')} />
+        <Route path="/transporter/orders/:orderId/track" element={placeholder('Transporter Track Order')} />
         <Route path="/transporter/bid" element={<BidPage />} />
         <Route path="/transporter/my-bids" element={<MyBidsPage />} />
         <Route path="/transporter/track/:id" element={placeholder('Transporter Track Order')} />
@@ -91,10 +104,10 @@ export default function AppRoutes() {
       <Route path="/admin/login" element={placeholder('Admin Login')} />
 
       <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-        <Route path="/admin" element={placeholder('Admin Dashboard')} />
-        <Route path="/admin/dashboard" element={placeholder('Admin Dashboard')} />
-        <Route path="/admin/orders" element={placeholder('Admin Orders')} />
-        <Route path="/admin/users" element={placeholder('Admin Users')} />
+        <Route path="/admin" element={<Home />} />
+        <Route path="/admin/dashboard" element={<Dashboard />} />
+        <Route path="/admin/orders" element={<OrderManagement />} />
+        <Route path="/admin/users" element={<UserManagement />} />
       </Route>
 
 
