@@ -5,6 +5,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchOrderDetails, clearCurrentOrder } from '../store/slices/ordersSlice';
 import UserActions from '../components/trackOrders/UserActions';
 import ChatWindow from '../components/trackOrders/ChatWindow';
+import Header from '../components/common/Header';
+import Footer from '../components/common/Footer';
 // import LiveTracking from '../components/trackOrders/LiveTracking';
 // import { fetchTrackingData, clearTracking } from '../store/slices/trackingSlice';
 
@@ -101,6 +103,8 @@ const TrackOrderPage = () => {
   }
 
   return (
+    <>
+    <Header />
     <div className="container">
       <div id="main-content">
       
@@ -177,7 +181,7 @@ const TrackOrderPage = () => {
                       <th>Item Name</th>
                       <th>Quantity</th>
                       <th>Price</th>
-                      {userType === 'customer' && <th>Delivery Status</th>}
+                      {/* {userType === 'customer' && <th>Delivery Status</th>} */}
                     </tr>
                   </thead>
                   <tbody>
@@ -186,7 +190,7 @@ const TrackOrderPage = () => {
                         <td>{item.item_name}</td>
                         <td>{item.quantity}</td>
                         <td>${item.price}</td>
-                        {userType === 'customer' && (
+                        {/* {userType === 'customer' && (
                           <td>
                             <select
                               className="delivery-status"
@@ -197,7 +201,7 @@ const TrackOrderPage = () => {
                               <option value="Damaged">Damaged</option>
                             </select>
                           </td>
-                        )}
+                        )} */}
                       </tr>
                     ))}
                   </tbody>
@@ -244,6 +248,8 @@ const TrackOrderPage = () => {
 
       </div>
     </div>
+    <Footer />
+    </>
   );
 };
 

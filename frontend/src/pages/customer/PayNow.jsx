@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { replace, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import '../../styles/PayNow.css';
 import { useDispatch } from 'react-redux';
 import { confirmDelivery } from '../../store/slices/ordersSlice';
@@ -98,6 +98,7 @@ export default function PayNow({ orderId: propOrderId, amount: propAmount }) {
     try {
       await dispatch(confirmDelivery({ orderId })).unwrap();
       showNotification({ message: 'Delivery Confirmed', type: 'success' });
+      navigate('/customer/orders', { replace: true });
     } catch (err) {
       showNotification({ message: 'Unable to Process Payment', type: 'error' });
     } finally {

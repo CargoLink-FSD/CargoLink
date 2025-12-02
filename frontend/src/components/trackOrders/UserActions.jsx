@@ -41,7 +41,7 @@ const CustomerActions = ({ order }) => {
             <h2 className="card-title">Complete Delivery</h2>
           </div>
           <div className="action-buttons">
-            <Link to={`/customer/paynow?orderId=${order.id}`} className="btn btn-primary">
+            <Link to={`/customer/paynow?orderId=${order._id}&amount=${order.final_price}`} className="btn btn-primary">
               Pay Now
             </Link>
           </div>
