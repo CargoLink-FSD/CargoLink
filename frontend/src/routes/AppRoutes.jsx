@@ -19,6 +19,12 @@ import OrderBids from '../pages/customer/OrderBids';
 import PlaceOrder from '../pages/customer/PlaceOrder';
 import TransporterOrders from '../pages/transporter/TransporterOrders';
 import MyBidsPage from '../pages/transporter/MyBids';
+import About from '../pages/static/About';
+import Services from '../pages/static/Services';
+import Contact from '../pages/static/Contact';
+import Careers from '../pages/static/Careers';
+import Terms from '../pages/static/Terms';
+import Privacy from '../pages/static/Privacy';
 import UserManagement from '../pages/admin/UserManagement';
 import OrderManagement from '../pages/admin/OrderManagement';
 import Dashboard from '../pages/admin/Dashboard';
@@ -44,12 +50,12 @@ export default function AppRoutes() {
       {/* Static Pages */}
 
       
-      <Route path="/static/about" element={placeholder('Static: About')} />
-      <Route path="/static/services" element={placeholder('Static: Services')} />
-      <Route path="/static/contact" element={placeholder('Static: Contact')} />
-      <Route path="/static/terms" element={placeholder('Static: Terms of Service')} />
-      <Route path="/static/privacy" element={placeholder('Static: Privacy Policy')} />
-      <Route path="/static/careers" element={placeholder('Static: Careers')} />
+      <Route path="/static/about" element={<About />} />
+      <Route path="/static/services" element={<Services />} />
+      <Route path="/static/contact" element={<Contact />} />
+      <Route path="/static/terms" element={<Terms />} />
+      <Route path="/static/privacy" element={<Privacy />} />
+      <Route path="/static/careers" element={<Careers />} />
 
 
       {/* Customer Routes */}
