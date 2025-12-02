@@ -174,7 +174,7 @@ const TransporterInfo = ({ profile, dispatch, updateTransporterField }) => {
   };
 
   return (
-    <div className="profile-section-card">
+    <div className="profile-content">
       <div className="card-header-row">
         <h2 className="card-title">Business Information</h2>
       </div>

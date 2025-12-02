@@ -23,6 +23,9 @@ import UserManagement from '../pages/admin/UserManagement';
 import OrderManagement from '../pages/admin/OrderManagement';
 import Dashboard from '../pages/admin/Dashboard';
 
+import FleetManagement from '../pages/transporter/FleetManagement';
+import VehicleDetails from '../pages/transporter/VehicleDetails';
+
 export default function AppRoutes() {
   const placeholderStyle = { padding: '2rem', fontSize: '1.25rem' };
   const placeholder = (label) => <div style={placeholderStyle}>{label}</div>;
@@ -74,8 +77,8 @@ export default function AppRoutes() {
       <Route element={<ProtectedRoute allowedRoles={['transporter']} />}>
         <Route path="/transporter" element={<Home />} />
         <Route path="/transporter/profile" element={<TransporterProfile />} />
-        <Route path="/transporter/fleet" element={placeholder('Transporter Fleet')} />
-        <Route path="/transporter/fleet/:vehicleId" element={placeholder('Transporter Fleet Details')} />
+        <Route path="/transporter/fleet" element={<FleetManagement />} />
+        <Route path="/transporter/fleet/:vehicleId" element={<VehicleDetails />} />
         <Route path="/transporter/orders" element={<TransporterOrders />} />
         <Route path="/transporter/order/:orderId" element={placeholder('Transporter Order Details')} />
         <Route path="/transporter/orders/:orderId/track" element={placeholder('Transporter Track Order')} />
