@@ -30,7 +30,7 @@ export default function OrderCard({
   const handleViewDetails = (e) => {
     e?.stopPropagation();
     const path = variant === 'customer' 
-      ? `/customer/order/${order._id}`
+      ? `/customer/orders/${order._id}`
       : `/transporter/orders/${order._id}`;
     navigate(path);
   };
@@ -43,7 +43,7 @@ export default function OrderCard({
   const handleTrackOrderClick = (e) => {
     e.stopPropagation();
     if (variant === 'customer') {
-      navigate(`/customer/track/${order._id}`);
+      navigate(`/customer/orders/${order._id}/track`);
     } else if (onTrackOrder) {
       onTrackOrder(order._id);
     }
@@ -140,7 +140,7 @@ export default function OrderCard({
               <path d="M12 2v20"/>
               <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
             </svg>
-            {order.max_price ? `₹${order.max_price}` : '—'}
+            {order.final_price ? `₹${order.final_price}` : order.max_price ? `₹${order.max_price}` : '—'}
           </li>
           <li>
             <svg className="li-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -178,7 +178,7 @@ export default function OrderCard({
           </>
         )}
         
-        {variant === 'customer' && order.status?.toLowerCase().includes('transit') && (
+        {variant === 'customer' &&  (order.status?.toLowerCase() === 'started' || order.status?.toLowerCase() === 'in transit') && (
           <button 
             className="btn btn-outline"
             onClick={handleTrackOrderClick}

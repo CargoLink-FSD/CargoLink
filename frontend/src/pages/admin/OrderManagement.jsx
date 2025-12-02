@@ -136,7 +136,7 @@ export default function OrderManagement() {
           <div className="section-header">
             <h2>Order Management</h2>
             <button className="refresh-btn" onClick={fetchOrders}>
-              ⟳ Refresh
+              Refresh
             </button>
           </div>
           
@@ -149,7 +149,6 @@ export default function OrderManagement() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              
             </div>
             
             <div className="filter-controls">
@@ -197,8 +196,8 @@ export default function OrderManagement() {
                   <tr key={order.order_id}>
                     <td>#ORD-{order.order_id.slice(-6)}</td>
                     <td>{order.customer_name}</td>
-                    <td>{order.pickup?.city || 'N/A'}, {order.pickup?.state || ''}</td>
-                    <td>{order.delivery?.city || 'N/A'}, {order.delivery?.state || ''}</td>
+                    <td>{order.pickup_location || 'N/A'}</td>
+                    <td>{order.dropoff_location || 'N/A'}</td>
                     <td>{formatDate(order.createdAt)}</td>
                     <td>
                       <span className={`status-badge ${getStatusClass(order.status)}`}>

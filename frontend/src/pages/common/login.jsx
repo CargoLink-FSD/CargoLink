@@ -63,15 +63,6 @@ function Login() {
         </div>
 
         <div className="form-options">
-          <div className="remember-me">
-            <input
-              type="checkbox"
-              id="rememberMe"
-              checked={formData.rememberMe || false}
-              {...register('rememberMe')}
-            />
-            <label htmlFor="rememberMe">Remember me</label>
-          </div>
           <Link to={`/forgot-password?type=${userType}`} className="link">Forgot password?</Link>
         </div>
 

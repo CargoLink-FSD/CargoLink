@@ -23,8 +23,8 @@ orderRouter.get('/transporter/vehicles', authMiddleware(['transporter']), orderC
 orderRouter.post('/:orderId/assign-vehicle', authMiddleware(['transporter']), orderController.assignVehicle); // Assign vehicle to order
 
 // Trips
-orderRouter.post('/:orderId/start-transit', authMiddleware(['transporter']), orderController.startTransit); // start transit
-orderRouter.post('/:orderId/confirm-pickup', authMiddleware(['customer']), orderController.confirmPickup); // confirm order pick-up 
+orderRouter.post('/:orderId/confirm-pickup', authMiddleware(['transporter']), orderController.confirmPickup); // confirm order pick-up 
+orderRouter.post('/:orderId/start-transit', authMiddleware(['transporter']), orderController.startTransit); // start transit 
 orderRouter.post('/:orderId/confirm-delivery', authMiddleware(['customer']), orderController.confirmDelivery); // confirm order delivery
 
 // Bids

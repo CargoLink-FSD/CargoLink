@@ -35,7 +35,6 @@ export const dobSchema = z.string().min(1, 'Date of birth is required').refine((
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, 'Password is required'),
-  rememberMe: z.boolean().optional(),
 });
 
 // Customer signup
