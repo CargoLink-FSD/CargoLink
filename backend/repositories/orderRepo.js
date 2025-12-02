@@ -81,6 +81,7 @@ const assignOrder = async (orderId, transporterId, finalPrice) => {
             assigned_transporter_id: transporterId,
             final_price: finalPrice,
             status: 'Assigned',
+            assignment: {} // Initialize empty assignment object
         },
         { new: true }
     );
@@ -99,8 +100,8 @@ const checkActiveOrder = async (orderId, transporterId) => {
     return order;
 };
 
-const updateOrderStatus = async (orderId, status) => {
-    const updateData = { status };
+const updateOrderStatus = async (orderId, status, additionalData = {}) => {
+    const updateData = { status, ...additionalData };
 
     return await Order.findByIdAndUpdate(
         orderId,

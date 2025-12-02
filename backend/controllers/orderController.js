@@ -245,8 +245,6 @@ const withdrawBid = async (req, res, next) => {
 };
 
 
-<<<<<<< HEAD
-=======
 const startTransit = async (req, res, next) => {
   try {
     const orderId = req.params.orderId;
@@ -336,7 +334,6 @@ const getTransporterVehicles = async (req, res, next) => {
     next(err);
   }
 };
->>>>>>> ee9a98ad062423b392eb5fbd460c2e888695b2d9
 
 const confirmPickup = async (req, res, next) => {
   try {
