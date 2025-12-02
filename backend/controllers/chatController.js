@@ -10,6 +10,8 @@ const sendMessage = async (req, res, next) => {
     const userId = req.user.id;
     const userType = req.user.role;
 
+    logger.debug(`User ${userId} (${userType}) sending message to order ${orderId}: ${message}`);
+
     // Validate order exists and user has access
     const order = await orderModel.findById(orderId);
     if (!order) {
@@ -25,7 +27,7 @@ const sendMessage = async (req, res, next) => {
     }
 
     // Find or create chat
-    let chat = await chatModel.findOne({ order_id: orderId });
+    let chat = await chatModel.findOne({ order: orderId });
     if (!chat) {
       chat = new chatModel({
         order: orderId,
@@ -73,11 +75,9 @@ const getChatHistory = async (req, res, next) => {
       throw new AppError(403, "Forbidden", "Not authorized to access this chat", "ERR_FORBIDDEN");
     }
 
-    logger.debug("Fetching chat history for order:", orderId);
     // Find chat
     const chat = await chatModel.findOne({ order: orderId })
 
-    logger.debug("Chat fetched:", chat);
 
 
     if (!chat) {
@@ -90,8 +90,7 @@ const getChatHistory = async (req, res, next) => {
     // Format messages
     const formattedMessages = chat.messages.map(msg => ({
       id: msg._id,
-      senderType: msg.sender_type,
-      senderId: msg.sender_id,
+      senderType: msg.senderType,
       content: msg.content,
       timestamp: msg.timestamp.toISOString(),
       formattedTime: msg.timestamp.toLocaleString('en-IN', { 
@@ -104,8 +103,8 @@ const getChatHistory = async (req, res, next) => {
       success: true, 
       data: { 
         messages: formattedMessages,
-        customerInfo: chat.customer_id,
-        transporterInfo: chat.transporter_id
+        customerInfo: chat.customer,
+        transporterInfo: chat.transporter
       } 
     });
   } catch (err) {

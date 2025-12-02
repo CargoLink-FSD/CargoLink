@@ -137,6 +137,30 @@ const withdrawBid = async (bidId, transporterId) => {
     return;
 };
 
+const confirmPickup = async (transporterId, orderId, otp) => {
+    const order = await orderRepo.verifyOTPAndUpdateStatus(orderId, transporterId, otp);
+    console.log({order, transporterId, orderId, otp});
+    
+    if (!order) {
+        throw new AppError(400, "InvalidOperation", "Invalid OTP or order not found", "ERR_INVALID_OPERATION");
+    }
+    return order;
+};
+
+const confirmDelivery = async (customerId, orderId) => {
+    const exist = await orderRepo.existsOrderForCustomer(orderId, customerId);
+    if (!exist) {
+        throw new AppError(404, "NotFound", "Order not found or access denied", "ERR_NOT_FOUND");
+    }
+
+    const order = await orderRepo.updateOrderStatus(orderId, 'Completed');
+    if (!order) {
+        throw new AppError(400, "InvalidOperation", "Order cannot be marked as delivered", "ERR_INVALID_OPERATION");
+    }
+    return order;
+};
+
+
 export default {
     getOrdersByUser,
     getOrderDetails,
@@ -150,5 +174,7 @@ export default {
     getTransporterBids,
     submitBid,
     withdrawBid,
+    confirmPickup,
+    confirmDelivery,
 
 }

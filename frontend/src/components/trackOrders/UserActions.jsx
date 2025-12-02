@@ -2,7 +2,9 @@
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-// import { confirmPickup } from '../../store/slices/ordersSlice';
+import { confirmOrderPickup } from '../../store/slices/ordersSlice';
+import { useNotification } from '../../context/NotificationContext';
+
 
 
 const CustomerActions = ({ order }) => {
@@ -86,20 +88,21 @@ const TransporterActions = ({ order }) => {
   const dispatch = useDispatch();
   const { orderId } = useParams();
   const [otp, setOtp] = useState('');
+  const { showNotification } = useNotification();
+  
 
   const handleConfirmPickup = async () => {
     if (!otp) {
-      alert('Please enter OTP');
+      alert('Please enter the OTP');  // change to notification
       return;
     }
 
     try {
-      // await dispatch(confirmPickup({ orderId, otp })).unwrap();
-      alert('Pickup Confirmed!');
+      await dispatch(confirmOrderPickup({ orderId, otp })).unwrap();
+      showNotification({ message: 'Pickup Confirmed', type: 'success' });  
       setOtp('');
-    } catch (error) {
-      alert(`Error: ${error}`);
-    }
+    } catch (err) {
+      showNotification({ message: 'Incorrect OTP', type: 'error' });    }
   };
 
   const handleUpdateLocation = () => {

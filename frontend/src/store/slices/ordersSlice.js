@@ -253,6 +253,7 @@ const ordersSlice = createSlice({
       })
       .addCase(confirmOrderPickup.fulfilled, (state, action) => {
         state.loading = false;
+        state.currentOrder.status = 'In Transit';
         state.error = null;
       })
       .addCase(confirmOrderPickup.rejected, (state, action) => {
@@ -267,6 +268,7 @@ const ordersSlice = createSlice({
       })
       .addCase(confirmOrderDelivery.fulfilled, (state, action) => {
         state.loading = false;
+        state.currentOrder.status = 'Completed';
         state.error = null;
       })
       .addCase(confirmOrderDelivery.rejected, (state, action) => {

@@ -89,6 +89,34 @@ const checkActiveOrder = async (orderId, transporterId) => {
     return order;
 };
 
+const updateOrderStatus = async (orderId, status) => {
+    const updateData = { status };
+
+    return await Order.findByIdAndUpdate(
+        orderId,
+        updateData,
+        { new: true }
+    );
+};
+
+// Verify OTP and Update Status
+const verifyOTPAndUpdateStatus = async (orderId, transporterId, otp) => {
+    return await Order.findOneAndUpdate(
+        { 
+            _id: orderId, 
+            assigned_transporter_id: transporterId, 
+            otp: otp,
+            status: 'Started'
+        },
+        { 
+            status: 'In Transit',
+            $unset: { otp: 1 }
+        },
+        { new: true }
+    );
+};
+
+
 export default {
     countOrdersByCustomer,
     countOrdersByTransporter,
@@ -102,4 +130,6 @@ export default {
     getActiveOrders,
     assignOrder,
     checkActiveOrder,
+    updateOrderStatus,
+    verifyOTPAndUpdateStatus
 }

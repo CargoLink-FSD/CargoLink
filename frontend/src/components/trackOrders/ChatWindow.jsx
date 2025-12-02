@@ -10,7 +10,21 @@ const ChatWindow = ({ orderId, userType}) => {
   
   const { messages, loading, error } = useSelector((state) => state.chat);
 
-    dispatch(fetchChatMessages(orderId));
+    useEffect(() => {
+        dispatch(fetchChatMessages(orderId));
+        return () => {
+            dispatch(clearChat());
+        };
+    }, []);
+
+  useEffect(() => {
+    const s = setInterval(() => {
+      dispatch(fetchChatMessages(orderId));
+    }, 5000); // Fetch new messages every 5 seconds
+    return () => {
+        clearInterval(s);
+    };
+  }, []);
 
 
   useEffect(() => {
@@ -26,7 +40,8 @@ const ChatWindow = ({ orderId, userType}) => {
     try {
       await dispatch(sendChatMessage({ 
         orderId, 
-        message: trimmedMessage, 
+        message: trimmedMessage,
+        userType: userType
       })).unwrap();
       
       setMessage('');
@@ -72,7 +87,7 @@ const ChatWindow = ({ orderId, userType}) => {
               {messages.map((msg, index) => (
                 <div
                   key={index}
-                  className={`message ${msg.senderType === userType ? 'sent' : 'received'}`}
+                  className={`message ${msg.senderType === userType ? 'sent' : 'received'}`}  //css for sent/received are swapped
                 >
                   <div className="message-bubble">{msg.content}</div>
                   <div className="message-time">{formatTime(msg.timestamp)}</div>

@@ -19,7 +19,7 @@ orderRouter.delete("/:orderId", authMiddleware(["customer"]), orderController.ca
 orderRouter.get("/:orderId", authMiddleware(["customer", "transporter"]), orderController.getOrderDetails); // Get order details (role-filtered)
 
 // Trips
-orderRouter.post('/:orderId/confirm-pickup', authMiddleware(['customer']), orderController.confirmPickup); // confirm order pick-up 
+orderRouter.post('/:orderId/confirm-pickup', authMiddleware(['transporter']), orderController.confirmPickup); // confirm order pick-up 
 orderRouter.post('/:orderId/confirm-delivery', authMiddleware(['customer']), orderController.confirmDelivery); // confirm order delivery
 
 // Bids
