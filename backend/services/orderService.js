@@ -137,12 +137,108 @@ const withdrawBid = async (bidId, transporterId) => {
     return;
 };
 
+const startTransit = async (orderId, transporterId) => {
+    // Check if order exists and is assigned to this transporter
+    const order = await orderRepo.getOrderById(orderId);
+    
+    if (!order) {
+        throw new AppError(404, "NotFound", "Order not found", "ERR_NOT_FOUND");
+    }
+
+    if (order.assigned_transporter_id?.toString() !== transporterId) {
+        throw new AppError(403, "Forbidden", "You are not authorized to start transit for this order", "ERR_FORBIDDEN");
+    }
+
+    if (order.status !== 'Assigned') {
+        throw new AppError(400, "InvalidOperation", "Only assigned orders can be started", "ERR_INVALID_OPERATION");
+    }
+
+    // Generate OTP for pickup confirmation
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+
+    // Update order status to Started
+    const updatedOrder = await orderRepo.updateOrderStatus(orderId, 'Started', { otp });
+
+    return updatedOrder;
+};
+
+const assignVehicleToOrder = async (orderId, vehicleId, transporterId) => {
+    // Import transporter model
+    const Transporter = (await import('../models/transporter.js')).default;
+
+    // Check if order exists and is assigned to this transporter
+    const order = await orderRepo.getOrderById(orderId);
+    
+    if (!order) {
+        throw new AppError(404, "NotFound", "Order not found", "ERR_NOT_FOUND");
+    }
+
+    if (order.assigned_transporter_id?.toString() !== transporterId) {
+        throw new AppError(403, "Forbidden", "You are not authorized to assign vehicle to this order", "ERR_FORBIDDEN");
+    }
+
+    if (order.status !== 'Assigned') {
+        throw new AppError(400, "InvalidOperation", "Only assigned orders can have vehicles assigned", "ERR_INVALID_OPERATION");
+    }
+
+    // Find transporter and vehicle
+    const transporter = await Transporter.findById(transporterId);
+    if (!transporter) {
+        throw new AppError(404, "NotFound", "Transporter not found", "ERR_NOT_FOUND");
+    }
+
+    const vehicle = transporter.fleet.id(vehicleId);
+    if (!vehicle) {
+        throw new AppError(404, "NotFound", "Vehicle not found in your fleet", "ERR_NOT_FOUND");
+    }
+
+    // Check vehicle availability
+    if (vehicle.status !== 'Available') {
+        throw new AppError(400, "InvalidOperation", "Vehicle is not available", "ERR_INVALID_OPERATION");
+    }
+
+    // Update vehicle status
+    vehicle.status = 'Assigned';
+    vehicle.current_trip_id = orderId;
+    await transporter.save();
+
+    // Assign vehicle to order
+    const assignmentData = {
+        vehicle_id: vehicle._id,
+        vehicle_number: vehicle.registration,
+        vehicle_type: vehicle.truck_type
+    };
+
+    const updatedOrder = await orderRepo.assignVehicleToOrder(orderId, assignmentData);
+
+    return updatedOrder;
+};
+
+const getTransporterVehicles = async (transporterId) => {
+    const Transporter = (await import('../models/transporter.js')).default;
+    
+    const transporter = await Transporter.findById(transporterId).select('fleet');
+    if (!transporter) {
+        throw new AppError(404, "NotFound", "Transporter not found", "ERR_NOT_FOUND");
+    }
+
+    // Filter available vehicles
+    const availableVehicles = transporter.fleet.filter(
+        vehicle => vehicle.status === 'Available'
+    );
+
+    return availableVehicles;
+};
+
 export default {
     getOrdersByUser,
     getOrderDetails,
     placeOrder,
     cancelOrder,
+    startTransit,
     getActiveOrders,
+    assignVehicleToOrder,
+    getTransporterVehicles,
 
     getCurrentBids,
     acceptBid,
