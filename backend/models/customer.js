@@ -40,7 +40,7 @@ CustomerSchema.methods.verifyPassword = function (password) {
 
 CustomerSchema.methods.updatePassword = async function (newPassword) {
   this.password = newPassword;
-  await this.save();
+  await this.save({ validateModifiedOnly: true });
 };
 
 const customerModel = mongoose.model("Customer", CustomerSchema);

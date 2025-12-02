@@ -47,7 +47,47 @@ const logout = async (req, res, next) => {
 
 // Placeholders for future flows
 const forgotPassword = async (req, res, next) => {
-  next(new AppError(501, 'NotImplemented', 'Forgot password not implemented', 'ERR_NOT_IMPLEMENTED'));
+  try {
+    console.log('Forgot password request body:', req.body);
+    const { email, userType } = req.body;
+
+    // Import models dynamically
+    const Customer = (await import('../models/customer.js')).default;
+    const Transporter = (await import('../models/transporter.js')).default;
+    const { sendMail, generatePassword } = await import('../utils/misc.js');
+
+    // Generate temporary password
+    const password = generatePassword();
+
+    // Find user based on type
+    let user = null;
+    if (userType === 'customer') {
+      user = await Customer.findOne({ email: email });
+    } else if (userType === 'transporter') {
+      user = await Transporter.findOne({ email: email });
+    }
+
+    if (!user) {
+      return next(new AppError(404, 'NotFound', 'Email not found', 'ERR_NOT_FOUND'));
+    }
+
+    // Send email with temporary password
+    await sendMail(
+      email,
+      'CargoLink - Password Reset',
+      `Hello,\n\nYour temporary password is: ${password}\n\nPlease use this password to log in and change it immediately for security purposes.\n\nBest regards,\nCargoLink Team`
+    );
+
+    // Update user password
+    await user.updatePassword(password);
+
+    res.status(200).json({
+      success: true,
+      message: 'Temporary password sent to your email',
+    });
+  } catch (err) {
+    next(err);
+  }
 };
 const resetPassword = async (req, res, next) => {
   next(new AppError(501, 'NotImplemented', 'Reset password not implemented', 'ERR_NOT_IMPLEMENTED'));
