@@ -19,10 +19,19 @@ import OrderBids from '../pages/customer/OrderBids';
 import PlaceOrder from '../pages/customer/PlaceOrder';
 import TransporterOrders from '../pages/transporter/TransporterOrders';
 import MyBidsPage from '../pages/transporter/MyBids';
+import About from '../pages/static/About';
+import Services from '../pages/static/Services';
+import Contact from '../pages/static/Contact';
+import Careers from '../pages/static/Careers';
+import Terms from '../pages/static/Terms';
+import Privacy from '../pages/static/Privacy';
 import UserManagement from '../pages/admin/UserManagement';
 import OrderManagement from '../pages/admin/OrderManagement';
 import Dashboard from '../pages/admin/Dashboard';
 import OrderDetails from '../pages/common/OrderDetails';
+
+import FleetManagement from '../pages/transporter/FleetManagement';
+import VehicleDetails from '../pages/transporter/VehicleDetails';
 
 export default function AppRoutes() {
   const placeholderStyle = { padding: '2rem', fontSize: '1.25rem' };
@@ -42,12 +51,12 @@ export default function AppRoutes() {
       {/* Static Pages */}
 
       
-      <Route path="/static/about" element={placeholder('Static: About')} />
-      <Route path="/static/services" element={placeholder('Static: Services')} />
-      <Route path="/static/contact" element={placeholder('Static: Contact')} />
-      <Route path="/static/terms" element={placeholder('Static: Terms of Service')} />
-      <Route path="/static/privacy" element={placeholder('Static: Privacy Policy')} />
-      <Route path="/static/careers" element={placeholder('Static: Careers')} />
+      <Route path="/static/about" element={<About />} />
+      <Route path="/static/services" element={<Services />} />
+      <Route path="/static/contact" element={<Contact />} />
+      <Route path="/static/terms" element={<Terms />} />
+      <Route path="/static/privacy" element={<Privacy />} />
+      <Route path="/static/careers" element={<Careers />} />
 
 
       {/* Customer Routes */}
@@ -75,8 +84,8 @@ export default function AppRoutes() {
       <Route element={<ProtectedRoute allowedRoles={['transporter']} />}>
         <Route path="/transporter" element={<Home />} />
         <Route path="/transporter/profile" element={<TransporterProfile />} />
-        <Route path="/transporter/fleet" element={placeholder('Transporter Fleet')} />
-        <Route path="/transporter/fleet/:vehicleId" element={placeholder('Transporter Fleet Details')} />
+        <Route path="/transporter/fleet" element={<FleetManagement />} />
+        <Route path="/transporter/fleet/:vehicleId" element={<VehicleDetails />} />
         <Route path="/transporter/orders" element={<TransporterOrders />} />
         <Route path="/transporter/orders/:orderId" element={<OrderDetails />} />
         <Route path="/transporter/orders/:orderId/track" element={placeholder('Transporter Track Order')} />

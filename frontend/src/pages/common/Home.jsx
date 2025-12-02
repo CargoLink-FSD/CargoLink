@@ -59,7 +59,7 @@ function Home() {
         </section>
 
         <section className="features">
-          <h2 className="section-title">Why Choose CargoLink?</h2>
+          <h2 className="home-section-title">Why Choose CargoLink?</h2>
           <div className="feature-grid">
             <div className="feature-card">
               <div className="feature-image">
@@ -102,7 +102,7 @@ function Home() {
         </section>
 
         <section className="testimonials">
-          <h2 className="section-title">What Our Users Say</h2>
+          <h2 className="home-section-title">What Our Users Say</h2>
           <div className="testimonial-grid">
             <div className="testimonial-card">
               <div className="testimonial-header">

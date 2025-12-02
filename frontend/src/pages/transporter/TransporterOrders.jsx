@@ -4,6 +4,7 @@ import OrderCard from '../../components/common/OrderCard';
 import AssignVehicleModal from '../../components/common/AssignVehicleModal';
 import './TransporterOrders.css';
 import Header from '../../components/common/Header';
+import Footer from '../../components/common/Footer';
 
 const TransporterOrders = () => {
   const {
@@ -191,6 +192,7 @@ const TransporterOrders = () => {
         onConfirm={handleConfirmAssignment}
       />
     </div>
+    <Footer />
     </>
   );
 };

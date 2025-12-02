@@ -13,6 +13,7 @@ import { useNotification } from '../../context/NotificationContext';
 import OrderCard from '../../components/common/OrderCard';
 import './CustomerOrders.css';
 import Header from '../../components/common/Header';
+import Footer from '../../components/common/Footer';
 
 export default function CustomerOrders() {
   const dispatch = useDispatch();
@@ -131,6 +132,7 @@ export default function CustomerOrders() {
         </div>
       )}
     </div>
+    <Footer />
     </>
   );
 }
