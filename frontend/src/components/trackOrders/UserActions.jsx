@@ -54,26 +54,26 @@ const CustomerActions = ({ order }) => {
         </div>
         <div className="detail-group">
           <p className="detail-label">Contact Person</p>
-          <p className="detail-value">{order.transporter?.contactPerson || "N/A"}</p>
+          <p className="detail-value">{order.assigned_transporter_id?.name || "N/A"}</p>
         </div>
         <div className="detail-group">
           <p className="detail-label">Contact Phone</p>
-          <p className="detail-value">{order.transporter?.contactPhone || "N/A"}</p>
+          <p className="detail-value">{order.assigned_transporter_id?.primary_contact || "N/A"}</p>
         </div>
         <div className="detail-group">
           <p className="detail-label">Email</p>
-          <p className="detail-value">{order.transporter?.email || "N/A"}</p>
+          <p className="detail-value">{order.assigned_transporter_id?.email || "N/A"}</p>
         </div>
         <div className="action-buttons">
           <button 
             className="btn btn-primary" 
-            onClick={() => handleCall(order.transporter?.contactPhone)}
+            onClick={() => handleCall(order.assigned_transporter_id?.primary_contact)}
           >
             Call Transporter
           </button>
           <button 
             className="btn btn-outline" 
-            onClick={() => handleEmail(order.transporter?.email)}
+            onClick={() => handleEmail(order.assigned_transporter_id?.email)}
           >
             Email Transporter
           </button>
@@ -165,26 +165,26 @@ const TransporterActions = ({ order }) => {
         </div>
         <div className="detail-group">
           <p className="detail-label">Contact Person</p>
-          <p className="detail-value">{order.customer?.contactPerson || "N/A"}</p>
+          <p className="detail-value">{(order.customer_id)? `${order.customer_id.firstName} ${order.customer_id.lastName}`: "N/A"}</p>
         </div>
         <div className="detail-group">
           <p className="detail-label">Contact Phone</p>
-          <p className="detail-value">{order.customer?.contactPhone || "N/A"}</p>
+          <p className="detail-value">{order.customer_id?.phone || "N/A"}</p>
         </div>
         <div className="detail-group">
           <p className="detail-label">Email</p>
-          <p className="detail-value">{order.customer?.email || "N/A"}</p>
+          <p className="detail-value">{order.customer_id?.email || "N/A"}</p>
         </div>
         <div className="action-buttons">
           <button 
             className="btn btn-primary" 
-            onClick={() => handleCall(order.customer?.contactPhone)}
+            onClick={() => handleCall(order.customer_id?.phone)}
           >
             Call Customer
           </button>
           <button 
             className="btn btn-outline" 
-            onClick={() => handleEmail(order.customer?.email)}
+            onClick={() => handleEmail(order.customer_id?.email)}
           >
             Email Customer
           </button>

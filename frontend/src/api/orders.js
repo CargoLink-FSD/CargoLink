@@ -59,7 +59,7 @@ export async function confirmPickup({orderId, otp}) {
 /**
  * Confirm delivery for an order
  */
-export async function confirmDelivery(orderId) {
+export async function confirmDelivery({orderId}) {
   return await http.post(`/api/orders/${orderId}/confirm-delivery`);
 }
 

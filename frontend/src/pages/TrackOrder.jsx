@@ -60,7 +60,7 @@ const TrackOrderPage = () => {
   }, [currentOrder?.shipments]);
 
   useEffect(() => {
-    if (userType === 'Customer' && currentOrder?.shipments) {
+    if (userType === 'customer' && currentOrder?.shipments) {
         calculateTotal();
       }
   }, [currentOrder?.shipments, userType, calculateTotal]);
@@ -177,7 +177,7 @@ const TrackOrderPage = () => {
                       <th>Item Name</th>
                       <th>Quantity</th>
                       <th>Price</th>
-                      {userType === 'Customer' && <th>Delivery Status</th>}
+                      {userType === 'customer' && <th>Delivery Status</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -186,7 +186,7 @@ const TrackOrderPage = () => {
                         <td>{item.item_name}</td>
                         <td>{item.quantity}</td>
                         <td>${item.price}</td>
-                        {userType === 'Customer' && (
+                        {userType === 'customer' && (
                           <td>
                             <select
                               className="delivery-status"
@@ -203,7 +203,7 @@ const TrackOrderPage = () => {
                   </tbody>
                 </table>
               </div>
-              {userType === 'Customer' && (
+              {userType === 'customer' && (
                 <div className="payment-section">
                   <span className="total-amount">
                     Total: $<span id="total-amount">{total.toFixed(2)}</span>
