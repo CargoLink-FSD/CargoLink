@@ -51,7 +51,7 @@ const getActiveOrders = async (transporterId) => {
     const orders = await orderRepo.getActiveOrders(transporterId);
 
     orders.forEach(order => {
-        order.already_bid = order.bid_by_transporter && order.bid_by_transporter.length > 0;
+        order.already_bid = !!order.bid_by_transporter;
         delete order.bid_by_transporter;
     });
 
@@ -76,6 +76,16 @@ const acceptBid = async (customerId, orderId, bidId) => {
     const bid = await bidRepo.getBidById(bidId);
     if (!bid || bid.order_id.toString() !== orderId) {
         throw new AppError(404, "NotFound", "Bid not found for the specified order", "ERR_NOT_FOUND");
+    }
+
+    // Validate bidding window is still open 
+    const orderDetails = await orderRepo.getOrderDetailsForCustomer(orderId, customerId);
+    const twoDaysFromNow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+    
+    if (orderDetails.scheduled_at < twoDaysFromNow) {
+        throw new AppError(400, "ValidationError", 
+            "Bidding window has closed. Cannot accept bids within 2 days of scheduled pickup", 
+            "ERR_BIDDING_CLOSED");
     }
 
     const order = await orderRepo.assignOrder(orderId, bid.transporter_id, bid.bid_amount);
@@ -110,10 +120,12 @@ const getTransporterBids = async (transporterId) => {
 };
 
 const submitBid = async (transporterId, orderId, bidAmount, notes) => {
-    // Check if order exists and is open for bidding
+    // Check if order exists and is open for bidding (must be at least 2 days before pickup)
     const active = await orderRepo.checkActiveOrder(orderId, transporterId);
     if (!active) {
-        throw new AppError(404, "NotFound", "Order not found or not up for bidding", "ERR_NOT_FOUND");
+        throw new AppError(400, "ValidationError", 
+            "Bidding window has closed or order is not available. Bids can only be placed at least 2 days before scheduled pickup", 
+            "ERR_BIDDING_CLOSED");
     }
 
     const bid = await bidRepo.createBid({

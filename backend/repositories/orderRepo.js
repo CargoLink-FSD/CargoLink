@@ -55,7 +55,13 @@ const cancelOrder = async (orderId) => {
 };
 
 const getActiveOrders = async (transporterId) => {
-    const orders = await Order.find({ status: 'Placed' })
+    // only shows order before 2days of scheduled pickup
+    const twoDaysFromNow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+    
+    const orders = await Order.find({ 
+        status: 'Placed',
+        scheduled_at: { $gte: twoDaysFromNow } // Filter out orders with closed bidding window
+      })
       .populate({
         path: 'bid_by_transporter',
         match: { transporter_id: transporterId },
@@ -82,9 +88,13 @@ const assignOrder = async (orderId, transporterId, finalPrice) => {
 };
 
 const checkActiveOrder = async (orderId, transporterId) => {
+    // Bidding window closes 2 days before scheduled pickup
+    const twoDaysFromNow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+    
     const order = await Order.exists({
       _id: orderId,
-      status: "Placed"
+      status: "Placed",
+      scheduled_at: { $gte: twoDaysFromNow } // Pickup must be at least 2 days away
     });
     return order;
 };

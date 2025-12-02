@@ -84,7 +84,8 @@ const cancelOrder = async (req, res, next) => {
 
 const getActiveOrders = async (req, res, next) => {
   try {
-    const orders = await orderService.getActiveOrders();
+    const transporterId = req.user.id;
+    const orders = await orderService.getActiveOrders(transporterId);
     res.status(200).json({ 
       success: true, 
       data: orders ,
