@@ -153,16 +153,16 @@ const TransporterOrders = () => {
         </div>
       )}
 
-      {error && (
+      {/* {error && (
         <div className="error-state">
           <div className="error-icon">⚠️</div>
           <p>{error}</p>
         </div>
-      )}
+      )} */}
 
       {!loading && !error && orders.length === 0 && (
         <div className="empty-state">
-          <div className="empty-icon">📦</div>
+          <div className="empty-icon"></div>
           <h3>No orders found</h3>
           <p>You don't have any orders assigned yet.</p>
         </div>

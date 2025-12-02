@@ -70,7 +70,7 @@ export default function AppRoutes() {
         <Route path="/customer" element={<Home />} />
         <Route path="/customer/profile" element={<CustomerProfile />} />
         <Route path="/customer/place-order" element={<PlaceOrder />} />
-  <Route path="/customer/paynow" element={<PayNow />} />
+        <Route path="/customer/paynow" element={<PayNow />} />
         <Route path="/customer/orders" element={<CustomerOrders />} />
         <Route path="/customer/orders/:orderId" element={<OrderDetails/>} />
         <Route path="/customer/order/:orderId/bids" element={<OrderBids />} />
@@ -89,12 +89,8 @@ export default function AppRoutes() {
         <Route path="/transporter/fleet" element={<FleetManagement />} />
         <Route path="/transporter/fleet/:vehicleId" element={<VehicleDetails />} />
         <Route path="/transporter/orders" element={<TransporterOrders />} />
-
         <Route path="/transporter/orders/:orderId" element={<OrderDetails/>} />
         <Route path="/transporter/orders/:orderId/track" element={<TrackOrder/>} />
-
-        <Route path="/transporter/orders/:orderId/track" element={placeholder('Transporter Track Order')} />
-
         <Route path="/transporter/bid" element={<BidPage />} />
         <Route path="/transporter/my-bids" element={<MyBidsPage />} />
         <Route path="/transporter/assignment" element={placeholder('Assignment: Dashboard')} />

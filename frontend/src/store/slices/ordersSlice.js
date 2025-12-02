@@ -268,7 +268,6 @@ const ordersSlice = createSlice({
       })
       .addCase(confirmDelivery.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentOrder.status = 'Completed';
         state.error = null;
       })
       .addCase(confirmDelivery.rejected, (state, action) => {

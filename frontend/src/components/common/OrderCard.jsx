@@ -80,6 +80,18 @@ export default function OrderCard({
   const canStartTransit = order.status?.toLowerCase() === 'assigned' && order.assignment;
   const isInTransit = order.status?.toLowerCase() === 'started' || order.status?.toLowerCase() === 'in transit';
 
+  if (variant === 'transporter') {
+    console.log('OrderCard Debug:', order._id?.slice(-6), {
+      status: order.status,
+      assignment: order.assignment,
+      assignmentType: typeof order.assignment,
+      vehicleId: order.assignment?.vehicle_id,
+      hasVehicleId: !!order.assignment?.vehicle_id,
+      notHasVehicleId: !order.assignment?.vehicle_id,
+      showAssignBtn: variant === 'transporter' && order.status?.toLowerCase() === 'assigned' && !order.assignment?.vehicle_id,
+      showStartBtn: variant === 'transporter' && order.status?.toLowerCase() === 'assigned' && !!order.assignment?.vehicle_id
+    });
+  }
   return (
     <div 
       className={`order-card ${variant}`} 
