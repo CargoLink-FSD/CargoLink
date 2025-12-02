@@ -50,14 +50,16 @@ export async function rejectBid(orderId, bidId) {
 /**
  * Confirm pickup for an order
  */
-export async function confirmPickup(orderId) {
-  return await http.post(`/api/orders/${orderId}/confirm-pickup`);
+export async function confirmPickup({orderId, otp}) {
+  console.log("calling confirmpickup with: ", orderId);
+  
+  return await http.post(`/api/orders/${orderId}/confirm-pickup`, {otp});
 }
 
 /**
  * Confirm delivery for an order
  */
-export async function confirmDelivery(orderId) {
+export async function confirmDelivery({orderId}) {
   return await http.post(`/api/orders/${orderId}/confirm-delivery`);
 }
 

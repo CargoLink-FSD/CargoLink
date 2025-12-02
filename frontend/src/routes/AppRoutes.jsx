@@ -27,7 +27,10 @@ import Terms from '../pages/static/Terms';
 import Privacy from '../pages/static/Privacy';
 import UserManagement from '../pages/admin/UserManagement';
 import OrderManagement from '../pages/admin/OrderManagement';
+import OrderDetails from '../pages/common/OrderDetails';
 import Dashboard from '../pages/admin/Dashboard';
+import TrackOrder from '../pages/TrackOrder'
+import PayNow from '../pages/customer/PayNow';
 
 import FleetManagement from '../pages/transporter/FleetManagement';
 import VehicleDetails from '../pages/transporter/VehicleDetails';
@@ -67,11 +70,11 @@ export default function AppRoutes() {
         <Route path="/customer" element={<Home />} />
         <Route path="/customer/profile" element={<CustomerProfile />} />
         <Route path="/customer/place-order" element={<PlaceOrder />} />
-        <Route path="/customer/paynow" element={placeholder('Customer Payment')} />
+  <Route path="/customer/paynow" element={<PayNow />} />
         <Route path="/customer/orders" element={<CustomerOrders />} />
-        <Route path="/customer/order/:orderId" element={placeholder('Customer Order Details')} />
+        <Route path="/customer/orders/:orderId" element={<OrderDetails/>} />
         <Route path="/customer/order/:orderId/bids" element={<OrderBids />} />
-        <Route path="/customer/track/:id" element={placeholder('Customer Track Order')} />
+        <Route path="/customer/orders/:orderId/track" element={<TrackOrder/>} />
       </Route>
 
 
@@ -86,10 +89,14 @@ export default function AppRoutes() {
         <Route path="/transporter/fleet" element={<FleetManagement />} />
         <Route path="/transporter/fleet/:vehicleId" element={<VehicleDetails />} />
         <Route path="/transporter/orders" element={<TransporterOrders />} />
+<<<<<<< HEAD
+        <Route path="/transporter/orders/:orderId" element={<OrderDetails/>} />
+        <Route path="/transporter/orders/:orderId/track" element={<TrackOrder/>} />
+=======
         <Route path="/transporter/orders/:orderId/track" element={placeholder('Transporter Track Order')} />
+>>>>>>> ee9a98ad062423b392eb5fbd460c2e888695b2d9
         <Route path="/transporter/bid" element={<BidPage />} />
         <Route path="/transporter/my-bids" element={<MyBidsPage />} />
-        <Route path="/transporter/track/:id" element={placeholder('Transporter Track Order')} />
         <Route path="/transporter/assignment" element={placeholder('Assignment: Dashboard')} />
         <Route path="/transporter/assignment/order/:order_id" element={placeholder('Assignment: Order Detail')} />
         <Route path="/transporter/assignment/vehicles/available" element={placeholder('Assignment: Available Vehicles')} />
@@ -104,7 +111,7 @@ export default function AppRoutes() {
 
       <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
         <Route path="/admin" element={<Home />} />
-        <Route path="/admin/dashboard" element={<Dashboard />} />
+        {/* <Route path="/admin/dashboard" element={<Dashboard />} /> */}
         <Route path="/admin/orders" element={<OrderManagement />} />
         <Route path="/admin/users" element={<UserManagement />} />
       </Route>

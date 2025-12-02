@@ -336,21 +336,54 @@ const getTransporterVehicles = async (req, res, next) => {
 };
 
 const confirmPickup = async (req, res, next) => {
-  // Placeholder for confirming order pickup
+  try {
+    const transporterId = req.user.id;
+    const orderId = req.params.orderId;
+    const { otp } = req.body;
+
+    if(!mongoose.Types.ObjectId.isValid(orderId)) {
+      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
+        { type: "field", value: orderId, msg: "Not a valid order ID", path: "orderId", location: "params" }
+      );
+    }
+
+    const order = await orderService.confirmPickup(transporterId, orderId, otp);
+
+    res.status(200).json({ 
+      success: true, 
+      data: order,
+      message: "Pickup confirmed successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
 };
 
 const confirmDelivery = async (req, res, next) => {
-  // Placeholder for confirming order delivery
-};
+  try {
+    const customerId = req.user.id;
+    const orderId = req.params.orderId;
 
-const submitRating = async (req, res, next) => {
-  // Placeholder for submitting a rating for an order
-};
+    if(!mongoose.Types.ObjectId.isValid(orderId)) {
+      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
+        { type: "field", value: orderId, msg: "Not a valid order ID", path: "orderId", location: "params" }
+      );
+    }
 
+    const order = await orderService.confirmDelivery(customerId, orderId);
+
+    res.status(200).json({ 
+      success: true, 
+      data: order,
+      message: "Delivery confirmed successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
 export default {
   getUserOrders,
-
   placeOrder,
   cancelOrder,
   startTransit,
@@ -361,7 +394,6 @@ export default {
   getCurrentBids,
   acceptBid,
   rejectBid,
-  submitRating,
   getActiveOrders,
   getTransporterBids,
   submitBid,

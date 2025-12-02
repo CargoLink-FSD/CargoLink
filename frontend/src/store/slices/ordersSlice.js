@@ -96,7 +96,7 @@ export const confirmOrderPickup = createAsyncThunk(
 );
 
 // Async thunk for confirming delivery
-export const confirmOrderDelivery = createAsyncThunk(
+export const confirmDelivery = createAsyncThunk(
   'orders/confirmDelivery',
   async (orderId, { rejectWithValue }) => {
     try {
@@ -253,6 +253,7 @@ const ordersSlice = createSlice({
       })
       .addCase(confirmOrderPickup.fulfilled, (state, action) => {
         state.loading = false;
+        state.currentOrder.status = 'In Transit';
         state.error = null;
       })
       .addCase(confirmOrderPickup.rejected, (state, action) => {
@@ -261,15 +262,16 @@ const ordersSlice = createSlice({
       })
 
       // Confirm delivery
-      .addCase(confirmOrderDelivery.pending, (state) => {
+      .addCase(confirmDelivery.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(confirmOrderDelivery.fulfilled, (state, action) => {
+      .addCase(confirmDelivery.fulfilled, (state, action) => {
         state.loading = false;
+        state.currentOrder.status = 'Completed';
         state.error = null;
       })
-      .addCase(confirmOrderDelivery.rejected, (state, action) => {
+      .addCase(confirmDelivery.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

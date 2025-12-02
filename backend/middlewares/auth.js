@@ -19,7 +19,9 @@ export const authMiddleware = (roles = []) => {
         try {
             const { userId, role } = authService.validateAccessTokenPayload(decoded, roles);
             req.user = { id: userId, role };
-            logger.debug('Auth ok', { userId, role });
+            // if (!req.url.startsWith('/api/chat')) {
+            //     logger.debug('Auth ok', { userId, role });
+            // }
             next();
         } catch (err) {
             next(err);

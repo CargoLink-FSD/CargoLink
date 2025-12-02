@@ -30,7 +30,7 @@ export default function OrderCard({
   const handleViewDetails = (e) => {
     e?.stopPropagation();
     const path = variant === 'customer' 
-      ? `/customer/order/${order._id}`
+      ? `/customer/orders/${order._id}`
       : `/transporter/orders/${order._id}`;
     navigate(path);
   };
@@ -43,7 +43,7 @@ export default function OrderCard({
   const handleTrackOrderClick = (e) => {
     e.stopPropagation();
     if (variant === 'customer') {
-      navigate(`/customer/track/${order._id}`);
+      navigate(`/customer/orders/${order._id}/track`);
     } else if (onTrackOrder) {
       onTrackOrder(order._id);
     }
@@ -178,7 +178,7 @@ export default function OrderCard({
           </>
         )}
         
-        {variant === 'customer' && order.status?.toLowerCase().includes('transit') && (
+        {variant === 'customer' &&  (order.status?.toLowerCase() === 'started' || order.status?.toLowerCase() === 'in transit') && (
           <button 
             className="btn btn-outline"
             onClick={handleTrackOrderClick}

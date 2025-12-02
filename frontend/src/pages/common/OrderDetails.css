@@ -1,0 +1,263 @@
+.container {
+  padding-top: 120px;
+  padding-bottom: 80px;
+  min-height: calc(100vh - 200px);
+}
+
+.order-info-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.order-header h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.status-badge.placed {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-badge.assigned {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.status-badge.in-transit,
+.status-badge.started {
+  background: #e8f5e9;
+  color: #388e3c;
+}
+
+.status-badge.completed {
+  background: #e0f2f1;
+  color: #00796b;
+}
+
+.status-badge.cancelled {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.info-section {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.info-section h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+  padding-bottom: 20px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.info-item .label {
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.info-item .value {
+  color: #333;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.info-item .earnings {
+  color: #388e3c;
+  font-weight: 600;
+}
+
+.shipment-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.shipment-table th,
+.shipment-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.shipment-table th {
+  background-color: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+}
+
+.shipment-table td {
+  color: #333;
+}
+
+.shipment-table tr:last-child td {
+  border-bottom: none;
+}
+
+.insurance-amount {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
+  border: 1px solid #4dd0e1;
+  border-radius: 8px;
+  text-align: right;
+  font-size: 1rem;
+  color: #006064;
+}
+
+.insurance-amount p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.insurance-amount span {
+  font-weight: 700;
+  color: #d81b60;
+  font-size: 1.1rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 2rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-primary {
+  background: linear-gradient(90deg, #6b5bff, #5f46ff);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(90deg, #5f46ff, #5337e6);
+}
+
+.btn-secondary {
+  background: white;
+  color: #6b5bff;
+  border: 2px solid #6b5bff;
+}
+
+.btn-secondary:hover {
+  background: #f7f3ff;
+}
+
+.loading-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #6b5bff;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .order-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .action-buttons .btn {
+    width: 100%;
+  }
+
+  .shipment-table th,
+  .shipment-table td {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .insurance-amount {
+    font-size: 0.9rem;
+    text-align: left;
+  }
+
+  .insurance-amount span {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .order-header h2 {
+    font-size: 1.4rem;
+  }
+
+  .info-section {
+    padding: 1.5rem;
+  }
+
+  .info-section h3 {
+    font-size: 1.1rem;
+  }
+}
