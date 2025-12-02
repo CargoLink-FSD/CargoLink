@@ -46,12 +46,13 @@ const createOrder = async (orderData) => {
     return order;
 };
 
-const cancelOrder = async (orderId) => {
+const cancelOrder = async (orderId, customerId) => {
       const updatedOrder = await Order.findOneAndUpdate(
-    { _id: orderId, customerId, status: "Pending" },
+    { _id: orderId, customer_id: customerId, status: "Placed" },
     { $set: { status: "Cancelled" } },
     { new: true }
   );
+  return updatedOrder;
 };
 
 const getActiveOrders = async (transporterId) => {
