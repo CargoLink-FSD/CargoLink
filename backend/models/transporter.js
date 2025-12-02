@@ -52,7 +52,7 @@ TransporterSchema.methods.verifyPassword = function (password) {
 
 TransporterSchema.methods.updatePassword = async function (newPassword) {
   this.password = newPassword;
-  await this.save();
+  await this.save({ validateModifiedOnly: true });
 };
 
 const transporterModel = mongoose.model("Transporter", TransporterSchema);

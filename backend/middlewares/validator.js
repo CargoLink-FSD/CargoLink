@@ -280,7 +280,8 @@ const login =  [
   body('role').isIn(['customer','transporter','admin']).withMessage('Role must be customer, transporter or admin'),
 ]
 const forgotPassword =  [
-  body('email').isEmail().withMessage('Valid email required'),
+  body('email').trim().isEmail().withMessage('Valid email required'),
+  body('userType').trim().isIn(['customer', 'transporter']).withMessage('Valid user type required (customer or transporter)'),
 ]
 const resetPassword = [
   body('token').notEmpty().withMessage('Reset token required'),
