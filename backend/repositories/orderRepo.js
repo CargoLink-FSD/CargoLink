@@ -55,7 +55,13 @@ const cancelOrder = async (orderId) => {
 };
 
 const getActiveOrders = async (transporterId) => {
-    const orders = await Order.find({ status: 'Placed' })
+    // only shows order before 2days of scheduled pickup
+    const twoDaysFromNow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+    
+    const orders = await Order.find({ 
+        status: 'Placed',
+        scheduled_at: { $gte: twoDaysFromNow } // Filter out orders with closed bidding window
+      })
       .populate({
         path: 'bid_by_transporter',
         match: { transporter_id: transporterId },
@@ -82,9 +88,13 @@ const assignOrder = async (orderId, transporterId, finalPrice) => {
 };
 
 const checkActiveOrder = async (orderId, transporterId) => {
+    // Bidding window closes 2 days before scheduled pickup
+    const twoDaysFromNow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+    
     const order = await Order.exists({
       _id: orderId,
-      status: "Placed"
+      status: "Placed",
+      scheduled_at: { $gte: twoDaysFromNow } // Pickup must be at least 2 days away
     });
     return order;
 };
@@ -117,6 +127,36 @@ const verifyOTPAndUpdateStatus = async (orderId, transporterId, otp) => {
 };
 
 
+const getOrderById = async (orderId) => {
+    return await Order.findById(orderId);
+};
+
+// const updateOrderStatus = async (orderId, status, additionalData = {}) => {
+//     const updateData = { status, ...additionalData };
+//     const updatedOrder = await Order.findByIdAndUpdate(
+//         orderId,
+//         { $set: updateData },
+//         { new: true }
+//     );
+//     return updatedOrder;
+// };
+
+const assignVehicleToOrder = async (orderId, assignmentData) => {
+    const updatedOrder = await Order.findByIdAndUpdate(
+        orderId,
+        { 
+            $set: { 
+                'assignment.vehicle_id': assignmentData.vehicle_id,
+                'assignment.vehicle_number': assignmentData.vehicle_number,
+                'assignment.vehicle_type': assignmentData.vehicle_type,
+                'assignment.assigned_at': new Date()
+            } 
+        },
+        { new: true }
+    );
+    return updatedOrder;
+};
+
 export default {
     countOrdersByCustomer,
     countOrdersByTransporter,
@@ -131,5 +171,7 @@ export default {
     assignOrder,
     checkActiveOrder,
     updateOrderStatus,
-    verifyOTPAndUpdateStatus
+    verifyOTPAndUpdateStatus,
+    getOrderById,
+    assignVehicleToOrder,
 }

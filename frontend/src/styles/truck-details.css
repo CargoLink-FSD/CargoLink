@@ -1,0 +1,180 @@
+/* Truck Details Page Styles */
+
+.truck-details-page .container {
+    width: clamp(70%, 1280px, 90%);
+    margin: 0 auto;
+    padding-top: 100px;
+    padding-bottom: 80px;
+}
+
+.truck-details-page .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+    margin-bottom: 1rem;
+}
+
+.truck-details-page .title-section {
+    position: relative;
+}
+
+.truck-details-page .title-section h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+
+.truck-details-page .title-underline {
+    width: 100px;
+    height: 4px;
+    background: linear-gradient(90deg, #6366f1 0%, #a5b4fc 100%);
+    margin-top: 8px;
+    border-radius: 2px;
+}
+
+.truck-details-page .btn-back {
+    padding: 0.5rem 1.5rem;
+    border: 1px solid #6366f1;
+    border-radius: 8px;
+    color: #6366f1;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s;
+    background: white;
+}
+
+.truck-details-page .btn-back:hover {
+    background: #eff6ff;
+}
+
+/* Details Card */
+.truck-details-page .details-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    padding: 2rem;
+    margin-top: 1rem;
+}
+
+.truck-details-page .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2.5rem;
+}
+
+.truck-details-page .card-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+
+.truck-details-page .status-text {
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: 0.05em;
+}
+
+.truck-details-page .status-text.available {
+    color: #10b981;
+}
+
+.truck-details-page .status-text.inmaintenance {
+    color: #ef4444;
+}
+
+.truck-details-page .status-text.assigned {
+    color: #3b82f6;
+}
+
+.truck-details-page .status-text.unavailable {
+    color: #6b7280;
+}
+
+/* Grid Layout */
+.truck-details-page .details-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2.5rem 1rem;
+    margin-bottom: 3rem;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 2rem;
+}
+
+.truck-details-page .detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.truck-details-page .detail-item label {
+    font-size: 0.875rem;
+    color: #4b5563;
+    font-weight: 400;
+}
+
+.truck-details-page .detail-item p {
+    font-size: 1.125rem;
+    color: #111827;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* Actions */
+.truck-details-page .card-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.truck-details-page .btn-action {
+    padding: 0.6rem 1.5rem;
+    border: 1px solid #6366f1;
+    border-radius: 8px;
+    color: #6366f1;
+    background: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.truck-details-page .btn-action:hover {
+    background: #eff6ff;
+}
+
+.truck-details-page .btn-action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.truck-details-page .schedule-container {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.truck-details-page .date-input {
+    padding: 0.6rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    color: #374151;
+}
+
+@media (max-width: 768px) {
+    .truck-details-page .details-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .truck-details-page .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+}
+  

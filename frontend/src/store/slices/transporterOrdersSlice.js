@@ -82,13 +82,26 @@ export const fetchTransporterBids = createAsyncThunk(
   }
 );
 
+// Async thunk for fetching transporter's vehicles
+export const fetchTransporterVehicles = createAsyncThunk(
+  'transporterOrders/fetchVehicles',
+  async (_, { rejectWithValue }) => {
+    try {
+      const vehicles = await transporterOrdersApi.getTransporterVehicles();
+      return vehicles;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Failed to fetch vehicles');
+    }
+  }
+);
+
 // Async thunk for assigning vehicle to order
 export const assignVehicle = createAsyncThunk(
   'transporterOrders/assignVehicle',
-  async ({ tripId, orderId, truckId }, { rejectWithValue }) => {
+  async ({ orderId, vehicleId }, { rejectWithValue }) => {
     try {
-      await transporterOrdersApi.assignVehicleToOrder(tripId, orderId, truckId);
-      return { tripId, orderId, truckId };
+      await transporterOrdersApi.assignVehicleToOrder(orderId, vehicleId);
+      return { orderId, vehicleId };
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to assign vehicle');
     }
@@ -111,10 +124,10 @@ export const unassignVehicle = createAsyncThunk(
 // Async thunk for starting transit
 export const startOrderTransit = createAsyncThunk(
   'transporterOrders/startTransit',
-  async (tripId, { rejectWithValue }) => {
+  async (orderId, { rejectWithValue }) => {
     try {
-      await transporterOrdersApi.startTransit(tripId);
-      return tripId;
+      await transporterOrdersApi.startTransit(orderId);
+      return orderId;
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to start transit');
     }
@@ -140,6 +153,7 @@ const initialState = {
   availableOrders: [],
   currentOrder: null,
   bids: [],
+  vehicles: [],
   loading: false,
   error: null,
   filters: {
@@ -262,6 +276,21 @@ const transporterOrdersSlice = createSlice({
         state.error = action.payload;
       })
 
+      // Fetch transporter vehicles
+      .addCase(fetchTransporterVehicles.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTransporterVehicles.fulfilled, (state, action) => {
+        state.loading = false;
+        state.vehicles = Array.isArray(action.payload) ? action.payload : [];
+        state.error = null;
+      })
+      .addCase(fetchTransporterVehicles.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
       // Assign vehicle
       .addCase(assignVehicle.pending, (state) => {
         state.loading = true;
@@ -356,6 +385,7 @@ export const selectFilteredTransporterOrders = (state) => {
 
 export const selectCurrentTransporterOrder = (state) => state.transporterOrders.currentOrder;
 export const selectTransporterBids = (state) => state.transporterOrders.bids;
+export const selectTransporterVehicles = (state) => state.transporterOrders.vehicles;
 export const selectTransporterOrdersLoading = (state) => state.transporterOrders.loading;
 export const selectTransporterOrdersError = (state) => state.transporterOrders.error;
 

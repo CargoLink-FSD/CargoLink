@@ -116,6 +116,72 @@ const updateTruck = async (transporterId, truckId, updates) => {
   return updatedTruck;
 }
 
+const setTruckMaintenance = async (transporterId, truckId) => {
+  const truck = await transporterRepo.getTruck(transporterId, truckId);
+  if (!truck) {
+    throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
+  }
+
+  if (truck.status === 'Assigned') {
+    throw new AppError(400, 'ValidationError', 'Cannot set assigned truck to maintenance', 'ERR_TRUCK_ASSIGNED');
+  }
+
+  const updates = {
+    status: 'In Maintenance',
+    last_service_date: new Date(),
+    next_service_date: null
+  };
+
+  const updatedTruck = await transporterRepo.updateTruckInFleet(transporterId, truckId, updates);
+  return updatedTruck;
+};
+
+const setTruckAvailable = async (transporterId, truckId) => {
+  const truck = await transporterRepo.getTruck(transporterId, truckId);
+  if (!truck) {
+    throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
+  }
+
+  const updates = {
+    status: 'Available'
+  };
+
+  const updatedTruck = await transporterRepo.updateTruckInFleet(transporterId, truckId, updates);
+  return updatedTruck;
+};
+
+const setTruckUnavailable = async (transporterId, truckId) => {
+  const truck = await transporterRepo.getTruck(transporterId, truckId);
+  if (!truck) {
+    throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
+  }
+
+  const updates = {
+    status: 'Unavailable'
+  };
+
+  const updatedTruck = await transporterRepo.updateTruckInFleet(transporterId, truckId, updates);
+  return updatedTruck;
+};
+
+const scheduleMaintenance = async (transporterId, truckId, nextServiceDate) => {
+  const truck = await transporterRepo.getTruck(transporterId, truckId);
+  if (!truck) {
+    throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
+  }
+
+  if (truck.next_service_date) {
+    throw new AppError(400, 'ValidationError', 'Maintenance already scheduled', 'ERR_MAINTENANCE_SCHEDULED');
+  }
+
+  const updates = {
+    next_service_date: new Date(nextServiceDate)
+  };
+
+  const updatedTruck = await transporterRepo.updateTruckInFleet(transporterId, truckId, updates);
+  return updatedTruck;
+};
+
 
 export default {
   registerTransporter,
@@ -127,4 +193,8 @@ export default {
   addFleet,
   removeTruck,
   updateTruck,
+  setTruckMaintenance,
+  setTruckAvailable,
+  setTruckUnavailable,
+  scheduleMaintenance,
 };

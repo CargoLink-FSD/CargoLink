@@ -1,15 +1,19 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useTransporterOrders } from '../../hooks/useTransporterOrders';
 import OrderCard from '../../components/common/OrderCard';
+import AssignVehicleModal from '../../components/common/AssignVehicleModal';
 import './TransporterOrders.css';
 import Header from '../../components/common/Header';
+import Footer from '../../components/common/Footer';
 
 const TransporterOrders = () => {
   const {
     orders,
+    vehicles,
     loading,
     error,
     loadOrders,
+    loadVehicles,
     assignVehicleToOrder,
     unassignVehicleFromOrder,
     startTransit,
@@ -20,21 +24,15 @@ const TransporterOrders = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [selectedVehicle, setSelectedVehicle] = useState('');
-  const [vehicles, setVehicles] = useState([]);
 
   useEffect(() => {
     loadOrders().catch(err => {
       console.error('Error loading orders:', err);
     });
-    // Load transporter's vehicles (you'll need to implement this API call)
-    // For now, using mock data
-    setVehicles([
-      { _id: '1', vehicle_number: 'KA01AB1234', truck_type: 'Open Body' },
-      { _id: '2', vehicle_number: 'KA01CD5678', truck_type: 'Container' },
-      { _id: '3', vehicle_number: 'KA02EF9012', truck_type: 'Trailer' },
-    ]);
-  }, []);
+    loadVehicles().catch(err => {
+      console.error('Error loading vehicles:', err);
+    });
+  }, [loadOrders, loadVehicles]);
 
   const handleSearch = (e) => {
     const value = e.target.value;
@@ -48,72 +46,78 @@ const TransporterOrders = () => {
     filterOrders(searchTerm, value);
   };
 
-  const handleAssign = (order) => {
+  const handleAssign = useCallback((order) => {
+    console.log('Opening assign modal for order:', order._id);
     setSelectedOrder(order);
     setShowAssignModal(true);
-  };
+  }, []);
 
-  const handleUnassign = async (order) => {
+  const handleUnassign = useCallback(async (order) => {
     if (window.confirm('Are you sure you want to unassign this vehicle?')) {
       try {
-        // Assuming order has tripId - you may need to adjust based on your data structure
         await unassignVehicleFromOrder(order.tripId || order._id, order._id);
         loadOrders();
       } catch (err) {
         console.error('Failed to unassign vehicle:', err);
       }
     }
-  };
+  }, [unassignVehicleFromOrder, loadOrders]);
 
-  const handleStartTransit = async (order) => {
+  const handleStartTransit = useCallback(async (order) => {
     if (window.confirm('Are you sure you want to start transit for this order?')) {
       try {
-        // Assuming order has tripId - you may need to adjust based on your data structure
-        await startTransit(order.tripId || order._id);
-        loadOrders();
+        await startTransit(order._id);
+        await loadOrders();
       } catch (err) {
         console.error('Failed to start transit:', err);
+        alert('Failed to start transit. Please try again.');
       }
     }
-  };
+  }, [startTransit, loadOrders]);
 
-  const handleTrackOrder = (orderId) => {
+  const handleTrackOrder = useCallback((orderId) => {
     // Navigate to track order page
     window.location.href = `/transporter/orders/${orderId}/track`;
-  };
+  }, []);
 
   const handleViewDetails = (orderId) => {
     // Navigate to order details page
     window.location.href = `/transporter/orders/${orderId}`;
   };
 
-  const handleConfirmAssignment = async () => {
-    if (!selectedVehicle) {
+  const handleConfirmAssignment = useCallback(async (vehicleId) => {
+    if (!vehicleId || !selectedOrder) {
       alert('Please select a vehicle');
+      console.error('Missing vehicleId or selectedOrder:', { vehicleId, selectedOrder });
       return;
     }
 
     try {
-      // Assuming selectedOrder has tripId - you may need to adjust based on your data structure
-      await assignVehicleToOrder(
-        selectedOrder.tripId || selectedOrder._id,
-        selectedOrder._id,
-        selectedVehicle
-      );
+      console.log('TransporterOrders: Assigning vehicle:', vehicleId, 'to order:', selectedOrder._id);
+      const result = await assignVehicleToOrder(selectedOrder._id, vehicleId);
+      console.log('TransporterOrders: Assignment result:', result);
+      alert('Vehicle assigned successfully!');
       setShowAssignModal(false);
       setSelectedOrder(null);
-      setSelectedVehicle('');
-      loadOrders();
+      // Reload orders to get updated assignment data
+      await loadOrders();
+      console.log('TransporterOrders: Orders reloaded after assignment');
     } catch (err) {
-      console.error('Failed to assign vehicle:', err);
+      console.error('TransporterOrders: Failed to assign vehicle - Full error:', err);
+      console.error('TransporterOrders: Error details:', {
+        message: err.message,
+        status: err.status,
+        payload: err.payload
+      });
+      alert(`Failed to assign vehicle: ${err.message || 'Unknown error'}`);
     }
-  };
+  }, [selectedOrder, assignVehicleToOrder, loadOrders]);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
+    console.log('Closing assign modal');
     setShowAssignModal(false);
     setSelectedOrder(null);
-    setSelectedVehicle('');
-  };
+  }, []);
 
   return (
     <>
@@ -180,53 +184,15 @@ const TransporterOrders = () => {
         </div>
       )}
 
-      {showAssignModal && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Assign Vehicle</h2>
-              <button className="close-btn" onClick={handleCloseModal}>
-                ×
-              </button>
-            </div>
-
-            <div className="modal-body">
-              <div className="order-info">
-                <p><strong>Order ID:</strong> #{selectedOrder?._id?.slice(-8).toUpperCase()}</p>
-                <p><strong>Route:</strong> {selectedOrder?.pickup?.city} → {selectedOrder?.delivery?.city}</p>
-                <p><strong>Truck Type:</strong> {selectedOrder?.truck_type}</p>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="vehicle-select">Select Vehicle</label>
-                <select
-                  id="vehicle-select"
-                  value={selectedVehicle}
-                  onChange={(e) => setSelectedVehicle(e.target.value)}
-                  className="vehicle-select"
-                >
-                  <option value="">-- Select a vehicle --</option>
-                  {vehicles.map((vehicle) => (
-                    <option key={vehicle._id} value={vehicle._id}>
-                      {vehicle.vehicle_number} - {vehicle.truck_type}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button className="btn-cancel" onClick={handleCloseModal}>
-                Cancel
-              </button>
-              <button className="btn-confirm" onClick={handleConfirmAssignment}>
-                Assign Vehicle
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AssignVehicleModal
+        isOpen={showAssignModal}
+        onClose={handleCloseModal}
+        order={selectedOrder}
+        vehicles={vehicles}
+        onConfirm={handleConfirmAssignment}
+      />
     </div>
+    <Footer />
     </>
   );
 };

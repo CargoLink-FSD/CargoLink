@@ -140,7 +140,7 @@ export default function OrderCard({
               <path d="M12 2v20"/>
               <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
             </svg>
-            {order.max_price ? `₹${order.max_price}` : '—'}
+            {order.final_price ? `₹${order.final_price}` : order.max_price ? `₹${order.max_price}` : '—'}
           </li>
           <li>
             <svg className="li-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -188,12 +188,21 @@ export default function OrderCard({
         )}
 
         {/* Transporter-specific actions */}
-        {variant === 'transporter' && order.status?.toLowerCase() === 'assigned' && !order.assignment && (
+        {variant === 'transporter' && order.status?.toLowerCase() === 'assigned' && !order.assignment?.vehicle_id && (
           <button 
             className="btn btn-primary"
             onClick={handleAssign}
           >
             Assign Vehicle
+          </button>
+        )}
+
+        {variant === 'transporter' && order.status?.toLowerCase() === 'assigned' && order.assignment?.vehicle_id && (
+          <button 
+            className="btn btn-outline"
+            onClick={handleStartTransit}
+          >
+            Start Transit
           </button>
         )}
 
