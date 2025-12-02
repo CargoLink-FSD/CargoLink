@@ -244,6 +244,96 @@ const withdrawBid = async (req, res, next) => {
 };
 
 
+const startTransit = async (req, res, next) => {
+  try {
+    const orderId = req.params.orderId;
+    const transporterId = req.user.id;
+
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
+        { type: "field", value: orderId, msg: "Not a valid order ID", path: "orderId", location: "params" }
+      );
+    }
+
+    await orderService.startTransit(orderId, transporterId);
+
+    res.status(200).json({
+      success: true,
+      message: "Transit started successfully"
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const assignVehicle = async (req, res, next) => {
+  try {
+    const orderId = req.params.orderId;
+    const { vehicleId } = req.body;
+    const transporterId = req.user.id;
+
+    logger.debug('assignVehicle called', { orderId, vehicleId, transporterId, body: req.body });
+    console.log('=== ASSIGN VEHICLE DEBUG ===');
+    console.log('orderId:', orderId, 'type:', typeof orderId);
+    console.log('vehicleId:', vehicleId, 'type:', typeof vehicleId);
+    console.log('req.body:', JSON.stringify(req.body));
+    console.log('transporterId:', transporterId);
+
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      console.log('VALIDATION FAILED: orderId is not valid ObjectId');
+      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
+        { type: "field", value: orderId, msg: "Not a valid order ID", path: "orderId", location: "params" }
+      );
+    }
+    console.log('✓ orderId validation passed');
+
+    if (!vehicleId) {
+      console.log('VALIDATION FAILED: vehicleId is missing or falsy');
+      logger.error('vehicleId is missing from request body', req.body);
+      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
+        { type: "field", value: vehicleId, msg: "Vehicle ID is required", path: "vehicleId", location: "body" }
+      );
+    }
+    console.log('✓ vehicleId presence check passed');
+
+    if (!mongoose.Types.ObjectId.isValid(vehicleId)) {
+      console.log('VALIDATION FAILED: vehicleId is not a valid ObjectId');
+      logger.error('vehicleId is not a valid ObjectId', { vehicleId });
+      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
+        { type: "field", value: vehicleId, msg: "Not a valid vehicle ID", path: "vehicleId", location: "body" }
+      );
+    }
+    console.log('✓ vehicleId ObjectId validation passed');
+    console.log('All validations passed, calling service...');
+
+    const updatedOrder = await orderService.assignVehicleToOrder(orderId, vehicleId, transporterId);
+
+    res.status(200).json({
+      success: true,
+      message: "Vehicle assigned successfully",
+      data: updatedOrder
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getTransporterVehicles = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+
+    const vehicles = await orderService.getTransporterVehicles(transporterId);
+
+    res.status(200).json({
+      success: true,
+      data: vehicles,
+      message: "Vehicles fetched successfully"
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const confirmPickup = async (req, res, next) => {
   // Placeholder for confirming order pickup
 };
@@ -262,6 +352,9 @@ export default {
 
   placeOrder,
   cancelOrder,
+  startTransit,
+  assignVehicle,
+  getTransporterVehicles,
   confirmPickup,
   confirmDelivery,
   getCurrentBids,

@@ -18,7 +18,12 @@ orderRouter.delete("/:orderId", authMiddleware(["customer"]), orderController.ca
 
 orderRouter.get("/:orderId", authMiddleware(["customer", "transporter"]), orderController.getOrderDetails); // Get order details (role-filtered)
 
+// Vehicles
+orderRouter.get('/transporter/vehicles', authMiddleware(['transporter']), orderController.getTransporterVehicles); // Get available vehicles
+orderRouter.post('/:orderId/assign-vehicle', authMiddleware(['transporter']), orderController.assignVehicle); // Assign vehicle to order
+
 // Trips
+orderRouter.post('/:orderId/start-transit', authMiddleware(['transporter']), orderController.startTransit); // start transit
 orderRouter.post('/:orderId/confirm-pickup', authMiddleware(['customer']), orderController.confirmPickup); // confirm order pick-up 
 orderRouter.post('/:orderId/confirm-delivery', authMiddleware(['customer']), orderController.confirmDelivery); // confirm order delivery
 

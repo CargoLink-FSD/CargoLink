@@ -89,6 +89,36 @@ const checkActiveOrder = async (orderId, transporterId) => {
     return order;
 };
 
+const getOrderById = async (orderId) => {
+    return await Order.findById(orderId);
+};
+
+const updateOrderStatus = async (orderId, status, additionalData = {}) => {
+    const updateData = { status, ...additionalData };
+    const updatedOrder = await Order.findByIdAndUpdate(
+        orderId,
+        { $set: updateData },
+        { new: true }
+    );
+    return updatedOrder;
+};
+
+const assignVehicleToOrder = async (orderId, assignmentData) => {
+    const updatedOrder = await Order.findByIdAndUpdate(
+        orderId,
+        { 
+            $set: { 
+                'assignment.vehicle_id': assignmentData.vehicle_id,
+                'assignment.vehicle_number': assignmentData.vehicle_number,
+                'assignment.vehicle_type': assignmentData.vehicle_type,
+                'assignment.assigned_at': new Date()
+            } 
+        },
+        { new: true }
+    );
+    return updatedOrder;
+};
+
 export default {
     countOrdersByCustomer,
     countOrdersByTransporter,
@@ -102,4 +132,7 @@ export default {
     getActiveOrders,
     assignOrder,
     checkActiveOrder,
+    getOrderById,
+    updateOrderStatus,
+    assignVehicleToOrder,
 }
