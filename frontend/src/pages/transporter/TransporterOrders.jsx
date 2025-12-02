@@ -3,6 +3,7 @@ import { useTransporterOrders } from '../../hooks/useTransporterOrders';
 import OrderCard from '../../components/common/OrderCard';
 import './TransporterOrders.css';
 import Header from '../../components/common/Header';
+import Footer from '../../components/common/Footer';
 
 const TransporterOrders = () => {
   const {
@@ -227,6 +228,7 @@ const TransporterOrders = () => {
         </div>
       )}
     </div>
+    <Footer />
     </>
   );
 };
