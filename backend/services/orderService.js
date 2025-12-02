@@ -40,9 +40,9 @@ const cancelOrder = async (orderId, customerId) => {
     if (!exist) {
         throw new AppError(404, "NotFound", "Order not found or access denied", "ERR_NOT_FOUND");
     }
-    const order = await orderRepo.cancelOrder(orderId);
+    const order = await orderRepo.cancelOrder(orderId, customerId);
     if (!order) {
-        throw new AppError(400, "InvalidOperation", "Only pending orders can be cancelled", "ERR_INVALID_OPERATION");
+        throw new AppError(400, "InvalidOperation", "Only placed orders can be cancelled", "ERR_INVALID_OPERATION");
     }
     return order;
 };
