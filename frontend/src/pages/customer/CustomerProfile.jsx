@@ -9,6 +9,7 @@ import Header from '../../components/common/Header';
 import ProfileField from '../../components/profile/ProfileField';
 import SecurityTab from '../../components/profile/SecurityTab';
 import '../../styles/profile.css';
+import Footer from '../../components/common/Footer';
 
 const CustomerProfile = () => {
   const {
@@ -145,6 +146,7 @@ const CustomerProfile = () => {
         </div>
       </div>
       </div>
+      <Footer />
     </>
   );
 };
