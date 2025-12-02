@@ -135,7 +135,7 @@ const FleetManagement = () => {
         </div>
 
         {/* Search Controls */}
-        <div className="controls">
+        <div className="controls-section">
           <div className="search-bar">
             <input
               type="text"
@@ -151,7 +151,7 @@ const FleetManagement = () => {
         </div>
 
         {/* Filters */}
-        <div className="filters">
+        <div className="filters-section">
           <select id="status-filter" value={filters.status} onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}>
             <option value="all">All Status</option>
             <option value="available">Available</option>
@@ -186,26 +186,69 @@ const FleetManagement = () => {
                 {filteredVehicles.map(vehicle => (
                   <div key={vehicle._id || vehicle.truck_id} className="vehicle-card">
                     <div className="vehicle-header">
-                      <h3>{vehicle.name}</h3>
-                      <span className={`status-badge ${vehicle.status ? vehicle.status.toLowerCase() : ''}`}>{vehicle.status}</span>
+                      <div className="vehicle-identity">
+                        <h3>{vehicle.name}</h3>
+                        <span className="registration">{vehicle.registration || vehicle.registrationNumber}</span>
+                      </div>
+                      <span className={`status-badge ${vehicle.status ? vehicle.status.toLowerCase().replace(/\s+/g, '') : ''}`}>
+                        {vehicle.status}
+                      </span>
                     </div>
 
                     <div className="vehicle-info-block">
-                      <p><strong>Type:</strong> {vehicle.truck_type || vehicle.type}</p>
-                      <p><strong>Reg:</strong> {vehicle.registration || vehicle.registrationNumber}</p>
-                      <p><strong>Capacity:</strong> {vehicle.capacity} tons</p>
-                      <p><strong>Last Service:</strong> {vehicle.last_service_date ? new Date(vehicle.last_service_date).toLocaleDateString() : 'N/A'}</p>
-                      <p><strong>Next Service:</strong> {vehicle.next_service_date ? new Date(vehicle.next_service_date).toLocaleDateString() : 'N/A'}</p>
-                      <p><strong>Order ID:</strong> {vehicle.current_trip_id || 'None'}</p>
+                      <div className="info-row">
+                        <span className="icon">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                        </span>
+                        <span className="label">Type:</span>
+                        <span className="value">{vehicle.truck_type || vehicle.type}</span>
+                      </div>
+                      
+                      <div className="info-row">
+                        <span className="icon">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                        </span>
+                        <span className="label">Capacity:</span>
+                        <span className="value">{vehicle.capacity} tons</span>
+                      </div>
+
+                      <div className="info-row">
+                        <span className="icon">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        </span>
+                        <span className="label">Manufacture Year:</span>
+                        <span className="value">{vehicle.manufacture_year || vehicle.manufactureYear}</span>
+                      </div>
+
+                      <div className="info-row">
+                        <span className="icon">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+                        </span>
+                        <span className="label">Last Service:</span>
+                        <span className="value">{vehicle.last_service_date ? new Date(vehicle.last_service_date).toLocaleDateString() : 'N/A'}</span>
+                      </div>
+
+                      <div className="info-row">
+                        <span className="icon">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+                        </span>
+                        <span className="label">Next Service Due:</span>
+                        <span className="value">{vehicle.next_service_date ? new Date(vehicle.next_service_date).toLocaleDateString() : 'Not Scheduled yet'}</span>
+                      </div>
+
+                      <div className="info-row">
+                        <span className="icon">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        </span>
+                        <span className="label">Order ID:</span>
+                        <span className="value">{vehicle.current_trip_id || 'Not Assigned'}</span>
+                      </div>
                     </div>
 
-                    <div className="vehicle-actions" style={{ marginTop: '1.5rem' }}>
-                      <button className="btn btn-outline" style={{ display: 'block', width: '100%' }} onClick={() => openDescriptionModal(vehicle)}>View Details</button>
-                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-                        <button className="btn" onClick={() => openEditModal(vehicle)}>Edit</button>
-                        <button className="btn btn-danger" onClick={() => openConfirmDelete(vehicle)}>Remove</button>
-                        <Link to={`/transporter/fleet/${vehicle._id || vehicle.truck_id}`} className="btn btn-link">Open Page</Link>
-                      </div>
+                    <div className="vehicle-actions">
+                      <Link to={`/transporter/fleet/${vehicle._id || vehicle.truck_id}`} className="btn btn-details">Details</Link>
+                      <button className="btn btn-update" onClick={() => openEditModal(vehicle)}>Update</button>
+                      <button className="btn btn-remove" onClick={() => openConfirmDelete(vehicle)}>Remove</button>
                     </div>
                   </div>
                 ))}

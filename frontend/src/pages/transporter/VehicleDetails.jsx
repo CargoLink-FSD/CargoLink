@@ -1,113 +1,233 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getVehicle, deleteVehicle } from '../../api/fleet';
-import Modal from '../../components/common/Modal';
+import { useVehicleDetails } from '../../hooks/fleet/useVehicleDetails';
+import { useNotification } from '../../context/NotificationContext';
+import Header from '../../components/common/Header';
+import Footer from '../../components/common/Footer';
 import '../../styles/truck-details.css';
 
 const VehicleDetails = () => {
   const { vehicleId } = useParams();
   const navigate = useNavigate();
-  const [vehicle, setVehicle] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState('');
 
-  useEffect(() => {
-    fetchDetails();
-  }, [vehicleId]);
+  const {
+    vehicle,
+    loading,
+    actionLoading,
+    handleDelete: deleteVehicle,
+    handleSetMaintenance,
+    handleSetAvailable,
+    handleSetUnavailable,
+    handleScheduleMaintenance: scheduleMaintenance
+  } = useVehicleDetails(vehicleId);
 
-  const fetchDetails = async () => {
+  const { showSuccess, showError } = useNotification();
+
+  const onSetMaintenance = async () => {
     try {
-      setLoading(true);
-      const vehicleData = await getVehicle(vehicleId);
-      setVehicle(vehicleData.data || vehicleData);
+      const result = await handleSetMaintenance();
+      showSuccess(result.message);
     } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
+      showError(error.message);
     }
   };
 
-  const handleDelete = async () => {
+  const onSetAvailable = async () => {
     try {
-      await deleteVehicle(vehicleId);
-      navigate('/transporter/fleet');
+      const result = await handleSetAvailable();
+      showSuccess(result.message);
     } catch (error) {
-      alert('Failed to delete vehicle');
+      showError(error.message);
     }
   };
 
-  if (loading) return <div className="container main-content">Loading...</div>;
-  if (!vehicle) return <div className="container main-content">Vehicle not found</div>;
+  const onSetUnavailable = async () => {
+    try {
+      const result = await handleSetUnavailable();
+      showSuccess(result.message);
+    } catch (error) {
+      showError(error.message);
+    }
+  };
+
+  const onScheduleMaintenance = async (e) => {
+    e.preventDefault();
+    if (!scheduleDate) {
+      showError('Please select a date for maintenance');
+      return;
+    }
+    try {
+      const result = await scheduleMaintenance(scheduleDate);
+      showSuccess(result.message);
+      setScheduleDate('');
+    } catch (error) {
+      showError(error.message);
+    }
+  };
+
+  const renderActionButtons = () => {
+    if (!vehicle) return null;
+
+    const status = vehicle.status;
+    const hasNextServiceDate = !!(vehicle.next_service_date && 
+                                  vehicle.next_service_date !== 'Not Scheduled' && 
+                                  vehicle.next_service_date !== 'null' && 
+                                  vehicle.next_service_date !== '');
+
+    const minDate = new Date().toISOString().split('T')[0];
+
+    // Helper for button styles
+    const btnClass = "btn-action";
+
+    if (status === 'In Maintenance') {
+      return (
+        <>
+          <button className={btnClass} onClick={onSetAvailable} disabled={actionLoading}>
+            Set Available
+          </button>
+          {!hasNextServiceDate && (
+            <div className="schedule-container">
+               <input 
+                type="date" 
+                className="date-input"
+                min={minDate}
+                value={scheduleDate}
+                onChange={(e) => setScheduleDate(e.target.value)}
+                disabled={actionLoading}
+              />
+              <button className={btnClass} onClick={onScheduleMaintenance} disabled={actionLoading}>
+                Schedule Maintenance
+              </button>
+            </div>
+          )}
+        </>
+      );
+    } else if (status === 'Available') {
+      return (
+        <>
+          <button className={btnClass} onClick={onSetMaintenance} disabled={actionLoading}>
+            Set Maintenance
+          </button>
+          <button className={btnClass} onClick={onSetUnavailable} disabled={actionLoading}>
+            Set Unavailable
+          </button>
+           {!hasNextServiceDate && (
+            <div className="schedule-container">
+               <input 
+                type="date" 
+                className="date-input"
+                min={minDate}
+                value={scheduleDate}
+                onChange={(e) => setScheduleDate(e.target.value)}
+                disabled={actionLoading}
+              />
+              <button className={btnClass} onClick={onScheduleMaintenance} disabled={actionLoading}>
+                Schedule Maintenance
+              </button>
+            </div>
+          )}
+        </>
+      );
+    } else if (status === 'Unavailable') {
+      return (
+        <>
+          <button className={btnClass} onClick={onSetAvailable} disabled={actionLoading}>
+            Set Available
+          </button>
+           {!hasNextServiceDate && (
+            <div className="schedule-container">
+               <input 
+                type="date" 
+                className="date-input"
+                min={minDate}
+                value={scheduleDate}
+                onChange={(e) => setScheduleDate(e.target.value)}
+                disabled={actionLoading}
+              />
+              <button className={btnClass} onClick={onScheduleMaintenance} disabled={actionLoading}>
+                Schedule Maintenance
+              </button>
+            </div>
+          )}
+        </>
+      );
+    } else if (status === 'Assigned') {
+      return (
+        <>
+          <button className={btnClass} onClick={onSetUnavailable} disabled={actionLoading}>
+            Set Unavailable
+          </button>
+          <button className={btnClass} onClick={onSetAvailable} disabled={actionLoading}>
+            Set Available
+          </button>
+          <button className={btnClass} onClick={onSetMaintenance} disabled={actionLoading}>
+            Set Maintenance
+          </button>
+        </>
+      );
+    }
+    return null;
+  };
+
+  if (loading) return <div className="loading-screen">Loading...</div>;
+  if (!vehicle) return <div className="error-screen">Vehicle not found</div>;
 
   return (
-    <div className="container main-content">
-      {/* Page Header matching truck-details.ejs */}
-      <div className="page-header">
-        <div className="page-title">
-            <h1 id="truck-title">Truck Details</h1>
+    <div className="truck-details-page">
+      <Header />
+      <main className="container">
+        <div className="page-header">
+          <div className="title-section">
+            <h1>Truck Details - {vehicle.name}</h1>
+            <div className="title-underline"></div>
+          </div>
+          <Link to="/transporter/fleet" className="btn-back">
+            ← Back to Fleet
+          </Link>
         </div>
-        <div className="page-actions">
-            <Link to="/transporter/fleet" className="btn btn-outline">
-                ← Back to Fleet
-            </Link>
-        </div>
-      </div>
 
-      <div className="truck-details-container">
-        <div className="truck-card">
-            {/* Truck Header */}
-            <div className="truck-header">
-                <h3 id="truck-name">{vehicle.name}</h3>
-                <span id="truck-status-badge" className={`status-badge ${vehicle.status?.toLowerCase()}`}>
-                    {vehicle.status}
-                </span>
-            </div>
-            
-            {/* Info Grid */}
-            <div className="truck-info-grid" id="truck-info-grid">
-                <div className="info-item">
-                    <span className="label">Type</span>
-                    <span className="value">{vehicle.truck_type || vehicle.type}</span>
-                </div>
-                <div className="info-item">
-                    <span className="label">Registration</span>
-                    <span className="value">{vehicle.registration || vehicle.registrationNumber}</span>
-                </div>
-                <div className="info-item">
-                    <span className="label">Capacity</span>
-                    <span className="value">{vehicle.capacity} Tons</span>
-                </div>
-                <div className="info-item">
-                    <span className="label">Year</span>
-                    <span className="value">{vehicle.manufacture_year || vehicle.manufactureYear}</span>
-                </div>
-                <div className="info-item">
-                    <span className="label">Last Service</span>
-                    <span className="value">{vehicle.last_service_date ? new Date(vehicle.last_service_date).toLocaleDateString() : 'N/A'}</span>
-                </div>
-                <div className="info-item">
-                    <span className="label">Next Service</span>
-                    <span className="value">{vehicle.next_service_date ? new Date(vehicle.next_service_date).toLocaleDateString() : 'N/A'}</span>
-                </div>
-            </div>
+        <div className="details-card">
+          <div className="card-header">
+            <h2>{vehicle.name}</h2>
+            <span className={`status-text ${vehicle.status ? vehicle.status.toLowerCase().replace(/\s+/g, '') : ''}`}>
+              {vehicle.status ? vehicle.status.toUpperCase() : 'UNKNOWN'}
+            </span>
+          </div>
 
-            {/* Actions Container */}
-            <div id="truck-actions-container" className="truck-actions">
-                <button className="btn btn-danger" onClick={() => setIsDeleteModalOpen(true)}>Remove Vehicle</button>
+          <div className="details-grid">
+            <div className="detail-item">
+              <label>Registration</label>
+              <p>{vehicle.registration || vehicle.registrationNumber}</p>
             </div>
-        </div>
-      </div>
+            <div className="detail-item">
+              <label>Type</label>
+              <p>{vehicle.truck_type || vehicle.type}</p>
+            </div>
+            <div className="detail-item">
+              <label>Capacity</label>
+              <p>{vehicle.capacity} tons</p>
+            </div>
+            <div className="detail-item">
+              <label>Manufacture Year</label>
+              <p>{vehicle.manufacture_year || vehicle.manufactureYear}</p>
+            </div>
+            <div className="detail-item">
+              <label>Last Service Date</label>
+              <p>{vehicle.last_service_date ? new Date(vehicle.last_service_date).toLocaleDateString() : 'N/A'}</p>
+            </div>
+            <div className="detail-item">
+              <label>Next Service Date</label>
+              <p>{vehicle.next_service_date ? new Date(vehicle.next_service_date).toLocaleDateString() : 'N/A'}</p>
+            </div>
+          </div>
 
-      {/* Confirmation Modal */}
-      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Confirm Action">
-        <div className="modal-body">
-            <p>Are you sure you want to permanently remove <strong>{vehicle.name}</strong>?</p>
-            <div className="form-actions confirm-actions" style={{marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem'}}>
-                <button id="confirm-yes" className="btn btn-danger" onClick={handleDelete}>Yes, Remove</button>
-                <button id="confirm-no" className="btn btn-secondary" onClick={() => setIsDeleteModalOpen(false)}>Cancel</button>
-            </div>
+          <div className="card-actions">
+            {renderActionButtons()}
+          </div>
         </div>
-      </Modal>
+      </main>
+      <Footer />
     </div>
   );
 };

@@ -65,7 +65,7 @@
   position: relative;
 }
 
-.section-title {
+.home-section-title {
   text-align: center;
   font-size: clamp(2.25rem, 4vw, 3.25rem);
   margin-bottom: 5rem;
@@ -74,7 +74,7 @@
   letter-spacing: -0.01em;
 }
 
-.section-title::after {
+.home-section-title::after {
   content: '';
   position: absolute;
   bottom: -20px;
@@ -174,12 +174,12 @@
   overflow: hidden;
 }
 
-.testimonials .section-title {
+.testimonials .home-section-title {
   color: var(--white);
   margin-bottom: 6rem;
 }
 
-.testimonials .section-title::after {
+.testimonials .home-section-title::after {
   background: var(--white);
 }
 
@@ -278,7 +278,7 @@ blockquote::before {
     font-size: 1.1rem;
   }
 
-  .section-title {
+  .home-section-title {
     font-size: 2rem;
   }
 

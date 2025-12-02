@@ -29,4 +29,37 @@ export const deleteVehicle = async (vehicleId) => {
   return response.data;
 };
 
-export default { getFleet, getVehicle, addVehicle, updateVehicle, deleteVehicle };
+// Truck Status Management
+export const setTruckMaintenance = async (vehicleId) => {
+  const response = await http.post(`/api/transporters/fleet/${vehicleId}/set-maintenance`);
+  return response.data;
+};
+
+export const setTruckAvailable = async (vehicleId) => {
+  const response = await http.post(`/api/transporters/fleet/${vehicleId}/set-available`);
+  return response.data;
+};
+
+export const setTruckUnavailable = async (vehicleId) => {
+  const response = await http.post(`/api/transporters/fleet/${vehicleId}/set-unavailable`);
+  return response.data;
+};
+
+export const scheduleMaintenance = async (vehicleId, nextServiceDate) => {
+  const response = await http.post(`/api/transporters/fleet/${vehicleId}/schedule-maintenance`, {
+    next_service_date: nextServiceDate
+  });
+  return response.data;
+};
+
+export default { 
+  getFleet, 
+  getVehicle, 
+  addVehicle, 
+  updateVehicle, 
+  deleteVehicle,
+  setTruckMaintenance,
+  setTruckAvailable,
+  setTruckUnavailable,
+  scheduleMaintenance
+};
