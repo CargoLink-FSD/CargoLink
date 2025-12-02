@@ -21,7 +21,7 @@ import TransporterOrders from '../pages/transporter/TransporterOrders';
 import MyBidsPage from '../pages/transporter/MyBids';
 import UserManagement from '../pages/admin/UserManagement';
 import OrderManagement from '../pages/admin/OrderManagement';
-import Dashboard from '../pages/admin/Dashboard';
+// import Dashboard from '../pages/admin/Dashboard';
 import TrackOrder from '../pages/TrackOrder'
 
 export default function AppRoutes() {
@@ -96,7 +96,7 @@ export default function AppRoutes() {
 
       <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
         <Route path="/admin" element={<Home />} />
-        <Route path="/admin/dashboard" element={<Dashboard />} />
+        {/* <Route path="/admin/dashboard" element={<Dashboard />} /> */}
         <Route path="/admin/orders" element={<OrderManagement />} />
         <Route path="/admin/users" element={<UserManagement />} />
       </Route>
