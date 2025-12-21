@@ -1,4 +1,5 @@
 import path from 'path';
+import nodemailer from 'nodemailer';
 
 
 export class AppError extends Error {
@@ -126,3 +127,38 @@ class Logger {
 }
 
 export const logger = new Logger();
+
+// Email configuration
+const mailer = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "cargolink.logistcs@gmail.com",
+    pass: "zrpt aldt sylq qdty"
+  }
+});
+
+export async function sendMail(to, subject, text) {
+  try {
+    const info = await mailer.sendMail({
+      from: '"CargoLink" <cargolink.logistcs@gmail.com>',
+      to: to,
+      subject: subject,
+      text: text,
+    });
+
+    logger.info(`Email sent to ${to}: ${info.messageId}`);
+    return info;
+  } catch (err) {
+    logger.error("Error sending email:", err);
+    throw err;
+  }
+}
+
+export function generatePassword() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let password = '';
+  for (let i = 0; i < 8; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+}

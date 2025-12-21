@@ -1,0 +1,310 @@
+/* Assignment-specific styles - extends styles.css */
+
+/* Vehicle Assignment Modal */
+.assignment-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.assignment-modal.active {
+    display: flex;
+}
+
+.assignment-modal-content {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.assignment-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--gray-200);
+}
+
+.assignment-modal-header h2 {
+    color: var(--secondary);
+    font-size: 1.5rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: var(--gray);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.modal-close:hover {
+    color: var(--error);
+    transform: rotate(90deg);
+}
+
+/* Vehicle List in Modal */
+.vehicle-list {
+    display: grid;
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.vehicle-card {
+    border: 2px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: var(--transition);
+    background: var(--white);
+}
+
+.vehicle-card:hover {
+    border-color: var(--primary);
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+}
+
+.vehicle-card.selected {
+    border-color: var(--success);
+    background: var(--gray-50);
+}
+
+.vehicle-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.vehicle-number {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--secondary);
+}
+
+.vehicle-card-body {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+}
+
+.vehicle-detail {
+    font-size: 0.875rem;
+    color: var(--gray);
+}
+
+.vehicle-detail strong {
+    color: var(--secondary);
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.status-available {
+    background: #d1fae5;
+    color: var(--success);
+}
+
+.status-assigned {
+    background: #fef3c7;
+    color: var(--warning);
+}
+
+.status-in-transit {
+    background: #dbeafe;
+    color: var(--primary);
+}
+
+.status-maintenance {
+    background: #fee2e2;
+    color: var(--error);
+}
+
+/* Assignment Info Display */
+.assignment-info {
+    background: var(--gray-50);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-top: 1rem;
+    border-left: 4px solid var(--primary);
+}
+
+.assignment-info h4 {
+    color: var(--secondary);
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+}
+
+.assignment-info p {
+    color: var(--gray);
+    font-size: 0.875rem;
+    margin: 0.5rem 0;
+}
+
+.assignment-info strong {
+    color: var(--secondary);
+}
+
+/* Assignment History Table */
+.assignment-history {
+    margin-top: 2rem;
+}
+
+.assignment-history h3 {
+    color: var(--secondary);
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+}
+
+.history-table-wrapper {
+    overflow-x: auto;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--white);
+    font-size: 0.9rem;
+}
+
+.history-table thead {
+    background: var(--secondary);
+    color: var(--white);
+}
+
+.history-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.history-table tbody tr {
+    border-bottom: 1px solid var(--gray-200);
+    transition: var(--transition);
+}
+
+.history-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.history-table tbody tr:hover {
+    background: var(--gray-50);
+}
+
+.history-table td {
+    padding: 1rem;
+    vertical-align: top;
+}
+
+.history-table td strong {
+    color: var(--secondary);
+    font-size: 1rem;
+}
+
+.history-table td small {
+    font-size: 0.75rem;
+    color: var(--gray);
+}
+
+/* Assign Button in Orders */
+.btn-assign {
+    background: var(--success);
+    color: var(--white);
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-assign:hover {
+    background: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-unassign {
+    background: var(--error);
+    color: var(--white);
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-unassign:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Empty State */
+.empty-vehicles {
+    text-align: center;
+    padding: 2rem;
+    color: var(--gray);
+}
+
+.empty-vehicles svg {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid var(--gray-200);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .assignment-modal-content {
+        width: 95%;
+        padding: 1.5rem;
+    }
+
+    .vehicle-card-body {
+        grid-template-columns: 1fr;
+    }
+}

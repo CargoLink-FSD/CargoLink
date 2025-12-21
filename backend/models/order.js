@@ -57,6 +57,14 @@ const OrderSchema = new mongoose.Schema(
     final_price: Number, // used in 'Assigned'
     otp: String, // used in 'In Transit'
 
+    // Vehicle Assignment (embedded for quick access)
+    assignment: {
+      vehicle_id: { type: mongoose.Schema.Types.ObjectId },
+      vehicle_number: String,
+      vehicle_type: String,
+      assigned_at: Date
+    },
+
     shipments: [ShipmentItemSchema], // visible always
   },
   { timestamps: true },

@@ -7,6 +7,7 @@ import transporterReducer from './slices/transporterSlice';
 import ordersReducer from './slices/ordersSlice';
 import transporterOrdersReducer from './slices/transporterOrdersSlice';
 import bidsReducer from './slices/bidsSlice';
+import chatReducer from './slices/chatSlice';
 
 // Configure and export the Redux store
 export const store = configureStore({
@@ -17,6 +18,7 @@ export const store = configureStore({
     orders: ordersReducer,
     transporterOrders: transporterOrdersReducer,
     bids: bidsReducer,
+    chat: chatReducer,
   },
 });
 

@@ -1,7 +1,7 @@
-const mongoose = require('mongoose');
+import mongoose  from 'mongoose'
 
 const messageSchema = new mongoose.Schema({
-  senderType: { type: String, enum: ['Customer', 'Transporter'], required: true },
+  senderType: { type: String, enum: ['customer', 'transporter'], required: true },
   content: { type: String, required: true },
   timestamp: { type: Date, default: Date.now }
 });
@@ -14,4 +14,4 @@ const chatSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Chat', chatSchema);
+export default mongoose.model('Chat', chatSchema);

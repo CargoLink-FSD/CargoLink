@@ -15,6 +15,47 @@ export default function BidPage() {
     loadOrders,
   } = useBids();
 
+  // Calculate bidding end time (2 days before scheduled pickup)
+  const getBiddingEndTime = (scheduledAt) => {
+    if (!scheduledAt) return 'N/A';
+    const pickupDate = new Date(scheduledAt);
+    const biddingEndDate = new Date(pickupDate);
+    biddingEndDate.setDate(pickupDate.getDate() - 2);
+    
+    return biddingEndDate.toLocaleString([], {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Calculate time remaining until bidding closes
+  const getTimeRemaining = (scheduledAt) => {
+    if (!scheduledAt) return '';
+    const pickupDate = new Date(scheduledAt);
+    const biddingEndDate = new Date(pickupDate);
+    biddingEndDate.setDate(pickupDate.getDate() - 2);
+    
+    const now = new Date();
+    const diff = biddingEndDate - now;
+    
+    if (diff <= 0) return 'Closed';
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    
+    if (days > 0) {
+      return `${days}d ${hours}h`;
+    } else if (hours > 0) {
+      return `${hours}h`;
+    } else {
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      return `${minutes}m`;
+    }
+  };
+
   return (
     <>
       <Header />
@@ -73,12 +114,14 @@ export default function BidPage() {
               <div className="bid-card" key={bid._id} id={`bid-card-${index}`}>
                 <div className="bid-header">
                   <div className="bid-price" data-original-price={bid.max_price}>${bid.max_price}</div>
+                  <div className="bid-timer">{getTimeRemaining(bid.scheduled_at)}</div>
                 </div>
                 <div className="bid-body">
                   <div className="bid-details">
                     <div className="bid-detail"><span className="detail-label">Order ID:</span><span>{bid._id}</span></div>
                     <div className="bid-detail"><span className="detail-label">Scheduled Date:</span><span>{new Date(bid.scheduled_at).toLocaleDateString()}</span></div>
                     <div className="bid-detail"><span className="detail-label">Scheduled Time:</span><span>{new Date(bid.scheduled_at).toLocaleTimeString()}</span></div>
+                    <div className="bid-detail"><span className="detail-label">Bidding Ends:</span><span style={{ color: '#e67e22', fontWeight: '600' }}>{getBiddingEndTime(bid.scheduled_at)}</span></div>
                     <div className="bid-detail"><span className="detail-label">Pickup:</span><span>{bid.pickup?.city}, {bid.pickup?.state}</span></div>
                     <div className="bid-detail"><span className="detail-label">Delivery:</span><span>{bid.delivery?.city}, {bid.delivery?.state}</span></div>
                     <div className="bid-detail"><span className="detail-label">Distance:</span><span>{bid.distance} km</span></div>

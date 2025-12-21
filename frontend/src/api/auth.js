@@ -28,7 +28,7 @@ export const refreshToken = async () => {
 };
 
 export const forgotPassword = async ({ email, userType }) => {
-  const data = await http.post('/api/auth/forgot-password', { email });
+  const data = await http.post('/api/auth/forgot-password', { email, userType });
   return data;
 };
 

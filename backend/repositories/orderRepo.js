@@ -46,16 +46,23 @@ const createOrder = async (orderData) => {
     return order;
 };
 
-const cancelOrder = async (orderId) => {
+const cancelOrder = async (orderId, customerId) => {
       const updatedOrder = await Order.findOneAndUpdate(
-    { _id: orderId, customerId, status: "Pending" },
+    { _id: orderId, customer_id: customerId, status: "Placed" },
     { $set: { status: "Cancelled" } },
     { new: true }
   );
+  return updatedOrder;
 };
 
 const getActiveOrders = async (transporterId) => {
-    const orders = await Order.find({ status: 'Placed' })
+    // only shows order before 2days of scheduled pickup
+    const twoDaysFromNow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+    
+    const orders = await Order.find({ 
+        status: 'Placed',
+        scheduled_at: { $gte: twoDaysFromNow } // Filter out orders with closed bidding window
+      })
       .populate({
         path: 'bid_by_transporter',
         match: { transporter_id: transporterId },
@@ -75,6 +82,7 @@ const assignOrder = async (orderId, transporterId, finalPrice) => {
             assigned_transporter_id: transporterId,
             final_price: finalPrice,
             status: 'Assigned',
+            assignment: {} // Initialize empty assignment object
         },
         { new: true }
     );
@@ -82,11 +90,73 @@ const assignOrder = async (orderId, transporterId, finalPrice) => {
 };
 
 const checkActiveOrder = async (orderId, transporterId) => {
+    // Bidding window closes 2 days before scheduled pickup
+    const twoDaysFromNow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+    
     const order = await Order.exists({
       _id: orderId,
-      status: "Placed"
+      status: "Placed",
+      scheduled_at: { $gte: twoDaysFromNow } // Pickup must be at least 2 days away
     });
     return order;
+};
+
+const updateOrderStatus = async (orderId, status, additionalData = {}) => {
+    const updateData = { status, ...additionalData };
+
+    return await Order.findByIdAndUpdate(
+        orderId,
+        updateData,
+        { new: true }
+    );
+};
+
+// Verify OTP and Update Status
+const verifyOTPAndUpdateStatus = async (orderId, transporterId, otp) => {
+    return await Order.findOneAndUpdate(
+        { 
+            _id: orderId, 
+            assigned_transporter_id: transporterId, 
+            otp: otp,
+            status: 'Started'
+        },
+        { 
+            status: 'In Transit',
+            $unset: { otp: 1 }
+        },
+        { new: true }
+    );
+};
+
+
+const getOrderById = async (orderId) => {
+    return await Order.findById(orderId);
+};
+
+// const updateOrderStatus = async (orderId, status, additionalData = {}) => {
+//     const updateData = { status, ...additionalData };
+//     const updatedOrder = await Order.findByIdAndUpdate(
+//         orderId,
+//         { $set: updateData },
+//         { new: true }
+//     );
+//     return updatedOrder;
+// };
+
+const assignVehicleToOrder = async (orderId, assignmentData) => {
+    const updatedOrder = await Order.findByIdAndUpdate(
+        orderId,
+        { 
+            $set: { 
+                'assignment.vehicle_id': assignmentData.vehicle_id,
+                'assignment.vehicle_number': assignmentData.vehicle_number,
+                'assignment.vehicle_type': assignmentData.vehicle_type,
+                'assignment.assigned_at': new Date()
+            } 
+        },
+        { new: true }
+    );
+    return updatedOrder;
 };
 
 export default {
@@ -102,4 +172,8 @@ export default {
     getActiveOrders,
     assignOrder,
     checkActiveOrder,
+    updateOrderStatus,
+    verifyOTPAndUpdateStatus,
+    getOrderById,
+    assignVehicleToOrder,
 }

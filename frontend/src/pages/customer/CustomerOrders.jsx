@@ -13,6 +13,7 @@ import { useNotification } from '../../context/NotificationContext';
 import OrderCard from '../../components/common/OrderCard';
 import './CustomerOrders.css';
 import Header from '../../components/common/Header';
+import Footer from '../../components/common/Footer';
 
 export default function CustomerOrders() {
   const dispatch = useDispatch();
@@ -69,16 +70,16 @@ export default function CustomerOrders() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="orders-container">
-        <div className="error-state">
-          <span className="error-icon">⚠️</span>
-          <p>{error}</p>
-        </div>
-      </div>
-    );
-  }
+  // if (error) {
+  //   return (
+  //     <div className="orders-container">
+  //       <div className="error-state">
+  //         <span className="error-icon">⚠️</span>
+  //         <p>{error}</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <>
@@ -114,13 +115,8 @@ export default function CustomerOrders() {
 
       {orders.length === 0 ? (
         <div className="empty-state">
-          <span className="empty-icon">📦</span>
+          
           <h3>No Orders Found</h3>
-          <p>
-            {filters.searchTerm || filters.statusFilter !== 'all' 
-              ? 'Try adjusting your filters' 
-              : 'You haven\'t placed any orders yet'}
-          </p>
         </div>
       ) : (
         <div className="orders-grid">
@@ -136,6 +132,7 @@ export default function CustomerOrders() {
         </div>
       )}
     </div>
+    <Footer />
     </>
   );
 }

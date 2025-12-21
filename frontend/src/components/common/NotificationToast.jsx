@@ -1,5 +1,5 @@
 import { useNotification } from '../../context/NotificationContext';
-import '../../styles/notification.css';
+import '../../styles/Notification.css';
 
 export default function NotificationToast() {
   const { notification, hideNotification } = useNotification();

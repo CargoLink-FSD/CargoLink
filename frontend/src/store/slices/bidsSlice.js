@@ -78,21 +78,6 @@ export const withdrawBid = createAsyncThunk(
   }
 );
 
-/**
- * Get bids for a specific order
- */
-export const getOrderBids = createAsyncThunk(
-  'bids/getOrderBids',
-  async (orderId, { rejectWithValue }) => {
-    try {
-      const data = await bidsApi.getOrderBids(orderId);
-      return { orderId, bids: data };
-    } catch (error) {
-      return rejectWithValue(error.message || 'Failed to fetch order bids');
-    }
-  }
-);
-
 // Slice
 const bidsSlice = createSlice({
   name: 'bids',
@@ -170,19 +155,6 @@ const bidsSlice = createSlice({
         state.error = action.payload;
       })
       
-      // Get Order Bids
-      .addCase(getOrderBids.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(getOrderBids.fulfilled, (state, action) => {
-        state.loading = false;
-        state.orderBids[action.payload.orderId] = action.payload.bids;
-      })
-      .addCase(getOrderBids.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      });
   },
 });
 

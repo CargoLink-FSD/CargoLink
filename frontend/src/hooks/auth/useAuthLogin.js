@@ -24,7 +24,7 @@ export const useAuthLogin = () => {
   // Initialize form with react-hook-form and Zod validation
   const { register, handleSubmit, formState: { errors }, watch } = useForm({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '', rememberMe: false },
+    defaultValues: { email: '', password: '' },
     mode: 'onBlur',
   });
 

@@ -1,0 +1,158 @@
+.paynow-container {
+  padding: 2rem 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.payment-card {
+  width: 100%;
+  max-width: 560px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+  padding: 2rem;
+  text-align: center;
+}
+
+.payment-card .icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem auto;
+}
+
+.payment-card h1 {
+  margin: 0 0 1rem 0;
+}
+
+.payment-card .details {
+  margin: 1rem 0 1.5rem 0;
+  font-size: 1.05rem;
+}
+
+.payment-card .amount {
+  font-weight: 700;
+}
+
+.payment-card .txid {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.payment-card .actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.payment-card.error {
+  border: 1px solid #ffcdd2;
+}
+
+/* Forms: inputs and selection styling */
+.payment-card .card-form,
+.payment-card .netbanking-form,
+.payment-card .upi-form {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0 16px 0;
+}
+
+.payment-card .card-form .row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.payment-card .card-form .row > input {
+  flex: 1 1 160px;
+  min-width: 0; /* prevent overflow in flex */
+}
+
+.payment-card input[type="text"],
+.payment-card input[type="password"],
+.payment-card select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb; /* gray-200 */
+  border-radius: 10px;
+  background: #fff;
+  color: #111827; /* gray-900 */
+  font-size: 0.95rem;
+  line-height: 1.25rem;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+.payment-card input::placeholder {
+  color: #9ca3af; /* gray-400 */
+}
+
+.payment-card input:focus,
+.payment-card select:focus {
+  outline: none;
+  border-color: #2e7d32; /* primary */
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.12);
+}
+
+.payment-card input:hover,
+.payment-card select:hover {
+  border-color: #cbd5e1; /* gray-300 */
+}
+
+.payment-card input:disabled,
+.payment-card select:disabled {
+  background-color: #f9fafb; /* gray-50 */
+  color: #9ca3af; /* gray-400 */
+  cursor: not-allowed;
+}
+
+/* Select: custom arrow */
+.payment-card select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5.5 7.5l4.5 4.5 4.5-4.5' stroke='%236b7280' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px 16px;
+  padding-right: 40px; /* space for arrow */
+}
+
+/* Error message styling */
+.payment-card .field-error {
+  color: #ef4444; /* red-500 */
+  font-size: 0.72rem;
+  line-height: 1rem;
+  margin-top: 4px;
+  text-align: left;
+  padding-left: 4px;
+}
+
+/* Utility: invalid state hook if needed */
+.payment-card .is-invalid {
+  border-color: #ef4444 !important; /* red-500 */
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+}
+
+/* Improve autofill contrast */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #fff inset;
+  box-shadow: 0 0 0px 1000px #fff inset;
+}
+
+/* Compact tweak for small screens */
+@media (max-width: 480px) {
+  .payment-card input[type="text"],
+  .payment-card input[type="password"],
+  .payment-card select {
+    padding: 11px 12px;
+    font-size: 0.93rem;
+  }
+}

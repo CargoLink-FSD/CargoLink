@@ -280,8 +280,13 @@ const login =  [
   body('role').isIn(['customer','transporter','admin']).withMessage('Role must be customer, transporter or admin'),
 ]
 const forgotPassword =  [
+<<<<<<< HEAD
   body('email').isEmail().withMessage('Valid email required'),
   body('role').isIn(['customer','transporter']).withMessage('Role must be customer or transporter'),
+=======
+  body('email').trim().isEmail().withMessage('Valid email required'),
+  body('userType').trim().isIn(['customer', 'transporter']).withMessage('Valid user type required (customer or transporter)'),
+>>>>>>> 12e415a3f43e9281aa2ba6a3346543db2e32a5a0
 ]
 const resetPassword = [
   body('email').isEmail().withMessage('Valid email required'),

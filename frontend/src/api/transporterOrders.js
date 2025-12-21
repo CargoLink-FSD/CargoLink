@@ -53,13 +53,23 @@ export async function getTransporterBids() {
 }
 
 /**
+ * Get transporter's available vehicles
+ */
+export async function getTransporterVehicles() {
+  const response = await http.get('/api/orders/transporter/vehicles');
+  return response.data || response || [];
+}
+
+/**
  * Assign vehicle to an order
  */
-export async function assignVehicleToOrder(tripId, orderId, truckId) {
-  return await http.post(`/api/trips/${tripId}/assign-order`, {
-    orderId,
-    truckId
-  });
+export async function assignVehicleToOrder(orderId, vehicleId) {
+  console.log('API: assignVehicleToOrder called with:', { orderId, vehicleId });
+  const payload = { vehicleId };
+  console.log('API: Sending POST to /api/orders/' + orderId + '/assign-vehicle with payload:', payload);
+  const result = await http.post(`/api/orders/${orderId}/assign-vehicle`, payload);
+  console.log('API: Assignment response:', result);
+  return result;
 }
 
 /**
@@ -72,8 +82,8 @@ export async function unassignVehicleFromOrder(tripId, orderId) {
 /**
  * Start transit for an order
  */
-export async function startTransit(tripId) {
-  return await http.post(`/api/trips/${tripId}/start`);
+export async function startTransit(orderId) {
+  return await http.post(`/api/orders/${orderId}/start-transit`);
 }
 
 /**

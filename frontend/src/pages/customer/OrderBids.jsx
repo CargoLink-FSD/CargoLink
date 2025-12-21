@@ -123,7 +123,7 @@ export default function OrderBids() {
 
         {bids.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📋</div>
+          
             <h3>No Bids Yet</h3>
             <p>No transporters have placed bids on this order yet. Please check back later.</p>
             <button onClick={() => navigate('/customer/orders')} className="btn-primary">
