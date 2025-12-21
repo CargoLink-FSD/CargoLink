@@ -1,5 +1,6 @@
 import transporterService from "../services/transporterService.js";
 import authService from "../services/authService.js";
+import otpRepo from "../repositories/otpRepo.js";
 import mongoose from "mongoose";
 import { logger, AppError } from "../utils/misc.js";
 
@@ -7,9 +8,20 @@ const createTransporter = async (req, res, next) => {
   try {
     const transporterData = req.body;
     logger.debug("Transporter creation input", transporterData)
+    
+    // Verify OTP before creating transporter
+    const isVerified = await otpRepo.isOTPVerified(transporterData.email, 'signup', 'transporter');
+    if (!isVerified) {
+      throw new AppError(400, 'AuthError', 'Please verify your email with OTP first', 'ERR_OTP_NOT_VERIFIED');
+    }
+    
     const transporter = await transporterService.registerTransporter(transporterData);
     transporter.password = undefined;
     logger.debug("Transporter Created", transporter);
+    
+    // Delete verified OTP after successful signup
+    await otpRepo.deleteVerifiedOTP(transporterData.email, 'signup', 'transporter');
+    
     const { accessToken, refreshToken } = authService.generateTokens(transporter, 'transporter');
     
     res.status(201).json({

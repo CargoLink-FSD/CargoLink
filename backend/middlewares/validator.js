@@ -281,13 +281,15 @@ const login =  [
 ]
 const forgotPassword =  [
   body('email').isEmail().withMessage('Valid email required'),
+  body('role').isIn(['customer','transporter']).withMessage('Role must be customer or transporter'),
 ]
 const resetPassword = [
-  body('token').notEmpty().withMessage('Reset token required'),
+  body('email').isEmail().withMessage('Valid email required'),
   body('newPassword')
     .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
     .matches(/[A-Z]/).withMessage('Password must contain at least one uppercase letter')
     .matches(/[0-9]/).withMessage('Password must contain at least one number'),
+  body('role').isIn(['customer','transporter']).withMessage('Role must be customer or transporter'),
 ]
 const password = [
   body('oldPassword').notEmpty().withMessage('Old password required'),

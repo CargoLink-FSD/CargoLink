@@ -9,13 +9,15 @@ import { useNotification } from '../../context/NotificationContext';
 import { redirectAfterSignup } from '../../utils/redirectUser';
 import { useStepForm } from './useStepForm';
 import { customerStep1Schema, customerStep2Schema, customerStep3Schema, customerStep4Schema, customerSignupSchema } from '../../utils/schemas';
+import { sendSignupOTP, verifySignupOTP, resendOTP } from '../../api/otp';
 
-// Define validation schema for each step
+// Define validation schema for each step (now 5 steps with OTP)
 const steps = [
   { fields: ['firstName', 'lastName', 'gender'], schema: customerStep1Schema },
   { fields: ['phone', 'email', 'dob'], schema: customerStep2Schema },
   { fields: ['street_address', 'city', 'state', 'pin'], schema: customerStep3Schema },
   { fields: ['password', 'confirmPassword', 'terms'], schema: customerStep4Schema },
+  { fields: [], schema: null }, // OTP step - no form validation needed
 ];
 
 export const useCustomerSignup = () => {
@@ -25,7 +27,10 @@ export const useCustomerSignup = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { currentStep, totalSteps, nextStep: goNext, prevStep } = useStepForm(4);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpError, setOtpError] = useState(null);
+  const { currentStep, totalSteps, nextStep: goNext, prevStep } = useStepForm(5);
 
   // Initialize form with react-hook-form and Zod validation
   const { register, handleSubmit, watch, formState: { errors }, trigger, setError, clearErrors, getValues } = useForm({
@@ -68,33 +73,106 @@ export const useCustomerSignup = () => {
 
   // Validate current step before proceeding to next
   const nextStep = async () => {
-    const step = steps[currentStep - 1];
-    const fields = step.fields;
+    // Step 4 is password step, need to send OTP before moving to step 5
+    if (currentStep === 4) {
+      const step = steps[currentStep - 1];
+      const fields = step.fields;
+      const rhfValid = await trigger(fields);
+      const values = getValues();
+      const subset = Object.fromEntries(fields.map((f) => [f, values[f]]));
+      const zodResult = step.schema.safeParse(subset);
 
-    // First try built-in RHF validation for current fields
-    const rhfValid = await trigger(fields);
-
-    // Additionally validate with Zod step schema to ensure errors surface before navigation
-    const values = getValues();
-    const subset = Object.fromEntries(fields.map((f) => [f, values[f]]));
-    const zodResult = step.schema.safeParse(subset);
-
-    if (!rhfValid || !zodResult.success) {
-      // Clear previous step field errors and set fresh ones from Zod
-      clearErrors(fields);
-      if (!zodResult.success) {
-        zodResult.error.issues.forEach((issue) => {
-          const pathKey = Array.isArray(issue.path) && issue.path.length ? issue.path[0] : undefined;
-          if (pathKey && fields.includes(pathKey)) {
-            setError(pathKey, { type: 'zod', message: issue.message });
-          }
-        });
+      if (!rhfValid || !zodResult.success) {
+        clearErrors(fields);
+        if (!zodResult.success) {
+          zodResult.error.issues.forEach((issue) => {
+            const pathKey = Array.isArray(issue.path) && issue.path.length ? issue.path[0] : undefined;
+            if (pathKey && fields.includes(pathKey)) {
+              setError(pathKey, { type: 'zod', message: issue.message });
+            }
+          });
+        }
+        showError('Please fix the errors before continuing.');
+        return;
       }
-      showError('Please fix the errors before continuing.');
+
+      // Send OTP
+      setLoading(true);
+      try {
+        await sendSignupOTP(values.email, 'customer');
+        setOtpSent(true);
+        showSuccess('OTP sent to your email!');
+        goNext();
+      } catch (error) {
+        showError(error?.response?.data?.message || 'Failed to send OTP. Please try again.');
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
+    // For other steps, validate normally
+    if (currentStep < 4) {
+      const step = steps[currentStep - 1];
+      const fields = step.fields;
+      const rhfValid = await trigger(fields);
+      const values = getValues();
+      const subset = Object.fromEntries(fields.map((f) => [f, values[f]]));
+      const zodResult = step.schema.safeParse(subset);
+
+      if (!rhfValid || !zodResult.success) {
+        clearErrors(fields);
+        if (!zodResult.success) {
+          zodResult.error.issues.forEach((issue) => {
+            const pathKey = Array.isArray(issue.path) && issue.path.length ? issue.path[0] : undefined;
+            if (pathKey && fields.includes(pathKey)) {
+              setError(pathKey, { type: 'zod', message: issue.message });
+            }
+          });
+        }
+        showError('Please fix the errors before continuing.');
+        return;
+      }
+    }
+
     goNext();
+  };
+
+  // Handle OTP verification
+  const handleVerifyOTP = async (otp) => {
+    setLoading(true);
+    setOtpError(null);
+    try {
+      const values = getValues();
+      await verifySignupOTP(values.email, otp, 'customer');
+      setOtpVerified(true);
+      showSuccess('Email verified successfully!');
+      
+      // Now submit the form
+      await onSubmit(values);
+    } catch (error) {
+      const errorMsg = error?.response?.data?.message || 'Invalid OTP. Please try again.';
+      setOtpError(errorMsg);
+      showError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle OTP resend
+  const handleResendOTP = async () => {
+    setLoading(true);
+    setOtpError(null);
+    try {
+      const values = getValues();
+      await resendOTP(values.email, 'signup', 'customer');
+      showSuccess('OTP resent to your email!');
+    } catch (error) {
+      const errorMsg = error?.response?.data?.message || 'Failed to resend OTP. Please try again.';
+      showError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return {
@@ -113,5 +191,10 @@ export const useCustomerSignup = () => {
     toggleShowConfirmPassword: () => setShowConfirmPassword(p => !p),
     navigate,
     setError,
+    otpSent,
+    otpVerified,
+    otpError,
+    handleVerifyOTP,
+    handleResendOTP,
   };
 };

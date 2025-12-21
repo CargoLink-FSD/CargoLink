@@ -14,7 +14,13 @@ authRouter.post("/logout", authController.logout);
 
 // Password management
 authRouter.post("/forgot-password", validate(validationSchema.forgotPassword), authController.forgotPassword);
-authRouter.post("/reset-password/:token", validate(validationSchema.resetPassword), authController.resetPassword);
+authRouter.post("/verify-reset-otp", authController.verifyResetOTP);
+authRouter.post("/reset-password", validate(validationSchema.resetPassword), authController.resetPassword);
+
+// OTP management
+authRouter.post("/send-signup-otp", authController.sendSignupOTP);
+authRouter.post("/verify-signup-otp", authController.verifySignupOTP);
+authRouter.post("/resend-otp", authController.resendOTP);
 
 // Email verification
 authRouter.get("/verify-email/:token", authController.verifyEmail);

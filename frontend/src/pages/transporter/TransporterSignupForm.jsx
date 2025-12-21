@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import AuthLayout from '../../components/auth/AuthLayout';
+import OTPVerification from '../../components/auth/OTPVerification';
 import { useTransporterSignup } from '../../hooks/auth/useTransporterSignup';
 import { Button } from '../../components/forms';
 import ProgressSteps from '../../components/forms/ProgressSteps';
@@ -48,6 +49,9 @@ const TransporterSignupForm = () => {
     errors,
     register,
     navigate,
+    otpError,
+    handleVerifyOTP,
+    handleResendOTP,
   } = state;
 
   return (
@@ -170,7 +174,27 @@ const TransporterSignupForm = () => {
 
             <div className="buttons">
               <Button type="button" variant="outline" onClick={prevStep}>Previous</Button>
-              <Button type="submit" variant="primary" disabled={loading} loading={loading}>Create Account</Button>
+              <Button type="button" variant="primary" onClick={nextStep} disabled={loading} loading={loading}>
+                Send Verification Code
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {currentStep === 5 && (
+          <div className="form-step">
+            <OTPVerification
+              email={formData.email}
+              onVerify={handleVerifyOTP}
+              onResend={handleResendOTP}
+              loading={loading}
+              error={otpError}
+              purpose="signup"
+            />
+            <div className="buttons" style={{ marginTop: '20px' }}>
+              <Button type="button" variant="outline" onClick={prevStep} disabled={loading}>
+                Previous
+              </Button>
             </div>
           </div>
         )}

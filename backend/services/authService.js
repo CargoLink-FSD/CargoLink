@@ -110,10 +110,34 @@ export function validateAccessTokenPayload(payload, roles) {
   return { userId: payload.sub, role: payload.role };
 }
 
+export async function resetPassword(email, newPassword, role) {
+  let user;
+  if (role === 'customer') {
+    user = await customerRepo.findByEmail(email);
+  } else if (role === 'transporter') {
+    user = await transporterRepo.findByEmail(email);
+  } else {
+    throw new AppError(400, 'AuthError', 'Unsupported role', 'ERR_UNSUPPORTED_ROLE');
+  }
+
+  if (!user) {
+    throw new AppError(404, 'AuthError', 'User not found', 'ERR_USER_NOT_FOUND');
+  }
+
+  // Hash and update password
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  user.password = hashedPassword;
+  await user.save();
+
+  logger.info('Password reset successful', { email, role });
+  return { success: true };
+}
+
 export default {
   authenticateUser,
   generateTokens,
   rotateRefreshToken,
   revokeRefreshToken,
   validateAccessTokenPayload,
+  resetPassword,
 };

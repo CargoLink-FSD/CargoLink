@@ -1,14 +1,26 @@
 import customerService from "../services/customerService.js";
 import authService from "../services/authService.js";
+import otpRepo from "../repositories/otpRepo.js";
 import { AppError, logger } from "../utils/misc.js";
 
 const createCustomer = async (req, res, next) => {
   try {
     const customerData = req.body;
     logger.debug("Customer creation input", customerData);
+    
+    // Verify OTP before creating customer
+    const isVerified = await otpRepo.isOTPVerified(customerData.email, 'signup', 'customer');
+    if (!isVerified) {
+      throw new AppError(400, 'AuthError', 'Please verify your email with OTP first', 'ERR_OTP_NOT_VERIFIED');
+    }
+    
     const customer = await customerService.registerCustomer(customerData);
     customer.password = undefined; 
     logger.debug("Customer Created", customer);
+    
+    // Delete verified OTP after successful signup
+    await otpRepo.deleteVerifiedOTP(customerData.email, 'signup', 'customer');
+    
     const { accessToken, refreshToken } = authService.generateTokens(customer, 'customer'); //tokens for auto login after signup.
     
     res.status(201).json({

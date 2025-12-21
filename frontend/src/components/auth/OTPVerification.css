@@ -1,0 +1,167 @@
+.otp-verification {
+  max-width: 450px;
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
+.otp-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.otp-header h3 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+.otp-instruction {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.otp-instruction strong {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.otp-inputs {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.otp-input {
+  width: 50px;
+  height: 56px;
+  font-size: 24px;
+  font-weight: 600;
+  text-align: center;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  color: #111827;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.otp-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.otp-input:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.otp-input-error {
+  border-color: #ef4444;
+}
+
+.otp-input-error:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.otp-error {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.otp-error .error-message {
+  display: inline-block;
+  color: #ef4444;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.otp-actions {
+  margin-bottom: 24px;
+}
+
+.otp-resend {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.resend-link {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px;
+  transition: color 0.2s;
+}
+
+.resend-link:hover:not(:disabled) {
+  color: #2563eb;
+}
+
+.resend-link:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.resend-link strong {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.resend-timer {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.resend-timer strong {
+  color: #111827;
+  font-weight: 600;
+}
+
+.otp-footer {
+  margin-top: 32px;
+}
+
+.otp-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 16px;
+  background-color: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #92400e;
+  line-height: 1.5;
+}
+
+.otp-note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #f59e0b;
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .otp-inputs {
+    gap: 8px;
+  }
+
+  .otp-input {
+    width: 42px;
+    height: 48px;
+    font-size: 20px;
+  }
+
+  .otp-header h3 {
+    font-size: 20px;
+  }
+
+  .otp-instruction {
+    font-size: 13px;
+  }
+}
