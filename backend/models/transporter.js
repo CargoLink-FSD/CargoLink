@@ -17,6 +17,12 @@ const FleetSchema = new mongoose.Schema(
     next_service_date: Date,
     currentLocation: String,
     current_trip_id: { type: mongoose.Schema.Types.ObjectId, ref: "Trip" },
+    // Rental bookings - array of time periods when vehicle is booked
+    bookings: [{
+      order_id: { type: mongoose.Schema.Types.ObjectId, ref: "Order" },
+      start_date: { type: Date, required: true },
+      end_date: { type: Date, required: true }
+    }]
   },
   { _id: true },
 );

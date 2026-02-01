@@ -31,6 +31,24 @@ const getOrderDetails = async (orderId, userId, role) => {
 };
 
 const placeOrder = async (orderData) => {
+    // If it's a rental order, validate rental fields
+    if (orderData.is_rental) {
+        if (!orderData.rental_start || !orderData.rental_end) {
+            throw new AppError(400, "ValidationError", "Rental orders require rental_start and rental_end dates", "ERR_VALIDATION");
+        }
+
+        const rentalStart = new Date(orderData.rental_start);
+        const rentalEnd = new Date(orderData.rental_end);
+
+        if (rentalEnd <= rentalStart) {
+            throw new AppError(400, "ValidationError", "rental_end must be after rental_start", "ERR_VALIDATION");
+        }
+
+        // Calculate rental duration in days
+        const durationMs = rentalEnd - rentalStart;
+        orderData.rental_duration_days = Math.ceil(durationMs / (1000 * 60 * 60 * 24));
+    }
+
     const order = await orderRepo.createOrder(orderData);
     return order;
 };

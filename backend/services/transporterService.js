@@ -182,6 +182,66 @@ const scheduleMaintenance = async (transporterId, truckId, nextServiceDate) => {
   return updatedTruck;
 };
 
+/**
+ * Check if a vehicle is available for a rental period
+ * @param {string} transporterId - Transporter ID
+ * @param {string} vehicleId - Vehicle ID
+ * @param {Date} startDate - Rental start date
+ * @param {Date} endDate - Rental end date
+ * @returns {boolean} - True if available, false otherwise
+ */
+const checkVehicleAvailability = async (transporterId, vehicleId, startDate, endDate) => {
+  const truck = await transporterRepo.getTruck(transporterId, vehicleId);
+  if (!truck) {
+    throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
+  }
+
+  // Check if vehicle is in a non-available status
+  if (truck.status === 'In Maintenance' || truck.status === 'Unavailable') {
+    return false;
+  }
+
+  // Check for booking conflicts
+  if (truck.bookings && truck.bookings.length > 0) {
+    const hasConflict = truck.bookings.some(booking => {
+      const bookingStart = new Date(booking.start_date);
+      const bookingEnd = new Date(booking.end_date);
+      const requestStart = new Date(startDate);
+      const requestEnd = new Date(endDate);
+
+      // Check if periods overlap
+      return (requestStart < bookingEnd && requestEnd > bookingStart);
+    });
+
+    if (hasConflict) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+/**
+ * Get available vehicles for a rental period
+ * @param {string} transporterId - Transporter ID
+ * @param {Date} startDate - Rental start date
+ * @param {Date} endDate - Rental end date
+ * @returns {Array} - List of available vehicles
+ */
+const getAvailableVehiclesForRental = async (transporterId, startDate, endDate) => {
+  const { fleet } = await getTransporterFleet(transporterId);
+  
+  const availableVehicles = [];
+  for (const vehicle of fleet) {
+    const isAvailable = await checkVehicleAvailability(transporterId, vehicle._id, startDate, endDate);
+    if (isAvailable) {
+      availableVehicles.push(vehicle);
+    }
+  }
+
+  return availableVehicles;
+};
+
 
 export default {
   registerTransporter,
@@ -197,4 +257,6 @@ export default {
   setTruckAvailable,
   setTruckUnavailable,
   scheduleMaintenance,
+  checkVehicleAvailability,
+  getAvailableVehiclesForRental,
 };

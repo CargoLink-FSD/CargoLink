@@ -53,6 +53,12 @@ const OrderSchema = new mongoose.Schema(
     bidding_closes_at: { type: Date }, // When bidding window closes (2 days before scheduled_at)
     expires_at: { type: Date }, // When order expires if no action taken
 
+    // Rental fields
+    is_rental: { type: Boolean, default: false }, // Is this a rental order (time/day-based booking)?
+    rental_start: { type: Date }, // Rental start date/time (for rental orders)
+    rental_end: { type: Date }, // Rental end date/time (for rental orders)
+    rental_duration_days: { type: Number }, // Duration in days (for rental orders)
+
     assigned_transporter_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Transporter",

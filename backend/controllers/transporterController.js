@@ -351,6 +351,67 @@ const updatePaymentInfo = async (req, res, next) => {
 
 
 
+// Check vehicle availability for rental
+const checkVehicleAvailability = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const vehicleId = req.params.vehicleId;
+    const { startDate, endDate } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(vehicleId)) {
+      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
+        { type: "field", value: vehicleId, msg: "Not a valid vehicle ID", path: "vehicleId", location: "params" }
+      );
+    }
+
+    if (!startDate || !endDate) {
+      throw new AppError(400, "ValidationError", 'startDate and endDate are required', 'ERR_VALIDATION');
+    }
+
+    const isAvailable = await transporterService.checkVehicleAvailability(
+      transporterId,
+      vehicleId,
+      new Date(startDate),
+      new Date(endDate)
+    );
+
+    res.status(200).json({
+      success: true,
+      data: { available: isAvailable },
+      message: isAvailable ? 'Vehicle is available' : 'Vehicle is not available for the requested period',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Get available vehicles for rental period
+const getAvailableVehiclesForRental = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      throw new AppError(400, "ValidationError", 'startDate and endDate are required', 'ERR_VALIDATION');
+    }
+
+    const availableVehicles = await transporterService.getAvailableVehiclesForRental(
+      transporterId,
+      new Date(startDate),
+      new Date(endDate)
+    );
+
+    res.status(200).json({
+      success: true,
+      data: availableVehicles,
+      message: 'Available vehicles fetched successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+
 // Export all functions
 export default {
   createTransporter,
@@ -368,6 +429,8 @@ export default {
   setTruckAvailable,
   setTruckUnavailable,
   scheduleMaintenance,
+  checkVehicleAvailability,
+  getAvailableVehiclesForRental,
 
   getServiceLocations,
   addServiceLocation,
