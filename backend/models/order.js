@@ -45,9 +45,13 @@ const OrderSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["Placed", "Assigned", "In Transit", "Completed", "Cancelled"],
+      enum: ["Placed", "Assigned", "In Transit", "Completed", "Cancelled", "Expired", "Rejected"],
       default: "Placed",
     },
+
+    // Expiry fields
+    bidding_closes_at: { type: Date }, // When bidding window closes (2 days before scheduled_at)
+    expires_at: { type: Date }, // When order expires if no action taken
 
     assigned_transporter_id: {
       type: mongoose.Schema.Types.ObjectId,
@@ -75,6 +79,18 @@ OrderSchema.virtual("bid_by_transporter", {
   localField: "_id",
   foreignField: "order_id",
   justOne: true,
+});
+
+// Pre-save hook to set bidding_closes_at and expires_at
+OrderSchema.pre('save', function(next) {
+  if (this.isNew && this.scheduled_at) {
+    // Bidding closes 2 days before scheduled pickup
+    this.bidding_closes_at = new Date(this.scheduled_at.getTime() - 2 * 24 * 60 * 60 * 1000);
+    
+    // Order expires 1 day after bidding closes if no bids are accepted
+    this.expires_at = new Date(this.bidding_closes_at.getTime() + 24 * 60 * 60 * 1000);
+  }
+  next();
 });
 
 const orderModel = mongoose.model("Order", OrderSchema);

@@ -159,6 +159,30 @@ const assignVehicleToOrder = async (orderId, assignmentData) => {
     return updatedOrder;
 };
 
+const getExpiredOrders = async () => {
+    const now = new Date();
+    return await Order.find({
+        status: 'Placed',
+        expires_at: { $lte: now }
+    });
+};
+
+const markOrderAsExpired = async (orderId) => {
+    return await Order.findByIdAndUpdate(
+        orderId,
+        { status: 'Expired' },
+        { new: true }
+    );
+};
+
+const markOrderAsRejected = async (orderId) => {
+    return await Order.findByIdAndUpdate(
+        orderId,
+        { status: 'Rejected' },
+        { new: true }
+    );
+};
+
 export default {
     countOrdersByCustomer,
     countOrdersByTransporter,
@@ -176,4 +200,7 @@ export default {
     verifyOTPAndUpdateStatus,
     getOrderById,
     assignVehicleToOrder,
+    getExpiredOrders,
+    markOrderAsExpired,
+    markOrderAsRejected,
 }
