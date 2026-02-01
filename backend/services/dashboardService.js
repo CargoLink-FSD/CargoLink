@@ -1,13 +1,22 @@
 import Order from '../models/order.js';
 import Bid from '../models/bids.js';
+import mongoose from 'mongoose';
+import { AppError } from '../utils/misc.js';
 
 /**
  * Get customer dashboard statistics
  */
 const getCustomerDashboard = async (customerId) => {
+  // Validate ObjectId
+  if (!mongoose.Types.ObjectId.isValid(customerId)) {
+    throw new AppError(400, 'ValidationError', 'Invalid customer ID', 'ERR_VALIDATION');
+  }
+
+  const customerObjectId = new mongoose.Types.ObjectId(customerId);
+
   // Order statistics
   const orderStats = await Order.aggregate([
-    { $match: { customer_id: customerId } },
+    { $match: { customer_id: customerObjectId } },
     {
       $group: {
         _id: '$status',
@@ -17,23 +26,23 @@ const getCustomerDashboard = async (customerId) => {
   ]);
 
   // Total orders
-  const totalOrders = await Order.countDocuments({ customer_id: customerId });
+  const totalOrders = await Order.countDocuments({ customer_id: customerObjectId });
 
   // Active orders (Placed, Assigned, In Transit)
   const activeOrders = await Order.countDocuments({
-    customer_id: customerId,
+    customer_id: customerObjectId,
     status: { $in: ['Placed', 'Assigned', 'In Transit', 'Started'] }
   });
 
   // Completed orders
   const completedOrders = await Order.countDocuments({
-    customer_id: customerId,
+    customer_id: customerObjectId,
     status: 'Completed'
   });
 
   // Total spending
   const spendingResult = await Order.aggregate([
-    { $match: { customer_id: customerId, status: 'Completed', final_price: { $exists: true } } },
+    { $match: { customer_id: customerObjectId, status: 'Completed', final_price: { $exists: true } } },
     {
       $group: {
         _id: null,
@@ -44,7 +53,7 @@ const getCustomerDashboard = async (customerId) => {
   const totalSpent = spendingResult.length > 0 ? spendingResult[0].totalSpent : 0;
 
   // Recent orders
-  const recentOrders = await Order.find({ customer_id: customerId })
+  const recentOrders = await Order.find({ customer_id: customerObjectId })
     .sort({ createdAt: -1 })
     .limit(5)
     .select('_id status pickup delivery scheduled_at final_price max_price createdAt')
@@ -64,9 +73,16 @@ const getCustomerDashboard = async (customerId) => {
  * Get transporter dashboard statistics
  */
 const getTransporterDashboard = async (transporterId) => {
+  // Validate ObjectId
+  if (!mongoose.Types.ObjectId.isValid(transporterId)) {
+    throw new AppError(400, 'ValidationError', 'Invalid transporter ID', 'ERR_VALIDATION');
+  }
+
+  const transporterObjectId = new mongoose.Types.ObjectId(transporterId);
+
   // Order statistics
   const orderStats = await Order.aggregate([
-    { $match: { assigned_transporter_id: transporterId } },
+    { $match: { assigned_transporter_id: transporterObjectId } },
     {
       $group: {
         _id: '$status',
@@ -76,17 +92,17 @@ const getTransporterDashboard = async (transporterId) => {
   ]);
 
   // Total orders
-  const totalOrders = await Order.countDocuments({ assigned_transporter_id: transporterId });
+  const totalOrders = await Order.countDocuments({ assigned_transporter_id: transporterObjectId });
 
   // Active orders (Assigned, In Transit)
   const activeOrders = await Order.countDocuments({
-    assigned_transporter_id: transporterId,
+    assigned_transporter_id: transporterObjectId,
     status: { $in: ['Assigned', 'In Transit', 'Started'] }
   });
 
   // Completed orders
   const completedOrders = await Order.countDocuments({
-    assigned_transporter_id: transporterId,
+    assigned_transporter_id: transporterObjectId,
     status: 'Completed'
   });
 
@@ -94,7 +110,7 @@ const getTransporterDashboard = async (transporterId) => {
   const earningsResult = await Order.aggregate([
     { 
       $match: { 
-        assigned_transporter_id: transporterId, 
+        assigned_transporter_id: transporterObjectId, 
         status: 'Completed', 
         final_price: { $exists: true } 
       } 
@@ -109,11 +125,11 @@ const getTransporterDashboard = async (transporterId) => {
   const totalEarnings = earningsResult.length > 0 ? earningsResult[0].totalEarnings : 0;
 
   // Bid statistics
-  const totalBids = await Bid.countDocuments({ transporter_id: transporterId });
+  const totalBids = await Bid.countDocuments({ transporter_id: transporterObjectId });
 
   // Average bid amount
   const avgBidResult = await Bid.aggregate([
-    { $match: { transporter_id: transporterId } },
+    { $match: { transporter_id: transporterObjectId } },
     {
       $group: {
         _id: null,
@@ -124,7 +140,7 @@ const getTransporterDashboard = async (transporterId) => {
   const avgBidAmount = avgBidResult.length > 0 ? avgBidResult[0].avgBidAmount : 0;
 
   // Recent orders
-  const recentOrders = await Order.find({ assigned_transporter_id: transporterId })
+  const recentOrders = await Order.find({ assigned_transporter_id: transporterObjectId })
     .sort({ createdAt: -1 })
     .limit(5)
     .select('_id status pickup delivery scheduled_at final_price createdAt')
@@ -132,7 +148,7 @@ const getTransporterDashboard = async (transporterId) => {
     .lean();
 
   // Pending bids (orders with bids but not yet assigned)
-  const pendingBids = await Bid.find({ transporter_id: transporterId })
+  const pendingBids = await Bid.find({ transporter_id: transporterObjectId })
     .populate({
       path: 'order_id',
       match: { status: 'Placed' },

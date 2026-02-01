@@ -45,6 +45,8 @@ const placeOrder = async (orderData) => {
         }
 
         // Calculate rental duration in days
+        // Note: Uses Math.ceil to round up partial days (e.g., 25 hours = 2 days)
+        // This ensures customers are billed for any partial day usage
         const durationMs = rentalEnd - rentalStart;
         orderData.rental_duration_days = Math.ceil(durationMs / (1000 * 60 * 60 * 24));
     }

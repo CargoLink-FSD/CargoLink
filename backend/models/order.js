@@ -90,8 +90,18 @@ OrderSchema.virtual("bid_by_transporter", {
 // Pre-save hook to set bidding_closes_at and expires_at
 OrderSchema.pre('save', function(next) {
   if (this.isNew && this.scheduled_at) {
+    const now = new Date();
+    const scheduled = new Date(this.scheduled_at);
+    
     // Bidding closes 2 days before scheduled pickup
-    this.bidding_closes_at = new Date(this.scheduled_at.getTime() - 2 * 24 * 60 * 60 * 1000);
+    this.bidding_closes_at = new Date(scheduled.getTime() - 2 * 24 * 60 * 60 * 1000);
+    
+    // Validate that bidding window is not already closed
+    if (this.bidding_closes_at <= now) {
+      // If scheduled pickup is less than 2 days away, set bidding_closes_at to now
+      // This allows immediate order creation but bidding will be immediately closed
+      this.bidding_closes_at = now;
+    }
     
     // Order expires 1 day after bidding closes if no bids are accepted
     this.expires_at = new Date(this.bidding_closes_at.getTime() + 24 * 60 * 60 * 1000);
