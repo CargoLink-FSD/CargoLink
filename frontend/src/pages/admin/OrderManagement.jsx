@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNotification } from '../../context/NotificationContext';
 import http from '../../api/http';
 import Header from '../../components/common/Header';
+import { formatCurrency } from '../../utils/currency';
 import './OrderManagement.css';
 
 export default function OrderManagement() {
@@ -251,7 +252,7 @@ export default function OrderManagement() {
                     </div>
                     <div className="detail-row">
                       <span className="detail-label">Final Price:</span>
-                      <span>${selectedOrder.final_price ? selectedOrder.final_price.toFixed(2) : 'N/A'}</span>
+                      <span>{formatCurrency(selectedOrder.final_price, { includeDecimals: true })}</span>
                     </div>
                     <div className="detail-row">
                       <span className="detail-label">Created Date:</span>
@@ -291,7 +292,7 @@ export default function OrderManagement() {
                           orderBids.map((bid, index) => (
                             <tr key={index}>
                               <td>{bid.transporter_name || 'N/A'}</td>
-                              <td>${bid.bid_amount?.toFixed(2) || 'N/A'}</td>
+                              <td>{formatCurrency(bid.bid_amount, { includeDecimals: true })}</td>
                               <td>{formatDateTime(bid.bid_time || bid.createdAt)}</td>
                             </tr>
                           ))

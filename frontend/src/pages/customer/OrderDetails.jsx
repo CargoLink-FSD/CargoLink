@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import http from '../../api/http';
+import { formatCurrency } from '../../utils/currency';
 import '../../pages/customer/CustomerOrders.css';
 export default function OrderDetails(){
   const { orderId } = useParams();
@@ -97,7 +98,7 @@ export default function OrderDetails(){
               </div>
 
               <div style={{marginTop:14}}><small>Payment Amount</small>
-                <div style={{marginTop:8}}>{price ? `₹${price}` : 'N/A'}</div>
+                <div style={{marginTop:8}}>{formatCurrency(price)}</div>
               </div>
             </div>
           </div>
@@ -119,13 +120,13 @@ export default function OrderDetails(){
                     <tr key={idx} style={{borderTop:'1px solid #eee'}}>
                       <td style={{padding:12}}>{it.name || it.itemName || it.description || 'Item'}</td>
                       <td style={{padding:12}}>{it.quantity || it.qty || it.count || '—'}</td>
-                      <td style={{padding:12}}>{it.price ? `₹${it.price}` : it.bid_amount ? `₹${it.bid_amount}` : '—'}</td>
+                      <td style={{padding:12}}>{formatCurrency(it.price || it.bid_amount)}</td>
                       <td style={{padding:12}}>{it.delivery_status || it.status || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <div style={{marginTop:12,fontWeight:700}}>Total: {price ? `₹${price}` : '—'}</div>
+              <div style={{marginTop:12,fontWeight:700}}>Total: {formatCurrency(price)}</div>
             </div>
           </div>
 

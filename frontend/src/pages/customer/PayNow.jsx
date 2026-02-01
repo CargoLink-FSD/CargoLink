@@ -4,6 +4,7 @@ import '../../styles/PayNow.css';
 import { useDispatch } from 'react-redux';
 import { confirmDelivery } from '../../store/slices/ordersSlice';
 import { useNotification } from '../../context/NotificationContext';
+import { formatCurrency } from '../../utils/currency';
 
 const generateTransactionId = () => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -114,7 +115,7 @@ export default function PayNow({ orderId: propOrderId, amount: propAmount }) {
         <div className="icon">✔</div>
         <h1>Payment Confirmation</h1>
         <div className="details">
-          <p>Amount: <span className="amount">₹ {Number(amount || 0).toLocaleString('en-IN')}</span></p>
+          <p>Amount: <span className="amount">{formatCurrency(amount || 0)}</span></p>
           <p>Order ID: <span>{orderId || '—'}</span></p>
           {errors.orderId && <p className="field-error">{errors.orderId}</p>}
           <p>Transaction ID: <span className="txid">{transactionId}</span></p>

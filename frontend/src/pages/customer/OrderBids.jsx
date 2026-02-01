@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useNotification } from '../../context/NotificationContext';
 import http from '../../api/http';
 import Header from '../../components/common/Header';
+import { formatCurrency } from '../../utils/currency';
 import './OrderBids.css';
 
 export default function OrderBids() {
@@ -62,11 +63,6 @@ export default function OrderBids() {
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
-
-  const formatCurrency = (amount) => {
-    if (!amount) return '—';
-    return `₹${Number(amount).toLocaleString('en-IN')}`;
   };
 
   if (loading) {

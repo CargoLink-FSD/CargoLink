@@ -7,6 +7,7 @@ import UserActions from '../components/trackOrders/UserActions';
 import ChatWindow from '../components/trackOrders/ChatWindow';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
+import { formatCurrency, calculateShipmentsTotal } from '../utils/currency';
 // import LiveTracking from '../components/trackOrders/LiveTracking';
 // import { fetchTrackingData, clearTracking } from '../store/slices/trackingSlice';
 
@@ -52,12 +53,7 @@ const TrackOrderPage = () => {
   
   const calculateTotal = useCallback(() => {
     if (!currentOrder?.shipments) return;
-    let totalAmount = 0;
-    currentOrder.shipments.forEach((item) => {
-      const price = parseFloat(item.price);
-      const adjustedPrice = item.delivery_status === 'Damaged' ? price * 0.9 : price;
-      totalAmount += adjustedPrice;
-    });
+    const totalAmount = calculateShipmentsTotal(currentOrder.shipments);
     setTotal(totalAmount);
   }, [currentOrder?.shipments]);
 
@@ -158,7 +154,7 @@ const TrackOrderPage = () => {
                 <div className="detail-group">
                   <p className="detail-label">Payment Amount</p>
                   <p className="detail-value">
-                    {currentOrder.final_price ? `₹${currentOrder.final_price}` : "Not finalized"}
+                    {formatCurrency(currentOrder.final_price) || "Not finalized"}
                   </p>
                 </div>
               </div>
@@ -189,7 +185,7 @@ const TrackOrderPage = () => {
                       <tr key={index}>
                         <td>{item.item_name}</td>
                         <td>{item.quantity}</td>
-                        <td>${item.price}</td>
+                        <td>{formatCurrency(item.price)}</td>
                         {/* {userType === 'customer' && (
                           <td>
                             <select
