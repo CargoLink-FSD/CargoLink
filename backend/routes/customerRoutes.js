@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.js";
 import { validate, validationSchema } from "../middlewares/validator.js";
 import customerController from "../controllers/customerController.js";
+import dashboardController from "../controllers/dashboardController.js";
 
 const customerRouter = Router();
 
@@ -10,6 +11,9 @@ customerRouter.post("/register", validate(validationSchema.customer), customerCo
 
 // All routes require authentication as customer
 customerRouter.use(authMiddleware(['customer']));
+
+// Dashboard
+customerRouter.get("/dashboard", dashboardController.getCustomerDashboard); // Get dashboard stats
 
 // Profile
 customerRouter.get("/profile", customerController.getCustomerProfile); // Get profile

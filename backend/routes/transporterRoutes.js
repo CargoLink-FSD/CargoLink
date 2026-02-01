@@ -3,6 +3,7 @@ import { authMiddleware } from "../middlewares/auth.js";
 import { validate } from "../middlewares/validator.js";
 import { validationSchema } from "../middlewares/validator.js";
 import transporterController from "../controllers/transporterController.js";
+import dashboardController from "../controllers/dashboardController.js";
 
 const transporterRouter = Router();
 
@@ -13,6 +14,9 @@ transporterRouter.post("/register", validate(validationSchema.transporter), tran
 
 // All routes require authentication as transporter
 transporterRouter.use(authMiddleware(['transporter']));
+
+// Dashboard
+transporterRouter.get("/dashboard", dashboardController.getTransporterDashboard); // Get dashboard stats
 
 // Profile
 transporterRouter.get("/profile", transporterController.getTransporterProfile); // Get profile
@@ -41,6 +45,10 @@ transporterRouter.post("/fleet/:truckId/set-maintenance", transporterController.
 transporterRouter.post("/fleet/:truckId/set-available", transporterController.setTruckAvailable); // Set truck to available
 transporterRouter.post("/fleet/:truckId/set-unavailable", transporterController.setTruckUnavailable); // Set truck to unavailable
 transporterRouter.post("/fleet/:truckId/schedule-maintenance", transporterController.scheduleMaintenance); // Schedule maintenance
+
+// Rental Availability
+transporterRouter.get("/fleet/:vehicleId/availability", transporterController.checkVehicleAvailability); // Check vehicle availability for rental
+transporterRouter.get("/fleet/available-for-rental", transporterController.getAvailableVehiclesForRental); // Get available vehicles for rental period
 
 
 // transporterRouter.get("/drivers", transporterController.getDrivers); // List drivers
