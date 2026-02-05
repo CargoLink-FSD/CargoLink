@@ -261,3 +261,33 @@ h1 {
     from { width: 100%; }
     to { width: 0; }
 }
+
+/* Google OAuth Styles */
+.oauth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 1.5rem 0;
+}
+
+.oauth-divider::before,
+.oauth-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.oauth-divider span {
+    padding: 0 1rem;
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.google-login-container {
+    margin-bottom: 1.5rem;
+}
+
+.google-login-container > div {
+    width: 100% !important;
+}

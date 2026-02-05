@@ -102,7 +102,7 @@ export default function OrderCard({
         <div>
           <h3>Order</h3>
           <div className="order-id">
-            #{variant === 'customer' ? order._id : order._id?.slice(-8).toUpperCase()}
+            #{ order._id?.slice(-8).toUpperCase()}
           </div>
           <span className="date">{formatDate(order.createdAt || order.order_date)}</span>
         </div>
