@@ -18,17 +18,22 @@ const CustomerSchema = new mongoose.Schema(
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    phone: { type: String, required: true },
-    dob: { type: Date, required: true },
-    gender: { type: String, enum: ["Male", "Female", "Other"], required: true },
-    password: { type: String, required: true },
+    phone: { type: String },
+    dob: { type: Date },
+    gender: { type: String, enum: ["Male", "Female", "Other"] },
+    password: { type: String },
     addresses: [AddressSchema],
+    // OAuth fields
+    authProvider: { type: String, enum: ["google", "local"], default: "local" },
+    googleId: { type: String },
+    profilePicture: { type: String },
+    isEmailVerified: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
 
 CustomerSchema.pre("save", async function (next) {
-  if (this.isModified("password")) {
+  if (this.isModified("password") && this.password) {
     this.password = await bcrypt.hash(this.password, 10);
   }
   next();

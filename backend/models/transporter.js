@@ -24,23 +24,28 @@ const FleetSchema = new mongoose.Schema(
 const TransporterSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    gst_in: { type: String, required: true, unique: true },
-    pan: { type: String, required: true, unique: true },
-    street: { type: String, required: true },
-    city: { type: String, required: true },
-    state: { type: String, required: true },
-    pin: { type: String, required: true },
-    primary_contact: { type: String, required: true },
+    gst_in: { type: String },
+    pan: { type: String },
+    street: { type: String },
+    city: { type: String },
+    state: { type: String },
+    pin: { type: String },
+    primary_contact: { type: String },
     secondary_contact: String,
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    password: { type: String },
     fleet: [FleetSchema],
+    // OAuth fields
+    authProvider: { type: String, enum: ["google", "local"], default: "local" },
+    googleId: { type: String },
+    profilePicture: { type: String },
+    isEmailVerified: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
 
 TransporterSchema.pre("save", async function (next) {
-  if (this.isModified("password")) {
+  if (this.isModified("password") && this.password) {
     this.password = await bcrypt.hash(this.password, 10);
   }
   next();

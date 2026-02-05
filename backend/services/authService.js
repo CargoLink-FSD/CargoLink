@@ -43,6 +43,11 @@ export async function authenticateUser({ email, password, role }) {
     throw new AppError(401, 'AuthError', 'Invalid credentials', 'ERR_INVALID_CREDENTIALS');
   }
 
+  // Check if user signed up with Google OAuth
+  if (user.authProvider === 'google') {
+    throw new AppError(401, 'AuthError', 'This account uses Google Sign-In. Please continue with Google.', 'ERR_GOOGLE_AUTH_REQUIRED');
+  }
+
   logger.debug('User found', { user: user, role, password, userPassword: user.password });
 
   const passwordOk = await user.verifyPassword(password);
