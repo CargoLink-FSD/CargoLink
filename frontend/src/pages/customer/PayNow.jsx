@@ -1,8 +1,9 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { replace, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import '../../styles/PayNow.css';
+import { useDispatch } from 'react-redux';
+import { confirmDelivery } from '../../store/slices/ordersSlice';
 import { useNotification } from '../../context/NotificationContext';
-import { paymentAPI } from '../../api/payment'; // Updated to use your new API service
 
 const generateTransactionId = () => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -13,11 +14,19 @@ const generateTransactionId = () => {
   return id;
 };
 
+/**
+ * PayNow component contract
+ * Props (optional):
+ *  - orderId: string
+ *  - amount: number
+ * Precedence: props > navigation state > query params.
+ */
 export default function PayNow({ orderId: propOrderId, amount: propAmount }) {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { showNotification } = useNotification();
+  const dispatch = useDispatch();
 
   // Read from navigation state when available, else fall back to query params
   const stateOrderId = location.state?.orderId;
@@ -27,6 +36,7 @@ export default function PayNow({ orderId: propOrderId, amount: propAmount }) {
 
   const orderId = propOrderId || stateOrderId || qpOrderId || '';
   const amount = useMemo(() => {
+    // Prefer amount from props > state > query param; default 0
     const raw = propAmount ?? stateAmount ?? (qpAmount ? Number(qpAmount) : 0);
     return Number.isFinite(raw) ? raw : 0;
   }, [propAmount, stateAmount, qpAmount]);
@@ -36,7 +46,7 @@ export default function PayNow({ orderId: propOrderId, amount: propAmount }) {
   const [card, setCard] = useState({ number: '', name: '', expiry: '', cvv: '' });
   const [netBank, setNetBank] = useState('HDFC');
   const [upi, setUpi] = useState('');
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState({}); // field -> message
 
   const validate = useCallback(() => {
     const nextErrors = {};
@@ -49,12 +59,29 @@ export default function PayNow({ orderId: propOrderId, amount: propAmount }) {
       if (!card.name.trim()) nextErrors.cardName = 'Name required';
       if (!/^\d{2}\/\d{2}$/.test(card.expiry)) {
         nextErrors.cardExpiry = 'Expiry must be MM/YY';
+      } else {
+        const [mmStr, yyStr] = card.expiry.split('/');
+        const mm = Number(mmStr);
+        const yy = Number(yyStr);
+        if (mm < 1 || mm > 12) {
+          nextErrors.cardExpiry = 'Invalid month';
+        } else {
+          const now = new Date();
+          const currentYY = Number(String(now.getFullYear()).slice(-2));
+          const currentMM = now.getMonth() + 1;
+          if (yy < currentYY || (yy === currentYY && mm < currentMM)) {
+            nextErrors.cardExpiry = 'Card expired';
+          }
+        }
       }
       if (!/^\d{3,4}$/.test(card.cvv)) nextErrors.cardCvv = 'CVV must be 3-4 digits';
     }
-    if (method === 'upi' && !/^[a-zA-Z0-9.\-_]{2,}@[a-zA-Z]{2,}$/.test(upi)) {
-      nextErrors.upi = 'Invalid UPI handle';
+    if (method === 'upi') {
+      if (!/^[a-zA-Z0-9.\-_]{2,}@[a-zA-Z]{2,}$/.test(upi)) {
+        nextErrors.upi = 'Invalid UPI handle';
+      }
     }
+    // Netbanking: ensure selection exists
     if (method === 'netbanking' && !netBank) {
       nextErrors.netBank = 'Select a bank';
     }
@@ -63,31 +90,23 @@ export default function PayNow({ orderId: propOrderId, amount: propAmount }) {
   }, [method, card, upi, netBank, orderId]);
 
   const hasErrors = Object.keys(errors).length > 0;
-  const transactionId = useMemo(() => generateTransactionId(), []);
 
-  const handlePaymentSubmit = async () => {
+  const handleConfirmDelivery = async () => {
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) return;
-
     setLoading(true);
     try {
-      // Integration with backend: Processes payment and updates order status to 'Assigned'
-      await paymentAPI.processPayment(orderId, {
-        transactionId: transactionId,
-        method: method.toUpperCase(),
-      });
-
-      showNotification({ message: 'Payment Successful! Your order is now assigned.', type: 'success' });
-      
-      // Redirect to orders page where they can see the assigned transporter
+      await dispatch(confirmDelivery({ orderId })).unwrap();
+      showNotification({ message: 'Delivery Confirmed', type: 'success' });
       navigate('/customer/orders', { replace: true });
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Unable to Process Payment';
-      showNotification({ message: errorMsg, type: 'error' });
+      showNotification({ message: 'Unable to Process Payment', type: 'error' });
     } finally {
       setLoading(false);
     }
   };
+
+  const transactionId = useMemo(() => generateTransactionId(), []);
 
   return (
     <main className="paynow-container">
@@ -101,18 +120,19 @@ export default function PayNow({ orderId: propOrderId, amount: propAmount }) {
           <p>Transaction ID: <span className="txid">{transactionId}</span></p>
         </div>
 
+        {/* Dummy payment flow */}
         <div className="pay-methods">
           <div className="method-switch">
             <label>
-              <input type="radio" value="card" checked={method === 'card'} onChange={() => setMethod('card')} />
+              <input type="radio" name="paymethod" value="card" checked={method === 'card'} onChange={() => setMethod('card')} />
               Card
             </label>
             <label>
-              <input type="radio" value="netbanking" checked={method === 'netbanking'} onChange={() => setMethod('netbanking')} />
+              <input type="radio" name="paymethod" value="netbanking" checked={method === 'netbanking'} onChange={() => setMethod('netbanking')} />
               NetBanking
             </label>
             <label>
-              <input type="radio" value="upi" checked={method === 'upi'} onChange={() => setMethod('upi')} />
+              <input type="radio" name="paymethod" value="upi" checked={method === 'upi'} onChange={() => setMethod('upi')} />
               UPI
             </label>
           </div>
@@ -124,16 +144,20 @@ export default function PayNow({ orderId: propOrderId, amount: propAmount }) {
                 placeholder="Card Number"
                 value={card.number}
                 onChange={(e) => setCard({ ...card, number: e.target.value })}
-                maxLength={16}
+                maxLength={19}
                 className={errors.cardNumber ? 'is-invalid' : ''}
+                onBlur={validate}
               />
+              {errors.cardNumber && <div className="field-error">{errors.cardNumber}</div>}
               <input
                 type="text"
                 placeholder="Name on Card"
                 value={card.name}
                 onChange={(e) => setCard({ ...card, name: e.target.value })}
                 className={errors.cardName ? 'is-invalid' : ''}
+                onBlur={validate}
               />
+              {errors.cardName && <div className="field-error">{errors.cardName}</div>}
               <div className="row">
                 <input
                   type="text"
@@ -141,25 +165,43 @@ export default function PayNow({ orderId: propOrderId, amount: propAmount }) {
                   value={card.expiry}
                   onChange={(e) => setCard({ ...card, expiry: e.target.value })}
                   maxLength={5}
+                  className={errors.cardExpiry ? 'is-invalid' : ''}
+                  onBlur={validate}
                 />
                 <input
                   type="password"
                   placeholder="CVV"
                   value={card.cvv}
                   onChange={(e) => setCard({ ...card, cvv: e.target.value })}
-                  maxLength={3}
+                  maxLength={4}
+                  className={errors.cardCvv ? 'is-invalid' : ''}
+                  onBlur={validate}
                 />
               </div>
+              {(errors.cardExpiry || errors.cardCvv) && (
+                <div className="field-error">
+                  {errors.cardExpiry || errors.cardCvv}
+                </div>
+              )}
             </div>
           )}
 
           {method === 'netbanking' && (
             <div className="netbanking-form">
-              <select value={netBank} onChange={(e) => setNetBank(e.target.value)}>
+              <select
+                value={netBank}
+                onChange={(e) => setNetBank(e.target.value)}
+                className={errors.netBank ? 'is-invalid' : ''}
+                onBlur={validate}
+              >
+                <option value="">Select Bank</option>
                 <option value="HDFC">HDFC Bank</option>
                 <option value="SBI">State Bank of India</option>
                 <option value="ICICI">ICICI Bank</option>
+                <option value="AXIS">Axis Bank</option>
+                <option value="KOTAK">Kotak Mahindra Bank</option>
               </select>
+              {errors.netBank && <div className="field-error">{errors.netBank}</div>}
             </div>
           )}
 
@@ -170,18 +212,16 @@ export default function PayNow({ orderId: propOrderId, amount: propAmount }) {
                 placeholder="yourname@upi"
                 value={upi}
                 onChange={(e) => setUpi(e.target.value)}
+                className={errors.upi ? 'is-invalid' : ''}
+                onBlur={validate}
               />
+              {errors.upi && <div className="field-error">{errors.upi}</div>}
             </div>
           )}
         </div>
-
         <div className="actions">
-          <button 
-            className="btn btn-primary" 
-            onClick={handlePaymentSubmit} 
-            disabled={loading || !orderId || hasErrors}
-          >
-            {loading ? 'Processing...' : 'Confirm & Pay'}
+          <button className="btn btn-primary" onClick={handleConfirmDelivery} disabled={loading || !orderId || hasErrors}>
+            {loading ? 'Confirming...' : 'Confirm Payment'}
           </button>
           <button className="btn btn-outline" onClick={() => navigate(-1)} disabled={loading}>
             Back

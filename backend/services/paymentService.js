@@ -1,30 +1,65 @@
 import orderModel from "../models/order.js";
-import Payment from "../models/payment.js"; 
-import Review from "../models/review.js";   
+import Payment from "../models/payment.js";
+import Review from "../models/review.js";
 
 export default {
-  // Existing payment methods...
 
-  addReview: async (orderId, customerId, reviewData) => {
-    // 1. Fetch the specific order
+  /** ============================
+   *  CONFIRM PAYMENT
+   *  ============================ */
+  confirmPayment: async (orderId, details) => {
     const order = await orderModel.findById(orderId);
-    
-    // 2. Security Check: Ensure order exists and is Completed
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    // Ensure transporter is assigned
+    if (!order.assigned_transporter_id) {
+      throw new Error("Cannot pay for an order without an assigned transporter");
+    }
+
+    // Prevent duplicate payments
+    const existingPayment = await Payment.findOne({ order_id: orderId });
+    if (existingPayment) {
+      throw new Error("Payment already completed for this order");
+    }
+
+    const payment = await Payment.create({
+      order_id: orderId,
+      customer_id: details.customerId,
+      amount: order.final_price ?? order.max_price,
+      transaction_id: details.transactionId,
+      method: details.method,
+      status: "Completed"
+    });
+
+    // Move order to Assigned so transporter can start
+    order.status = "Assigned";
+    await order.save();
+
+    return payment;
+  },
+
+  /** ============================
+   *  ADD REVIEW
+   *  ============================ */
+  addReview: async (orderId, customerId, reviewData) => {
+    const order = await orderModel.findById(orderId);
+
+    // Order must exist AND be completed
     if (!order || order.status !== "Completed") {
       throw new Error("You can only review completed orders");
     }
 
-    // 3. Prevent Duplicates: Check the flag on the order
+    // Prevent duplicate reviews
     if (order.is_reviewed) {
       throw new Error("You have already submitted a review for this order");
     }
 
-    // 4. Data Validation: Ensure there is a transporter to rate
     if (!order.assigned_transporter_id) {
       throw new Error("No transporter assigned to this order");
     }
 
-    // 5. Create the Review record
     const review = await Review.create({
       order_id: orderId,
       customer_id: customerId,
@@ -40,8 +75,17 @@ export default {
     return review;
   },
 
+  /** ============================
+   *  PAYMENT HISTORY
+   *  ============================ */
   getHistory: async (userId, role) => {
-    const filter = role === "customer" ? { customer_id: userId } : { transporter_id: userId };
-    return await Payment.find(filter).populate("order_id").sort({ createdAt: -1 });
+    const filter =
+      role === "customer"
+        ? { customer_id: userId }
+        : { transporter_id: userId };
+
+    return await Payment.find(filter)
+      .populate("order_id")
+      .sort({ createdAt: -1 });
   }
 };
