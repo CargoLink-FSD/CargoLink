@@ -31,8 +31,8 @@ const getCustomerProfile = async (customerId)  => {
   
   const orderCount = await orderRepo.countOrdersByCustomer(customer._id);
   
-  // fetch image
-  const profileImage = '/img/Mr.H.jpg' 
+  // Use profile picture from database if available
+  const profileImage = customer.profilePicture || null;
 
   return {customer, orderCount, profileImage};
 };

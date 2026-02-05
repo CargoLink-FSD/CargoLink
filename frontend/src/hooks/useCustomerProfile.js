@@ -6,6 +6,7 @@ import {
   updateCustomerPassword,
   addCustomerAddress,
   deleteCustomerAddress,
+  uploadCustomerProfilePicture,
   clearError,
   clearUpdateSuccess,
 } from '../store/slices/customerSlice';
@@ -55,5 +56,6 @@ export const useCustomerProfile = () => {
     updateCustomerPassword,
     addCustomerAddress,
     deleteCustomerAddress,
+    uploadCustomerProfilePicture,
   };
 };

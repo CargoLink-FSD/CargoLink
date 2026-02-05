@@ -7,10 +7,10 @@ const createCustomer = async (req, res, next) => {
     const customerData = req.body;
     logger.debug("Customer creation input", customerData);
     const customer = await customerService.registerCustomer(customerData);
-    customer.password = undefined; 
+    customer.password = undefined;
     logger.debug("Customer Created", customer);
     const { accessToken, refreshToken } = authService.generateTokens(customer, 'customer'); //tokens for auto login after signup.
-    
+
     res.status(201).json({
       success: true,
       data: { accessToken, refreshToken },
@@ -26,15 +26,15 @@ const getCustomerProfile = async (req, res, next) => {
 
   try {
     const customerId = req.user.id;
-    const {customer, orderCount, profileImage} = await customerService.getCustomerProfile(customerId);
+    const { customer, orderCount, profileImage } = await customerService.getCustomerProfile(customerId);
 
     const customerProfile = {
       firstName: customer.firstName,
       lastName: customer.lastName,
       email: customer.email,
       phone: customer.phone,
-      dob: customer.dob, 
-      memberSince: customer.createdAt, 
+      dob: customer.dob,
+      memberSince: customer.createdAt,
       gender: customer.gender,
       addresses: customer.addresses,
       profileImage,
@@ -57,13 +57,19 @@ const getCustomerProfile = async (req, res, next) => {
 const updateCustomerProfile = async (req, res, next) => {
   try {
     const customerId = req.user.id;
-    if (!req.body || Object.keys(req.body).length === 0){
-      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION', 
-        {type: "data", msg: "No Fields to update in request Body", location: "body"}
+    if ((!req.body || Object.keys(req.body).length === 0) && !req.file) {
+      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
+        { type: "data", msg: "No Fields to update in request Body", location: "body" }
       );
     }
 
     const updates = req.body;
+    
+    // If a profile picture was uploaded, add the path to updates
+    if (req.file) {
+      updates.profilePicture = `/uploads/profile-pictures/${req.file.filename}`;
+    }
+
     const customer = await customerService.updateCustomerProfile(customerId, updates);
 
     res.status(200).json({
@@ -116,9 +122,9 @@ const removeAddress = async (req, res, next) => {
   try {
     const customerId = req.user.id;
     const addressIndex = parseInt(req.params.addressId);
-    if (!(/^[0-9]+$/.test(req.params.addressId) && Number.isSafeInteger(addressIndex))){
-      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION', 
-        { type: "field", value: req.params.addressId, msg: "Not a valid Index for addresses", path: "addressIndex", location: "params"}
+    if (!(/^[0-9]+$/.test(req.params.addressId) && Number.isSafeInteger(addressIndex))) {
+      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
+        { type: "field", value: req.params.addressId, msg: "Not a valid Index for addresses", path: "addressIndex", location: "params" }
       );
     }
 
@@ -139,7 +145,7 @@ const updatePassword = async (req, res, next) => {
   try {
     logger.debug('Update password request received', { user: req.user, body: req.body });
     const customerId = req.user.id;
-    const {oldPassword, newPassword} = req.body;
+    const { oldPassword, newPassword } = req.body;
 
     await customerService.changePassword(customerId, oldPassword, newPassword);
 
@@ -154,19 +160,19 @@ const updatePassword = async (req, res, next) => {
 };
 
 
-const deleteCustomer = async (req, res, next) => {};
+const deleteCustomer = async (req, res, next) => { };
 
 
 
 export default {
-    createCustomer,
+  createCustomer,
 
-    getCustomerProfile,
-    updateCustomerProfile,
-    deleteCustomer,
-    updatePassword,
-    
-    getAddresses,
-    addAddress,
-    removeAddress,
+  getCustomerProfile,
+  updateCustomerProfile,
+  deleteCustomer,
+  updatePassword,
+
+  getAddresses,
+  addAddress,
+  removeAddress,
 }

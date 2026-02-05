@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import { profileFieldSchemas, addressSchema } from '../../utils/schemas';
 import { useCustomerProfile } from '../../hooks/useCustomerProfile';
+import { fetchCustomerProfile } from '../../store/slices/customerSlice';
 import { useNotification } from '../../context/NotificationContext';
 import Header from '../../components/common/Header';
 import ProfileField from '../../components/profile/ProfileField';
@@ -26,7 +27,27 @@ const CustomerProfile = () => {
     updateCustomerPassword,
     addCustomerAddress,
     deleteCustomerAddress,
+    uploadCustomerProfilePicture,
   } = useCustomerProfile();
+
+  const handleProfilePictureChange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please select a valid image file (JPEG, PNG, GIF, or WEBP)');
+        return;
+      }
+      // Validate file size (2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        alert('File size must be less than 2MB');
+        return;
+      }
+      await dispatch(uploadCustomerProfilePicture(file));
+      await dispatch(fetchCustomerProfile());
+    }
+  };
 
   if (loading && !profile) {
     return (
@@ -57,94 +78,117 @@ const CustomerProfile = () => {
         <div className="profile-container">
           {/* Profile Header Card */}
           <div className="profile-header-card">
-          <div className="profile-header-content">
-            <div className="profile-header-left">
-              <div className="profile-avatar-large">
-                {profile.firstName ? profile.firstName[0].toUpperCase() : '?'}
-              </div>
-              <div className="profile-header-info">
-                <div className="profile-name-row">
-                  <h1 className="profile-display-name">{profile.firstName} {profile.lastName}</h1>
-                  <span className="status-badge active">Active</span>
+            <div className="profile-header-content">
+              <div className="profile-header-left">
+                <div className="profile-avatar-wrapper">
+                  {profile.profileImage ? (
+                    <img 
+                      src={`http://localhost:3000${profile.profileImage}`} 
+                      alt="Profile" 
+                      className="profile-avatar-large"
+                      onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                    />
+                  ) : (
+                    <div className="profile-avatar-large">
+                      {profile.firstName ? profile.firstName[0].toUpperCase() : '?'}
+                    </div>
+                  )}
+                  <label className="profile-picture-upload-btn" title="Upload profile picture">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                      <circle cx="12" cy="13" r="4"></circle>
+                    </svg>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleProfilePictureChange}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
                 </div>
-                <p className="profile-header-email">{profile.email}</p>
-                <p className="profile-member-since">
-                  Member since {new Date(profile.memberSince).toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
-                </p>
-              </div>
-            </div>
-            <div className="profile-header-right">
-              <div className="profile-stats-card">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                </svg>
-                <div className="stat-info">
-                  <div className="stat-value">
-                    {Array.isArray(profile?.orderCount)
-                      ? profile.orderCount.reduce((sum, item) => sum + (item.count || 0), 0)
-                      : (typeof profile?.orderCount === 'number' ? profile.orderCount : 0)}
+                <div className="profile-header-info">
+                  <div className="profile-name-row">
+                    <h1 className="profile-display-name">{profile.firstName} {profile.lastName}</h1>
+                    <span className="status-badge active">Active</span>
                   </div>
-                  <div className="stat-label">Total Orders</div>
+                  <p className="profile-header-email">{profile.email}</p>
+                  <p className="profile-member-since">
+                    Member since {new Date(profile.memberSince).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </p>
+                </div>
+              </div>
+              <div className="profile-header-right">
+                <div className="profile-stats-card">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                  </svg>
+                  <div className="stat-info">
+                    <div className="stat-value">
+                      {Array.isArray(profile?.orderCount)
+                        ? profile.orderCount.reduce((sum, item) => sum + (item.count || 0), 0)
+                        : (typeof profile?.orderCount === 'number' ? profile.orderCount : 0)}
+                    </div>
+                    <div className="stat-label">Total Orders</div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Tab Navigation */}
+          <div className="profile-tabs">
+            <button
+              className={`profile-tab ${activeTab === 'personal' ? 'active' : ''}`}
+              onClick={() => setActiveTab('personal')}
+            >
+              Personal Info
+            </button>
+            <button
+              className={`profile-tab ${activeTab === 'addresses' ? 'active' : ''}`}
+              onClick={() => setActiveTab('addresses')}
+            >
+              Addresses
+            </button>
+            <button
+              className={`profile-tab ${activeTab === 'security' ? 'active' : ''}`}
+              onClick={() => setActiveTab('security')}
+            >
+              Security
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          <div className="profile-content">
+            {activeTab === 'personal' && (
+              <ProfileInfo
+                profile={profile}
+                dispatch={dispatch}
+                updateCustomerField={updateCustomerField}
+              />
+            )}
+
+            {activeTab === 'addresses' && (
+              <AddressesTab
+                addresses={addresses}
+                showAddressForm={showAddressForm}
+                setShowAddressForm={setShowAddressForm}
+                dispatch={dispatch}
+                addCustomerAddress={addCustomerAddress}
+                deleteCustomerAddress={deleteCustomerAddress}
+              />
+            )}
+
+            {activeTab === 'security' && (
+              <SecurityTab dispatch={dispatch} updatePasswordAction={updateCustomerPassword} userEmail={profile?.email} />
+            )}
+          </div>
         </div>
-
-        {/* Tab Navigation */}
-        <div className="profile-tabs">
-          <button
-            className={`profile-tab ${activeTab === 'personal' ? 'active' : ''}`}
-            onClick={() => setActiveTab('personal')}
-          >
-            Personal Info
-          </button>
-          <button
-            className={`profile-tab ${activeTab === 'addresses' ? 'active' : ''}`}
-            onClick={() => setActiveTab('addresses')}
-          >
-            Addresses
-          </button>
-          <button
-            className={`profile-tab ${activeTab === 'security' ? 'active' : ''}`}
-            onClick={() => setActiveTab('security')}
-          >
-            Security
-          </button>
-        </div>
-
-        {/* Tab Content */}
-        <div className="profile-content">
-          {activeTab === 'personal' && (
-            <ProfileInfo 
-              profile={profile} 
-              dispatch={dispatch}
-              updateCustomerField={updateCustomerField}
-            />
-          )}
-
-          {activeTab === 'addresses' && (
-            <AddressesTab
-              addresses={addresses}
-              showAddressForm={showAddressForm}
-              setShowAddressForm={setShowAddressForm}
-              dispatch={dispatch}
-              addCustomerAddress={addCustomerAddress}
-              deleteCustomerAddress={deleteCustomerAddress}
-            />
-          )}
-
-          {activeTab === 'security' && (
-            <SecurityTab dispatch={dispatch} updatePasswordAction={updateCustomerPassword} userEmail={profile?.email} />
-          )}
-        </div>
-      </div>
       </div>
       <Footer />
     </>
@@ -220,10 +264,10 @@ const ProfileInfo = ({ profile, dispatch, updateCustomerField }) => {
           displayValue={
             profile?.dob
               ? new Date(profile.dob).toLocaleDateString('en-US', {
-                  month: '2-digit',
-                  day: '2-digit',
-                  year: 'numeric'
-                })
+                month: '2-digit',
+                day: '2-digit',
+                year: 'numeric'
+              })
               : ''
           }
           type="date"
@@ -272,11 +316,11 @@ const AddressesTab = ({ addresses, showAddressForm, setShowAddressForm, dispatch
         pin: addressSchema.shape.pin,
         phone: addressSchema.shape.phone,
       };
-      
+
       if (fieldSchemas[name]) {
         fieldSchemas[name].parse(value);
       }
-      
+
       setFieldErrors(prev => ({ ...prev, [name]: '' }));
       return true;
     } catch (error) {

@@ -15,6 +15,14 @@ export const updateCustomerProfile = async (fieldType, fieldValue) => {
   return response.data;
 };
 
+// Upload customer profile picture
+export const uploadCustomerProfilePicture = async (file) => {
+  const formData = new FormData();
+  formData.append('profilePicture', file);
+  const response = await http.put('/api/customers/profile', formData);
+  return response.data;
+};
+
 // Update customer password
 export const updateCustomerPassword = async (oldPassword, newPassword) => {
   const response = await http.patch('/api/customers/password', {
@@ -45,6 +53,7 @@ export const deleteCustomerAddress = async (addressId) => {
 export default {
   getCustomerProfile,
   updateCustomerProfile,
+  uploadCustomerProfilePicture,
   updateCustomerPassword,
   getCustomerAddresses,
   addCustomerAddress,

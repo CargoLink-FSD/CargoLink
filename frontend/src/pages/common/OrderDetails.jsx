@@ -163,6 +163,19 @@ export default function OrderDetails() {
                 <span className="value">{order.special_instructions}</span>
               </div>
             )}
+            {order.cargo_photo && (
+              <div className="info-item" style={{ marginTop: '1rem' }}>
+                <span className="label">Cargo Photo</span>
+                <div className="cargo-photo-display">
+                  <img
+                    src={`http://localhost:3000${order.cargo_photo}`}
+                    alt="Cargo"
+                    className="cargo-photo-full"
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Shipment Items */}

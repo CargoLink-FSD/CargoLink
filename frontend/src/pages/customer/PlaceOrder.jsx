@@ -37,6 +37,8 @@ export default function PlaceOrder() {
     touched,
     loading,
     savedAddresses,
+    cargoPhoto,
+    cargoPhotoPreview,
     handleInputChange,
     handleShipmentChange,
     addShipmentItem,
@@ -44,7 +46,9 @@ export default function PlaceOrder() {
     loadAddress,
     handleSubmit,
     setFieldTouched,
-    getBiddingEndTime
+    getBiddingEndTime,
+    handleCargoPhotoChange,
+    removeCargoPhoto
   } = usePlaceOrder();
 
   return (
@@ -59,12 +63,12 @@ export default function PlaceOrder() {
           {/* Shipment Details - Two Column Layout */}
           <div className="form-section">
             <h2 className="section-title">Shipment Details</h2>
-            
+
             <div className="form-row">
               {/* Pickup Location */}
               <div className="form-group">
                 <label htmlFor="pickup-street" className="form-label">Pickup Location</label>
-                
+
                 {savedAddresses.length > 0 && (
                   <select
                     id="pickup-address-select"
@@ -136,7 +140,7 @@ export default function PlaceOrder() {
               {/* Drop-off Location */}
               <div className="form-group">
                 <label htmlFor="dropoff-street" className="form-label">Drop-off Location</label>
-                
+
                 {savedAddresses.length > 0 && (
                   <select
                     id="dropoff-address-select"
@@ -261,7 +265,7 @@ export default function PlaceOrder() {
           {/* Cargo Information */}
           <div className="form-section">
             <h2 className="section-title">Cargo Information</h2>
-            
+
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="goods-type" className="form-label">Type of Goods</label>
@@ -416,6 +420,44 @@ export default function PlaceOrder() {
                 <span className="error-message">{errors['cargo.description']}</span>
               )}
             </div>
+
+            {/* Cargo Photo Upload */}
+            <div className="form-group">
+              <label htmlFor="cargo-photo" className="form-label">Cargo Photo (Optional)</label>
+              <div className="file-upload-container">
+                {!cargoPhotoPreview ? (
+                  <div className="file-upload-area">
+                    <input
+                      type="file"
+                      id="cargo-photo"
+                      className="file-input"
+                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                      onChange={handleCargoPhotoChange}
+                    />
+                    <label htmlFor="cargo-photo" className="file-upload-label">
+                      <svg className="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <span className="upload-text">Click to upload cargo photo</span>
+                      <span className="upload-hint">JPEG, PNG, GIF or WEBP (Max 5MB)</span>
+                    </label>
+                  </div>
+                ) : (
+                  <div className="file-preview-container">
+                    <img src={cargoPhotoPreview} alt="Cargo preview" className="cargo-photo-preview" />
+                    <button
+                      type="button"
+                      className="remove-photo-btn"
+                      onClick={removeCargoPhoto}
+                      aria-label="Remove photo"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+              </div>
+              <p className="form-hint">Upload a photo of your cargo to help transporters understand the shipment better</p>
+            </div>
           </div>
 
           {/* Pricing Section */}
@@ -427,17 +469,20 @@ export default function PlaceOrder() {
                 <div className="form-group">
                   <label htmlFor="max-price" className="form-label">Maximum Price</label>
                   <input
-                    type="number"
+                    type="text"
                     id="max-price"
                     className={`input-field ${errors['cargo.maxPrice'] && touched['cargo.maxPrice'] ? 'error' : ''}`}
-                    value={formData.cargo.maxPrice}
+                    value={formData.cargo.maxPrice ? `₹${formData.cargo.maxPrice}` : ''}
                     onChange={(e) => handleInputChange('cargo', 'maxPrice', e.target.value)}
                     onBlur={() => setFieldTouched('cargo.maxPrice')}
-                    placeholder="Calculated based on distance"
-                    min="2000"
+                    placeholder={formData.transit.distance ? "Calculating..." : "Enter distance first"}
                     readOnly
                   />
-                  <div className="form-info">Calculated: 30 rs/km (0-1000 km), 28 rs/km (1000-2000 km), 25 rs/km (above 2000 km)</div>
+                  <div className="form-info">
+                    {formData.transit.distance ?
+                      `Auto-calculated: ${formData.transit.distance} km × ${formData.transit.distance <= 1000 ? 30 : formData.transit.distance <= 2000 ? 28 : 25} rs/km`
+                      : 'Fill in the Distance field above to auto-calculate the price'}
+                  </div>
                   {errors['cargo.maxPrice'] && touched['cargo.maxPrice'] && (
                     <span className="error-message">{errors['cargo.maxPrice']}</span>
                   )}
