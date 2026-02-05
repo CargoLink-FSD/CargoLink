@@ -41,6 +41,19 @@ export const updateTransporterPassword = createAsyncThunk(
   }
 );
 
+export const fetchTransporterRatings = createAsyncThunk(
+  'transporter/fetchRatings',
+  async (_, { rejectWithValue }) => {
+    try {
+      const data = await transporterApi.getTransporterRatings();
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Failed to fetch ratings');
+    }
+  }
+);
+
+// Initial state - added dedicated ratings fields
 export const uploadTransporterProfilePicture = createAsyncThunk(
   'transporter/uploadProfilePicture',
   async (file, { rejectWithValue }) => {
@@ -59,6 +72,11 @@ const initialState = {
   loading: false,
   error: null,
   updateSuccess: false,
+
+  // Dedicated ratings state (this helps prevent permanent loading state)
+  ratings: null,           // will hold { averageRating, totalReviews, reviews, ... }
+  ratingsLoading: false,
+  ratingsError: null,
 };
 
 // Slice
@@ -91,7 +109,7 @@ const transporterSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       // Update transporter field
       .addCase(updateTransporterField.pending, (state) => {
         state.loading = true;
@@ -110,7 +128,7 @@ const transporterSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       // Update password
       .addCase(updateTransporterPassword.pending, (state) => {
         state.loading = true;
@@ -125,6 +143,19 @@ const transporterSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+
+      // ── Ratings handling ───────────────────────────────────────────────
+      .addCase(fetchTransporterRatings.pending, (state) => {
+        state.ratingsLoading = true;
+        state.ratingsError = null;
+      })
+      .addCase(fetchTransporterRatings.fulfilled, (state, action) => {
+        state.ratingsLoading = false;
+        state.ratings = action.payload;  // expected shape: { averageRating, totalReviews, reviews }
+      })
+      .addCase(fetchTransporterRatings.rejected, (state, action) => {
+        state.ratingsLoading = false;
+        state.ratingsError = action.payload;
       
       // Upload profile picture
       .addCase(uploadTransporterProfilePicture.pending, (state) => {

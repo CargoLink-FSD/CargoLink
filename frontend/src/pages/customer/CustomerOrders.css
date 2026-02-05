@@ -4,7 +4,50 @@
   padding: 2rem;
   min-height: calc(100vh - 200px);
 }
+.order-card-wrapper {
+  position: relative; /* Create a coordinate system for the button */
+}
 
+
+.btn-review-trigger {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 100; 
+  background: #ffc107;
+  color: #000;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transition: transform 0.2s ease;
+}
+
+.btn-review-trigger:hover {
+  transform: scale(1.05);
+  background: #ffb300;
+}
+
+/* Modal Overlay Wrapper */
+.modal-overlay-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  cursor: pointer;
+}
+
+.modal-overlay-wrapper > * {
+  pointer-events: auto;
+}
 .orders-header {
   margin-bottom: 1.75rem;
 }
