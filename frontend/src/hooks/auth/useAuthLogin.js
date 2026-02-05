@@ -8,6 +8,8 @@ import { loginUser } from '../../store/slices/authSlice';
 import { useNotification } from '../../context/NotificationContext';
 import { loginSchema } from '../../utils/schemas';
 import { redirectAfterLogin } from '../../utils/redirectUser';
+import * as authApi from '../../api/auth';
+import tokenStorage from '../../utils/token';
 
 export const useAuthLogin = () => {
   const navigate = useNavigate();
@@ -16,6 +18,7 @@ export const useAuthLogin = () => {
   const { showError, showSuccess } = useNotification();
   const [searchParams] = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   // Get user type and redirect URL from query params
   const userType = searchParams.get('type') || 'customer';
@@ -55,15 +58,53 @@ export const useAuthLogin = () => {
     }
   };
 
+  // Handle Google OAuth login
+  const handleGoogleLogin = async (credentialResponse) => {
+    setGoogleLoading(true);
+    try {
+      const response = await authApi.googleLogin({
+        credential: credentialResponse.credential,
+        role: userType,
+      });
+      
+      // Store tokens
+      tokenStorage.setTokens(response.accessToken, response.refreshToken);
+      
+      // Update Redux state
+      const userInfo = tokenStorage.getUserFromToken();
+      dispatch(loginUser.fulfilled({ accessToken: response.accessToken, refreshToken: response.refreshToken }));
+      
+      showSuccess('Logged in successfully with Google.');
+      redirectTo ? navigate(redirectTo, { replace: true }) : redirectAfterLogin(userInfo?.role || userType, navigate);
+    } catch (err) {
+      const errorMessage = err?.payload?.message || err?.message || 'Google login failed';
+      
+      if (errorMessage.includes('No account found') || errorMessage.includes('ERR_USER_NOT_FOUND')) {
+        showError('No account found with this email. Please sign up first.');
+      } else {
+        showError(errorMessage);
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    showError('Google login failed. Please try again.');
+    setGoogleLoading(false);
+  };
+
   return {
     formData: watch(),
     userType,
     showPassword,
-    authLoading,
+    authLoading: authLoading || googleLoading,
     errors,
     register,
     handleSubmit: handleSubmit(onSubmit),
     toggleShowPassword: () => setShowPassword(!showPassword),
     navigate,
+    handleGoogleLogin,
+    handleGoogleError,
   };
 };

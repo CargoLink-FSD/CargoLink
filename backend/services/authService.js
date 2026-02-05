@@ -110,10 +110,21 @@ export function validateAccessTokenPayload(payload, roles) {
   return { userId: payload.sub, role: payload.role };
 }
 
+// Find user by email and role (for Google OAuth)
+export async function findUserByEmailAndRole(email, role) {
+  if (role === 'customer') {
+    return await customerRepo.findByEmail(email);
+  } else if (role === 'transporter') {
+    return await transporterRepo.findByEmail(email);
+  }
+  return null;
+}
+
 export default {
   authenticateUser,
   generateTokens,
   rotateRefreshToken,
   revokeRefreshToken,
   validateAccessTokenPayload,
+  findUserByEmailAndRole,
 };

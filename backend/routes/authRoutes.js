@@ -20,4 +20,8 @@ authRouter.post("/reset-password/:token", validate(validationSchema.resetPasswor
 authRouter.get("/verify-email/:token", authController.verifyEmail);
 authRouter.post("/resend-verification", authController.resendVerification);
 
+// Google OAuth routes
+authRouter.post("/google-login", authController.googleLogin);
+authRouter.post("/google-verify", authController.googleVerify);
+
 export default authRouter;

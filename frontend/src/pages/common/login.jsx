@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuthLogin } from '../../hooks/auth/useAuthLogin';
 import { EyeIcon, EyeOffIcon } from '../../components/auth/AuthUI';
 import AuthLayout from '../../components/auth/AuthLayout';
@@ -17,6 +18,8 @@ function Login() {
     handleSubmit,
     toggleShowPassword,
     navigate,
+    handleGoogleLogin,
+    handleGoogleError,
   } = useAuthLogin();
 
   return (
@@ -85,6 +88,21 @@ function Login() {
           </Button>
         </div>
       </form>
+
+      {/* Google OAuth Button */}
+      <div className="oauth-divider">
+        <span>OR</span>
+      </div>
+      
+      <div className="google-login-container">
+        <GoogleLogin
+          onSuccess={handleGoogleLogin}
+          onError={handleGoogleError}
+          text="continue_with"
+          size="large"
+          width="100%"
+        />
+      </div>
 
       <p className="register-text">
         Not a user?{' '}

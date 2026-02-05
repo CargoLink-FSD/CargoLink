@@ -37,5 +37,15 @@ export const resetPassword = async ({ token, password }) => {
   return data;
 };
 
-export default { login, signup, logout, refreshToken, forgotPassword, resetPassword };
+export const googleLogin = async ({ credential, role }) => {
+  const data = await http.post('/api/auth/google-login', { credential, role });
+  return data.data;
+};
+
+export const googleVerify = async ({ credential }) => {
+  const data = await http.post('/api/auth/google-verify', { credential });
+  return data.data;
+};
+
+export default { login, signup, logout, refreshToken, forgotPassword, resetPassword, googleLogin, googleVerify };
 

@@ -1,5 +1,9 @@
 import authService from '../services/authService.js';
 import { AppError } from '../utils/misc.js';
+import { OAuth2Client } from 'google-auth-library';
+import { GOOGLE_CLIENT_ID } from '../config/index.js';
+
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 // Helper to standardize responses
 function send(res, statusCode, payload) {
@@ -99,6 +103,76 @@ const resendVerification = async (req, res, next) => {
   next(new AppError(501, 'NotImplemented', 'Resend verification not implemented', 'ERR_NOT_IMPLEMENTED'));
 };
 
+// Google OAuth Login
+const googleLogin = async (req, res, next) => {
+  try {
+    const { credential, role } = req.body;
+    
+    if (!credential) {
+      throw new AppError(400, 'AuthError', 'Google credential required', 'ERR_GOOGLE_INPUT');
+    }
+    
+    if (!role) {
+      throw new AppError(400, 'AuthError', 'Role required', 'ERR_GOOGLE_INPUT');
+    }
+
+    // Verify the Google token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: GOOGLE_CLIENT_ID,
+    });
+    
+    const payload = ticket.getPayload();
+    const email = payload.email;
+
+    if (!email) {
+      throw new AppError(400, 'AuthError', 'Email not found in Google account', 'ERR_GOOGLE_EMAIL');
+    }
+
+    // Try to find user by email and role
+    const user = await authService.findUserByEmailAndRole(email, role);
+    
+    if (!user) {
+      throw new AppError(404, 'AuthError', 'No account found with this email. Please sign up first.', 'ERR_USER_NOT_FOUND');
+    }
+
+    // Generate tokens for the found user
+    const { accessToken, refreshToken } = authService.generateTokens(user, role);
+    send(res, 200, { message: 'Login successful', data: { accessToken, refreshToken } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Google OAuth Verify (for signup - just extracts email)
+const googleVerify = async (req, res, next) => {
+  try {
+    const { credential } = req.body;
+    
+    if (!credential) {
+      throw new AppError(400, 'AuthError', 'Google credential required', 'ERR_GOOGLE_INPUT');
+    }
+
+    // Verify the Google token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: GOOGLE_CLIENT_ID,
+    });
+    
+    const payload = ticket.getPayload();
+    const email = payload.email;
+
+    if (!email) {
+      throw new AppError(400, 'AuthError', 'Email not found in Google account', 'ERR_GOOGLE_EMAIL');
+    }
+
+    // Return just the email for signup form population
+    send(res, 200, { message: 'Email verified', data: { email } });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export default {
   login,
   refreshToken,
@@ -107,5 +181,7 @@ export default {
   resetPassword,
   verifyEmail,
   resendVerification,
+  googleLogin,
+  googleVerify,
 };
 

@@ -57,8 +57,8 @@ export const customerSignupSchema = z.object({
   path: ['confirmPassword'],
 });
 
-export const customerStep1Schema = customerSignupSchema.pick({ firstName: true, lastName: true, gender: true });
-export const customerStep2Schema = customerSignupSchema.pick({ phone: true, email: true, dob: true });
+export const customerStep1Schema = customerSignupSchema.pick({ firstName: true, lastName: true, gender: true, email: true });
+export const customerStep2Schema = customerSignupSchema.pick({ phone: true, dob: true });
 export const customerStep3Schema = customerSignupSchema.pick({ street_address: true, city: true, state: true, pin: true });
 export const customerStep4Schema = customerSignupSchema.pick({ password: true, confirmPassword: true, terms: true });
 
