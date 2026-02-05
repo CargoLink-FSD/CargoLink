@@ -10,13 +10,13 @@ const FleetSchema = new mongoose.Schema(
     truck_type: { type: String, required: true },
     status: {
       type: String,
-      enum: ["Available", "Assigned", "In Maintenance", "Unavailable"],
+      enum: ["Available", "OnTrip", "Maintenance", "Unavailable"],
       default: "Available",
     },
     last_service_date: Date,
     next_service_date: Date,
     currentLocation: String,
-    current_trip_id: { type: mongoose.Schema.Types.ObjectId, ref: "Trip" },
+    current_trip_id: { type: mongoose.Schema.Types.ObjectId, ref: "Trip", default: null },
   },
   { _id: true },
 );

@@ -2,34 +2,31 @@ import mongoose from "mongoose";
 
 const TripStopSchema = new mongoose.Schema(
   {
-    sequence: { type: Number, required: true },
+    order_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+      required: true,
+    },
     type: {
       type: String,
-      enum: ["Pickup", "Dropoff", "Waypoint"],
+      enum: ["PICKUP", "DROPOFF"],
       required: true,
-      default: "Waypoint",
     },
-    order_id: { type: mongoose.Schema.Types.ObjectId, ref: "Order" },
-    address: {
-      street: { type: String, required: true },
-      city: { type: String, required: true },
-      state: { type: String, required: true },
-      pin: { type: String, required: true },
-      coordinates: {
-        type: [Number],
-        default: undefined,
-      },
+    seq: {
+      type: Number,
+      required: true,
     },
-    scheduled_arrival_at: Date,
-    scheduled_departure_at: Date,
-    eta_at: Date,
-    actual_arrival_at: Date,
-    actual_departure_at: Date,
     status: {
       type: String,
-      enum: ["Pending", "En Route", "Arrived", "Departed", "Skipped"],
+      enum: ["Pending", "Arrived", "Done"],
       default: "Pending",
     },
+    otp: {
+      type: String,
+      default: null,
+    },
+    arrived_at: Date,
+    done_at: Date,
   },
   { _id: false },
 );
@@ -41,31 +38,22 @@ const TripSchema = new mongoose.Schema(
       ref: "Transporter",
       required: true,
     },
-    assigned_vehicle_id: { type: mongoose.Schema.Types.ObjectId, required: true },
-    order_ids: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Order",
-        required: true,
-      },
-    ],
+    vehicle_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: false,
+      default: null,
+    },
     status: {
       type: String,
-      enum: ["Planned", "Scheduled", "In Transit", "Delayed", "Completed", "Cancelled"],
+      enum: ["Planned", "Scheduled", "InTransit", "Completed", "Cancelled"],
       default: "Planned",
     },
-    stops: { type: [TripStopSchema], default: [] },
-    current_stop_sequence: { type: Number, default: 0 },
-    current_location_coordinates: {
-      type: [Number],
-      default: undefined,
+    stops: {
+      type: [TripStopSchema],
+      default: [],
     },
-    planned_start_at: Date,
-    actual_start_at: Date,
-    planned_end_at: Date,
-    actual_end_at: Date,
-    total_distance_km: Number,
-    total_duration_minutes: Number,
+    started_at: Date,
+    completed_at: Date,
   },
   { timestamps: true },
 );

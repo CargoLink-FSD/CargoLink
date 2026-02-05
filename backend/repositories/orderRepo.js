@@ -120,52 +120,48 @@ const updateOrderStatus = async (orderId, status, additionalData = {}) => {
     );
 };
 
-// Verify OTP and Update Status
-const verifyOTPAndUpdateStatus = async (orderId, transporterId, otp) => {
-    return await Order.findOneAndUpdate(
-        {
-            _id: orderId,
-            assigned_transporter_id: transporterId,
-            otp: otp,
-            status: 'Started'
-        },
-        {
-            status: 'In Transit',
-            $unset: { otp: 1 }
-        },
-        { new: true }
-    );
-};
-
-
 const getOrderById = async (orderId) => {
     return await Order.findById(orderId);
 };
 
-// const updateOrderStatus = async (orderId, status, additionalData = {}) => {
-//     const updateData = { status, ...additionalData };
-//     const updatedOrder = await Order.findByIdAndUpdate(
-//         orderId,
-//         { $set: updateData },
-//         { new: true }
-//     );
-//     return updatedOrder;
-// };
+const getOrdersByIds = async (orderIds) => {
+    return await Order.find({ _id: { $in: orderIds } });
+};
 
-const assignVehicleToOrder = async (orderId, assignmentData) => {
-    const updatedOrder = await Order.findByIdAndUpdate(
+const assignTripToOrder = async (orderId, tripId) => {
+    return await Order.findByIdAndUpdate(
         orderId,
         {
             $set: {
-                'assignment.vehicle_id': assignmentData.vehicle_id,
-                'assignment.vehicle_number': assignmentData.vehicle_number,
-                'assignment.vehicle_type': assignmentData.vehicle_type,
-                'assignment.assigned_at': new Date()
-            }
+                trip_id: tripId,
+                status: 'Scheduled',
+            },
         },
         { new: true }
     );
-    return updatedOrder;
+};
+
+
+const removeTripFromOrder = async (orderId) => {
+    return await Order.findByIdAndUpdate(
+        orderId,
+        {
+            $set: {
+                trip_id: null,
+                status: 'Assigned',
+            },
+        },
+        { new: true }
+    );
+};
+
+
+const getAssignedOrdersForTransporter = async (transporterId) => {
+    return await Order.find({
+        assigned_transporter_id: transporterId,
+        status: 'Assigned',
+        trip_id: null,
+    });
 };
 
 export default {
@@ -182,7 +178,9 @@ export default {
     assignOrder,
     checkActiveOrder,
     updateOrderStatus,
-    verifyOTPAndUpdateStatus,
     getOrderById,
-    assignVehicleToOrder,
+    getOrdersByIds,
+    assignTripToOrder,
+    removeTripFromOrder,
+    getAssignedOrdersForTransporter,
 }
