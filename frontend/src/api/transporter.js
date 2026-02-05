@@ -15,6 +15,14 @@ export const updateTransporterProfile = async (fieldType, fieldValue) => {
   return response.data;
 };
 
+// Upload transporter profile picture
+export const uploadTransporterProfilePicture = async (file) => {
+  const formData = new FormData();
+  formData.append('profilePicture', file);
+  const response = await http.put('/api/transporters/profile', formData);
+  return response.data;
+};
+
 // Update transporter password
 export const updateTransporterPassword = async (oldPassword, newPassword) => {
   const response = await http.patch('/api/transporters/password', {
@@ -27,5 +35,6 @@ export const updateTransporterPassword = async (oldPassword, newPassword) => {
 export default {
   getTransporterProfile,
   updateTransporterProfile,
+  uploadTransporterProfilePicture,
   updateTransporterPassword,
 };

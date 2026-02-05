@@ -3,8 +3,41 @@ import { authMiddleware } from "../middlewares/auth.js";
 import { validate } from "../middlewares/validator.js";
 import { validationSchema } from "../middlewares/validator.js";
 import orderController from "../controllers/orderController.js";
+import upload from "../config/multer.js";
 
 const orderRouter = Router();
+
+// Middleware to parse JSON strings from FormData
+const parseFormDataJSON = (req, res, next) => {
+    if (req.body.pickup) {
+        try {
+            req.body.pickup = JSON.parse(req.body.pickup);
+        } catch (e) {
+            // Already an object, skip
+        }
+    }
+    if (req.body.delivery) {
+        try {
+            req.body.delivery = JSON.parse(req.body.delivery);
+        } catch (e) {
+            // Already an object, skip
+        }
+    }
+    if (req.body.shipments) {
+        try {
+            req.body.shipments = JSON.parse(req.body.shipments);
+        } catch (e) {
+            // Already an array, skip
+        }
+    }
+
+    // Convert numeric fields from strings to numbers
+    if (req.body.distance) req.body.distance = parseFloat(req.body.distance);
+    if (req.body.max_price) req.body.max_price = parseFloat(req.body.max_price);
+    if (req.body.weight) req.body.weight = parseFloat(req.body.weight);
+
+    next();
+};
 
 // Common:
 orderRouter.get("/my-orders", authMiddleware(["customer", "transporter"]), orderController.getUserOrders); // Get user-specific orders
@@ -12,7 +45,7 @@ orderRouter.get("/available", authMiddleware(["transporter"]), orderController.g
 orderRouter.get("/my-bids", authMiddleware(["transporter"]), orderController.getTransporterBids); // List transporter's bids
 
 // Orders:
-orderRouter.post("/", authMiddleware(["customer"]), validate(validationSchema.order), orderController.placeOrder); // Place order (shipment/rental)
+orderRouter.post("/", authMiddleware(["customer"]), upload.single('cargo_photo'), parseFormDataJSON, validate(validationSchema.order), orderController.placeOrder); // Place order (shipment/rental)
 orderRouter.delete("/:orderId", authMiddleware(["customer"]), orderController.cancelOrder); // Cancel order
 // orderRouter.post("/:orderId/rating", authMiddleware(["customer"]), validate(validationSchema.rating), orderController.submitRating); // Submit rating for order
 
@@ -33,7 +66,7 @@ orderRouter.post("/:orderId/bids/:bidId/accept", authMiddleware(["customer"]), o
 orderRouter.delete("/:orderId/bids/:bidId", authMiddleware(["customer"]), orderController.rejectBid); // Reject bid
 
 orderRouter.post("/:orderId/bids", authMiddleware(["transporter"]), validate(validationSchema.bid), orderController.submitBid); // Submit bid
-orderRouter.delete( '/:orderId/bids/:bidId', authMiddleware(['transporter']), orderController.withdrawBid); // Withdraw a bid
+orderRouter.delete('/:orderId/bids/:bidId', authMiddleware(['transporter']), orderController.withdrawBid); // Withdraw a bid
 
 
 

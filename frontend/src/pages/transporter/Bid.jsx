@@ -21,7 +21,7 @@ export default function BidPage() {
     const pickupDate = new Date(scheduledAt);
     const biddingEndDate = new Date(pickupDate);
     biddingEndDate.setDate(pickupDate.getDate() - 2);
-    
+
     return biddingEndDate.toLocaleString([], {
       month: 'short',
       day: 'numeric',
@@ -37,15 +37,15 @@ export default function BidPage() {
     const pickupDate = new Date(scheduledAt);
     const biddingEndDate = new Date(pickupDate);
     biddingEndDate.setDate(pickupDate.getDate() - 2);
-    
+
     const now = new Date();
     const diff = biddingEndDate - now;
-    
+
     if (diff <= 0) return 'Closed';
-    
+
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    
+
     if (days > 0) {
       return `${days}d ${hours}h`;
     } else if (hours > 0) {
@@ -135,12 +135,12 @@ export default function BidPage() {
                     <label htmlFor={`notes-${index}`}>Notes (Optional)</label>
                     <textarea id={`notes-${index}`} rows={2} placeholder="Add any notes about your bid" />
                     <div className="bid-actions">
-                      <a href={`/transporter/order/${bid._id}`} className="btn btn-secondary">More Info</a>
+                      <a href={`/transporter/orders/${bid._id}`} className="btn btn-secondary">More Info</a>
                       {bid.already_bid ? (
                         <button className="btn" disabled>Bid Placed</button>
                       ) : (
-                        <button 
-                          className="btn btn-primary" 
+                        <button
+                          className="btn btn-primary"
                           onClick={() => placeBid(index, bid._id)}
                           disabled={submitting}
                         >

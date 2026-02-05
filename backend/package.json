@@ -24,6 +24,7 @@
     "google-auth-library": "^10.5.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.3",
+    "multer": "^2.0.2",
     "nodemailer": "^7.0.11",
     "ws": "^8.13.0"
   },

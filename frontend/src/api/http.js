@@ -12,20 +12,25 @@ export const getBaseUrl = () => API_BASE_URL;
 
 async function request(path, { method = 'GET', headers, body, credentials = 'include', _retry = false } = {}) {
   const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
-  
+
   // Get access token and add to headers if available
   const accessToken = tokenStorage.getAccessToken();
   const authHeaders = accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {};
-  
+
+  // Check if body is FormData - don't stringify or set Content-Type
+  const isFormData = body instanceof FormData;
+
   const opts = {
     method,
     credentials,
     headers: {
-      'Content-Type': 'application/json',
+      // Only set Content-Type for non-FormData requests
+      ...(!isFormData && { 'Content-Type': 'application/json' }),
       ...authHeaders,
       ...(headers || {}),
     },
-    body: body ? JSON.stringify(body) : undefined,
+    // Only stringify non-FormData bodies
+    body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
   };
 
   const res = await fetch(url, opts);
@@ -38,11 +43,11 @@ async function request(path, { method = 'GET', headers, body, credentials = 'inc
 
   // Handle 401 Unauthorized - Token expired
   // Skip refresh logic for auth endpoints (login, signup, refresh-token)
-  const isAuthEndpoint = path.includes('/auth/login') || 
-                         path.includes('/auth/signup') || 
-                         path.includes('/auth/refresh-token') ||
-                         path.includes('/register');
-  
+  const isAuthEndpoint = path.includes('/auth/login') ||
+    path.includes('/auth/signup') ||
+    path.includes('/auth/refresh-token') ||
+    path.includes('/register');
+
   if (res.status === 401 && !_retry && !isAuthEndpoint) {
     try {
       await handleTokenRefresh();

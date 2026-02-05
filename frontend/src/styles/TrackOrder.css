@@ -473,3 +473,20 @@
   font-size: 1.1em;
   font-weight: bold;
 }
+/* Cargo Photo Display in TrackOrder */
+.cargo-photo-wrapper {
+  margin-top: 0.5rem;
+}
+
+.cargo-photo {
+  max-width: 300px;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.cargo-photo:hover {
+  transform: scale(1.05);
+}

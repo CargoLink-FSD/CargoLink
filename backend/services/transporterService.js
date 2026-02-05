@@ -33,8 +33,8 @@ const getTransporterProfile = async (transporterId)  => {
   
   const orderCount = await orderRepo.countOrdersByTransporter(transporter._id);
   
-  // fetch image
-  const profileImage = '/img/Mr.H.jpg' 
+  // Use profile picture from database if available
+  const profileImage = transporter.profilePicture || null;
   
   const fleetCount = transporter.fleet.length;
 

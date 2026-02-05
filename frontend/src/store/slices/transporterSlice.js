@@ -41,6 +41,18 @@ export const updateTransporterPassword = createAsyncThunk(
   }
 );
 
+export const uploadTransporterProfilePicture = createAsyncThunk(
+  'transporter/uploadProfilePicture',
+  async (file, { rejectWithValue }) => {
+    try {
+      const response = await transporterApi.uploadTransporterProfilePicture(file);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Failed to upload profile picture');
+    }
+  }
+);
+
 // Initial state
 const initialState = {
   profile: null,
@@ -110,6 +122,21 @@ const transporterSlice = createSlice({
         state.updateSuccess = true;
       })
       .addCase(updateTransporterPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      
+      // Upload profile picture
+      .addCase(uploadTransporterProfilePicture.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.updateSuccess = false;
+      })
+      .addCase(uploadTransporterProfilePicture.fulfilled, (state, action) => {
+        state.loading = false;
+        state.updateSuccess = true;
+      })
+      .addCase(uploadTransporterProfilePicture.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

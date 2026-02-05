@@ -10,8 +10,8 @@ const getUserOrders = async (req, res, next) => {
 
     const orders = await orderService.getOrdersByUser(userId, role);
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       data: orders,
       message: "Orders fetched successfully",
     });
@@ -26,7 +26,7 @@ const getOrderDetails = async (req, res, next) => {
     const userId = req.user.id;
     const role = req.user.role;
 
-    if(!mongoose.Types.ObjectId.isValid(orderId)) {
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
         { type: "field", value: orderId, msg: "Not a valid order ID", path: "orderId", location: "params" }
       );
@@ -34,8 +34,8 @@ const getOrderDetails = async (req, res, next) => {
 
     const orderDetails = await orderService.getOrderDetails(orderId, userId, role);
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       data: orderDetails,
       message: "Order details fetched successfully",
     });
@@ -49,12 +49,17 @@ const placeOrder = async (req, res, next) => {
     const orderData = req.body;
     orderData.customer_id = req.user.id;
 
+    // If a cargo photo was uploaded, add the path to orderData
+    if (req.file) {
+      orderData.cargo_photo = `/uploads/cargo-photos/${req.file.filename}`;
+    }
+
     const order = await orderService.placeOrder(orderData);
 
-    res.status(201).json({ 
-      success: true, 
-      data: { orderId: order._id }, 
-      message: "Order placed successfully", 
+    res.status(201).json({
+      success: true,
+      data: { orderId: order._id },
+      message: "Order placed successfully",
     });
   } catch (err) {
     next(err);
@@ -62,20 +67,20 @@ const placeOrder = async (req, res, next) => {
 };
 
 const cancelOrder = async (req, res, next) => {
-  try{
+  try {
     const orderId = req.params.orderId;
     const customerId = req.user.id;
 
-    if(!mongoose.Types.ObjectId.isValid(orderId)) {
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
         { type: "field", value: orderId, msg: "Not a valid order ID", path: "orderId", location: "params" }
       );
     }
     await orderService.cancelOrder(orderId, customerId);
 
-    res.status(200).json({ 
-      success: true, 
-      message: "Order cancelled successfully" 
+    res.status(200).json({
+      success: true,
+      message: "Order cancelled successfully"
     });
   } catch (err) {
     next(err);
@@ -86,9 +91,9 @@ const getActiveOrders = async (req, res, next) => {
   try {
     const transporterId = req.user.id;
     const orders = await orderService.getActiveOrders(transporterId);
-    res.status(200).json({ 
-      success: true, 
-      data: orders ,
+    res.status(200).json({
+      success: true,
+      data: orders,
       message: "Active orders fetched successfully",
     });
 
@@ -99,11 +104,11 @@ const getActiveOrders = async (req, res, next) => {
 
 
 const getCurrentBids = async (req, res, next) => {
-  try{
+  try {
     const customerId = req.user.id;
     const orderId = req.params.orderId;
 
-    if(!mongoose.Types.ObjectId.isValid(orderId)) {
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
         { type: "field", value: orderId, msg: "Not a valid order ID", path: "orderId", location: "params" }
       );
@@ -111,8 +116,8 @@ const getCurrentBids = async (req, res, next) => {
 
     const bids = await orderService.getCurrentBids(customerId, orderId);
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       data: bids,
       message: "Current bids for the order fetched successfully",
     });
@@ -124,17 +129,17 @@ const getCurrentBids = async (req, res, next) => {
 
 
 const acceptBid = async (req, res, next) => {
-  try{
+  try {
     const customerId = req.user.id;
     const orderId = req.params.orderId;
     const bidId = req.params.bidId;
 
-    if(!mongoose.Types.ObjectId.isValid(orderId)) {
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
         { type: "field", value: orderId, msg: "Not a valid order ID", path: "orderId", location: "params" }
       );
     }
-    if(!mongoose.Types.ObjectId.isValid(bidId)) {
+    if (!mongoose.Types.ObjectId.isValid(bidId)) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
         { type: "field", value: bidId, msg: "Not a valid bid ID", path: "bidId", location: "params" }
       );
@@ -142,9 +147,9 @@ const acceptBid = async (req, res, next) => {
 
     await orderService.acceptBid(customerId, orderId, bidId);
 
-    res.status(200).json({ 
-      success: true, 
-      message: "Bid accepted and order assigned successfully" 
+    res.status(200).json({
+      success: true,
+      message: "Bid accepted and order assigned successfully"
     });
 
   } catch (err) {
@@ -181,13 +186,13 @@ const rejectBid = async (req, res, next) => {
 };
 
 const getTransporterBids = async (req, res, next) => {
-  try{
+  try {
     const transporterId = req.user.id;
 
     const bids = await orderService.getTransporterBids(transporterId);
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       data: bids,
       message: "Bids by transporter fetched successfully",
     });
@@ -198,12 +203,12 @@ const getTransporterBids = async (req, res, next) => {
 };
 
 const submitBid = async (req, res, next) => {
-  try{
+  try {
     const transporterId = req.user.id;
     const orderId = req.params.orderId; //reads orderid from url params
     const { bidAmount, notes } = req.body;
 
-    if(!mongoose.Types.ObjectId.isValid(orderId)) {
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
         { type: "field", value: orderId, msg: "Not a valid order ID", path: "orderId", location: "params" } //reads orderid from url params
       );
@@ -211,10 +216,10 @@ const submitBid = async (req, res, next) => {
 
     const bid = await orderService.submitBid(transporterId, orderId, bidAmount, notes);
 
-    res.status(201).json({ 
-      success: true, 
-      data: { bidId: bid._id }, 
-      message: "Bid submitted successfully", 
+    res.status(201).json({
+      success: true,
+      data: { bidId: bid._id },
+      message: "Bid submitted successfully",
     });
 
   } catch (err) {
@@ -223,22 +228,22 @@ const submitBid = async (req, res, next) => {
 };
 
 const withdrawBid = async (req, res, next) => {
-  try{
+  try {
     const transporterId = req.user.id;
     const bidId = req.params.bidId;
 
-    if(!mongoose.Types.ObjectId.isValid(bidId)) {
+    if (!mongoose.Types.ObjectId.isValid(bidId)) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
         { type: "field", value: bidId, msg: "Not a valid bid ID", path: "bidId", location: "params" }
       );
     }
-    
+
     await orderService.withdrawBid(transporterId, bidId);
-    res.status(200).json({ 
-      success: true, 
-      message: "Bid withdrawn successfully" 
+    res.status(200).json({
+      success: true,
+      message: "Bid withdrawn successfully"
     });
-    
+
   } catch (err) {
     next(err);
   }
@@ -341,7 +346,7 @@ const confirmPickup = async (req, res, next) => {
     const orderId = req.params.orderId;
     const { otp } = req.body;
 
-    if(!mongoose.Types.ObjectId.isValid(orderId)) {
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
         { type: "field", value: orderId, msg: "Not a valid order ID", path: "orderId", location: "params" }
       );
@@ -349,8 +354,8 @@ const confirmPickup = async (req, res, next) => {
 
     const order = await orderService.confirmPickup(transporterId, orderId, otp);
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       data: order,
       message: "Pickup confirmed successfully",
     });
@@ -364,7 +369,7 @@ const confirmDelivery = async (req, res, next) => {
     const customerId = req.user.id;
     const orderId = req.params.orderId;
 
-    if(!mongoose.Types.ObjectId.isValid(orderId)) {
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
         { type: "field", value: orderId, msg: "Not a valid order ID", path: "orderId", location: "params" }
       );
@@ -372,8 +377,8 @@ const confirmDelivery = async (req, res, next) => {
 
     const order = await orderService.confirmDelivery(customerId, orderId);
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       data: order,
       message: "Delivery confirmed successfully",
     });

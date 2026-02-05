@@ -46,7 +46,7 @@ export const useAuthLogin = () => {
       // Map backend error to user-friendly message
       const rawError = typeof err === 'string' ? err : err?.message || 'Login failed';
       let errorMessage = rawError;
-      
+
       if (rawError.includes('Google Sign-In') || rawError.includes('ERR_GOOGLE_AUTH_REQUIRED')) {
         errorMessage = 'This account uses Google Sign-In. Please click "Continue with Google" to login.';
       } else if (rawError.includes('Invalid credentials') || rawError.includes('ERR_INVALID_CREDENTIALS')) {
@@ -55,7 +55,7 @@ export const useAuthLogin = () => {
         // This shouldn't happen anymore, but just in case
         errorMessage = 'Login failed. Please try again.';
       }
-      
+
       showError(errorMessage);
     }
   };
@@ -68,19 +68,19 @@ export const useAuthLogin = () => {
         credential: credentialResponse.credential,
         role: userType,
       });
-      
+
       // Store tokens
       tokenStorage.setTokens(response.accessToken, response.refreshToken);
-      
+
       // Update Redux state
       const userInfo = tokenStorage.getUserFromToken();
       dispatch(loginUser.fulfilled({ accessToken: response.accessToken, refreshToken: response.refreshToken }));
-      
+
       showSuccess('Logged in successfully with Google.');
       redirectTo ? navigate(redirectTo, { replace: true }) : redirectAfterLogin(userInfo?.role || userType, navigate);
     } catch (err) {
       const errorMessage = err?.payload?.message || err?.message || 'Google login failed';
-      
+
       if (errorMessage.includes('No account found') || errorMessage.includes('ERR_USER_NOT_FOUND')) {
         showError('No account found with this email. Please sign up first.');
       } else {

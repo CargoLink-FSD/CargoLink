@@ -3,8 +3,8 @@ import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import './OrderCard.css';
 
-export default function OrderCard({ 
-  order, 
+export default function OrderCard({
+  order,
   variant = 'customer', // 'customer' or 'transporter'
   onDelete,
   onCancelOrder,
@@ -29,7 +29,7 @@ export default function OrderCard({
   // Customer actions
   const handleViewDetails = (e) => {
     e?.stopPropagation();
-    const path = variant === 'customer' 
+    const path = variant === 'customer'
       ? `/customer/orders/${order._id}`
       : `/transporter/orders/${order._id}`;
     navigate(path);
@@ -93,8 +93,8 @@ export default function OrderCard({
     });
   }
   return (
-    <div 
-      className={`order-card ${variant}`} 
+    <div
+      className={`order-card ${variant}`}
       onClick={handleViewDetails}
       role="button"
     >
@@ -102,7 +102,7 @@ export default function OrderCard({
         <div>
           <h3>Order</h3>
           <div className="order-id">
-            #{ order._id?.slice(-8).toUpperCase()}
+            #{order._id?.slice(-8).toUpperCase()}
           </div>
           <span className="date">{formatDate(order.createdAt || order.order_date)}</span>
         </div>
@@ -110,14 +110,14 @@ export default function OrderCard({
           {order.status || 'Unknown'}
         </span>
       </div>
-      
+
       <div className="order-details">
         <div className="route-box">
           <div className="route-left">
             <svg className="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
-              <path d="M2 12h20"/>
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+              <path d="M2 12h20" />
             </svg>
             <div className="route-text">
               <div className="from">From: {order.pickup?.city || 'N/A'}, {order.pickup?.state || ''}</div>
@@ -133,55 +133,67 @@ export default function OrderCard({
         <ul className="order-list">
           <li>
             <svg className="li-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10 17h4V5H2v12h3"/>
-              <path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5"/>
-              <circle cx="7.5" cy="17.5" r="2.5"/>
-              <circle cx="17.5" cy="17.5" r="2.5"/>
+              <path d="M10 17h4V5H2v12h3" />
+              <path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5" />
+              <circle cx="7.5" cy="17.5" r="2.5" />
+              <circle cx="17.5" cy="17.5" r="2.5" />
             </svg>
             {order.truck_type || 'Not Specified'}
           </li>
           <li>
             <svg className="li-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/>
-              <path d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9"/>
+              <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" />
+              <path d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9" />
             </svg>
             {order.goods_type || 'Not Specified'}
           </li>
           <li>
             <svg className="li-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2v20"/>
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              <path d="M12 2v20" />
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
             </svg>
             {order.final_price ? `₹${order.final_price}` : order.max_price ? `₹${order.max_price}` : '—'}
           </li>
           <li>
             <svg className="li-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="8" width="18" height="8" rx="1.5" ry="1.5"/>
-              <path d="M6 12h2M10 12h4M17 12h1"/>
+              <rect x="3" y="8" width="18" height="8" rx="1.5" ry="1.5" />
+              <path d="M6 12h2M10 12h4M17 12h1" />
             </svg>
             {order.assignment?.vehicle_number || 'Not Assigned'}
           </li>
         </ul>
+
+        {/* Cargo Photo Display */}
+        {order.cargo_photo && (
+          <div className="cargo-photo-thumbnail">
+            <img
+              src={`http://localhost:3000${order.cargo_photo}`}
+              alt="Cargo"
+              className="cargo-thumbnail-img"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+          </div>
+        )}
       </div>
 
       <div className="order-actions">
-        <button 
+        <button
           className="btn btn-primary"
           onClick={handleViewDetails}
         >
           View Details
         </button>
-        
+
         {/* Customer-specific actions */}
         {variant === 'customer' && order.status?.toLowerCase() === 'placed' && (
           <>
-            <button 
+            <button
               className="btn btn-outline btn-view-bids"
               onClick={handleViewBids}
             >
               View Bids
             </button>
-            <button 
+            <button
               className="btn btn-danger"
               onClick={handleCancelOrder}
             >
@@ -189,9 +201,9 @@ export default function OrderCard({
             </button>
           </>
         )}
-        
-        {variant === 'customer' &&  (order.status?.toLowerCase() === 'started' || order.status?.toLowerCase() === 'in transit') && (
-          <button 
+
+        {variant === 'customer' && (order.status?.toLowerCase() === 'started' || order.status?.toLowerCase() === 'in transit') && (
+          <button
             className="btn btn-outline"
             onClick={handleTrackOrderClick}
           >
@@ -201,7 +213,7 @@ export default function OrderCard({
 
         {/* Transporter-specific actions */}
         {variant === 'transporter' && order.status?.toLowerCase() === 'assigned' && !order.assignment?.vehicle_id && (
-          <button 
+          <button
             className="btn btn-primary"
             onClick={handleAssign}
           >
@@ -210,7 +222,7 @@ export default function OrderCard({
         )}
 
         {variant === 'transporter' && order.status?.toLowerCase() === 'assigned' && order.assignment?.vehicle_id && (
-          <button 
+          <button
             className="btn btn-outline"
             onClick={handleStartTransit}
           >
@@ -219,7 +231,7 @@ export default function OrderCard({
         )}
 
         {variant === 'transporter' && (order.status?.toLowerCase() === 'started' || order.status?.toLowerCase() === 'in transit') && (
-          <button 
+          <button
             className="btn btn-info"
             onClick={handleTrackOrderClick}
           >
