@@ -320,9 +320,20 @@ const scheduleMaintenance = async (req, res, next) => {
     next(err);
   }
 };
+const getTransporterRatings = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const ratingsData = await transporterService.getTransporterRatings(transporterId);
 
-
-
+    res.status(200).json({
+      success: true,
+      data: ratingsData,
+      message: 'Ratings and reviews fetched successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
 // Service Locations
 const getServiceLocations = async (req, res, next) => {
@@ -375,4 +386,5 @@ export default {
 
   getPaymentInfo,
   updatePaymentInfo,
+  getTransporterRatings,
 };

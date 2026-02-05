@@ -24,8 +24,15 @@ export const updateTransporterPassword = async (oldPassword, newPassword) => {
   return response.data;
 };
 
+// ── NEW ── Get transporter ratings / reviews
+export const getTransporterRatings = async () => {
+  const response = await http.get('/api/transporters/ratings');
+  return response.data;     // or response.data.data — match your backend response shape
+};
+
 export default {
   getTransporterProfile,
   updateTransporterProfile,
   updateTransporterPassword,
+  getTransporterRatings,    // ← don't forget to add it here too
 };

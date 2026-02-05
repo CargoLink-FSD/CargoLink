@@ -1,4 +1,5 @@
 import transporterRepo from "../repositories/transporterRepo.js";
+import Review from "../models/review.js";
 import orderRepo from "../repositories/orderRepo.js";
 import { AppError, logger } from "../utils/misc.js";
 import { get } from "mongoose";
@@ -181,6 +182,35 @@ const scheduleMaintenance = async (transporterId, truckId, nextServiceDate) => {
   const updatedTruck = await transporterRepo.updateTruckInFleet(transporterId, truckId, updates);
   return updatedTruck;
 };
+const getTransporterRatings = async (transporterId) => {
+  const reviews = await Review.find({ transporter_id: transporterId })
+    .populate('customer_id', 'firstName lastName')
+    .populate('order_id', 'pickup.city delivery.city')
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const totalReviews = reviews.length;
+  const sum = reviews.reduce((acc, r) => acc + (r.rating || 0), 0);
+  const averageRating = totalReviews > 0 ? (sum / totalReviews).toFixed(1) : 0;
+
+  const formattedReviews = reviews.map(r => ({
+    id: r._id,
+    customerName: r.customer_id ? `${r.customer_id.firstName} ${r.customer_id.lastName}` : 'Anonymous',
+    rating: r.rating,
+    comment: r.comment,
+    createdAt: r.createdAt,
+    orderInfo: {
+      pickup: r.order_id?.pickup?.city || 'N/A',
+      delivery: r.order_id?.delivery?.city || 'N/A'
+    }
+  }));
+
+  return {
+    averageRating: parseFloat(averageRating),
+    totalReviews,
+    reviews: formattedReviews
+  };
+};
 
 
 export default {
@@ -197,4 +227,5 @@ export default {
   setTruckAvailable,
   setTruckUnavailable,
   scheduleMaintenance,
+  getTransporterRatings,
 };

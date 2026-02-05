@@ -8,10 +8,10 @@ const countOrdersByCustomer = async (customerId) => {
 };
 
 const countOrdersByTransporter = async (transporterId) => {
-  return  Order.aggregate()
-    .match({ transporter_id: transporterId })
-    .group({ _id :"$status", count: { $sum:1 }})
-};
+    return Order.aggregate()
+      .match({ assigned_transporter_id: transporterId }) 
+      .group({ _id: "$status", count: { $sum: 1 } });
+  };
 
 const getOrdersByCustomer = async (customerId) => {
     const orders = await Order.find({ customer_id: customerId });

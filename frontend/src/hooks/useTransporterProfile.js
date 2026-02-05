@@ -1,17 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNotification } from '../context/NotificationContext';
 import {
   fetchTransporterProfile,
+  fetchTransporterRatings,
   updateTransporterField,
   updateTransporterPassword,
   clearError,
   clearUpdateSuccess,
 } from '../store/slices/transporterSlice';
-import { useNotification } from '../context/NotificationContext';
 
 export const useTransporterProfile = () => {
   const dispatch = useDispatch();
-  const { profile, loading, error, updateSuccess } = useSelector((state) => state.transporter);
+  const { profile, ratings, loading, error, updateSuccess } = useSelector((state) => state.transporter);
   const { showSuccess, showError } = useNotification();
   const [activeTab, setActiveTab] = useState('personal');
 
@@ -21,6 +22,7 @@ export const useTransporterProfile = () => {
 
   useEffect(() => {
     dispatch(fetchTransporterProfile());
+    dispatch(fetchTransporterRatings());
   }, [dispatch]);
 
   useEffect(() => {
@@ -39,6 +41,7 @@ export const useTransporterProfile = () => {
 
   return {
     profile,
+    ratings,
     loading,
     error,
     activeTab,

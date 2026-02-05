@@ -6,20 +6,16 @@ import paymentController from "../controllers/paymentController.js";
 
 const paymentRouter = Router();
 
-paymentRouter.use(authMiddleware);
-
 // ===== Customer Routes =====
 paymentRouter.post('/orders/:orderId/initiate', authMiddleware(['customer']), paymentController.initiatePayment); // Initiate payment for order
 paymentRouter.post('/orders/:orderId/process', authMiddleware(['customer']), paymentController.processPayment); // Process payment
-
+paymentRouter.post('/orders/:orderId/review', authMiddleware(['customer']), paymentController.submitReview);
 
 // ===== Transporter Routes =====
 paymentRouter.post( '/payout', authMiddleware(['transporter']), paymentController.requestPayout); // Request payout
 
-
 // ===== Common Routes =====
 paymentRouter.get('/history', authMiddleware(["customer"], ["transporter"]), paymentController.getPaymentHistory); // Get payment history
 paymentRouter.get('/:paymentId/invoice', authMiddleware(["customer"], ["transporter"]), paymentController.downloadInvoice); // Download invoice
-
 
 export default paymentRouter;
