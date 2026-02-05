@@ -38,6 +38,8 @@ const OrderSchema = new mongoose.Schema(
     truck_type: { type: String, required: true },
     description: { type: String, required: true },
     special_instructions: String,
+    cargo_photo: { type: String }, // Path to uploaded cargo photo
+
     status: {
       type: String,
       enum: ["Placed", "Assigned", "In Transit", "Completed", "Cancelled"],

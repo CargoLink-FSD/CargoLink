@@ -11,7 +11,7 @@ const createTransporter = async (req, res, next) => {
     transporter.password = undefined;
     logger.debug("Transporter Created", transporter);
     const { accessToken, refreshToken } = authService.generateTokens(transporter, 'transporter');
-    
+
     res.status(201).json({
       success: true,
       data: { accessToken, refreshToken },
@@ -60,12 +60,17 @@ const getTransporterProfile = async (req, res, next) => {
 const updateTransporterProfile = async (req, res, next) => {
   try {
     const transporterId = req.user.id;
-    if (!req.body || Object.keys(req.body).length === 0) {
+    if ((!req.body || Object.keys(req.body).length === 0) && !req.file) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
         { type: "data", msg: "No Fields to update in request Body", location: "body" }
       );
     }
     const updates = req.body;
+    
+    // If a profile picture was uploaded, add the path to updates
+    if (req.file) {
+      updates.profilePicture = `/uploads/profile-pictures/${req.file.filename}`;
+    }
 
     const transporter = await transporterService.updateTransporterProfile(transporterId, updates);
 
@@ -174,7 +179,7 @@ const getTruckDetails = async (req, res, next) => {
 };
 
 const updateTruck = async (req, res, next) => {
-  try{
+  try {
     const transporterId = req.user.id;
     const truckId = req.params.truckId;
     if (!mongoose.Types.ObjectId.isValid(truckId)) {
@@ -191,7 +196,7 @@ const updateTruck = async (req, res, next) => {
       data: updatedTruck,
       message: 'Transporter Truck updated successfully',
     });
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 };

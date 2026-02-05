@@ -65,6 +65,18 @@ export const deleteCustomerAddress = createAsyncThunk(
   }
 );
 
+export const uploadCustomerProfilePicture = createAsyncThunk(
+  'customer/uploadProfilePicture',
+  async (file, { rejectWithValue }) => {
+    try {
+      const response = await customerApi.uploadCustomerProfilePicture(file);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Failed to upload profile picture');
+    }
+  }
+);
+
 // Initial state
 const initialState = {
   profile: null,
@@ -179,6 +191,21 @@ const customerSlice = createSlice({
         state.updateSuccess = true;
       })
       .addCase(deleteCustomerAddress.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      
+      // Upload profile picture
+      .addCase(uploadCustomerProfilePicture.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.updateSuccess = false;
+      })
+      .addCase(uploadCustomerProfilePicture.fulfilled, (state, action) => {
+        state.loading = false;
+        state.updateSuccess = true;
+      })
+      .addCase(uploadCustomerProfilePicture.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

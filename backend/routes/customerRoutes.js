@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.js";
 import { validate, validationSchema } from "../middlewares/validator.js";
 import customerController from "../controllers/customerController.js";
+import profileUpload from "../config/profileMulter.js";
 
 const customerRouter = Router();
 
@@ -13,7 +14,7 @@ customerRouter.use(authMiddleware(['customer']));
 
 // Profile
 customerRouter.get("/profile", customerController.getCustomerProfile); // Get profile
-customerRouter.put("/profile", validate(validationSchema.updateCustomer), customerController.updateCustomerProfile); // Update profile
+customerRouter.put("/profile", profileUpload.single('profilePicture'), validate(validationSchema.updateCustomer), customerController.updateCustomerProfile); // Update profile
 customerRouter.delete("/profile", customerController.deleteCustomer); // Soft delete
 customerRouter.patch("/password", validate(validationSchema.password), customerController.updatePassword); // Change password
 

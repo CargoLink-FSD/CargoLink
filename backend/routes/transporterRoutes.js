@@ -3,6 +3,7 @@ import { authMiddleware } from "../middlewares/auth.js";
 import { validate } from "../middlewares/validator.js";
 import { validationSchema } from "../middlewares/validator.js";
 import transporterController from "../controllers/transporterController.js";
+import profileUpload from "../config/profileMulter.js";
 
 const transporterRouter = Router();
 
@@ -16,7 +17,7 @@ transporterRouter.use(authMiddleware(['transporter']));
 
 // Profile
 transporterRouter.get("/profile", transporterController.getTransporterProfile); // Get profile
-transporterRouter.put("/profile", validate(validationSchema.updateTransporter), transporterController.updateTransporterProfile); // Update profile
+transporterRouter.put("/profile", profileUpload.single('profilePicture'), validate(validationSchema.updateTransporter), transporterController.updateTransporterProfile); // Update profile
 transporterRouter.delete("/profile", transporterController.deleteTransporter); // Soft delete
 transporterRouter.patch("/password", validate(validationSchema.password), transporterController.updatePassword); // Change password
 

@@ -6,6 +6,7 @@ import {
   fetchTransporterRatings,
   updateTransporterField,
   updateTransporterPassword,
+  uploadTransporterProfilePicture,
   clearError,
   clearUpdateSuccess,
 } from '../store/slices/transporterSlice';
@@ -49,5 +50,6 @@ export const useTransporterProfile = () => {
     dispatch,
     updateTransporterField,
     updateTransporterPassword,
+    uploadTransporterProfilePicture,
   };
 };

@@ -50,23 +50,43 @@ export async function rejectBid(orderId, bidId) {
 /**
  * Confirm pickup for an order
  */
-export async function confirmPickup({orderId, otp}) {
+export async function confirmPickup({ orderId, otp }) {
   console.log("calling confirmpickup with: ", orderId);
-  
-  return await http.post(`/api/orders/${orderId}/confirm-pickup`, {otp});
+
+  return await http.post(`/api/orders/${orderId}/confirm-pickup`, { otp });
 }
 
 /**
  * Confirm delivery for an order
  */
-export async function confirmDelivery({orderId}) {
+export async function confirmDelivery({ orderId }) {
   return await http.post(`/api/orders/${orderId}/confirm-delivery`);
 }
 
 /**
  * Place a new order
  */
-export async function placeOrder(orderData) {
-  const response = await http.post('/api/orders', orderData);
+export async function placeOrder(orderData, cargoPhoto) {
+  // Always use FormData to maintain consistency with multer middleware
+  const formData = new FormData();
+
+  // Append all order data fields
+  Object.keys(orderData).forEach(key => {
+    if (key === 'pickup' || key === 'delivery') {
+      formData.append(key, JSON.stringify(orderData[key]));
+    } else if (key === 'shipments') {
+      formData.append(key, JSON.stringify(orderData[key]));
+    } else {
+      formData.append(key, orderData[key]);
+    }
+  });
+
+  // Append the cargo photo file if it exists
+  if (cargoPhoto) {
+    formData.append('cargo_photo', cargoPhoto);
+  }
+
+  // Don't set Content-Type manually - let axios set it with proper boundary
+  const response = await http.post('/api/orders', formData);
   return response.data;
 }

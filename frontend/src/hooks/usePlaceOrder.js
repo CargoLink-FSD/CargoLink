@@ -20,6 +20,8 @@ export function usePlaceOrder() {
     shipments: [{ name: '', quantity: '', price: '' }]
   });
 
+  const [cargoPhoto, setCargoPhoto] = useState(null);
+  const [cargoPhotoPreview, setCargoPhotoPreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
 
@@ -53,7 +55,7 @@ export function usePlaceOrder() {
   useEffect(() => {
     const { type } = formData.cargo;
     const weight = parseFloat(formData.cargo.weight);
-    
+
     if (!type || isNaN(weight)) return;
 
     let recommendedVehicle = getRecommendedVehicle(type, weight);
@@ -326,12 +328,45 @@ export function usePlaceOrder() {
     };
 
     try {
-      await dispatch(placeNewOrder(orderData)).unwrap();
+      await dispatch(placeNewOrder({ orderData, cargoPhoto })).unwrap();
       showSuccess('Order placed successfully!');
       navigate('/customer/orders');
     } catch (error) {
       showError(error || 'Failed to place order');
     }
+  };
+
+  // Handle cargo photo upload
+  const handleCargoPhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        showError('Please upload a valid image file (JPEG, PNG, GIF, or WEBP)');
+        return;
+      }
+
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        showError('File size must be less than 5MB');
+        return;
+      }
+
+      setCargoPhoto(file);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCargoPhotoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeCargoPhoto = () => {
+    setCargoPhoto(null);
+    setCargoPhotoPreview(null);
   };
 
   return {
@@ -340,6 +375,8 @@ export function usePlaceOrder() {
     touched,
     loading,
     savedAddresses,
+    cargoPhoto,
+    cargoPhotoPreview,
     handleInputChange,
     handleShipmentChange,
     addShipmentItem,
@@ -348,6 +385,8 @@ export function usePlaceOrder() {
     handleSubmit,
     setFieldTouched,
     getBiddingEndTime,
+    handleCargoPhotoChange,
+    removeCargoPhoto,
     navigate
   };
 }

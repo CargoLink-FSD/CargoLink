@@ -111,9 +111,9 @@ export const confirmDelivery = createAsyncThunk(
 // Async thunk for placing a new order
 export const placeNewOrder = createAsyncThunk(
   'orders/placeOrder',
-  async (orderData, { rejectWithValue }) => {
+  async ({ orderData, cargoPhoto }, { rejectWithValue }) => {
     try {
-      const response = await ordersApi.placeOrder(orderData);
+      const response = await ordersApi.placeOrder(orderData, cargoPhoto);
       return response;
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to place order');
@@ -302,7 +302,7 @@ export const selectFilteredOrders = (state) => {
 
   if (filters.searchTerm) {
     const search = filters.searchTerm.toLowerCase();
-    filtered = filtered.filter(order => 
+    filtered = filtered.filter(order =>
       order._id?.toLowerCase().includes(search) ||
       order.pickup?.city?.toLowerCase().includes(search) ||
       order.delivery?.city?.toLowerCase().includes(search)
@@ -310,7 +310,7 @@ export const selectFilteredOrders = (state) => {
   }
 
   if (filters.statusFilter && filters.statusFilter !== 'all') {
-    filtered = filtered.filter(order => 
+    filtered = filtered.filter(order =>
       order.status?.toLowerCase() === filters.statusFilter.toLowerCase()
     );
   }

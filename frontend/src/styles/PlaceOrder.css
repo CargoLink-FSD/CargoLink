@@ -9,14 +9,14 @@
     padding: 1rem 0;
     margin-bottom: 1.5rem;
 }
-  
+
 .page-title {
     color: var(--dark);
     font-size: 2rem;
     position: relative;
     margin-bottom: 0.5rem;
 }
-  
+
 .page-title::after {
     content: '';
     position: absolute;
@@ -257,7 +257,7 @@ select.input-field {
     .form-section-row {
         flex-direction: column;
     }
-    
+
     .form-section--half {
         min-width: 100%;
     }
@@ -267,14 +267,113 @@ select.input-field {
     .form-row {
         flex-direction: column;
     }
-    
+
     .form-group {
         min-width: 100%;
     }
-    
+
     .address-wrapper,
     .city-state-wrapper {
         flex-direction: column;
         gap: 0.5rem;
     }
+}
+
+/* Cargo Photo Upload Styles */
+.file-upload-container {
+    margin-top: 0.5rem;
+}
+
+.file-upload-area {
+    position: relative;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    background-color: #f8fafc;
+    cursor: pointer;
+}
+
+.file-upload-area:hover {
+    border-color: var(--primary);
+    background-color: #f1f5f9;
+}
+
+.file-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.file-upload-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.upload-icon {
+    width: 48px;
+    height: 48px;
+    color: var(--primary);
+}
+
+.upload-text {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--dark);
+}
+
+.upload-hint {
+    font-size: 0.875rem;
+    color: #64748b;
+}
+
+.file-preview-container {
+    position: relative;
+    display: inline-block;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cargo-photo-preview {
+    max-width: 300px;
+    max-height: 300px;
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px;
+}
+
+.remove-photo-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background-color: rgba(239, 68, 68, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    transition: background-color 0.2s ease;
+}
+
+.remove-photo-btn:hover {
+    background-color: rgba(220, 38, 38, 1);
+}
+
+.form-hint {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: #64748b;
 }
