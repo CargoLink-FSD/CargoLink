@@ -47,7 +47,9 @@ export const useAuthLogin = () => {
       const rawError = typeof err === 'string' ? err : err?.message || 'Login failed';
       let errorMessage = rawError;
       
-      if (rawError.includes('Invalid credentials') || rawError.includes('ERR_INVALID_CREDENTIALS')) {
+      if (rawError.includes('Google Sign-In') || rawError.includes('ERR_GOOGLE_AUTH_REQUIRED')) {
+        errorMessage = 'This account uses Google Sign-In. Please click "Continue with Google" to login.';
+      } else if (rawError.includes('Invalid credentials') || rawError.includes('ERR_INVALID_CREDENTIALS')) {
         errorMessage = 'Invalid email or password. Please try again.';
       } else if (rawError.includes('No refresh token')) {
         // This shouldn't happen anymore, but just in case
