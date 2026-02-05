@@ -9,11 +9,12 @@ import { useNotification } from '../../context/NotificationContext';
 import { redirectAfterSignup } from '../../utils/redirectUser';
 import { useStepForm } from './useStepForm';
 import { customerStep1Schema, customerStep2Schema, customerStep3Schema, customerStep4Schema, customerSignupSchema } from '../../utils/schemas';
+import * as authApi from '../../api/auth';
 
 // Define validation schema for each step
 const steps = [
-  { fields: ['firstName', 'lastName', 'gender'], schema: customerStep1Schema },
-  { fields: ['phone', 'email', 'dob'], schema: customerStep2Schema },
+  { fields: ['firstName', 'lastName', 'gender', 'email'], schema: customerStep1Schema },
+  { fields: ['phone', 'dob'], schema: customerStep2Schema },
   { fields: ['street_address', 'city', 'state', 'pin'], schema: customerStep3Schema },
   { fields: ['password', 'confirmPassword', 'terms'], schema: customerStep4Schema },
 ];
@@ -25,10 +26,11 @@ export const useCustomerSignup = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const { currentStep, totalSteps, nextStep: goNext, prevStep } = useStepForm(4);
 
   // Initialize form with react-hook-form and Zod validation
-  const { register, handleSubmit, watch, formState: { errors }, trigger, setError, clearErrors, getValues } = useForm({
+  const { register, handleSubmit, watch, formState: { errors }, trigger, setError, clearErrors, getValues, setValue } = useForm({
     defaultValues: { firstName: '', lastName: '', gender: '', dob: '', phone: '', email: '', street_address: '', city: '', state: '', pin: '', password: '', confirmPassword: '', terms: false },
     resolver: zodResolver(customerSignupSchema),
     mode: 'onChange',
@@ -97,10 +99,34 @@ export const useCustomerSignup = () => {
     goNext();
   };
 
+  // Handle Google OAuth for email fetching only
+  const handleGoogleSignup = async (credentialResponse) => {
+    setGoogleLoading(true);
+    try {
+      const response = await authApi.googleVerify({
+        credential: credentialResponse.credential,
+      });
+      
+      // Populate only the email field
+      setValue('email', response.email, { shouldValidate: true });
+      showSuccess('Email fetched from Google. Please complete the rest of the form.');
+    } catch (err) {
+      const errorMessage = err?.payload?.message || err?.message || 'Failed to fetch email from Google';
+      showError(errorMessage);
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    showError('Failed to fetch email from Google. Please try again.');
+    setGoogleLoading(false);
+  };
+
   return {
     formData: watch(),
     errors,
-    loading,
+    loading: loading || googleLoading,
     register,
     handleSubmit: handleSubmit(onSubmit),
     currentStep,
@@ -113,5 +139,7 @@ export const useCustomerSignup = () => {
     toggleShowConfirmPassword: () => setShowConfirmPassword(p => !p),
     navigate,
     setError,
+    handleGoogleSignup,
+    handleGoogleError,
   };
 };

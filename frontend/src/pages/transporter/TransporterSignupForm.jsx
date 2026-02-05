@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import AuthLayout from '../../components/auth/AuthLayout';
 import { useTransporterSignup } from '../../hooks/auth/useTransporterSignup';
 import { Button } from '../../components/forms';
@@ -14,7 +15,7 @@ const stepConfigs = [
     { type: 'text', name: 'name', label: 'Full Name', placeholder: 'Enter your full name', required: true },
     { type: 'tel', name: 'primary_contact', label: 'Primary Phone Number', placeholder: 'Enter your primary phone number', required: true },
     { type: 'tel', name: 'secondary_contact', label: 'Secondary Phone Number', placeholder: 'Enter your secondary phone number', required: true },
-    { type: 'email', name: 'email', label: 'Email', placeholder: 'Enter your email', required: true },
+    { type: 'email', name: 'email', label: 'Email', placeholder: 'Enter your email', required: true, showGoogleButton: true },
   ],
   [
     { heading: 'Business Details' },
@@ -48,6 +49,8 @@ const TransporterSignupForm = () => {
     errors,
     register,
     navigate,
+    handleGoogleSignup,
+    handleGoogleError,
   } = state;
 
   return (
@@ -82,6 +85,25 @@ const TransporterSignupForm = () => {
                   />
                   {field.helpText && <span className="help-text">{field.helpText}</span>}
                   {error && <span className="error-message">{error}</span>}
+                  
+                  {/* Google OAuth button for email field */}
+                  {field.showGoogleButton && currentStep === 1 && (
+                    <>
+                      <div className="oauth-divider-small">
+                        <span>OR</span>
+                      </div>
+                      <div className="google-signup-container">
+                        <GoogleLogin
+                          onSuccess={handleGoogleSignup}
+                          onError={handleGoogleError}
+                          text="continue_with"
+                          size="medium"
+                          width="100%"
+                        />
+                        <p className="google-help-text">Get email from Google</p>
+                      </div>
+                    </>
+                  )}
                 </div>
               );
             })}

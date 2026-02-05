@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import AuthLayout from '../../components/auth/AuthLayout';
 import { useCustomerSignup } from '../../hooks/auth/useCustomerSignup';
 import { Button } from '../../components/forms';
@@ -13,10 +14,10 @@ const stepConfigs = [
     { label: 'First Name', type: 'text', name: 'firstName', placeholder: 'Enter your first name', required: true },
     { label: 'Last Name', type: 'text', name: 'lastName', placeholder: 'Enter your last name', required: true },
     { label: 'Gender', type: 'select', name: 'gender', placeholder: 'Select your gender', required: true, options: [ { value: 'Male', label: 'Male' }, { value: 'Female', label: 'Female' }, { value: 'Other', label: 'Other' } ] },
+    { label: 'Email', type: 'email', name: 'email', placeholder: 'Enter your email', required: true, showGoogleButton: true },
   ],
   [
     { label: 'Phone Number', type: 'tel', name: 'phone', placeholder: 'Enter your phone number', required: true },
-    { label: 'Email', type: 'email', name: 'email', placeholder: 'Enter your email', required: true },
     { label: 'Date of Birth', type: 'date', name: 'dob', required: true },
   ],
   [
@@ -44,6 +45,8 @@ const CustomerSignupForm = () => {
     toggleShowConfirmPassword,
     register,
     navigate,
+    handleGoogleSignup,
+    handleGoogleError,
   } = state;
 
   return (
@@ -95,6 +98,25 @@ const CustomerSignupForm = () => {
                     {...register(field.name)}
                   />
                   {error && <span className="error-message">{error}</span>}
+                  
+                  {/* Google OAuth button for email field */}
+                  {field.showGoogleButton && currentStep === 1 && (
+                    <>
+                      <div className="oauth-divider-small">
+                        <span>OR</span>
+                      </div>
+                      <div className="google-signup-container">
+                        <GoogleLogin
+                          onSuccess={handleGoogleSignup}
+                          onError={handleGoogleError}
+                          text="continue_with"
+                          size="medium"
+                          width="100%"
+                        />
+                        <p className="google-help-text">Get email from Google</p>
+                      </div>
+                    </>
+                  )}
                 </div>
               );
             })}

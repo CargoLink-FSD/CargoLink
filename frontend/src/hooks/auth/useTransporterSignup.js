@@ -9,6 +9,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { redirectAfterSignup } from '../../utils/redirectUser';
 import { useStepForm } from './useStepForm';
 import { transporterStep1Schema, transporterStep2Schema, transporterStep3Schema, transporterStep4Schema, transporterSignupSchema } from '../../utils/schemas';
+import * as authApi from '../../api/auth';
 
 // Define validation schema for each step
 const steps = [
@@ -25,10 +26,11 @@ export const useTransporterSignup = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const { currentStep, totalSteps, nextStep: goNext, prevStep } = useStepForm(4);
 
   // Initialize form with react-hook-form and Zod validation
-  const { register, handleSubmit, watch, formState: { errors }, trigger, control, setError, clearErrors, getValues } = useForm({
+  const { register, handleSubmit, watch, formState: { errors }, trigger, control, setError, clearErrors, getValues, setValue } = useForm({
     defaultValues: { name: '', email: '', password: '', confirmPassword: '', primary_contact: '', secondary_contact: '', pan: '', gst_in: '', street_address: '', city: '', state: '', pin: '', terms: false, vehicles: [{ name: '', type: '', registrationNumber: '', capacity: '', manufacture_year: '' }] },
     resolver: zodResolver(transporterSignupSchema),
     mode: 'onChange',
@@ -110,10 +112,34 @@ export const useTransporterSignup = () => {
     goNext();
   };
 
+  // Handle Google OAuth for email fetching only
+  const handleGoogleSignup = async (credentialResponse) => {
+    setGoogleLoading(true);
+    try {
+      const response = await authApi.googleVerify({
+        credential: credentialResponse.credential,
+      });
+      
+      // Populate only the email field
+      setValue('email', response.email, { shouldValidate: true });
+      showSuccess('Email fetched from Google. Please complete the rest of the form.');
+    } catch (err) {
+      const errorMessage = err?.payload?.message || err?.message || 'Failed to fetch email from Google';
+      showError(errorMessage);
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    showError('Failed to fetch email from Google. Please try again.');
+    setGoogleLoading(false);
+  };
+
   return {
     formData: watch(),
     errors,
-    loading,
+    loading: loading || googleLoading,
     register,
     handleSubmit: handleSubmit(onSubmit),
     vehicles: fields,
@@ -129,5 +155,7 @@ export const useTransporterSignup = () => {
     prevStep,
     navigate,
     setError,
+    handleGoogleSignup,
+    handleGoogleError,
   };
 };
