@@ -1,0 +1,280 @@
+.container {
+    max-width: 1400px;
+    width: 95%;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.page-header {
+    padding: 1rem 0;
+    margin-bottom: 1.5rem;
+}
+  
+.page-title {
+    color: var(--dark);
+    font-size: 2rem;
+    position: relative;
+    margin-bottom: 0.5rem;
+}
+  
+.page-title::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    width: 100px;
+    height: 3px;
+    background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+}
+
+.order-form {
+    width: 100%;
+}
+
+/* Form Sections */
+.form-section {
+    background-color: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    padding: 1.5rem 1.5rem 1.5rem 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.section-title {
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--dark);
+    margin-bottom: 1rem;
+    position: relative;
+    padding-bottom: 0.5rem;
+    padding-left: 1rem;
+    text-align: left;
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 1.2rem;
+    width: 80px;
+    height: 4px;
+    background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+}
+
+/* Form Rows - Side by side layout */
+.form-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.form-group {
+    flex: 1;
+    min-width: 200px;
+    margin-bottom: 0.75rem;
+}
+
+/* Address wrappers for city/state side by side */
+.address-wrapper,
+.city-state-wrapper {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.address-wrapper .input-field,
+.city-state-wrapper .input-field {
+    flex: 1;
+}
+
+/* Side-by-side sections */
+.form-section-row {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-section--half {
+    flex: 1;
+    min-width: 300px;
+}
+
+/* Form Controls */
+.form-label {
+    display: block;
+    font-weight: 500;
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+    color: var(--dark);
+}
+
+.input-field {
+    background-color: var(--white);
+    width: 100%;
+    padding: 0.6rem 0.875rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    margin-top: 0.4rem;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.input-field::placeholder {
+    color: var(--gray);
+    opacity: 0.7;
+}
+
+textarea.input-field {
+    min-height: 100px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+select.input-field {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2364748B' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.875rem center;
+    padding-right: 2.5rem;
+}
+
+.error-message {
+    display: block;
+    margin-top: 0.3rem;
+    font-size: 0.825rem;
+    color: #dc2626;
+}
+
+.input-field.error {
+    border-color: #dc2626;
+}
+
+.form-info {
+    margin-top: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--gray);
+    line-height: 1.4;
+}
+
+/* Shipment Items */
+.shipment-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    position: relative;
+}
+
+.shipment-item .form-row {
+    gap: 0.75rem;
+    margin-bottom: 0;
+}
+
+.btn-remove-item {
+    background: #fee2e2;
+    color: #dc2626;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    align-self: center;
+    margin-top: 1.5rem;
+}
+
+.btn-remove-item:hover {
+    background: #fecaca;
+}
+
+.add-item-btn {
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+/* Countdown & Pricing */
+.countdown-container {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(34, 211, 238, 0.08));
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.countdown-label {
+    font-size: 0.85rem;
+    color: var(--gray);
+    margin-bottom: 0.25rem;
+}
+
+.countdown-timer {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+/* File Upload */
+.file-upload {
+    margin-top: 0.5rem;
+}
+
+.file-info {
+    width: 100%;
+    padding: 0.6rem;
+    border: 2px dashed #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.file-info:hover {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.02);
+}
+
+/* Submit Button */
+.form-submit {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .form-section-row {
+        flex-direction: column;
+    }
+    
+    .form-section--half {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .form-group {
+        min-width: 100%;
+    }
+    
+    .address-wrapper,
+    .city-state-wrapper {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
