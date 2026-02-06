@@ -50,6 +50,12 @@ export const deleteCustomerAddress = async (addressId) => {
   return response.data;
 };
 
+// Get customer dashboard statistics
+export const getCustomerDashboardStats = async () => {
+  const response = await http.get('/api/customers/dashboard-stats');
+  return response.data;
+};
+
 export default {
   getCustomerProfile,
   updateCustomerProfile,
@@ -58,4 +64,5 @@ export default {
   getCustomerAddresses,
   addCustomerAddress,
   deleteCustomerAddress,
+  getCustomerDashboardStats,
 };

@@ -12,6 +12,9 @@ customerRouter.post("/register", validate(validationSchema.customer), customerCo
 // All routes require authentication as customer
 customerRouter.use(authMiddleware(['customer']));
 
+// Dashboard
+customerRouter.get("/dashboard-stats", customerController.getDashboardStats); // Get dashboard statistics
+
 // Profile
 customerRouter.get("/profile", customerController.getCustomerProfile); // Get profile
 customerRouter.put("/profile", profileUpload.single('profilePicture'), validate(validationSchema.updateCustomer), customerController.updateCustomerProfile); // Update profile

@@ -38,10 +38,17 @@ export const getTransporterRatings = async () => {
   return response.data;     // or response.data.data — match your backend response shape
 };
 
+// Get transporter dashboard stats
+export const getTransporterDashboardStats = async () => {
+  const response = await http.get('/api/transporters/dashboard-stats');
+  return response.data;
+};
+
 export default {
   getTransporterProfile,
   updateTransporterProfile,
   uploadTransporterProfilePicture,
   updateTransporterPassword,
   getTransporterRatings,    // ← don't forget to add it here too
+  getTransporterDashboardStats,
 };

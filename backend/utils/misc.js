@@ -1,5 +1,20 @@
 import path from 'path';
 import nodemailer from 'nodemailer';
+import { createStream } from 'rotating-file-stream';
+import util from 'util';
+import { fileURLToPath } from 'url';
+
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const accessLogStream = createStream('access.log', {
+    interval: '30s',
+    path: path.join(path.dirname(''), 'logs'),
+    teeToStdout: true,
+})
+
 
 
 export class AppError extends Error {
@@ -90,12 +105,13 @@ class Logger {
     const color = logLevelColors[level] || '\x1b[0m'; // Default (no color)
 
     // Format the log message
-    const formattedMessage = `${color}${('['+level.toUpperCase()+']').padEnd(8, ' ')}\x1b[0m ${message.padEnd(80, ' ')}  ${timestamp}\t${location}`;
+    const formattedMessage = `${color}${('['+level.toUpperCase()+']').padEnd(8, ' ')}\x1b[0m ${message.padEnd(80, ' ')}  ${timestamp}\t${location} \n`;
 
-    // Output to the console
-    console.log(formattedMessage);
+    // Output to the rotating file stream
+    accessLogStream.write(util.format(formattedMessage));
     if(meta !== null)
-      console.log(meta);
+      // console.log(meta);
+      accessLogStream.write(util.format(meta)+ '\n');
   }
 
   // Log methods

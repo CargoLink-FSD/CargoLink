@@ -43,3 +43,19 @@ playwright-report/
 test-results/
 **/test-results/**
 /test-results/
+
+# Backend logs
+backend/logs/
+*.log
+
+# Logs (anywhere)
+logs/
+**/logs/
+
+# Uploads (anywhere)
+uploads/
+**/uploads/
+
+# Common backend upload locations
+backend/uploads/
+backend/public/uploads/
