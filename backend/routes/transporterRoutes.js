@@ -15,6 +15,9 @@ transporterRouter.post("/register", validate(validationSchema.transporter), tran
 // All routes require authentication as transporter
 transporterRouter.use(authMiddleware(['transporter']));
 
+// Dashboard
+transporterRouter.get("/dashboard-stats", transporterController.getDashboardStats); // Get dashboard statistics
+
 // Profile
 transporterRouter.get("/profile", transporterController.getTransporterProfile); // Get profile
 transporterRouter.put("/profile", profileUpload.single('profilePicture'), validate(validationSchema.updateTransporter), transporterController.updateTransporterProfile); // Update profile

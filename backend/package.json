@@ -26,6 +26,7 @@
     "mongoose": "^8.18.3",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.11",
+    "rotating-file-stream": "^3.2.8",
     "ws": "^8.13.0"
   },
   "devDependencies": {

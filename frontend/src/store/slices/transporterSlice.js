@@ -158,7 +158,7 @@ const transporterSlice = createSlice({
         state.ratingsError = action.payload;
       
       // Upload profile picture
-      .addCase(uploadTransporterProfilePicture.pending, (state) => {
+       }) .addCase(uploadTransporterProfilePicture.pending, (state) => {
         state.loading = true;
         state.error = null;
         state.updateSuccess = false;

@@ -54,6 +54,7 @@ export default function Header() {
 
             {isAuthenticated && userType === 'customer' && (
               <>
+                <Link className="underline-link" to="/customer/dashboard" onClick={handleLinkClick}>Dashboard</Link>
                 <Link className="underline-link" to="/customer/orders" onClick={handleLinkClick}>My Orders</Link>
                 <Link className="underline-link" to="/customer/place-order" onClick={handleLinkClick}>Place Order</Link>
                 <Link className="underline-link" to="/customer/profile" onClick={handleLinkClick}>Profile</Link>
@@ -68,6 +69,7 @@ export default function Header() {
 
             {isAuthenticated && userType === 'transporter' && (
               <>
+                <Link className="underline-link" to="/transporter/dashboard" onClick={handleLinkClick}>Dashboard</Link>
                 <Link className="underline-link" to="/transporter/my-bids" onClick={handleLinkClick}>My Bids</Link>
                 <Link className="underline-link" to="/transporter/bid" onClick={handleLinkClick}>Place Bid</Link>
                 <Link className="underline-link" to="/transporter/orders" onClick={handleLinkClick}>My Orders</Link>
