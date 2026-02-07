@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Order from '../models/order.js';
 
 
@@ -9,9 +10,12 @@ const countOrdersByCustomer = async (customerId) => {
 
 const countOrdersByTransporter = async (transporterId) => {
     return Order.aggregate()
-        .match({ transporter_id: transporterId })
-        .group({ _id: "$status", count: { $sum: 1 } })
-};
+      .match({ assigned_transporter_id: transporterId }) 
+      .group({ _id: "$status", count: { $sum: 1 } });
+  };
+//         .match({ transporter_id: transporterId })
+//         .group({ _id: "$status", count: { $sum: 1 } })
+// };
 
 const getOrdersByCustomer = async (customerId) => {
     const orders = await Order.find({ customer_id: customerId });
@@ -164,6 +168,127 @@ const getAssignedOrdersForTransporter = async (transporterId) => {
     });
 };
 
+/**
+ * Get comprehensive dashboard stats for a customer
+ * @param {ObjectId} customerId - The customer's ID
+ * @param {Object} dateFilters - Date filters for stats
+ * @returns {Object} Dashboard statistics
+ */
+const getCustomerDashboardStats = async (customerId, dateFilters) => {
+    const { activeStatuses, startOfMonth, endOfMonth, now, sevenDaysFromNow } = dateFilters;
+    
+    // Convert customerId to ObjectId if it's a string
+    const customerObjectId = typeof customerId === 'string' 
+        ? new mongoose.Types.ObjectId(customerId) 
+        : customerId;
+
+    // Run aggregation for status breakdown and spend calculations
+    const [statusBreakdown] = await Order.aggregate([
+        { $match: { customer_id: customerObjectId } },
+        {
+            $group: {
+                _id: '$status',
+                count: { $sum: 1 },
+                totalSpend: { 
+                    $sum: { 
+                        $ifNull: ['$final_price', { $ifNull: ['$max_price', 0] }] 
+                    } 
+                }
+            }
+        }
+    ]).then(results => {
+        // Transform to a structured object
+        const breakdown = {
+            Placed: 0,
+            Assigned: 0,
+            'In Transit': 0,
+            Started: 0,
+            Completed: 0,
+            Cancelled: 0,
+            Other: 0
+        };
+        let totalOrders = 0;
+        let estimatedTotalSpend = 0;
+
+        results.forEach(item => {
+            if (breakdown.hasOwnProperty(item._id)) {
+                breakdown[item._id] = item.count;
+            } else {
+                breakdown.Other += item.count;
+            }
+            totalOrders += item.count;
+            estimatedTotalSpend += item.totalSpend || 0;
+        });
+
+        return [{ breakdown, totalOrders, estimatedTotalSpend }];
+    });
+
+    // Get this month's spend
+    const [monthlySpendResult] = await Order.aggregate([
+        { 
+            $match: { 
+                customer_id: customerObjectId,
+                createdAt: { $gte: startOfMonth, $lte: endOfMonth }
+            } 
+        },
+        {
+            $group: {
+                _id: null,
+                thisMonthSpend: { 
+                    $sum: { 
+                        $ifNull: ['$final_price', { $ifNull: ['$max_price', 0] }] 
+                    } 
+                }
+            }
+        }
+    ]);
+
+    // Get upcoming pickups count (active orders with scheduled_at in next 7 days)
+    const upcomingPickupsCount = await Order.countDocuments({
+        customer_id: customerObjectId,
+        status: { $in: activeStatuses },
+        scheduled_at: { $gte: now, $lte: sevenDaysFromNow }
+    });
+
+    // Get upcoming orders details (top 5)
+    const upcomingOrders = await Order.find({
+        customer_id: customerObjectId,
+        status: { $in: activeStatuses },
+        scheduled_at: { $gte: now, $lte: sevenDaysFromNow }
+    })
+    .sort({ scheduled_at: 1 })
+    .limit(5)
+    .select('_id pickup delivery scheduled_at status final_price max_price')
+    .lean();
+
+    // Get recent orders (last 10)
+    const recentOrders = await Order.find({
+        customer_id: customerObjectId
+    })
+    .sort({ updatedAt: -1, createdAt: -1 })
+    .limit(10)
+    .select('_id pickup delivery scheduled_at status final_price max_price createdAt updatedAt')
+    .lean();
+
+    // Calculate active orders count
+    const activeOrdersCount = activeStatuses.reduce((sum, status) => {
+        return sum + (statusBreakdown.breakdown[status] || 0);
+    }, 0);
+
+    return {
+        totalOrders: statusBreakdown.totalOrders || 0,
+        activeOrders: activeOrdersCount,
+        completedOrders: statusBreakdown.breakdown.Completed || 0,
+        cancelledOrders: statusBreakdown.breakdown.Cancelled || 0,
+        statusBreakdown: statusBreakdown.breakdown,
+        estimatedTotalSpend: statusBreakdown.estimatedTotalSpend || 0,
+        thisMonthSpend: monthlySpendResult?.thisMonthSpend || 0,
+        upcomingPickupsCount,
+        upcomingOrders,
+        recentOrders
+    };
+};
+
 export default {
     countOrdersByCustomer,
     countOrdersByTransporter,
@@ -179,6 +304,8 @@ export default {
     checkActiveOrder,
     updateOrderStatus,
     getOrderById,
+    assignVehicleToOrder,
+    getCustomerDashboardStats,
     getOrdersByIds,
     assignTripToOrder,
     removeTripFromOrder,

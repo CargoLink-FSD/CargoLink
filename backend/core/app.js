@@ -5,11 +5,39 @@ import { fileURLToPath } from 'url';
 import router from '../routes/index.js';
 import { requestLogger } from '../middlewares/requestLogger.js';
 import { errorHandler } from '../utils/misc.js';
+import helmet from 'helmet';
+import compression from 'compression';
+import rateLimit from 'express-rate-limit';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
+
+
+app.use(compression());
+
+// Rate limiting - Cant scrape data using the api links and all like puthiyathlaimurai
+const limiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 100, // limit tO 100R
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true, 
+  legacyHeaders: false,
+});
+app.use(limiter);
 
 // CORS configuration
 app.use(cors({

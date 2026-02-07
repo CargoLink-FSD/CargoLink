@@ -162,6 +162,23 @@ const updatePassword = async (req, res, next) => {
 
 const deleteCustomer = async (req, res, next) => { };
 
+/**
+ * Get dashboard statistics for the authenticated customer
+ */
+const getDashboardStats = async (req, res, next) => {
+  try {
+    const customerId = req.user.id;
+    const stats = await customerService.getDashboardStats(customerId);
+
+    res.status(200).json({
+      success: true,
+      data: stats,
+      message: 'Dashboard statistics fetched successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
 
 export default {
@@ -175,4 +192,5 @@ export default {
   getAddresses,
   addAddress,
   removeAddress,
+  getDashboardStats,
 }

@@ -97,6 +97,39 @@ const changePassword = async (customerId, oldPassword, newPassword) => {
   await customer.updatePassword(newPassword);
 };
 
+/**
+ * Get dashboard statistics for a customer
+ * @param {string} customerId - The customer's ID
+ * @returns {Object} Dashboard statistics
+ */
+const getDashboardStats = async (customerId) => {
+  const customer = await customerRepo.findCustomerById(customerId);
+  if (!customer) {
+    throw new AppError(404, 'NotFoundError', 'Customer not found', 'ERR_NOT_FOUND');
+  }
+
+  // Define active statuses
+  const activeStatuses = ['Placed', 'Assigned', 'In Transit', 'Started'];
+  
+  // Get current month date range
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  
+  // Get upcoming pickups window (next 7 days)
+  const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  // Aggregation pipeline for comprehensive stats
+  const statsAggregation = await orderRepo.getCustomerDashboardStats(customerId, {
+    activeStatuses,
+    startOfMonth,
+    endOfMonth,
+    now,
+    sevenDaysFromNow
+  });
+
+  return statsAggregation;
+};
 
 export default {
   registerCustomer,
@@ -108,4 +141,5 @@ export default {
   removeCustomerAddress,
 
   changePassword,
+  getDashboardStats,
 }

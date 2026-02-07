@@ -32,9 +32,23 @@ export const updateTransporterPassword = async (oldPassword, newPassword) => {
   return response.data;
 };
 
+// ── NEW ── Get transporter ratings / reviews
+export const getTransporterRatings = async () => {
+  const response = await http.get('/api/transporters/ratings');
+  return response.data;     // or response.data.data — match your backend response shape
+};
+
+// Get transporter dashboard stats
+export const getTransporterDashboardStats = async () => {
+  const response = await http.get('/api/transporters/dashboard-stats');
+  return response.data;
+};
+
 export default {
   getTransporterProfile,
   updateTransporterProfile,
   uploadTransporterProfilePicture,
   updateTransporterPassword,
+  getTransporterRatings,    // ← don't forget to add it here too
+  getTransporterDashboardStats,
 };

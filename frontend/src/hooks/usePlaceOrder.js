@@ -43,7 +43,8 @@ export function usePlaceOrder() {
     const distance = parseFloat(formData.transit.distance);
     if (!isNaN(distance) && distance > 0) {
       let pricePerKm = distance <= 1000 ? 30 : distance <= 2000 ? 28 : 25;
-      const maxPrice = (distance * pricePerKm).toFixed(2);
+      const calculatedPrice = distance * pricePerKm;
+      const maxPrice = Math.max(calculatedPrice, 2000).toFixed(2);
       setFormData(prev => ({
         ...prev,
         cargo: { ...prev.cargo, maxPrice }
@@ -257,6 +258,26 @@ export function usePlaceOrder() {
   // Form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Mark ALL fields as touched so errors display
+    const allTouched = {};
+    ['pickup', 'delivery'].forEach(section => {
+      ['street', 'city', 'state', 'pin'].forEach(field => {
+        allTouched[`${section}.${field}`] = true;
+      });
+    });
+    ['date', 'time', 'distance'].forEach(field => {
+      allTouched[`transit.${field}`] = true;
+    });
+    ['type', 'vehicle', 'weight', 'description', 'maxPrice'].forEach(field => {
+      allTouched[`cargo.${field}`] = true;
+    });
+    formData.shipments.forEach((_, index) => {
+      ['name', 'quantity', 'price'].forEach(field => {
+        allTouched[`shipments.${index}.${field}`] = true;
+      });
+    });
+    setTouched(prev => ({ ...prev, ...allTouched }));
 
     // Validate all fields
     const newErrors = {};

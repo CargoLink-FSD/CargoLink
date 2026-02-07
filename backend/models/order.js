@@ -17,8 +17,6 @@ const OrderSchema = new mongoose.Schema(
       ref: "Customer",
       required: true,
     },
-
-    // Pickup & Delivery info
     pickup: {
       street: { type: String, required: true },
       city: { type: String, required: true },
@@ -31,12 +29,10 @@ const OrderSchema = new mongoose.Schema(
       state: { type: String, required: true },
       pin: { type: String, required: true },
     },
-
     scheduled_at: { type: Date, required: true },
     distance: { type: Number, required: true, min: 0 },
     order_date: { type: Date, default: Date.now },
     max_price: { type: Number, required: true, min: 2000 },
-
     goods_type: { type: String, required: true },
     weight: { type: Number, required: true },
     truck_type: { type: String, required: true },
@@ -49,12 +45,15 @@ const OrderSchema = new mongoose.Schema(
       enum: ["Placed", "Assigned", "Scheduled", "InTransit", "Completed", "Cancelled"],
       default: "Placed",
     },
-
     assigned_transporter_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Transporter",
     },
-
+    // This field prevents multiple reviews
+    is_reviewed: {
+      type: Boolean,
+      default: false
+    },
     trip_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Trip",

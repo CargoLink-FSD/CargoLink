@@ -77,4 +77,3 @@ export const http = {
 };
 
 export default http;
-

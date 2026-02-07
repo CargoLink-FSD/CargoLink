@@ -12,9 +12,11 @@ import CustomerProfile from '../pages/customer/CustomerProfile';
 import CustomerSignupForm from '../pages/customer/CustomerSignupForm';
 import TransporterProfile from '../pages/transporter/TransporterProfile';
 import TransporterSignupForm from '../pages/transporter/TransporterSignupForm';
+import TransporterDashboard from '../pages/transporter/TransporterDashboard';
 import BidPage from '../pages/transporter/Bid';
 import ProtectedRoute from './ProtectedRoute';
 import CustomerOrders from '../pages/customer/CustomerOrders';
+import CustomerDashboard from '../pages/customer/CustomerDashboard';
 import OrderBids from '../pages/customer/OrderBids';
 import PlaceOrder from '../pages/customer/PlaceOrder';
 import TransporterOrders from '../pages/transporter/TransporterOrders';
@@ -71,6 +73,7 @@ export default function AppRoutes() {
 
       <Route element={<ProtectedRoute allowedRoles={['customer']} />}>
         <Route path="/customer" element={<Home />} />
+        <Route path="/customer/dashboard" element={<CustomerDashboard />} />
         <Route path="/customer/profile" element={<CustomerProfile />} />
         <Route path="/customer/place-order" element={<PlaceOrder />} />
         <Route path="/customer/paynow" element={<PayNow />} />
@@ -88,6 +91,7 @@ export default function AppRoutes() {
 
       <Route element={<ProtectedRoute allowedRoles={['transporter']} />}>
         <Route path="/transporter" element={<Home />} />
+        <Route path="/transporter/dashboard" element={<TransporterDashboard />} />
         <Route path="/transporter/profile" element={<TransporterProfile />} />
         <Route path="/transporter/fleet" element={<FleetManagement />} />
         <Route path="/transporter/fleet/:vehicleId" element={<VehicleDetails />} />

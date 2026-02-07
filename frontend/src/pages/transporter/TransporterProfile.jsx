@@ -1,19 +1,21 @@
+import React from "react";
+import { transporterProfileFieldSchemas } from "../../utils/schemas";
+import { useTransporterProfile } from "../../hooks/useTransporterProfile";
+import RatingsTab from "../../components/transporter/RatingsTab";
+import Header from "../../components/common/Header";
+import { Truck, Box, User, MessageSquare, Shield } from "lucide-react";
+import ProfileField from "../../components/profile/ProfileField";
+import SecurityTab from "../../components/profile/SecurityTab";
+import "../../styles/profile.css";
+import Footer from "../../components/common/Footer";
 // Transporter Profile Page
 // Converted from transporter_profile.ejs and profile_transporter.js
-
-import React from 'react';
-import { transporterProfileFieldSchemas } from '../../utils/schemas';
-import { useTransporterProfile } from '../../hooks/useTransporterProfile';
 import { fetchTransporterProfile } from '../../store/slices/transporterSlice';
-import Header from '../../components/common/Header';
-import ProfileField from '../../components/profile/ProfileField';
-import SecurityTab from '../../components/profile/SecurityTab';
-import '../../styles/profile.css';
-import Footer from '../../components/common/Footer';
 
 const TransporterProfile = () => {
   const {
     profile,
+    ratings,
     loading,
     error,
     activeTab,
@@ -47,10 +49,12 @@ const TransporterProfile = () => {
     return (
       <>
         <Header />
-        <div style={{ paddingTop: '80px' }}>
+        <div style={{ paddingTop: "80px" }}>
           <div className="profile-container">
-            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <p style={{ fontSize: '1.2rem', color: 'var(--gray-500)' }}>Loading your profile...</p>
+            <div style={{ textAlign: "center", padding: "60px 20px" }}>
+              <p style={{ fontSize: "1.2rem", color: "var(--gray-500)" }}>
+                Loading your profile...
+              </p>
             </div>
           </div>
         </div>
@@ -62,11 +66,11 @@ const TransporterProfile = () => {
     return (
       <>
         <Header />
-        <div style={{ paddingTop: '80px' }}>
+        <div style={{ paddingTop: "80px" }}>
           <div className="profile-container">
-            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <p style={{ fontSize: '1.2rem', color: 'var(--error)' }}>
-                Unable to load profile. {error || 'Please try again.'}
+            <div style={{ textAlign: "center", padding: "60px 20px" }}>
+              <p style={{ fontSize: "1.2rem", color: "var(--error)" }}>
+                Unable to load profile. {error || "Please try again."}
               </p>
             </div>
           </div>
@@ -78,7 +82,7 @@ const TransporterProfile = () => {
   return (
     <>
       <Header />
-      <div style={{ paddingTop: '80px' }}>
+      <div className="profile-main-wrapper" style={{ paddingTop: "80px" }}>
         <div className="profile-container">
           {/* Profile Header Card */}
           <div className="profile-header-card">
@@ -158,43 +162,60 @@ const TransporterProfile = () => {
           {/* Tab Navigation */}
           <div className="profile-tabs">
             <button
-              className={`profile-tab ${activeTab === 'personal' ? 'active' : ''}`}
-              onClick={() => switchTab('personal')}
+              className={`profile-tab ${
+                activeTab === "personal" ? "active" : ""
+              }`}
+              onClick={() => switchTab("personal")}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
+              <User size={18} />
               Business Information
             </button>
             <button
-              className={`profile-tab ${activeTab === 'security' ? 'active' : ''}`}
-              onClick={() => switchTab('security')}
+              className={`profile-tab ${
+                activeTab === "ratings" ? "active" : ""
+              }`}
+              onClick={() => switchTab("ratings")}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
+              <MessageSquare size={18} />
+              Ratings & Reviews
+            </button>
+            <button
+              className={`profile-tab ${
+                activeTab === "security" ? "active" : ""
+              }`}
+              onClick={() => switchTab("security")}
+            >
+              <Shield size={18} />
               Security
             </button>
           </div>
 
-          {/* Tab Content */}
-          {activeTab === 'personal' && (
-            <div className="tab-content active">
-              <TransporterInfo
-                profile={profile}
-                dispatch={dispatch}
-                updateTransporterField={updateTransporterField}
-              />
-            </div>
-          )}
-
-          {activeTab === 'security' && (
-            <div className="tab-content active">
-              <SecurityTab dispatch={dispatch} updatePasswordAction={updateTransporterPassword} userEmail={profile?.email} />
-            </div>
-          )}
+          {/* Tab Content Area */}
+          <div className="profile-tab-content">
+            {activeTab === "personal" && (
+              <div className="tab-pane active">
+                <TransporterInfo
+                  profile={profile}
+                  dispatch={dispatch}
+                  updateTransporterField={updateTransporterField}
+                />
+              </div>
+            )}
+            {activeTab === "ratings" && (
+              <div className="tab-pane active">
+                <RatingsTab ratings={ratings} />
+              </div>
+            )}
+            {activeTab === "security" && (
+              <div className="tab-pane active">
+                <SecurityTab
+                  dispatch={dispatch}
+                  updatePasswordAction={updateTransporterPassword}
+                  userEmail={profile?.email}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <Footer />
@@ -204,23 +225,19 @@ const TransporterProfile = () => {
 
 // Transporter Info Component
 const TransporterInfo = ({ profile, dispatch, updateTransporterField }) => {
-  // Validation function for transporter fields
   const validateField = (fieldValue, fieldType) => {
     try {
       const schema = transporterProfileFieldSchemas[fieldType];
-      if (!schema) {
-        return { valid: false, msg: 'Invalid field type' };
-      }
+      if (!schema) return { valid: false, msg: "Invalid field type" };
       schema.parse(fieldValue);
       return { valid: true };
     } catch (error) {
-      // Handle Zod validation errors
       return { valid: false, msg: error.issues[0].message };
     }
   };
 
   return (
-    <div className="profile-content">
+    <div className="profile-content-card">
       <div className="card-header-row">
         <h2 className="card-title">Business Information</h2>
       </div>
@@ -228,7 +245,7 @@ const TransporterInfo = ({ profile, dispatch, updateTransporterField }) => {
         <ProfileField
           fieldKey="name"
           label="Company Name"
-          value={profile?.companyName || ''}
+          value={profile?.companyName || ""}
           type="text"
           dispatch={dispatch}
           updateAction={updateTransporterField}
@@ -237,7 +254,7 @@ const TransporterInfo = ({ profile, dispatch, updateTransporterField }) => {
         <ProfileField
           fieldKey="email"
           label="Email"
-          value={profile?.email || ''}
+          value={profile?.email || ""}
           type="email"
           dispatch={dispatch}
           updateAction={updateTransporterField}
@@ -246,7 +263,7 @@ const TransporterInfo = ({ profile, dispatch, updateTransporterField }) => {
         <ProfileField
           fieldKey="primary_contact"
           label="Primary Contact"
-          value={profile?.phone || ''}
+          value={profile?.phone || ""}
           type="tel"
           dispatch={dispatch}
           updateAction={updateTransporterField}
@@ -255,7 +272,7 @@ const TransporterInfo = ({ profile, dispatch, updateTransporterField }) => {
         <ProfileField
           fieldKey="secondary_contact"
           label="Secondary Contact"
-          value={profile?.secondaryContact || ''}
+          value={profile?.secondaryContact || ""}
           type="tel"
           dispatch={dispatch}
           updateAction={updateTransporterField}
@@ -265,7 +282,7 @@ const TransporterInfo = ({ profile, dispatch, updateTransporterField }) => {
         <ProfileField
           fieldKey="pan"
           label="PAN Number"
-          value={profile?.panNumber || ''}
+          value={profile?.panNumber || ""}
           type="text"
           dispatch={dispatch}
           updateAction={updateTransporterField}
@@ -274,7 +291,7 @@ const TransporterInfo = ({ profile, dispatch, updateTransporterField }) => {
         <ProfileField
           fieldKey="gst_in"
           label="GST Number"
-          value={profile?.gstNumber || ''}
+          value={profile?.gstNumber || ""}
           type="text"
           dispatch={dispatch}
           updateAction={updateTransporterField}
@@ -283,7 +300,7 @@ const TransporterInfo = ({ profile, dispatch, updateTransporterField }) => {
         <ProfileField
           fieldKey="street"
           label="Street Address"
-          value={profile?.address || ''}
+          value={profile?.address || ""}
           type="text"
           dispatch={dispatch}
           updateAction={updateTransporterField}
@@ -292,7 +309,7 @@ const TransporterInfo = ({ profile, dispatch, updateTransporterField }) => {
         <ProfileField
           fieldKey="city"
           label="City"
-          value={profile?.city || ''}
+          value={profile?.city || ""}
           type="text"
           dispatch={dispatch}
           updateAction={updateTransporterField}
@@ -301,7 +318,7 @@ const TransporterInfo = ({ profile, dispatch, updateTransporterField }) => {
         <ProfileField
           fieldKey="state"
           label="State"
-          value={profile?.state || ''}
+          value={profile?.state || ""}
           type="text"
           dispatch={dispatch}
           updateAction={updateTransporterField}
@@ -310,7 +327,7 @@ const TransporterInfo = ({ profile, dispatch, updateTransporterField }) => {
         <ProfileField
           fieldKey="pin"
           label="PIN Code"
-          value={profile?.pin || ''}
+          value={profile?.pin || ""}
           type="text"
           dispatch={dispatch}
           updateAction={updateTransporterField}

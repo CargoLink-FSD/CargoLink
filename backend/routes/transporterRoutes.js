@@ -15,6 +15,9 @@ transporterRouter.post("/register", validate(validationSchema.transporter), tran
 // All routes require authentication as transporter
 transporterRouter.use(authMiddleware(['transporter']));
 
+// Dashboard
+transporterRouter.get("/dashboard-stats", transporterController.getDashboardStats); // Get dashboard statistics
+
 // Profile
 transporterRouter.get("/profile", transporterController.getTransporterProfile); // Get profile
 transporterRouter.put("/profile", profileUpload.single('profilePicture'), validate(validationSchema.updateTransporter), transporterController.updateTransporterProfile); // Update profile
@@ -42,7 +45,8 @@ transporterRouter.post("/fleet/:truckId/set-maintenance", transporterController.
 transporterRouter.post("/fleet/:truckId/set-available", transporterController.setTruckAvailable); // Set truck to available
 transporterRouter.post("/fleet/:truckId/set-unavailable", transporterController.setTruckUnavailable); // Set truck to unavailable
 transporterRouter.post("/fleet/:truckId/schedule-maintenance", transporterController.scheduleMaintenance); // Schedule maintenance
-
+//rating
+transporterRouter.get('/ratings',transporterController.getTransporterRatings);
 
 // transporterRouter.get("/drivers", transporterController.getDrivers); // List drivers
 // transporterRouter.post("/drivers", validate(validationSchema.driver), transporterController.addDriver); // Add driver
