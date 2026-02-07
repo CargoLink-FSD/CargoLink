@@ -42,7 +42,7 @@ const OrderSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["Placed", "Assigned", "In Transit", "Completed", "Cancelled"],
+      enum: ["Placed", "Assigned", "Scheduled", "InTransit", "Completed", "Cancelled"],
       default: "Placed",
     },
     assigned_transporter_id: {
@@ -54,15 +54,15 @@ const OrderSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
-    final_price: Number,
-    otp: String,
-    assignment: {
-      vehicle_id: { type: mongoose.Schema.Types.ObjectId },
-      vehicle_number: String,
-      vehicle_type: String,
-      assigned_at: Date
+    trip_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Trip",
+      default: null,
     },
-    shipments: [ShipmentItemSchema],
+
+    final_price: Number, // used in 'Assigned'
+
+    shipments: [ShipmentItemSchema], // visible always
   },
   { timestamps: true },
 );

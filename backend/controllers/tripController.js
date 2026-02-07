@@ -1,174 +1,274 @@
-// import tripServices from '../services/tripServices.js';
-import { get } from "mongoose";
 import { AppError, logger } from "../utils/misc.js";
-import tripServices from "../services/tripService.js";
+import tripService from "../services/tripService.js";
 
-// Create Trip
+
 async function createTrip(req, res, next) {
-    try {
-        const trip = await tripServices.createTrip(req.transporter.id, req.body);
-        res.status(201).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const transporterId = req.user.id;
+    const trip = await tripService.createTrip(transporterId);
+    
+    res.status(201).json({
+      success: true,
+      data: trip,
+      message: "Trip created successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
-// Get Trips
+
 async function getTrips(req, res, next) {
-    try {
-        const trips = await tripServices.getTrips(req.transporter.id, req.query);
-        res.status(200).json({ success: true, data: trips });
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const transporterId = req.user.id;
+    const trips = await tripService.getTrips(transporterId, req.query);
+    
+    res.status(200).json({
+      success: true,
+      data: trips,
+      message: "Trips fetched successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
-// Get Trip Details
+
 async function getTripDetails(req, res, next) {
-    try {
-        const trip = await tripServices.getTripDetails(req.transporter.id, req.params.tripId);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const transporterId = req.user.id;
+    const tripId = req.params.id;
+    const trip = await tripService.getTripDetails(transporterId, tripId);
+    
+    res.status(200).json({
+      success: true,
+      data: trip,
+      message: "Trip details fetched successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
-// Update Trip
-async function updateTrip(req, res, next) {
-    try {
-        const trip = await tripServices.updateTrip(req.transporter.id, req.params.tripId, req.body);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
-}
 
-// Delete Trip
 async function deleteTrip(req, res, next) {
-    try {
-        await tripServices.deleteTrip(req.transporter.id, req.params.tripId);
-        res.status(200).json({ success: true, message: 'Trip deleted successfully' });
-    } catch (err) {
-        next(err);
-    }
-}
-// Assign Order to Trip
-async function assignOrder(req, res, next) {
-    try {
-        const trip = await tripServices.assignOrder(req.transporter.id, req.params.tripId, req.body.orderId);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const transporterId = req.user.id;
+    const tripId = req.params.id;
+    await tripService.deleteTrip(transporterId, tripId);
+    
+    res.status(200).json({
+      success: true,
+      message: "Trip deleted successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
-// Remove Order from Trip
-async function removeOrderFromTrip(req, res, next) {
-    try {
-        const trip = await tripServices.removeOrderFromTrip(req.transporter.id, req.params.tripId, req.params.orderId);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
+// ==================== VEHICLE & ORDER MANAGEMENT ====================
+
+/**
+ * POST /api/trips/:id/vehicle
+ * Assign a vehicle to a trip
+ */
+async function assignVehicle(req, res, next) {
+  try {
+    const transporterId = req.user.id;
+    const tripId = req.params.id;
+    const { vehicleId } = req.body;
+    
+    if (!vehicleId) {
+      throw new AppError(
+        400,
+        "ValidationError",
+        "vehicleId is required",
+        "ERR_VALIDATION"
+      );
     }
+    
+    const trip = await tripService.assignVehicle(transporterId, tripId, vehicleId);
+    
+    res.status(200).json({
+      success: true,
+      data: trip,
+      message: "Vehicle assigned successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
-// Assign Truck to Trip
-async function assignTruck(req, res, next) {
-    try {
-        const trip = await tripServices.assignTruck(req.transporter.id, req.params.tripId, req.body.truckId);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
+
+async function addOrders(req, res, next) {
+  try {
+    const transporterId = req.user.id;
+    const tripId = req.params.id;
+    const { orderIds } = req.body;
+    
+    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+      throw new AppError(
+        400,
+        "ValidationError",
+        "orderIds must be a non-empty array",
+        "ERR_VALIDATION"
+      );
     }
+    
+    const trip = await tripService.addOrders(transporterId, tripId, orderIds);
+    
+    res.status(200).json({
+      success: true,
+      data: trip,
+      message: "Orders added successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
-// Unassign Truck from Trip
-async function unassignTruck(req, res, next) {
-    try {
-        const trip = await tripServices.unassignTruck(req.transporter.id, req.params.tripId);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
-}
 
-// Auto-assign Orders to Trip
-async function autoAssignOrders(req, res, next) {
-    try {
-        const trip = await tripServices.autoAssignOrders(req.transporter.id, req.params.tripId);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
-}
-
-// Schedule Trip
 async function scheduleTrip(req, res, next) {
-    try {
-        const trip = await tripServices.scheduleTrip(req.transporter.id, req.params.tripId);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
+  try {
+    const transporterId = req.user.id;
+    const tripId = req.params.id;
+    const { orderIds } = req.body;
+    
+    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+      throw new AppError(
+        400,
+        "ValidationError",
+        "orderIds must be a non-empty array",
+        "ERR_VALIDATION"
+      );
     }
+    
+    const trip = await tripService.scheduleTrip(transporterId, tripId, orderIds);
+    
+    res.status(200).json({
+      success: true,
+      data: trip,
+      message: "Trip scheduled successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
-// Start Trip
+
+
+
 async function startTrip(req, res, next) {
-    try {
-        const trip = await tripServices.startTrip(req.transporter.id, req.params.tripId);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const transporterId = req.user.id;
+    const tripId = req.params.id;
+    const trip = await tripService.startTrip(transporterId, tripId);
+    
+    res.status(200).json({
+      success: true,
+      data: trip,
+      message: "Trip started successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
-// Update Trip Location
-async function updateTripLocation(req, res, next) {
-    try {
-        const trip = await tripServices.updateTripLocation(req.transporter.id, req.params.tripId, req.body);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
+
+async function arriveAtStop(req, res, next) {
+  try {
+    const transporterId = req.user.id;
+    const tripId = req.params.id;
+    const seq = req.params.seq;
+    
+    const trip = await tripService.arriveAtStop(transporterId, tripId, seq);
+    
+    res.status(200).json({
+      success: true,
+      data: trip,
+      message: "Arrival recorded successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
-// Complete Trip
+
+async function confirmPickup(req, res, next) {
+  try {
+    const transporterId = req.user.id;
+    const tripId = req.params.id;
+    const seq = req.params.seq;
+    const { otp } = req.body;
+    
+    if (!otp) {
+      throw new AppError(
+        400,
+        "ValidationError",
+        "OTP is required",
+        "ERR_VALIDATION"
+      );
+    }
+    
+    const trip = await tripService.confirmPickup(transporterId, tripId, seq, otp);
+    
+    res.status(200).json({
+      success: true,
+      data: trip,
+      message: "Pickup confirmed successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+
+async function confirmDropoff(req, res, next) {
+  try {
+    const transporterId = req.user.id;
+    const tripId = req.params.id;
+    const seq = req.params.seq;
+    
+    const trip = await tripService.confirmDropoff(transporterId, tripId, seq);
+    
+    res.status(200).json({
+      success: true,
+      data: trip,
+      message: "Dropoff confirmed successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+
 async function completeTrip(req, res, next) {
-    try {
-        const trip = await tripServices.completeTrip(req.transporter.id, req.params.tripId);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const transporterId = req.user.id;
+    const tripId = req.params.id;
+    const trip = await tripService.completeTrip(transporterId, tripId);
+    
+    res.status(200).json({
+      success: true,
+      data: trip,
+      message: "Trip completed successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
 }
-
-// Update Trip Status
-async function updateTripStatus(req, res, next) {
-    try {
-        const trip = await tripServices.updateTripStatus(req.transporter.id, req.params.tripId, req.body.status);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
-}
-
-
-
 
 export default {
-    createTrip,
-    getTrips,
-    getTripDetails,
-    updateTrip,
-    deleteTrip,
-    assignOrder,
-    removeOrderFromTrip,
-    assignTruck,
-    unassignTruck,
-    autoAssignOrders,
-    scheduleTrip,
-    startTrip,
-    updateTripLocation,
-    completeTrip,
-    updateTripStatus,
-}
+  createTrip,
+  getTrips,
+  getTripDetails,
+  deleteTrip,
+  assignVehicle,
+  addOrders,
+  scheduleTrip,
+  startTrip,
+  arriveAtStop,
+  confirmPickup,
+  confirmDropoff,
+  completeTrip,
+};

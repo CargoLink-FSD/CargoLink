@@ -36,6 +36,9 @@ import PayNow from '../pages/customer/PayNow';
 
 import FleetManagement from '../pages/transporter/FleetManagement';
 import VehicleDetails from '../pages/transporter/VehicleDetails';
+import TripList from '../components/transporter/TripList';
+import TripBuilder from '../components/transporter/TripBuilder';
+import ActiveTripDashboard from '../components/transporter/ActiveTripDashboard';
 
 export default function AppRoutes() {
   const placeholderStyle = { padding: '2rem', fontSize: '1.25rem' };
@@ -95,6 +98,10 @@ export default function AppRoutes() {
         <Route path="/transporter/orders" element={<TransporterOrders />} />
         <Route path="/transporter/orders/:orderId" element={<OrderDetails/>} />
         <Route path="/transporter/orders/:orderId/track" element={<TrackOrder/>} />
+        <Route path="/transporter/trips" element={<TripList />} />
+        <Route path="/transporter/trips/create" element={<TripBuilder />} />
+        <Route path="/transporter/trips/:tripId" element={<OrderDetails/>} />
+        <Route path="/transporter/trips/:tripId/execute" element={<ActiveTripDashboard />} />
         <Route path="/transporter/bid" element={<BidPage />} />
         <Route path="/transporter/my-bids" element={<MyBidsPage />} />
         <Route path="/transporter/assignment" element={placeholder('Assignment: Dashboard')} />

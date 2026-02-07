@@ -127,12 +127,12 @@ const setTruckMaintenance = async (transporterId, truckId) => {
     throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
   }
 
-  if (truck.status === 'Assigned') {
-    throw new AppError(400, 'ValidationError', 'Cannot set assigned truck to maintenance', 'ERR_TRUCK_ASSIGNED');
+  if (truck.status === 'OnTrip') {
+    throw new AppError(400, 'ValidationError', 'Cannot set truck on active trip to maintenance', 'ERR_TRUCK_ON_TRIP');
   }
 
   const updates = {
-    status: 'In Maintenance',
+    status: 'Maintenance',
     last_service_date: new Date(),
     next_service_date: null
   };

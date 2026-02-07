@@ -1,62 +1,75 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.js";
-import { validate } from "../middlewares/validator.js";
-import { validationSchema } from "../middlewares/validator.js";
 import tripController from "../controllers/tripController.js";
 
+/**
+ * Trip Routes
+ * Implements the trip-centric REST API.
+ * All routes require transporter authentication.
+ * 
+ * API Structure:
+ * POST   /api/trips                           → create trip (Planned)
+ * GET    /api/trips                           → list trips with filters
+ * GET    /api/trips/:id                       → get trip details
+ * DELETE /api/trips/:id                       → delete trip (Planned only)
+ * 
+ * POST   /api/trips/:id/vehicle               → assign vehicle
+ * POST   /api/trips/:id/orders                → add orders
+ * POST   /api/trips/:id/schedule              → schedule trip (generate stops)
+ * POST   /api/trips/:id/start                 → start trip (InTransit)
+ * 
+ * POST   /api/trips/:id/stops/:seq/arrive     → mark arrival at stop
+ * POST   /api/trips/:id/stops/:seq/confirm-pickup   → confirm pickup with OTP
+ * POST   /api/trips/:id/stops/:seq/confirm-dropoff  → confirm dropoff
+ * 
+ * POST   /api/trips/:id/complete              → complete trip
+ */
 
 const tripRouter = Router();
 
+// All trip routes require transporter authentication
 tripRouter.use(authMiddleware(["transporter"]));
 
-// // ===== Transporter Routes =====
+// ==================== TRIP CRUD ====================
 
-// Create trip
-tripRouter.post('/', validate(validationSchema.trip),  tripController.createTrip);
+// Create a new trip
+tripRouter.post("/", tripController.createTrip);
 
-// Get my trips
-tripRouter.get('/', tripController.getTrips);
+// Get all trips for transporter (with optional filters)
+tripRouter.get("/", tripController.getTrips);
 
-// Get trip details
-tripRouter.get('/:tripId',  tripController.getTripDetails);
+// Get detailed trip information
+tripRouter.get("/:id", tripController.getTripDetails);
 
-// Update trip
-tripRouter.put('/:tripId', validate(validationSchema.updateTrip),  tripController.updateTrip);
+// Delete a trip (Planned only)
+tripRouter.delete("/:id", tripController.deleteTrip);
 
-// Delete trip
-tripRouter.delete('/:tripId', tripController.deleteTrip);
+// ==================== TRIP PLANNING ====================
 
-// Assign order to trip
-tripRouter.post('/:tripId/assign-order', validate(validationSchema.tripAssignOrder),  tripController.assignOrder);
+// Assign a vehicle to the trip
+tripRouter.post("/:id/vehicle", tripController.assignVehicle);
 
-// Remove order from trip
-tripRouter.delete('/:tripId/orders/:orderId', tripController.removeOrderFromTrip);
+// Add orders to the trip
+tripRouter.post("/:id/orders", tripController.addOrders);
 
-// Assign truck to trip
-tripRouter.post('/:tripId/assign-truck', validate(validationSchema.tripAssignTruck),  tripController.assignTruck);
+// Schedule the trip (lock in orders, generate stops)
+tripRouter.post("/:id/schedule", tripController.scheduleTrip);
 
-// Remove order from trip
-tripRouter.post('/:tripId/unassign-truck', tripController.unassignTruck);
+// ==================== TRIP EXECUTION ====================
 
+// Start the trip (transition to InTransit)
+tripRouter.post("/:id/start", tripController.startTrip);
 
+// Mark arrival at a stop
+tripRouter.post("/:id/stops/:seq/arrive", tripController.arriveAtStop);
 
-// Auto-assign orders (algorithm)
-tripRouter.post('/:tripId/auto-assign', tripController.autoAssignOrders);
+// Confirm pickup with OTP validation
+tripRouter.post("/:id/stops/:seq/confirm-pickup", tripController.confirmPickup);
 
-// Get trip schedule
-tripRouter.post('/:tripId/schedule', tripController.scheduleTrip);
+// Confirm dropoff (no OTP required)
+tripRouter.post("/:id/stops/:seq/confirm-dropoff", tripController.confirmDropoff);
 
-// Start trip
-tripRouter.post('/:tripId/start', tripController.startTrip);
-
-// Update Location
-tripRouter.post('/:tripId/location', validate(validationSchema.tripLocation),  tripController.updateTripLocation);
-
-// Complete trip
-tripRouter.post('/:tripId/complete', tripController.completeTrip);
-
-// Update trip status
-tripRouter.put('/:tripId/status', validate(validationSchema.tripStatus),  tripController.updateTripStatus);
-
+// Complete the trip
+tripRouter.post("/:id/complete", tripController.completeTrip);
 
 export default tripRouter;

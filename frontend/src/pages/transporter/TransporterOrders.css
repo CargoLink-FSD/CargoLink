@@ -7,6 +7,9 @@
 
 .orders-header {
   margin-bottom: 1.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .orders-header h1 {
@@ -15,10 +18,27 @@
   color: #111;
 }
 
+.btn-view-trips {
+  padding: 0.75rem 1.5rem;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-view-trips:hover {
+  background: #0056b3;
+  transform: translateY(-2px);
+}
+
 .orders-filters {
   display: flex;
   gap: 1rem;
   align-items: center;
+  margin-bottom: 1.5rem;
 }
 
 .search-input,
@@ -289,8 +309,17 @@
   }
 
   .orders-header h1 {
-    font-size: 1.5rem;
+    font-size: 1.5rem  }
+  
+  .orders-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
   }
+  
+  .btn-view-trips {
+    width: 100%;
+  } 
 
   .orders-filters {
     flex-direction: column;
@@ -308,4 +337,98 @@
   .modal-content {
     margin: 1rem;
   }
+  
+  .trip-banner-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .btn-create-trip {
+    width: 100%;
+  }
+}
+
+/* Trip Banner Styles */
+.trip-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  color: white;
+}
+
+.trip-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.trip-banner-icon {
+  font-size: 3rem;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.trip-banner-text {
+  flex: 1;
+}
+
+.trip-banner-text h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  margin-top: 0;
+}
+
+.trip-banner-text p {
+  font-size: 1rem;
+  opacity: 0.95;
+  margin: 0;
+}
+
+.btn-create-trip {
+  padding: 1rem 2rem;
+  background: white;
+  color: #667eea;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-create-trip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+}
+
+/* Trip Info Banner */
+.trip-info-banner {
+  background: #e7f3ff;
+  border-left: 4px solid #007bff;
+  padding: 1rem 1.5rem;
+  margin-bottom: 2rem;
+  border-radius: 4px;
+}
+
+.trip-info-banner p {
+  margin: 0;
+  color: #004085;
+  font-size: 0.95rem;
+}
+
+.trip-info-banner a {
+  color: #007bff;
+  font-weight: 600;
+  text-decoration: underline;
 }
