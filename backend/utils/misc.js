@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const accessLogStream = createStream('access.log', {
-    interval: '30s',
+    interval: '1m',
     path: path.join(path.dirname(''), 'logs'),
     teeToStdout: true,
 })

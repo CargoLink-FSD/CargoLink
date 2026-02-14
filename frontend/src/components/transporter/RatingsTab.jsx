@@ -58,7 +58,7 @@ const RatingsTab = ({ ratings }) => {
       <div className="reviews-list-wrapper">
         <div className="reviews-list-header">
           <h2 className="reviews-list-title">Customer Reviews</h2>
-          <button className="write-review-btn-alt">Write a Review</button>
+          {/* <button className="write-review-btn-alt">Write a Review</button> */}
         </div>
 
         {reviews.length === 0 ? (
@@ -80,7 +80,7 @@ const RatingsTab = ({ ratings }) => {
                     </div>
                     {review.orderInfo && (
                       <p className="review-order-route">
-                        {review.orderInfo.pickup} → {review.orderInfo.delivery} • {review.orderInfo.distance || '1,400 km'}
+                        {review.orderInfo.pickup} → {review.orderInfo.delivery}
                       </p>
                     )}
                   </div>
@@ -95,8 +95,8 @@ const RatingsTab = ({ ratings }) => {
                 <p className="review-comment-body">{review.comment}</p>
 
                 <div className="review-footer-actions">
-                  <button className="review-foot-btn"><ThumbsUp size={14} /> Helpful (12)</button>
-                  <button className="review-foot-btn"><MessageSquare size={14} /> Reply</button>
+                  {/* <button className="review-foot-btn"><ThumbsUp size={14} /> Helpful (12)</button> */}
+                  {/* <button className="review-foot-btn"><MessageSquare size={14} /> Reply</button> */}
                 </div>
               </div>
             ))}

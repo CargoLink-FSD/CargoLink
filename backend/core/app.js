@@ -37,8 +37,8 @@ app.use(compression());
 
 // Rate limiting - Cant scrape data using the api links and all like puthiyathlaimurai
 const limiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 100, // limit tO 100R
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 200, // limit tO 100R
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true, 
   legacyHeaders: false,
