@@ -8,34 +8,53 @@ import Home from '../pages/common/Home';
 import Login from '../pages/common/login';
 import ForgotPassword from '../pages/common/ForgotPassword';
 import NotFound from '../pages/common/NotFound';
-import CustomerProfile from '../pages/customer/CustomerProfile';
-import CustomerSignupForm from '../pages/customer/CustomerSignupForm';
-import TransporterProfile from '../pages/transporter/TransporterProfile';
-import TransporterSignupForm from '../pages/transporter/TransporterSignupForm';
-import TransporterDashboard from '../pages/transporter/TransporterDashboard';
-import BidPage from '../pages/transporter/Bid';
 import ProtectedRoute from './ProtectedRoute';
-import CustomerOrders from '../pages/customer/CustomerOrders';
+
+import CustomerSignupForm from '../pages/customer/CustomerSignupForm';
 import CustomerDashboard from '../pages/customer/CustomerDashboard';
+import CustomerProfile from '../pages/customer/CustomerProfile';
+
+import CustomerOrders from '../pages/customer/CustomerOrders';
 import OrderBids from '../pages/customer/OrderBids';
 import PlaceOrder from '../pages/customer/PlaceOrder';
+import PayNow from '../pages/customer/PayNow';
+import TrackOrder from '../pages/TrackOrder'
+import OrderDetails from '../pages/common/OrderDetails';
+
+import TransporterSignupForm from '../pages/transporter/TransporterSignupForm';
+import TransporterDashboard from '../pages/transporter/TransporterDashboard';
+import TransporterProfile from '../pages/transporter/TransporterProfile';
+
 import TransporterOrders from '../pages/transporter/TransporterOrders';
 import MyBidsPage from '../pages/transporter/MyBids';
+import BidPage from '../pages/transporter/Bid';
+import FleetManagement from '../pages/transporter/FleetManagement';
+import VehicleDetails from '../pages/transporter/VehicleDetails';
+// import TripPlanner from '../pages/transporter/TripPlanner';
+// import TripManagement from '../pages/transporter/TripManagement';
+// import DriverManagement from '../pages/transporter/DriverManagement';
+
+import DriverSignupForm from '../pages/driver/DriverSignupForm';
+import DriverDashboard from '../pages/driver/DriverDashboard';
+import DriverProfile from '../pages/driver/DriverProfile';
+import DriverSchedule from '../pages/driver/DriverSchedule';
+
+// import TripInfo from '../pages/common/TripInfo';
+// import ActiveTrip from '../pages/driver/ActiveTrip';
+// import MyTrips from '../pages/driver/DriverTrips';
+
 import About from '../pages/static/About';
 import Services from '../pages/static/Services';
 import Contact from '../pages/static/Contact';
 import Careers from '../pages/static/Careers';
 import Terms from '../pages/static/Terms';
 import Privacy from '../pages/static/Privacy';
+
 import UserManagement from '../pages/admin/UserManagement';
 import OrderManagement from '../pages/admin/OrderManagement';
-import OrderDetails from '../pages/common/OrderDetails';
 import Dashboard from '../pages/admin/Dashboard';
-import TrackOrder from '../pages/TrackOrder'
-import PayNow from '../pages/customer/PayNow';
 
-import FleetManagement from '../pages/transporter/FleetManagement';
-import VehicleDetails from '../pages/transporter/VehicleDetails';
+
 
 export default function AppRoutes() {
   const placeholderStyle = { padding: '2rem', fontSize: '1.25rem' };
@@ -64,7 +83,6 @@ export default function AppRoutes() {
 
 
       {/* Customer Routes */}
-
       
       <Route path="/customer/signup" element={<CustomerSignupForm />} />
 
@@ -82,7 +100,6 @@ export default function AppRoutes() {
 
 
       {/* Transporter Routes */}
-
       
       <Route path="/transporter/signup" element={<TransporterSignupForm />} />
 
@@ -97,15 +114,40 @@ export default function AppRoutes() {
         <Route path="/transporter/orders/:orderId/track" element={<TrackOrder/>} />
         <Route path="/transporter/bid" element={<BidPage />} />
         <Route path="/transporter/my-bids" element={<MyBidsPage />} />
-        <Route path="/transporter/assignment" element={placeholder('Assignment: Dashboard')} />
-        <Route path="/transporter/assignment/order/:order_id" element={placeholder('Assignment: Order Detail')} />
-        <Route path="/transporter/assignment/vehicles/available" element={placeholder('Assignment: Available Vehicles')} />
-        <Route path="/transporter/assignment/vehicles/by-type" element={placeholder('Assignment: Vehicles By Type')} />
+        {/* <Route path="/transporter/trips" element={<TripManagement />} /> */}
+        {/* <Route path='/transporter/trips/edit' element={<TripPlanner />} /> */}
+        {/* <Route path="/transporter/trips/:tripId" element={<TripInfo />} /> */}
+        {/* <Route path="/transporter/drivers" element={<DriverManagement />} /> */}
+        {/* <Route path="/transporter/drivers/:driverId" element={<DriverProfile />} /> */}
+      </Route>
+
+
+      {/* Driver Routes */}
+
+      <Route path="/driver/signup" element={<DriverSignupForm />} />
+
+      <Route element={<ProtectedRoute allowedRoles={['driver']} />}>
+        <Route path="/driver" element={<Home />} />
+        <Route path="/driver/dashboard" element={<DriverDashboard />} />
+        <Route path="/driver/profile" element={<DriverProfile />} />
+        {/* <Route path="/driver/trips" element={<MyTrips />} /> */}
+        {/* <Route path="/driver/trips/active" element={<ActiveTrip />} /> */}
+        {/* <Route path="/driver/trips/:tripId" element={<TripInfo />} /> */}
+        <Route path="/driver/schedule" element={<DriverSchedule />} />
+      </Route>
+
+     
+      {/* Manager Routes */}
+
+     <Route element={<ProtectedRoute allowedRoles={['manager']} />}>
+        <Route path="/manager" element={<Home />} />
+        <Route path="/manager/dashboard" element={placeholder('Manager Dashboard')} />
+        <Route path="/manager/documents" element={placeholder('Manager Documents')} />
+        <Route path="/manager/tickets" element={placeholder('Manager Tickets')} />
       </Route>
 
 
       {/* Admin Routes */}
-
       
       <Route path="/admin/login" element={placeholder('Admin Login')} />
 

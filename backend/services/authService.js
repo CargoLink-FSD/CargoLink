@@ -1,4 +1,5 @@
 import customerRepo from "../repositories/customerRepo.js";
+import driverRepo from "../repositories/driverRepo.js";
 import transporterRepo from "../repositories/transporterRepo.js";
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
@@ -35,6 +36,8 @@ export async function authenticateUser({ email, password, role }) {
     user = await customerRepo.findByEmail(email);
   } else if (role === 'transporter') {
     user = await transporterRepo.findByEmail(email);
+  } else if (role === 'driver') {
+    user = await driverRepo.findByEmail(email);
   } else {
     throw new AppError(400, 'AuthError', 'Unsupported role', 'ERR_UNSUPPORTED_ROLE');
   }
@@ -121,6 +124,8 @@ export async function findUserByEmailAndRole(email, role) {
     return await customerRepo.findByEmail(email);
   } else if (role === 'transporter') {
     return await transporterRepo.findByEmail(email);
+  } else if (role === 'driver') {
+    return await driverRepo.findByEmail(email);
   }
   return null;
 }

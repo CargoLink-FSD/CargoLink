@@ -2,61 +2,30 @@ import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.js";
 import { validate } from "../middlewares/validator.js";
 import { validationSchema } from "../middlewares/validator.js";
-import tripController from "../controllers/tripController.js";
+// import tripController from "../controllers/tripController.js";
 
 
 const tripRouter = Router();
 
-tripRouter.use(authMiddleware(["transporter"]));
+// tripRouter.get('/:tripId', authMiddleware(["transporter", "driver"]),  tripController.getTripInfo); // Get specific trip details
 
-// // ===== Transporter Routes =====
-
-// Create trip
-tripRouter.post('/', validate(validationSchema.trip),  tripController.createTrip);
-
-// Get my trips
-tripRouter.get('/', tripController.getTrips);
-
-// Get trip details
-tripRouter.get('/:tripId',  tripController.getTripDetails);
-
-// Update trip
-tripRouter.put('/:tripId', validate(validationSchema.updateTrip),  tripController.updateTrip);
-
-// Delete trip
-tripRouter.delete('/:tripId', tripController.deleteTrip);
-
-// Assign order to trip
-tripRouter.post('/:tripId/assign-order', validate(validationSchema.tripAssignOrder),  tripController.assignOrder);
-
-// Remove order from trip
-tripRouter.delete('/:tripId/orders/:orderId', tripController.removeOrderFromTrip);
-
-// Assign truck to trip
-tripRouter.post('/:tripId/assign-truck', validate(validationSchema.tripAssignTruck),  tripController.assignTruck);
-
-// Remove order from trip
-tripRouter.post('/:tripId/unassign-truck', tripController.unassignTruck);
+// // Transporter CRUD
+// tripRouter.post('/', authMiddleware(["transporter"]), validate(validationSchema.trip),  tripController.createTrip); // Create new trip
+// tripRouter.get('/', authMiddleware(["transporter"]), tripController.getTrips); // Get all trips
+// tripRouter.put('/:tripId', authMiddleware(["transporter"]), validate(validationSchema.updateTrip),  tripController.updateTrip); // Update trip
+// tripRouter.delete('/:tripId', authMiddleware(["transporter"]), tripController.deleteTrip); // Delete trip
 
 
+// // Auto-assign orders (algorithm) probably not used
+// tripRouter.post('/:tripId/auto-assign', tripController.autoAssignOrders);
 
-// Auto-assign orders (algorithm)
-tripRouter.post('/:tripId/auto-assign', tripController.autoAssignOrders);
 
-// Get trip schedule
-tripRouter.post('/:tripId/schedule', tripController.scheduleTrip);
-
-// Start trip
-tripRouter.post('/:tripId/start', tripController.startTrip);
-
-// Update Location
-tripRouter.post('/:tripId/location', validate(validationSchema.tripLocation),  tripController.updateTripLocation);
-
-// Complete trip
-tripRouter.post('/:tripId/complete', tripController.completeTrip);
-
-// Update trip status
-tripRouter.put('/:tripId/status', validate(validationSchema.tripStatus),  tripController.updateTripStatus);
+// // Driver View and Actions 
+// tripRouter.get("/my-trips", tripController.getTrips); // View all trips assigned to the driver
+// tripRouter.post(":tripId/confirm-pickup", tripController.confirmPickup); // Confirm order pick-up
+// tripRouter.post(":tripId/confirm-delivery", tripController.confirmDelivery); // Confirm delivery completion
+// tripRouter.post(":tripId/update-location", validate(validationSchema.location), tripController.updateCurrentLocation); // Update current location during transit
+// tripRouter.post(":tripId/report-deley", validate(validationSchema.delay), tripController.reportDelay); // Report delay or issue during transit
 
 
 export default tripRouter;

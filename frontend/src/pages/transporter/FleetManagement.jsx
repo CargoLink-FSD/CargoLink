@@ -17,7 +17,7 @@ import { useVehicleForm } from '../../hooks/fleet/useVehicleForm';
 import '../../styles/styles.css';
 import '../../styles/layout.css';
 import '../../styles/Fleet.css';
-import '../../styles/notification.css';
+import '../../styles/Notification.css';
 
 const FleetManagement = () => {
   const { vehicles, loading, createVehicle, editVehicle, removeVehicle } = useFleetManagement();

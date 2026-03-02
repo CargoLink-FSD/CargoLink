@@ -57,10 +57,37 @@ export const customerSignupSchema = z.object({
   path: ['confirmPassword'],
 });
 
+
 export const customerStep1Schema = customerSignupSchema.pick({ firstName: true, lastName: true, gender: true, email: true });
 export const customerStep2Schema = customerSignupSchema.pick({ phone: true, dob: true });
 export const customerStep3Schema = customerSignupSchema.pick({ street_address: true, city: true, state: true, pin: true });
 export const customerStep4Schema = customerSignupSchema.pick({ password: true, confirmPassword: true, terms: true });
+
+// Driver signup
+export const driverSignupSchema = z.object({
+  firstName: z.string().min(1, 'First name is required').min(2, 'First name must be at least 2 characters').max(50, 'First name is too long').regex(REGEX.NAME, 'First name can only contain letters, spaces, hyphens and apostrophes'),
+  lastName: z.string().min(1, 'Last name is required').min(2, 'Last name must be at least 2 characters').max(50, 'Last name is too long').regex(REGEX.NAME, 'Last name can only contain letters, spaces, hyphens and apostrophes'),
+  gender: z.string().min(1, 'Gender is required'),
+  phone: phoneSchema,
+  email: emailSchema,
+  licenseNumber: z.string().min(1, 'License number is required').max(20, 'License number is too long'),
+  address: z.string().min(1, 'Street address is required'),
+  city: z.string().min(1, 'City is required'),
+  state: z.string().min(1, 'State is required'),
+  pin: pinSchema,
+  password: passwordSchema,
+  confirmPassword: z.string().min(1, 'Please confirm your password'),
+  terms: z.boolean().refine((val) => val === true, 'You must accept the terms'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
+});
+
+export const driverStep1Schema = driverSignupSchema.pick({ firstName: true, lastName: true, gender: true, email: true });
+export const driverStep2Schema = driverSignupSchema.pick({ phone: true, licenseNumber: true, address: true, city: true, state: true, pin: true });
+export const driverStep3Schema = driverSignupSchema.pick({ password: true, confirmPassword: true, terms: true });
+
+
 
 // Transporter signup
 export const vehicleSchema = z.object({
@@ -121,6 +148,19 @@ export const profileFieldSchemas = {
     return true;
   }, 'Please enter a valid date of birth'),
   gender: z.enum(['Male', 'Female', 'Other'], { errorMap: () => ({ message: 'Please select a valid gender' }) }),
+};
+
+export const driverProfileFieldSchemas = {
+  firstName: z.string().min(1, 'First name is required').min(2, 'First name must be at least 2 characters').max(50, 'First name is too long').regex(/^[A-Za-z\s'-]+$/, 'First name can only contain letters, spaces, hyphens and apostrophes'),
+  lastName: z.string().min(2, 'Last name must be at least 2 characters').max(50, 'Last name is too long').regex(/^[A-Za-z\s'-]+$/, 'Last name can only contain letters, spaces, hyphens and apostrophes'),
+  email: emailSchema,
+  phone: phoneSchema,
+  gender: z.enum(['Male', 'Female', 'Other'], { errorMap: () => ({ message: 'Please select a valid gender' }) }),
+  licenseNumber: z.string().min(1, 'License number is required').max(20, 'License number is too long'),
+  address: z.string().min(1, 'Street address is required'),
+  city: z.string().min(1, 'City is required'),
+  state: z.string().min(1, 'State is required'),
+  pin: pinSchema,
 };
 
 // Transporter profile field update schemas
