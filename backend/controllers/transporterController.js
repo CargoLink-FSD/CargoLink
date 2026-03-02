@@ -380,6 +380,103 @@ const updatePaymentInfo = async (req, res, next) => {
   // Placeholder for updating payment info
 };
 
+// ─── Driver Management ─────────────────────────────────────────────────────────
+
+const getDrivers = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const drivers = await transporterService.getDrivers(transporterId);
+
+    res.status(200).json({
+      success: true,
+      data: drivers,
+      message: 'Drivers fetched successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getDriverRequests = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const requests = await transporterService.getDriverRequests(transporterId);
+
+    res.status(200).json({
+      success: true,
+      data: requests,
+      message: 'Driver requests fetched successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const acceptDriverRequest = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const { applicationId } = req.params;
+    const application = await transporterService.acceptDriverRequest(transporterId, applicationId);
+
+    res.status(200).json({
+      success: true,
+      data: application,
+      message: 'Driver request accepted successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const rejectDriverRequest = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const { applicationId } = req.params;
+    const { rejectionReason } = req.body;
+    const application = await transporterService.rejectDriverRequest(transporterId, applicationId, rejectionReason);
+
+    res.status(200).json({
+      success: true,
+      data: application,
+      message: 'Driver request rejected',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const removeDriverFromCompany = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const { driverId } = req.params;
+    await transporterService.removeDriver(transporterId, driverId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Driver removed from company',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getDriverSchedule = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const { driverId } = req.params;
+    const { startDate, endDate } = req.query;
+    const schedule = await transporterService.getDriverSchedule(transporterId, driverId, startDate, endDate);
+
+    res.status(200).json({
+      success: true,
+      data: schedule,
+      message: 'Driver schedule fetched successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 
 
@@ -411,4 +508,12 @@ export default {
   getPaymentInfo,
   updatePaymentInfo,
   getTransporterRatings,
+
+  // Driver Management
+  getDrivers,
+  getDriverRequests,
+  acceptDriverRequest,
+  rejectDriverRequest,
+  removeDriverFromCompany,
+  getDriverSchedule,
 };

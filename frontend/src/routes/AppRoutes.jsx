@@ -30,14 +30,15 @@ import MyBidsPage from '../pages/transporter/MyBids';
 import BidPage from '../pages/transporter/Bid';
 import FleetManagement from '../pages/transporter/FleetManagement';
 import VehicleDetails from '../pages/transporter/VehicleDetails';
+import DriverManagement from '../pages/transporter/DriverManagement';
 // import TripPlanner from '../pages/transporter/TripPlanner';
 // import TripManagement from '../pages/transporter/TripManagement';
-// import DriverManagement from '../pages/transporter/DriverManagement';
 
 import DriverSignupForm from '../pages/driver/DriverSignupForm';
 import DriverDashboard from '../pages/driver/DriverDashboard';
 import DriverProfile from '../pages/driver/DriverProfile';
 import DriverSchedule from '../pages/driver/DriverSchedule';
+import JoinTransporter from '../pages/driver/JoinTransporter';
 
 // import TripInfo from '../pages/common/TripInfo';
 // import ActiveTrip from '../pages/driver/ActiveTrip';
@@ -114,11 +115,10 @@ export default function AppRoutes() {
         <Route path="/transporter/orders/:orderId/track" element={<TrackOrder/>} />
         <Route path="/transporter/bid" element={<BidPage />} />
         <Route path="/transporter/my-bids" element={<MyBidsPage />} />
+        <Route path="/transporter/drivers" element={<DriverManagement />} />
         {/* <Route path="/transporter/trips" element={<TripManagement />} /> */}
         {/* <Route path='/transporter/trips/edit' element={<TripPlanner />} /> */}
         {/* <Route path="/transporter/trips/:tripId" element={<TripInfo />} /> */}
-        {/* <Route path="/transporter/drivers" element={<DriverManagement />} /> */}
-        {/* <Route path="/transporter/drivers/:driverId" element={<DriverProfile />} /> */}
       </Route>
 
 
@@ -130,6 +130,7 @@ export default function AppRoutes() {
         <Route path="/driver" element={<Home />} />
         <Route path="/driver/dashboard" element={<DriverDashboard />} />
         <Route path="/driver/profile" element={<DriverProfile />} />
+        <Route path="/driver/join-transporter" element={<JoinTransporter />} />
         {/* <Route path="/driver/trips" element={<MyTrips />} /> */}
         {/* <Route path="/driver/trips/active" element={<ActiveTrip />} /> */}
         {/* <Route path="/driver/trips/:tripId" element={<TripInfo />} /> */}

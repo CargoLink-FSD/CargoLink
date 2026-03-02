@@ -44,11 +44,53 @@ export const getTransporterDashboardStats = async () => {
   return response.data;
 };
 
+// ─── Driver Management ─────────────────────────────────────────────────────────
+
+export const getDrivers = async () => {
+  const response = await http.get('/api/transporters/drivers');
+  return response.data;
+};
+
+export const getDriverRequests = async () => {
+  const response = await http.get('/api/transporters/driver-requests');
+  return response.data;
+};
+
+export const acceptDriverRequest = async (applicationId) => {
+  const response = await http.post(`/api/transporters/driver-requests/${applicationId}/accept`);
+  return response.data;
+};
+
+export const rejectDriverRequest = async (applicationId, rejectionReason) => {
+  const response = await http.post(`/api/transporters/driver-requests/${applicationId}/reject`, { rejectionReason });
+  return response.data;
+};
+
+export const removeDriver = async (driverId) => {
+  const response = await http.del(`/api/transporters/drivers/${driverId}`);
+  return response;
+};
+
+export const getDriverSchedule = async (driverId, startDate, endDate) => {
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const response = await http.get(`/api/transporters/drivers/${driverId}/schedule${query}`);
+  return response.data;
+};
+
 export default {
   getTransporterProfile,
   updateTransporterProfile,
   uploadTransporterProfilePicture,
   updateTransporterPassword,
-  getTransporterRatings,    // ← don't forget to add it here too
+  getTransporterRatings,
   getTransporterDashboardStats,
+  getDrivers,
+  getDriverRequests,
+  acceptDriverRequest,
+  rejectDriverRequest,
+  removeDriver,
+  getDriverSchedule,
 };

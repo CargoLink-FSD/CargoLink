@@ -18,6 +18,19 @@ const findTransporterById = async (id) => {
   return await Transporter.findById(id);
 };
 
+const findAllTransporters = async () => {
+  return await Transporter.find({})
+    .select('name email city state primary_contact profilePicture fleet')
+    .lean()
+    .then((transporters) =>
+      transporters.map((t) => ({
+        ...t,
+        fleetCount: t.fleet ? t.fleet.length : 0,
+        fleet: undefined,
+      }))
+    );
+};
+
 const updateTransporter = async (transporterId, updates) => {
   const transporter = await Transporter.findByIdAndUpdate(transporterId, updates, { new: true }).select('-password -fleet');
   return transporter
@@ -78,6 +91,7 @@ export default {
   createTransporter,
   findByEmail,
   findTransporterById,
+  findAllTransporters,
   updateTransporter,
   getFleet,
   getTruck,

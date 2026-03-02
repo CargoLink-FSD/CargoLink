@@ -75,7 +75,7 @@ export default function Header() {
                 <Link className="underline-link" to="/transporter/orders" onClick={handleLinkClick}>My Orders</Link>
                 <Link className="underline-link" to="/transporter/trips" onClick={handleLinkClick}>Trips</Link>
                 <Link className="underline-link" to="/transporter/fleet" onClick={handleLinkClick}>Manage Fleet</Link>
-                <Link className="underline-link" to="/transporter/driver" onClick={handleLinkClick}>Manage Drivers</Link>
+                <Link className="underline-link" to="/transporter/drivers" onClick={handleLinkClick}>Manage Drivers</Link>
                 <Link className="underline-link" to="/transporter/profile" onClick={handleLinkClick}>Profile</Link>
                 <div className="profile-dropdown">
                   <span className="profile-name">Transporter</span>
@@ -91,6 +91,7 @@ export default function Header() {
                 <Link className="underline-link" to="/driver/dashboard" onClick={handleLinkClick}>Dashboard</Link>
                 <Link className="underline-link" to="/driver/my-trips" onClick={handleLinkClick}>Trips</Link>
                 <Link className="underline-link" to="/driver/schedule" onClick={handleLinkClick}>Schedule</Link>
+                <Link className="underline-link" to="/driver/join-transporter" onClick={handleLinkClick}>Join Transporter</Link>
                 <Link className="underline-link" to="/driver/profile" onClick={handleLinkClick}>Profile</Link>
                 <div className="profile-dropdown">
                   <span className="profile-name">Driver</span>

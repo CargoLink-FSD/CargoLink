@@ -1,4 +1,5 @@
 import transporterRepo from "../repositories/transporterRepo.js";
+import driverRepo from "../repositories/driverRepo.js";
 import Review from "../models/review.js";
 import orderRepo from "../repositories/orderRepo.js";
 import Order from "../models/order.js";
@@ -484,6 +485,90 @@ const getDashboardStats = async (transporterId) => {
   };
 };
 
+// ─── Driver Management ─────────────────────────────────────────────────────────
+
+const getDrivers = async (transporterId) => {
+  const transporter = await transporterRepo.findTransporterById(transporterId);
+  if (!transporter) {
+    throw new AppError(404, 'NotFoundError', 'Transporter not found', 'ERR_NOT_FOUND');
+  }
+  const drivers = await driverRepo.findDriversByTransporter(transporterId);
+  return drivers;
+};
+
+const getDriverRequests = async (transporterId) => {
+  const transporter = await transporterRepo.findTransporterById(transporterId);
+  if (!transporter) {
+    throw new AppError(404, 'NotFoundError', 'Transporter not found', 'ERR_NOT_FOUND');
+  }
+  const requests = await driverRepo.getPendingApplicationsForTransporter(transporterId);
+  return requests;
+};
+
+const acceptDriverRequest = async (transporterId, applicationId) => {
+  const application = await driverRepo.findApplicationById(applicationId);
+  if (!application) {
+    throw new AppError(404, 'NotFoundError', 'Application not found', 'ERR_NOT_FOUND');
+  }
+  if (application.transporter_id._id.toString() !== transporterId) {
+    throw new AppError(403, 'ForbiddenError', 'Not your application to manage', 'ERR_FORBIDDEN');
+  }
+  if (application.status !== 'Pending') {
+    throw new AppError(400, 'ValidationError', 'Application is no longer pending', 'ERR_VALIDATION');
+  }
+
+  // Accept the application
+  const updated = await driverRepo.updateApplicationStatus(applicationId, 'Accepted');
+  // Associate driver with transporter
+  await driverRepo.setDriverTransporter(application.driver_id._id, transporterId);
+
+  return updated;
+};
+
+const rejectDriverRequest = async (transporterId, applicationId, rejectionReason) => {
+  const application = await driverRepo.findApplicationById(applicationId);
+  if (!application) {
+    throw new AppError(404, 'NotFoundError', 'Application not found', 'ERR_NOT_FOUND');
+  }
+  if (application.transporter_id._id.toString() !== transporterId) {
+    throw new AppError(403, 'ForbiddenError', 'Not your application to manage', 'ERR_FORBIDDEN');
+  }
+  if (application.status !== 'Pending') {
+    throw new AppError(400, 'ValidationError', 'Application is no longer pending', 'ERR_VALIDATION');
+  }
+
+  const updated = await driverRepo.updateApplicationStatus(applicationId, 'Rejected', rejectionReason);
+  return updated;
+};
+
+const removeDriver = async (transporterId, driverId) => {
+  const driver = await driverRepo.findDriverById(driverId);
+  if (!driver) {
+    throw new AppError(404, 'NotFoundError', 'Driver not found', 'ERR_NOT_FOUND');
+  }
+  if (!driver.transporter_id || driver.transporter_id.toString() !== transporterId) {
+    throw new AppError(400, 'ValidationError', 'Driver is not associated with your company', 'ERR_VALIDATION');
+  }
+
+  await driverRepo.removeDriverFromTransporter(driverId);
+};
+
+const getDriverSchedule = async (transporterId, driverId, startDate, endDate) => {
+  const driver = await driverRepo.findDriverById(driverId);
+  if (!driver) {
+    throw new AppError(404, 'NotFoundError', 'Driver not found', 'ERR_NOT_FOUND');
+  }
+  if (!driver.transporter_id || driver.transporter_id.toString() !== transporterId) {
+    throw new AppError(403, 'ForbiddenError', 'Driver is not associated with your company', 'ERR_FORBIDDEN');
+  }
+
+  const start = startDate || new Date().toISOString();
+  const end = endDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
+  const blocks = await driverRepo.getScheduleBlocks(driverId, start, end);
+  return { blocks, startDate: start, endDate: end, driverName: `${driver.firstName} ${driver.lastName}` };
+};
+
 
 export default {
   registerTransporter,
@@ -501,4 +586,12 @@ export default {
   scheduleMaintenance,
   getTransporterRatings,
   getDashboardStats,
+
+  // Driver Management
+  getDrivers,
+  getDriverRequests,
+  acceptDriverRequest,
+  rejectDriverRequest,
+  removeDriver,
+  getDriverSchedule,
 };

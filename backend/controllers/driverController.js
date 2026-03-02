@@ -127,6 +127,118 @@ const getDashboardStats = async (req, res, next) => {
   }
 };
 
+// ─── Schedule ──────────────────────────────────────────────────────────────────
+
+const getSchedule = async (req, res, next) => {
+  try {
+    const driverId = req.user.id;
+    const { startDate, endDate } = req.query;
+    const schedule = await driverService.getSchedule(driverId, startDate, endDate);
+
+    res.status(200).json({
+      success: true,
+      data: schedule,
+      message: 'Schedule fetched successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const addScheduleBlock = async (req, res, next) => {
+  try {
+    const driverId = req.user.id;
+    const blockData = req.body;
+    const block = await driverService.addScheduleBlock(driverId, blockData);
+
+    res.status(201).json({
+      success: true,
+      data: block,
+      message: 'Schedule block added successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const removeScheduleBlock = async (req, res, next) => {
+  try {
+    const driverId = req.user.id;
+    const { blockId } = req.params;
+    await driverService.removeScheduleBlock(driverId, blockId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Schedule block removed successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── Join Transporter ──────────────────────────────────────────────────────────
+
+const getTransporters = async (req, res, next) => {
+  try {
+    const transporters = await driverService.listTransporters();
+
+    res.status(200).json({
+      success: true,
+      data: transporters,
+      message: 'Transporters fetched successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const applyToTransporter = async (req, res, next) => {
+  try {
+    const driverId = req.user.id;
+    const { transporterId } = req.params;
+    const { message } = req.body;
+    const application = await driverService.applyToTransporter(driverId, transporterId, message);
+
+    res.status(201).json({
+      success: true,
+      data: application,
+      message: 'Application submitted successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getApplicationStatus = async (req, res, next) => {
+  try {
+    const driverId = req.user.id;
+    const applications = await driverService.getApplicationStatus(driverId);
+
+    res.status(200).json({
+      success: true,
+      data: applications,
+      message: 'Applications fetched successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const withdrawApplication = async (req, res, next) => {
+  try {
+    const driverId = req.user.id;
+    const { applicationId } = req.params;
+    await driverService.withdrawApplication(driverId, applicationId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Application withdrawn successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 export default {
   createDriver,
@@ -136,4 +248,15 @@ export default {
   deleteDriver,
   updatePassword,
   getDashboardStats,
+
+  // Schedule
+  getSchedule,
+  addScheduleBlock,
+  removeScheduleBlock,
+
+  // Join Transporter
+  getTransporters,
+  applyToTransporter,
+  getApplicationStatus,
+  withdrawApplication,
 }

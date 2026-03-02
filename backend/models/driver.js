@@ -8,6 +8,15 @@ const AvailabilitySlotSchema = new mongoose.Schema({
   available: { type: Boolean, default: true }
 }, { _id: false });
 
+const ScheduleBlockSchema = new mongoose.Schema({
+  title:     { type: String, default: "Unavailable" },
+  type:      { type: String, enum: ["unavailable", "trip"], default: "unavailable" },
+  startTime: { type: Date, required: true },
+  endTime:   { type: Date, required: true },
+  order_id:  { type: mongoose.Schema.Types.ObjectId, ref: "Order" },
+  notes:     { type: String, default: "" },
+}, { _id: true, timestamps: true });
+
 const DriverSchema = new mongoose.Schema({
 
   transporter_id: { type: mongoose.Schema.Types.ObjectId, ref: "Transporter" }, // nullable until approved
@@ -35,7 +44,7 @@ const DriverSchema = new mongoose.Schema({
     default: "Available",
   },
 
-  availability: { type: [AvailabilitySlotSchema], default: [] },
+  scheduleBlocks: { type: [ScheduleBlockSchema], default: [] },
 
   current_trip_id: { type: mongoose.Schema.Types.ObjectId, ref: "Trip" },
   location: {

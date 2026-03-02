@@ -48,12 +48,12 @@ transporterRouter.post("/fleet/:truckId/schedule-maintenance", transporterContro
 //rating
 transporterRouter.get('/ratings',transporterController.getTransporterRatings);
 
-// transporterRouter.get("/drivers", transporterController.getDrivers); // List drivers
-// transporterRouter.post("/drivers", validate(validationSchema.driver), transporterController.addDriver); // Add driver
-// transporterRouter.get("/drivers/:driverId", transporterController.getDriverDetails); // Get driver details
-// transporterRouter.put("/drivers/:driverId", validate(validationSchema.driver), transporterController.updateDriver); // Update driver
-// transporterRouter.delete("/drivers/:driverId", transporterController.removeDriver); // Delete driver
-// transporterRouter.get('/drivers/:driverId/availability', driverController.getDriverAvailability);
-// transporterRouter.put('/drivers/:driverId/availability', driverController.updateDriverAvailability);
+// Driver Management
+transporterRouter.get("/drivers", transporterController.getDrivers); // List associated drivers
+transporterRouter.get("/driver-requests", transporterController.getDriverRequests); // List pending applications
+transporterRouter.post("/driver-requests/:applicationId/accept", transporterController.acceptDriverRequest); // Accept driver application
+transporterRouter.post("/driver-requests/:applicationId/reject", transporterController.rejectDriverRequest); // Reject driver application
+transporterRouter.delete("/drivers/:driverId", transporterController.removeDriverFromCompany); // Remove driver
+transporterRouter.get("/drivers/:driverId/schedule", transporterController.getDriverSchedule); // View driver schedule
 
 export default transporterRouter;

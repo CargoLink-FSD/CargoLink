@@ -23,12 +23,15 @@ driverRouter.delete("/profile", driverController.deleteDriver); // Soft delete
 driverRouter.patch("/password", validate(validationSchema.password), driverController.updatePassword); // Change password
 
 // Schedule
-// driverRouter.get("/transporters", driverController.getTransporters); // Get list of transporters (for driver applications)
-// driverRouter.get("/transporters/:transporterId", driverController.getTransporterDetails); // Get transporter details for application
-// driverRouter.post("/apply/:transporterId", driverController.applyToTransporter); // Apply to become driver for a transporter
-// driverRouter.get("/schedule", driverController.getSchedule); // View upcoming schedule
-// driverRouter.post("/schedule/update", validate(validationSchema.schedule), driverController.updateSchedule); // Update availability schedule
+driverRouter.get("/schedule", driverController.getSchedule); // Get schedule (query: startDate, endDate)
+driverRouter.post("/schedule/block", validate(validationSchema.scheduleBlock), driverController.addScheduleBlock); // Add unavailable block
+driverRouter.delete("/schedule/block/:blockId", driverController.removeScheduleBlock); // Remove unavailable block
 
+// Join Transporter
+driverRouter.get("/transporters", driverController.getTransporters); // List all transporters
+driverRouter.post("/apply/:transporterId", driverController.applyToTransporter); // Apply to join a transporter
+driverRouter.get("/applications", driverController.getApplicationStatus); // Get application statuses
+driverRouter.delete("/application/:applicationId", driverController.withdrawApplication); // Withdraw application
 
 
 export default driverRouter;
