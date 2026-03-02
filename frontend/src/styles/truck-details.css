@@ -154,6 +154,7 @@
 
 .truck-details-page .schedule-container {
     display: flex;
+    flex-direction: column;
     gap: 0.5rem;
     align-items: center;
 }
@@ -175,6 +176,79 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 1rem;
+    }
+}
+
+/* ─── Fleet Schedule Section ─────────────────────────────────────────────── */
+
+.fleet-schedule-section {
+    margin-top: 2rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    padding: 2rem;
+}
+
+.fleet-schedule-section .schedule-container {
+    padding: 0;
+    max-width: 100%;
+}
+
+.fleet-schedule-section .schedule-header {
+    margin-bottom: 1.25rem;
+}
+
+.fleet-schedule-section .schedule-header h2 {
+    margin: 0;
+}
+
+/* Make the gantt wrapper fill the card */
+.fleet-schedule-section .gantt-wrapper {
+    box-shadow: none;
+    border: 1px solid #e5e7eb;
+}
+
+/* Ensure the gantt chart is wide enough for all 24 columns + label */
+.fleet-schedule-section .gantt-chart {
+    min-width: 1000px;
+}
+
+/* Fix the blocks container positioning to match the grid */
+.fleet-schedule-section .gantt-blocks-container {
+    position: absolute;
+    top: 0;
+    left: 120px;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+}
+
+/* Maintenance block styling (amber/yellow) */
+.gantt-block.maintenance {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid #f59e0b;
+    color: #92400e;
+}
+
+/* Legend maintenance color */
+.fleet-schedule-section .legend-color.maintenance {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+}
+
+/* Schedule legend spacing inside fleet section */
+.fleet-schedule-section .schedule-legend {
+    margin-bottom: 1.25rem;
+}
+
+/* Responsive adjustments for fleet schedule */
+@media (max-width: 768px) {
+    .fleet-schedule-section {
+        padding: 1rem;
+    }
+    
+    .fleet-schedule-section .gantt-chart {
+        min-width: 800px;
     }
 }
   

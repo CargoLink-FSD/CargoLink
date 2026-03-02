@@ -24,15 +24,6 @@ transporterRouter.put("/profile", profileUpload.single('profilePicture'), valida
 transporterRouter.delete("/profile", transporterController.deleteTransporter); // Soft delete
 transporterRouter.patch("/password", validate(validationSchema.password), transporterController.updatePassword); // Change password
 
-// // Service Locations
-// transporterRouter.get('/service-locations', transporterController.getServiceLocations);
-// transporterRouter.post(  '/service-locations',  transporterController.addServiceLocation);
-// transporterRouter.delete('/service-locations/:locationId', transporterController.removeServiceLocation);
-
-// // Payment Info
-// transporterRouter.get('payment-info', transporterController.getPaymentInfo);
-// transporterRouter.put('/payment-info',  transporterController.updatePaymentInfo);
-
 // Trucks
 transporterRouter.get("/fleet", transporterController.getTrucks); // List trucks
 transporterRouter.post("/fleet", validate(validationSchema.truck), transporterController.addTruck); // Add truck
@@ -45,6 +36,12 @@ transporterRouter.post("/fleet/:truckId/set-maintenance", transporterController.
 transporterRouter.post("/fleet/:truckId/set-available", transporterController.setTruckAvailable); // Set truck to available
 transporterRouter.post("/fleet/:truckId/set-unavailable", transporterController.setTruckUnavailable); // Set truck to unavailable
 transporterRouter.post("/fleet/:truckId/schedule-maintenance", transporterController.scheduleMaintenance); // Schedule maintenance
+
+// Fleet Schedule Management
+transporterRouter.get("/fleet/:truckId/schedule", transporterController.getFleetSchedule); // Get truck schedule
+transporterRouter.post("/fleet/:truckId/schedule/block", validate(validationSchema.fleetScheduleBlock), transporterController.addFleetScheduleBlock); // Add schedule block
+transporterRouter.delete("/fleet/:truckId/schedule/block/:blockId", transporterController.removeFleetScheduleBlock); // Remove schedule block
+
 //rating
 transporterRouter.get('/ratings',transporterController.getTransporterRatings);
 

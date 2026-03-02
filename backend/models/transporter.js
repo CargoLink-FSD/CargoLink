@@ -1,26 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
-const FleetSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: true },
-    registration: { type: String, required: true },
-    capacity: { type: Number, required: true, min: 0 },
-    manufacture_year: { type: Number, required: true },
-    truck_type: { type: String, required: true },
-    status: {
-      type: String,
-      enum: ["Available", "Assigned", "In Maintenance", "Unavailable"],
-      default: "Available",
-    },
-    last_service_date: Date,
-    next_service_date: Date,
-    currentLocation: String,
-    current_trip_id: { type: mongoose.Schema.Types.ObjectId, ref: "Trip" },
-  },
-  { _id: true },
-);
-
 const TransporterSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
@@ -34,7 +14,6 @@ const TransporterSchema = new mongoose.Schema(
     secondary_contact: String,
     email: { type: String, required: true, unique: true },
     password: { type: String },
-    fleet: [FleetSchema],
     // OAuth fields
     authProvider: { type: String, enum: ["google", "local"], default: "local" },
     googleId: { type: String },

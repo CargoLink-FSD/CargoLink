@@ -1,13 +1,27 @@
 import mongoose from "mongoose";
 
+const FleetScheduleBlockSchema = new mongoose.Schema(
+  {
+    title: { type: String, default: '' },
+    type: {
+      type: String,
+      enum: ['maintenance', 'unavailable', 'trip'],
+      required: true,
+    },
+    startTime: { type: Date, required: true },
+    endTime: { type: Date, required: true },
+    order_id: { type: mongoose.Schema.Types.ObjectId, ref: "Order" },
+    notes: { type: String, default: '' },
+  },
+  { _id: true }
+);
+
 const FleetSchema = new mongoose.Schema(
   {
-    transporter_id: { type: ObjectId, ref: "Transporter", required: true },
+    transporter_id: { type: mongoose.Schema.Types.ObjectId, ref: "Transporter", required: true },
     name: { type: String, required: true },
-    registration: { type: String, required: true,  unique: true },
+    registration: { type: String, required: true, unique: true },
     capacity: { type: Number, required: true, min: 0 },
-    max_weight_kg: Number,
-    max_volume_m3: Number,
     manufacture_year: { type: Number, required: true },
     truck_type: { type: String, required: true },
     status: {
@@ -17,15 +31,12 @@ const FleetSchema = new mongoose.Schema(
     },
     last_service_date: Date,
     next_service_date: Date,
-    
-    current_location: {
-        type: { type: String, enum: ["Point"], default: "Point" },
-        coordinates: [Number]
-    },
+    currentLocation: String,
     current_trip_id: { type: mongoose.Schema.Types.ObjectId, ref: "Trip" },
+    scheduleBlocks: [FleetScheduleBlockSchema],
   },
-  { _id: true },
+  { timestamps: true },
 );
 
-const fleetModel = mongoose.model("Fleet", FleetSchema);
-export default fleetModel;
+const Fleet = mongoose.model("Fleet", FleetSchema);
+export default Fleet;

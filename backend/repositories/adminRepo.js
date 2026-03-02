@@ -1,6 +1,7 @@
 import Order from '../models/order.js';
 import Customer from '../models/customer.js';
 import Transporter from '../models/transporter.js';
+import Fleet from '../models/fleet.js';
 import Bid from '../models/bids.js';
 
 // Dashboard Analytics Queries
@@ -98,11 +99,10 @@ const getOrderStatusDistribution = async () => {
 };
 
 const getFleetUtilization = async () => {
-    const result = await Transporter.aggregate([
-        { $unwind: "$fleet" },
+    const result = await Fleet.aggregate([
         {
             $group: {
-                _id: "$fleet.status",
+                _id: "$status",
                 count: { $sum: 1 }
             }
         },
@@ -216,13 +216,13 @@ const getAllOrders = async (query = {}, sortOptions = { createdAt: -1 }) => {
 const getOrderById = async (orderId) => {
     const order = await Order.findById(orderId)
         .populate('customer_id', 'firstName lastName email phone')
-        .populate('assigned_transporter_id', 'name email primary_contact fleet');
+        .populate('assigned_transporter_id', 'name email primary_contact');
     return order;
 };
 
 const getBidsForOrder = async (orderId) => {
     const bids = await Bid.find({ order_id: orderId })
-        .populate('transporter_id', 'name email primary_contact fleet')
+        .populate('transporter_id', 'name email primary_contact')
         .sort({ bid_amount: 1 });
     return bids;
 };

@@ -2,6 +2,7 @@ import { AppError, logger } from "../utils/misc.js";
 import tripRepo from "../repositories/tripRepo.js";
 import orderRepo from "../repositories/orderRepo.js";
 import transporterRepo from "../repositories/transporterRepo.js";
+import truckRepo from "../repositories/truckRepo.js";
 import mongoose from "mongoose";
 
 // Helper function to calculate ETA based on distance (0.5 hours per 50km average)
@@ -128,8 +129,11 @@ const assignTruck = async (transporterId, tripId, truckId) => {
   }
   
   // Check if truck belongs to transporter
-  const transporter = await transporterRepo.getTransporterById(transporterId);
-  const truck = transporter?.fleet?.find(t => t._id.toString() === truckId);
+  const transporter = await transporterRepo.findTransporterById(transporterId);
+  if (!transporter) {
+    throw new AppError(404, "NotFound", "Transporter not found", "ERR_NOT_FOUND");
+  }
+  const truck = await truckRepo.getTruck(transporterId, truckId);
   if (!truck) {
     throw new AppError(404, "NotFound", "Truck not found in your fleet", "ERR_NOT_FOUND");
   }

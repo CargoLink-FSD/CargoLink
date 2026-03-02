@@ -52,6 +52,26 @@ export const scheduleMaintenance = async (vehicleId, nextServiceDate) => {
   return response.data;
 };
 
+// Fleet Schedule Management
+export const getFleetSchedule = async (vehicleId, startDate, endDate) => {
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const response = await http.get(`/api/transporters/fleet/${vehicleId}/schedule${query}`);
+  return response.data;
+};
+
+export const addFleetScheduleBlock = async (vehicleId, blockData) => {
+  const response = await http.post(`/api/transporters/fleet/${vehicleId}/schedule/block`, blockData);
+  return response.data;
+};
+
+export const removeFleetScheduleBlock = async (vehicleId, blockId) => {
+  const response = await http.del(`/api/transporters/fleet/${vehicleId}/schedule/block/${blockId}`);
+  return response.data;
+};
+
 export default { 
   getFleet, 
   getVehicle, 
@@ -61,5 +81,8 @@ export default {
   setTruckMaintenance,
   setTruckAvailable,
   setTruckUnavailable,
-  scheduleMaintenance
+  scheduleMaintenance,
+  getFleetSchedule,
+  addFleetScheduleBlock,
+  removeFleetScheduleBlock,
 };

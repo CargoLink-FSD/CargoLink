@@ -1,5 +1,5 @@
 import Transporter from '../models/transporter.js';
-import { logger } from '../utils/misc.js'
+import Fleet from '../models/fleet.js';
 
 const checkEmailExists = async (email) => {
   return await Transporter.exists({ email });
@@ -19,72 +19,32 @@ const findTransporterById = async (id) => {
 };
 
 const findAllTransporters = async () => {
-  return await Transporter.find({})
-    .select('name email city state primary_contact profilePicture fleet')
-    .lean()
-    .then((transporters) =>
-      transporters.map((t) => ({
-        ...t,
-        fleetCount: t.fleet ? t.fleet.length : 0,
-        fleet: undefined,
-      }))
-    );
+  const transporters = await Transporter.find({})
+    .select('name email city state primary_contact profilePicture')
+    .lean();
+
+  // Attach fleet counts from the separate Fleet collection
+  const transporterIds = transporters.map((t) => t._id);
+  const fleetCounts = await Fleet.aggregate([
+    { $match: { transporter_id: { $in: transporterIds } } },
+    { $group: { _id: '$transporter_id', count: { $sum: 1 } } },
+  ]);
+  const countMap = Object.fromEntries(fleetCounts.map((fc) => [fc._id.toString(), fc.count]));
+
+  return transporters.map((t) => ({
+    ...t,
+    fleetCount: countMap[t._id.toString()] || 0,
+  }));
 };
 
 const updateTransporter = async (transporterId, updates) => {
-  const transporter = await Transporter.findByIdAndUpdate(transporterId, updates, { new: true }).select('-password -fleet');
+  const transporter = await Transporter.findByIdAndUpdate(transporterId, updates, { new: true }).select('-password');
   return transporter
 };
 
-
-const getFleet = async (transporterId) => {
-  const result = await Transporter.findById(transporterId).select('fleet');
-  return result.fleet;
+const getTransporterById = async (id) => {
+  return await Transporter.findById(id);
 };
-
-const getTruck = async (transporterId, truckId) => {
-  const truckData = await Transporter.findOne({
-      _id: transporterId,
-      'fleet._id': truckId
-    }, {'fleet.$': 1});
-
-  return truckData ? truckData.fleet[0] : null;
-};
-    
-
-const addTruck = async (transporterId, truck) => {
-
- const updated = await Transporter.findOneAndUpdate(
-    { _id: transporterId },
-    { $push: { fleet: truck } },
-    { new: true }
-  );
-  return updated.fleet[updated.fleet.length - 1];
-};
-
-const deleteTruck = async (transporterId, truckId) => {
-  
-  const updated =  await Transporter.findOneAndUpdate(
-    { _id: transporterId },
-    { $pull: { fleet: { _id: truckId } } },
-    { new: true }
-  );
-  logger.debug('Truck deleted, updated fleet:', { updatedFleet: updated });
-  return updated.fleet;
-};
-
-const updateTruckInFleet = async (transporterId, truckId, updates) => {
-  const updated = await Transporter.findOneAndUpdate(
-    { _id: transporterId, 'fleet._id': truckId },
-    { $set: Object.fromEntries(
-        Object.entries(updates).map(([key, value]) => ([`fleet.$.${key}`, value]))
-      )
-    },
-    { new: true }
-  );
-  logger.debug('Truck updated in fleet:', { updatedFleet: updated });
-  return updated.fleet.id(truckId);
-}
 
 export default {
   checkEmailExists,
@@ -93,9 +53,5 @@ export default {
   findTransporterById,
   findAllTransporters,
   updateTransporter,
-  getFleet,
-  getTruck,
-  addTruck,
-  deleteTruck,
-  updateTruckInFleet,
+  getTransporterById,
 }

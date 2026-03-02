@@ -1,5 +1,6 @@
 import adminService from "../services/adminService.js";
 import mongoose from "mongoose";
+import Fleet from "../models/fleet.js";
 import { AppError } from "../utils/misc.js";
 
 // Dashboard Analytics
@@ -195,12 +196,13 @@ const getOrderDetails = async (req, res, next) => {
 
     const order = await adminService.getOrderDetails(orderId);
 
-    // Find the truck assigned to this order if transporter is assigned
+    // Find the truck assigned to this order from separate Fleet collection
     let truckInfo = null;
-    if (order.assigned_transporter_id && order.assigned_transporter_id.fleet) {
-      const truck = order.assigned_transporter_id.fleet.find(
-        f => f.current_order_id?.toString() === orderId
-      );
+    if (order.assigned_transporter_id) {
+      const truck = await Fleet.findOne({
+        transporter_id: order.assigned_transporter_id._id,
+        current_trip_id: orderId
+      });
       if (truck) {
         truckInfo = {
           name: truck.name,
@@ -257,12 +259,13 @@ const getBidsForOrder = async (req, res, next) => {
 
     const bids = await adminService.getBidsForOrder(orderId);
 
-    const formattedBids = bids.map(bid => {
+    const formattedBids = await Promise.all(bids.map(async (bid) => {
       let truckInfo = null;
-      if (bid.transporter_id && bid.transporter_id.fleet) {
-        const truck = bid.transporter_id.fleet.find(
-          f => f.current_order_id?.toString() === orderId
-        );
+      if (bid.transporter_id) {
+        const truck = await Fleet.findOne({
+          transporter_id: bid.transporter_id._id,
+          current_trip_id: orderId
+        });
         if (truck) {
           truckInfo = {
             name: truck.name,
@@ -284,7 +287,7 @@ const getBidsForOrder = async (req, res, next) => {
         notes: bid.notes,
         createdAt: bid.createdAt
       };
-    });
+    }));
 
     res.status(200).json({
       success: true,

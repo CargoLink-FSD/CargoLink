@@ -150,7 +150,6 @@ const addTruck = async (req, res, next) => {
     const truckData = req.body;
 
     const truck = {
-      transporterId,
       name: truckData.name,
       registration: truckData.registration,
       capacity: parseFloat(truckData.capacity),
@@ -343,6 +342,83 @@ const scheduleMaintenance = async (req, res, next) => {
     next(err);
   }
 };
+
+// ─── Fleet Schedule ─────────────────────────────────────────────────────────────
+
+const getFleetSchedule = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const truckId = req.params.truckId;
+    const { startDate, endDate } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(truckId)) {
+      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
+        { type: "field", value: truckId, msg: "Not a valid truck ID", path: "truckId", location: "params" }
+      );
+    }
+
+    const schedule = await transporterService.getFleetSchedule(transporterId, truckId, startDate, endDate);
+
+    res.status(200).json({
+      success: true,
+      data: schedule,
+      message: 'Fleet schedule fetched successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const addFleetScheduleBlock = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const truckId = req.params.truckId;
+
+    if (!mongoose.Types.ObjectId.isValid(truckId)) {
+      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
+        { type: "field", value: truckId, msg: "Not a valid truck ID", path: "truckId", location: "params" }
+      );
+    }
+
+    const block = await transporterService.addFleetScheduleBlock(transporterId, truckId, req.body);
+
+    res.status(201).json({
+      success: true,
+      data: block,
+      message: 'Schedule block added successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const removeFleetScheduleBlock = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const { truckId, blockId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(truckId)) {
+      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
+        { type: "field", value: truckId, msg: "Not a valid truck ID", path: "truckId", location: "params" }
+      );
+    }
+    if (!mongoose.Types.ObjectId.isValid(blockId)) {
+      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
+        { type: "field", value: blockId, msg: "Not a valid block ID", path: "blockId", location: "params" }
+      );
+    }
+
+    await transporterService.removeFleetScheduleBlock(transporterId, truckId, blockId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Schedule block removed successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const getTransporterRatings = async (req, res, next) => {
   try {
     const transporterId = req.user.id;
@@ -500,6 +576,9 @@ export default {
   setTruckAvailable,
   setTruckUnavailable,
   scheduleMaintenance,
+  getFleetSchedule,
+  addFleetScheduleBlock,
+  removeFleetScheduleBlock,
 
   getServiceLocations,
   addServiceLocation,

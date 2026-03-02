@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   getVehicle, 
@@ -6,7 +6,10 @@ import {
   setTruckMaintenance,
   setTruckAvailable,
   setTruckUnavailable,
-  scheduleMaintenance
+  scheduleMaintenance,
+  getFleetSchedule,
+  addFleetScheduleBlock,
+  removeFleetScheduleBlock,
 } from '../../api/fleet';
 
 export const useVehicleDetails = (vehicleId) => {
@@ -14,6 +17,8 @@ export const useVehicleDetails = (vehicleId) => {
   const [vehicle, setVehicle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [scheduleBlocks, setScheduleBlocks] = useState([]);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
 
   useEffect(() => {
     fetchDetails();
@@ -97,6 +102,45 @@ export const useVehicleDetails = (vehicleId) => {
     }
   };
 
+  // ─── Schedule Methods ─────────────────────────────────────────────────────────
+
+  const fetchSchedule = useCallback(async (startDate, endDate) => {
+    try {
+      setScheduleLoading(true);
+      const data = await getFleetSchedule(vehicleId, startDate, endDate);
+      setScheduleBlocks(data.blocks || []);
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch fleet schedule', error);
+      throw error;
+    } finally {
+      setScheduleLoading(false);
+    }
+  }, [vehicleId]);
+
+  const handleAddScheduleBlock = async (blockData) => {
+    try {
+      setActionLoading(true);
+      const result = await addFleetScheduleBlock(vehicleId, blockData);
+      return result;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || error.message || 'Failed to add schedule block');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRemoveScheduleBlock = async (blockId) => {
+    try {
+      setActionLoading(true);
+      await removeFleetScheduleBlock(vehicleId, blockId);
+    } catch (error) {
+      throw new Error(error.response?.data?.message || error.message || 'Failed to remove schedule block');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return {
     vehicle,
     loading,
@@ -106,7 +150,14 @@ export const useVehicleDetails = (vehicleId) => {
     handleSetAvailable,
     handleSetUnavailable,
     handleScheduleMaintenance,
-    refetch: fetchDetails
+    refetch: fetchDetails,
+
+    // Schedule
+    scheduleBlocks,
+    scheduleLoading,
+    fetchSchedule,
+    handleAddScheduleBlock,
+    handleRemoveScheduleBlock,
   };
 };
 
