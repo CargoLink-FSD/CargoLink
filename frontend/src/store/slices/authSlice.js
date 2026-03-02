@@ -1,6 +1,6 @@
 //Auth Redux Slice
 //Manages authentication state and actions
- 
+
 
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import * as authApi from '../../api/auth';
@@ -12,6 +12,10 @@ export const loginUser = createAsyncThunk(
   async ({ email, password, role }, { rejectWithValue }) => {
     try {
       const response = await authApi.login({ email, password, role });
+      // If 2FA required, pass it through (not a failure, not a token response)
+      if (response.requires2FA) {
+        return response;
+      }
       return response;
     } catch (error) {
       return rejectWithValue(error.message || 'Login failed');
@@ -99,8 +103,14 @@ const authSlice = createSlice({
       // Handle login success
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
+        // If 2FA is required, don't set authenticated yet
+        if (action.payload?.requires2FA) {
+          return;
+        }
         state.isAuthenticated = true;
-        tokenStorage.setTokens(action.payload.accessToken, action.payload.refreshToken);
+        if (action.payload?.accessToken) {
+          tokenStorage.setTokens(action.payload.accessToken, action.payload.refreshToken);
+        }
         state.user = tokenStorage.getUserFromToken();
         state.error = null;
       })
@@ -112,7 +122,7 @@ const authSlice = createSlice({
         state.error = action.payload;
         tokenStorage.clearTokens();
       })
-      
+
       // Signup
       .addCase(signupUser.pending, (state) => {
         state.loading = true;
@@ -134,7 +144,7 @@ const authSlice = createSlice({
         state.error = action.payload;
         tokenStorage.clearTokens();
       })
-      
+
       // Logout
       .addCase(logoutUser.pending, (state) => {
         state.loading = true;
@@ -155,7 +165,7 @@ const authSlice = createSlice({
         state.error = null;
         tokenStorage.clearTokens();
       })
-      
+
       // Refresh Token
       .addCase(refreshAccessToken.pending, (state) => {
         state.loading = true;

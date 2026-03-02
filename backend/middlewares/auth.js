@@ -2,6 +2,7 @@ import { logger } from '../utils/misc.js';
 import { verifyAccessToken } from '../utils/jwt.js';
 import { AppError } from '../utils/misc.js';
 import authService from '../services/authService.js';
+import Transporter from '../models/transporter.js';
 
 export const authMiddleware = (roles = []) => {
     return (req, res, next) => {
@@ -27,4 +28,22 @@ export const authMiddleware = (roles = []) => {
             next(err);
         }
     };
+};
+
+export const requireVerified = async (req, res, next) => {
+    try {
+        if (req.user.role !== 'transporter') {
+            return next();
+        }
+        const transporter = await Transporter.findById(req.user.id).select('isVerified verificationStatus');
+        if (!transporter) {
+            return next(new AppError(404, 'NotFoundError', 'Transporter not found', 'ERR_NOT_FOUND'));
+        }
+        if (!transporter.isVerified) {
+            return next(new AppError(403, 'AuthError', 'Your account is not verified yet. Please upload your documents and wait for manager approval before placing bids.', 'ERR_NOT_VERIFIED'));
+        }
+        next();
+    } catch (err) {
+        next(err);
+    }
 };

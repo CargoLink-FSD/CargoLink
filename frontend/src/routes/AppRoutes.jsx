@@ -31,11 +31,20 @@ import UserManagement from '../pages/admin/UserManagement';
 import OrderManagement from '../pages/admin/OrderManagement';
 import OrderDetails from '../pages/common/OrderDetails';
 import Dashboard from '../pages/admin/Dashboard';
+
+import FleetOverview from '../pages/admin/FleetOverview';
+import TicketsOverview from '../pages/admin/TicketsOverview';
 import TrackOrder from '../pages/TrackOrder'
 import PayNow from '../pages/customer/PayNow';
 
 import FleetManagement from '../pages/transporter/FleetManagement';
 import VehicleDetails from '../pages/transporter/VehicleDetails';
+
+import ManagerLogin from '../pages/manager/ManagerLogin';
+import ManagerDashboard from '../pages/manager/ManagerDashboard';
+import ManagerSupport from '../pages/manager/ManagerSupport';
+import SupportTickets from '../pages/support/SupportTickets';
+import TicketDetail from '../pages/support/TicketDetail';
 
 export default function AppRoutes() {
   const placeholderStyle = { padding: '2rem', fontSize: '1.25rem' };
@@ -45,7 +54,7 @@ export default function AppRoutes() {
     <Routes>
 
       {/* Public Routes */}
-      
+
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       {/* <Route path="/signup" element={<CustomerSignupForm />} /> */}
@@ -54,7 +63,7 @@ export default function AppRoutes() {
 
       {/* Static Pages */}
 
-      
+
       <Route path="/static/about" element={<About />} />
       <Route path="/static/services" element={<Services />} />
       <Route path="/static/contact" element={<Contact />} />
@@ -65,7 +74,7 @@ export default function AppRoutes() {
 
       {/* Customer Routes */}
 
-      
+
       <Route path="/customer/signup" element={<CustomerSignupForm />} />
 
       <Route element={<ProtectedRoute allowedRoles={['customer']} />}>
@@ -75,15 +84,15 @@ export default function AppRoutes() {
         <Route path="/customer/place-order" element={<PlaceOrder />} />
         <Route path="/customer/paynow" element={<PayNow />} />
         <Route path="/customer/orders" element={<CustomerOrders />} />
-        <Route path="/customer/orders/:orderId" element={<OrderDetails/>} />
+        <Route path="/customer/orders/:orderId" element={<OrderDetails />} />
         <Route path="/customer/order/:orderId/bids" element={<OrderBids />} />
-        <Route path="/customer/orders/:orderId/track" element={<TrackOrder/>} />
+        <Route path="/customer/orders/:orderId/track" element={<TrackOrder />} />
       </Route>
 
 
       {/* Transporter Routes */}
 
-      
+
       <Route path="/transporter/signup" element={<TransporterSignupForm />} />
 
       <Route element={<ProtectedRoute allowedRoles={['transporter']} />}>
@@ -93,8 +102,8 @@ export default function AppRoutes() {
         <Route path="/transporter/fleet" element={<FleetManagement />} />
         <Route path="/transporter/fleet/:vehicleId" element={<VehicleDetails />} />
         <Route path="/transporter/orders" element={<TransporterOrders />} />
-        <Route path="/transporter/orders/:orderId" element={<OrderDetails/>} />
-        <Route path="/transporter/orders/:orderId/track" element={<TrackOrder/>} />
+        <Route path="/transporter/orders/:orderId" element={<OrderDetails />} />
+        <Route path="/transporter/orders/:orderId/track" element={<TrackOrder />} />
         <Route path="/transporter/bid" element={<BidPage />} />
         <Route path="/transporter/my-bids" element={<MyBidsPage />} />
         <Route path="/transporter/assignment" element={placeholder('Assignment: Dashboard')} />
@@ -106,28 +115,44 @@ export default function AppRoutes() {
 
       {/* Admin Routes */}
 
-      
+
       <Route path="/admin/login" element={placeholder('Admin Login')} />
 
       <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-        <Route path="/admin" element={<Home />} />
+        <Route path="/admin" element={<Dashboard />} />
         <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="/admin/orders" element={<OrderManagement />} />
         <Route path="/admin/users" element={<UserManagement />} />
+        <Route path="/admin/fleet" element={<FleetOverview />} />
+        <Route path="/admin/tickets" element={<TicketsOverview />} />
+      </Route>
+
+
+      {/* Manager Routes */}
+
+
+      <Route path="/manager/login" element={<ManagerLogin />} />
+
+      <Route element={<ProtectedRoute allowedRoles={['manager']} />}>
+        <Route path="/manager" element={<ManagerDashboard />} />
+        <Route path="/manager/dashboard" element={<ManagerDashboard />} />
+        <Route path="/manager/support" element={<ManagerSupport />} />
       </Route>
 
 
       {/* Shared Routes */}
 
-      
+
       <Route element={<ProtectedRoute allowedRoles={['customer', 'transporter']} />}>
         <Route path="/chat/orders/:orderId" element={placeholder('Chat: Order Conversation')} />
+        <Route path="/support/tickets" element={<SupportTickets />} />
+        <Route path="/support/tickets/:id" element={<TicketDetail />} />
       </Route>
 
 
       {/* 404 Fallback */}
 
-      
+
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

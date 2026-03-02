@@ -2,6 +2,9 @@ import Order from '../models/order.js';
 import Customer from '../models/customer.js';
 import Transporter from '../models/transporter.js';
 import Bid from '../models/bids.js';
+import Ticket from '../models/ticket.js';
+import Review from '../models/review.js';
+import Payment from '../models/payment.js';
 
 // Dashboard Analytics Queries
 const getOrdersPerDay = async () => {
@@ -268,7 +271,7 @@ const getOrderCountByCustomer = async () => {
             }
         }
     ]);
-    
+
     const orderCountMap = {};
     result.forEach((entry) => {
         orderCountMap[entry._id.toString()] = entry.noOfOrders;
@@ -288,12 +291,112 @@ const getOrderCountByTransporter = async () => {
             }
         }
     ]);
-    
+
     const orderCountMap = {};
     result.forEach((entry) => {
         orderCountMap[entry._id.toString()] = entry.noOfOrders;
     });
     return orderCountMap;
+};
+
+// ─── Extra counts for dashboard ───
+const getTotalCustomers = async () => Customer.countDocuments();
+const getTotalTransporters = async () => Transporter.countDocuments();
+
+const getTotalVehicles = async () => {
+    const result = await Transporter.aggregate([
+        { $unwind: "$fleet" },
+        { $count: "total" }
+    ]);
+    return result[0]?.total || 0;
+};
+
+const getOpenTickets = async () => Ticket.countDocuments({ status: { $in: ['open', 'in_progress'] } });
+const getPendingVerifications = async () => Transporter.countDocuments({ verificationStatus: 'under_review' });
+
+// ─── Fleet Overview ───
+const getAllFleetVehicles = async () => {
+    const transporters = await Transporter.find(
+        { 'fleet.0': { $exists: true } },
+        'name email primary_contact city state fleet'
+    ).lean();
+    const vehicles = [];
+    transporters.forEach(t => {
+        t.fleet.forEach(v => {
+            vehicles.push({
+                ...v,
+                transporter_id: t._id,
+                transporter_name: t.name,
+                transporter_email: t.email,
+                transporter_contact: t.primary_contact,
+                transporter_location: [t.city, t.state].filter(Boolean).join(', '),
+            });
+        });
+    });
+    return vehicles;
+};
+
+// ─── Tickets Overview ───
+const getAllTickets = async () => {
+    return Ticket.find()
+        .sort({ createdAt: -1 })
+        .lean();
+};
+
+const getTicketStats = async () => {
+    const result = await Ticket.aggregate([
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+        { $project: { status: "$_id", count: 1, _id: 0 } }
+    ]);
+    const stats = { open: 0, in_progress: 0, closed: 0, total: 0 };
+    result.forEach(r => { stats[r.status] = r.count; stats.total += r.count; });
+    return stats;
+};
+
+// ─── Individual User Details ───
+const getCustomerDetail = async (customerId) => {
+    const customer = await Customer.findById(customerId).lean();
+    if (!customer) return null;
+    const orders = await Order.find({ customer_id: customerId })
+        .populate('assigned_transporter_id', 'name')
+        .sort({ createdAt: -1 })
+        .lean();
+    const payments = await Payment.find({ customer_id: customerId }).lean();
+    const totalSpent = orders
+        .filter(o => o.status === 'Completed')
+        .reduce((sum, o) => sum + (o.final_price || 0), 0);
+    return {
+        ...customer,
+        orders,
+        payments,
+        totalOrders: orders.length,
+        completedOrders: orders.filter(o => o.status === 'Completed').length,
+        totalSpent,
+    };
+};
+
+const getTransporterDetail = async (transporterId) => {
+    const transporter = await Transporter.findById(transporterId).lean();
+    if (!transporter) return null;
+    const orders = await Order.find({ assigned_transporter_id: transporterId })
+        .populate('customer_id', 'firstName lastName')
+        .sort({ createdAt: -1 })
+        .lean();
+    const reviews = await Review.find({ transporter_id: transporterId })
+        .populate('customer_id', 'firstName lastName')
+        .sort({ createdAt: -1 })
+        .lean();
+    const avgRating = reviews.length > 0
+        ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+        : null;
+    return {
+        ...transporter,
+        orders,
+        reviews,
+        totalOrders: orders.length,
+        completedOrders: orders.filter(o => o.status === 'Completed').length,
+        avgRating,
+    };
 };
 
 export default {
@@ -307,13 +410,18 @@ export default {
     getMostRequestedTruckTypes,
     getPendingVsCompletedOrders,
     getAverageBidAmount,
-    
+    getTotalCustomers,
+    getTotalTransporters,
+    getTotalVehicles,
+    getOpenTickets,
+    getPendingVerifications,
+
     // Order Management
     getAllOrders,
     getOrderById,
     getBidsForOrder,
     getBidCountForOrder,
-    
+
     // User Management
     getAllCustomers,
     getAllTransporters,
@@ -322,5 +430,14 @@ export default {
     deleteCustomerById,
     deleteTransporterById,
     getOrderCountByCustomer,
-    getOrderCountByTransporter
+    getOrderCountByTransporter,
+    getCustomerDetail,
+    getTransporterDetail,
+
+    // Fleet Overview
+    getAllFleetVehicles,
+
+    // Tickets Overview
+    getAllTickets,
+    getTicketStats,
 };

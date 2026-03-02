@@ -12,14 +12,14 @@ export default function Header() {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const userType = user?.role || user?.type;
 
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
   const { toggle: toggleMobileMenu, close: closeMobileMenu } = useMobileMenu();
-  
+
   // Enable header scroll behavior
   useHeaderScroll();
-  
+
 
   const openLoginModal = () => setIsModalOpen(true);
   const closeLoginModal = () => setIsModalOpen(false);
@@ -61,6 +61,7 @@ export default function Header() {
                 <div className="profile-dropdown">
                   <span className="profile-name">Customer</span>
                   <div className="dropdown-content">
+                    <Link to="/support/tickets" className="dropdown-link" onClick={handleLinkClick}>Need Help?</Link>
                     <button onClick={handleLogout} className="logout-link">Logout</button>
                   </div>
                 </div>
@@ -78,6 +79,7 @@ export default function Header() {
                 <div className="profile-dropdown">
                   <span className="profile-name">Transporter</span>
                   <div className="dropdown-content">
+                    <Link to="/support/tickets" className="dropdown-link" onClick={handleLinkClick}>Need Help?</Link>
                     <button onClick={handleLogout} className="logout-link">Logout</button>
                   </div>
                 </div>
@@ -87,8 +89,10 @@ export default function Header() {
             {isAuthenticated && userType === 'admin' && (
               <>
                 <Link className="underline-link" to="/admin/dashboard" onClick={handleLinkClick}>Dashboard</Link>
-                <Link className="underline-link" to="/admin/users" onClick={handleLinkClick}>User Management</Link>
-                <Link className="underline-link" to="/admin/orders" onClick={handleLinkClick}>Orders List</Link>
+                <Link className="underline-link" to="/admin/users" onClick={handleLinkClick}>Users</Link>
+                <Link className="underline-link" to="/admin/orders" onClick={handleLinkClick}>Orders</Link>
+                <Link className="underline-link" to="/admin/fleet" onClick={handleLinkClick}>Fleet</Link>
+                <Link className="underline-link" to="/admin/tickets" onClick={handleLinkClick}>Tickets</Link>
                 <div className="profile-dropdown">
                   <span className="profile-name">Admin</span>
                   <div className="dropdown-content">
@@ -97,8 +101,21 @@ export default function Header() {
                 </div>
               </>
             )}
+
+            {isAuthenticated && userType === 'manager' && (
+              <>
+                <Link className="underline-link" to="/manager/dashboard" onClick={handleLinkClick}>Verification Queue</Link>
+                <Link className="underline-link" to="/manager/support" onClick={handleLinkClick}>Support Tickets</Link>
+                <div className="profile-dropdown">
+                  <span className="profile-name">Manager</span>
+                  <div className="dropdown-content">
+                    <button onClick={handleLogout} className="logout-link">Logout</button>
+                  </div>
+                </div>
+              </>
+            )}
           </nav>
-          
+
           {/* Mobile Menu Toggle Button */}
           <div className="mobile-menu-btn" onClick={toggleMobileMenu}>
             <span></span>
@@ -123,6 +140,11 @@ export default function Header() {
           <Link to="/login?type=admin" className="login-card" onClick={() => { closeLoginModal(); handleLinkClick(); }}>
             <h3>Login as Admin</h3>
             <p>Access administrative controls and manage platform settings.</p>
+          </Link>
+
+          <Link to="/manager/login" className="login-card" onClick={() => { closeLoginModal(); handleLinkClick(); }}>
+            <h3>Login as Manager</h3>
+            <p>Review and verify transporter documents for platform compliance.</p>
           </Link>
         </div>
       </Modal>

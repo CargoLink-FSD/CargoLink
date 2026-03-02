@@ -31,6 +31,7 @@
     margin: 0;
     background: transparent;
 }
+
 .card-container {
     display: flex;
     max-width: 900px;
@@ -73,16 +74,16 @@
 }
 
 .logo {
-    height:40px;
-    width:40px;
+    height: 40px;
+    width: 40px;
     transition: var(--transition);
     filter: brightness(0) saturate(100%) invert(25%) sepia(100%) saturate(500%) hue-rotate(180deg);
 }
-  
+
 .logo:hover {
     transform: rotate(0deg) translateX(2px) scale(1.1);
 }
-  
+
 
 .brand {
     font-size: 2rem;
@@ -151,7 +152,7 @@ h1 {
 .password-container {
     position: relative;
 }
-  
+
 .password-container input {
     padding-right: 3rem;
 }
@@ -204,11 +205,11 @@ h1 {
         height: auto;
         flex-direction: column;
     }
-    
+
     .left-side {
         display: none;
     }
-    
+
     .right-side {
         padding: 2rem 1.5rem;
     }
@@ -226,7 +227,7 @@ h1 {
     padding: 15px;
     border-radius: 5px;
     width: 300px;
-    position:fixed ;
+    position: fixed;
     top: 20px;
     right: 20px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -250,7 +251,8 @@ h1 {
     bottom: 0;
     left: 0;
     height: 5px;
-    background-color: var(--error1); /* Lighter red for progress */
+    background-color: var(--error1);
+    /* Lighter red for progress */
     width: 100%;
     animation: shrink 5s linear forwards;
 }
@@ -258,8 +260,13 @@ h1 {
 
 
 @keyframes shrink {
-    from { width: 100%; }
-    to { width: 0; }
+    from {
+        width: 100%;
+    }
+
+    to {
+        width: 0;
+    }
 }
 
 /* Google OAuth Styles */
@@ -288,6 +295,104 @@ h1 {
     margin-bottom: 1.5rem;
 }
 
-.google-login-container > div {
+.google-login-container>div {
     width: 100% !important;
+}
+
+/* ─── 2FA OTP Verification ─── */
+.otp-verification {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 0.5rem 0;
+}
+
+.otp-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.otp-inputs {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: center;
+}
+
+.otp-box {
+    width: 48px;
+    height: 56px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: #f8fafc;
+    color: #1e293b;
+    caret-color: #6366f1;
+}
+
+.otp-box:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    background: #fff;
+}
+
+.otp-box.filled {
+    border-color: #6366f1;
+    background: #eef2ff;
+}
+
+.otp-box:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.otp-hint {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    margin: 0;
+}
+
+.resend-text {
+    font-size: 0.88rem;
+    color: #64748b;
+    margin: 0;
+}
+
+.resend-btn {
+    background: none;
+    border: none;
+    color: #6366f1;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.88rem;
+    padding: 0;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.resend-btn:hover {
+    color: #4f46e5;
+}
+
+.resend-btn:disabled {
+    color: #94a3b8;
+    cursor: not-allowed;
+    text-decoration: none;
+}
+
+/* Responsive OTP boxes */
+@media (max-width: 400px) {
+    .otp-box {
+        width: 40px;
+        height: 48px;
+        font-size: 1.25rem;
+    }
+
+    .otp-inputs {
+        gap: 0.4rem;
+    }
 }

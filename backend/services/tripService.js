@@ -47,11 +47,11 @@ const updateTrip = async (transporterId, tripId, updateData) => {
   if (!trip || trip.transporter_id.toString() !== transporterId) {
     throw new AppError(404, "NotFound", "Trip not found or access denied", "ERR_NOT_FOUND");
   }
-  
+
   if (trip.status !== 'Planned') {
     throw new AppError(400, "InvalidOperation", "Can only update planned trips", "ERR_INVALID_OPERATION");
   }
-  
+
   const updatedTrip = await tripRepo.updateTrip(tripId, updateData);
   return updatedTrip;
 };
@@ -62,11 +62,11 @@ const deleteTrip = async (transporterId, tripId) => {
   if (!trip || trip.transporter_id.toString() !== transporterId) {
     throw new AppError(404, "NotFound", "Trip not found or access denied", "ERR_NOT_FOUND");
   }
-  
+
   if (trip.status !== 'Planned') {
     throw new AppError(400, "InvalidOperation", "Can only delete planned trips", "ERR_INVALID_OPERATION");
   }
-  
+
   await tripRepo.deleteTrip(tripId);
 };
 
@@ -76,27 +76,27 @@ const assignOrder = async (transporterId, tripId, orderId) => {
   if (!trip || trip.transporter_id.toString() !== transporterId) {
     throw new AppError(404, "NotFound", "Trip not found or access denied", "ERR_NOT_FOUND");
   }
-  
+
   if (trip.status !== 'Planned') {
     throw new AppError(400, "InvalidOperation", "Can only assign orders to planned trips", "ERR_INVALID_OPERATION");
   }
-  
+
   // Check if order exists and is assigned to this transporter
   const order = await orderRepo.getOrderById(orderId);
   if (!order || order.assigned_transporter_id?.toString() !== transporterId) {
     throw new AppError(404, "NotFound", "Order not found or not assigned to you", "ERR_NOT_FOUND");
   }
-  
+
   if (order.status !== 'Assigned') {
     throw new AppError(400, "InvalidOperation", "Order must be in 'Assigned' status", "ERR_INVALID_OPERATION");
   }
-  
+
   // Check if order is already in another trip
   const existingTrip = await tripRepo.getTripByOrderId(orderId);
   if (existingTrip && existingTrip._id.toString() !== tripId) {
     throw new AppError(400, "InvalidOperation", "Order is already assigned to another trip", "ERR_INVALID_OPERATION");
   }
-  
+
   const updatedTrip = await tripRepo.addOrderToTrip(tripId, orderId);
   return updatedTrip;
 };
@@ -107,11 +107,11 @@ const removeOrderFromTrip = async (transporterId, tripId, orderId) => {
   if (!trip || trip.transporter_id.toString() !== transporterId) {
     throw new AppError(404, "NotFound", "Trip not found or access denied", "ERR_NOT_FOUND");
   }
-  
+
   if (trip.status !== 'Planned') {
     throw new AppError(400, "InvalidOperation", "Can only remove orders from planned trips", "ERR_INVALID_OPERATION");
   }
-  
+
   const updatedTrip = await tripRepo.removeOrderFromTrip(tripId, orderId);
   return updatedTrip;
 };
@@ -122,24 +122,29 @@ const assignTruck = async (transporterId, tripId, truckId) => {
   if (!trip || trip.transporter_id.toString() !== transporterId) {
     throw new AppError(404, "NotFound", "Trip not found or access denied", "ERR_NOT_FOUND");
   }
-  
+
   if (trip.status !== 'Planned') {
     throw new AppError(400, "InvalidOperation", "Can only assign trucks to planned trips", "ERR_INVALID_OPERATION");
   }
-  
+
   // Check if truck belongs to transporter
   const transporter = await transporterRepo.getTransporterById(transporterId);
   const truck = transporter?.fleet?.find(t => t._id.toString() === truckId);
   if (!truck) {
     throw new AppError(404, "NotFound", "Truck not found in your fleet", "ERR_NOT_FOUND");
   }
-  
+
+  // Check RC verification — truck cannot be assigned until RC is approved by manager
+  if (truck.rc_status !== 'approved') {
+    throw new AppError(400, "InvalidOperation", "Vehicle RC must be verified by the manager before it can be assigned to a trip", "ERR_RC_NOT_VERIFIED");
+  }
+
   // Check if truck is available (not assigned to another active trip)
   const activeTripWithTruck = await tripRepo.getActiveTripByTruck(truckId);
   if (activeTripWithTruck && activeTripWithTruck._id.toString() !== tripId) {
     throw new AppError(400, "InvalidOperation", "Truck is already assigned to another active trip", "ERR_INVALID_OPERATION");
   }
-  
+
   const updatedTrip = await tripRepo.assignTruckToTrip(tripId, truckId);
   return updatedTrip;
 };
@@ -150,11 +155,11 @@ const unassignTruck = async (transporterId, tripId) => {
   if (!trip || trip.transporter_id.toString() !== transporterId) {
     throw new AppError(404, "NotFound", "Trip not found or access denied", "ERR_NOT_FOUND");
   }
-  
+
   if (trip.status !== 'Planned') {
     throw new AppError(400, "InvalidOperation", "Can only unassign trucks from planned trips", "ERR_INVALID_OPERATION");
   }
-  
+
   const updatedTrip = await tripRepo.unassignTruckFromTrip(tripId);
   return updatedTrip;
 };
@@ -165,10 +170,10 @@ const autoAssignOrders = async (transporterId, tripId) => {
   if (!trip || trip.transporter_id.toString() !== transporterId) {
     throw new AppError(404, "NotFound", "Trip not found or access denied", "ERR_NOT_FOUND");
   }
-  
+
   // Get available orders for this transporter
   const availableOrders = await orderRepo.getAssignedOrdersForTransporter(transporterId);
-  
+
   // Simple algorithm: assign orders that are not already in trips
   const orderIdsToAssign = [];
   for (const order of availableOrders) {
@@ -177,7 +182,7 @@ const autoAssignOrders = async (transporterId, tripId) => {
       orderIdsToAssign.push(order._id);
     }
   }
-  
+
   const updatedTrip = await tripRepo.addMultipleOrdersToTrip(tripId, orderIdsToAssign);
   return updatedTrip;
 };
@@ -188,26 +193,26 @@ const scheduleTrip = async (transporterId, tripId) => {
   if (!trip || trip.transporter_id.toString() !== transporterId) {
     throw new AppError(404, "NotFound", "Trip not found or access denied", "ERR_NOT_FOUND");
   }
-  
+
   if (trip.status !== 'Planned') {
     throw new AppError(400, "InvalidOperation", "Trip must be in 'Planned' status", "ERR_INVALID_OPERATION");
   }
-  
+
   if (!trip.assigned_vehicle_id) {
     throw new AppError(400, "InvalidOperation", "Trip must have a vehicle assigned", "ERR_INVALID_OPERATION");
   }
-  
+
   if (trip.order_ids.length === 0) {
     throw new AppError(400, "InvalidOperation", "Trip must have at least one order", "ERR_INVALID_OPERATION");
   }
-  
+
   // Create stops for pickup and delivery
   const stops = [];
   let sequence = 1;
   let totalDistance = 0;
-  
+
   const orders = await orderRepo.getOrdersByIds(trip.order_ids);
-  
+
   for (const order of orders) {
     // Add pickup stop
     stops.push({
@@ -217,7 +222,7 @@ const scheduleTrip = async (transporterId, tripId) => {
       address: order.pickup,
       status: 'Pending'
     });
-    
+
     // Add delivery stop
     stops.push({
       sequence: sequence++,
@@ -226,22 +231,22 @@ const scheduleTrip = async (transporterId, tripId) => {
       address: order.delivery,
       status: 'Pending'
     });
-    
+
     totalDistance += order.distance || 0;
   }
-  
+
   // Calculate ETAs for each stop (assuming sequential execution)
   const startTime = trip.planned_start_at || new Date();
   let currentTime = startTime;
-  
+
   for (const stop of stops) {
     stop.eta_at = new Date(currentTime);
     // Add 1 hour for pickup/delivery time + travel time to next stop
     currentTime = new Date(currentTime.getTime() + 60 * 60 * 1000);
   }
-  
+
   const estimatedEndTime = calculateETA(totalDistance, startTime);
-  
+
   const updatedTrip = await tripRepo.updateTrip(tripId, {
     status: 'Scheduled',
     stops: stops,
@@ -249,7 +254,7 @@ const scheduleTrip = async (transporterId, tripId) => {
     planned_end_at: estimatedEndTime,
     total_duration_minutes: Math.ceil((estimatedEndTime - startTime) / (1000 * 60))
   });
-  
+
   return updatedTrip;
 };
 
@@ -259,25 +264,25 @@ const startTrip = async (transporterId, tripId) => {
   if (!trip || trip.transporter_id.toString() !== transporterId) {
     throw new AppError(404, "NotFound", "Trip not found or access denied", "ERR_NOT_FOUND");
   }
-  
+
   if (trip.status !== 'Scheduled') {
     throw new AppError(400, "InvalidOperation", "Trip must be scheduled to start", "ERR_INVALID_OPERATION");
   }
-  
+
   const now = new Date();
-  
+
   // Generate OTP for the first order and update its status
   const firstOrderId = trip.order_ids[0];
   const otp = generateOTP();
-  
+
   await orderRepo.updateOrderStatus(firstOrderId, 'In Transit', otp);
-  
+
   const updatedTrip = await tripRepo.updateTrip(tripId, {
     status: 'In Transit',
     actual_start_at: now,
     current_stop_sequence: 1
   });
-  
+
   return updatedTrip;
 };
 
@@ -287,11 +292,11 @@ const updateTripLocation = async (transporterId, tripId, locationData) => {
   if (!trip || trip.transporter_id.toString() !== transporterId) {
     throw new AppError(404, "NotFound", "Trip not found or access denied", "ERR_NOT_FOUND");
   }
-  
+
   if (trip.status !== 'In Transit') {
     throw new AppError(400, "InvalidOperation", "Can only update location for trips in transit", "ERR_INVALID_OPERATION");
   }
-  
+
   const updatedTrip = await tripRepo.updateTripLocation(tripId, locationData.coordinates);
   return updatedTrip;
 };
@@ -302,31 +307,31 @@ const completeCurrentOrder = async (transporterId, tripId) => {
   if (!trip || trip.transporter_id.toString() !== transporterId) {
     throw new AppError(404, "NotFound", "Trip not found or access denied", "ERR_NOT_FOUND");
   }
-  
+
   if (trip.status !== 'In Transit') {
     throw new AppError(400, "InvalidOperation", "Trip must be in transit", "ERR_INVALID_OPERATION");
   }
-  
+
   // Get current order index
   const currentOrderIndex = trip.current_stop_sequence ? Math.floor((trip.current_stop_sequence - 1) / 2) : 0;
   const currentOrderId = trip.order_ids[currentOrderIndex];
-  
+
   // Mark current order as completed
   await orderRepo.updateOrderStatus(currentOrderId, 'Completed');
-  
+
   // Check if there are more orders
   const nextOrderIndex = currentOrderIndex + 1;
   if (nextOrderIndex < trip.order_ids.length) {
     // Start next order
     const nextOrderId = trip.order_ids[nextOrderIndex];
     const otp = generateOTP();
-    
+
     await orderRepo.updateOrderStatus(nextOrderId, 'In Transit', otp);
-    
+
     const updatedTrip = await tripRepo.updateTrip(tripId, {
       current_stop_sequence: (nextOrderIndex * 2) + 1
     });
-    
+
     return updatedTrip;
   } else {
     // No more orders, complete trip
@@ -340,13 +345,13 @@ const completeTrip = async (transporterId, tripId) => {
   if (!trip || trip.transporter_id.toString() !== transporterId) {
     throw new AppError(404, "NotFound", "Trip not found or access denied", "ERR_NOT_FOUND");
   }
-  
+
   if (trip.status !== 'In Transit') {
     throw new AppError(400, "InvalidOperation", "Trip must be in transit to complete", "ERR_INVALID_OPERATION");
   }
-  
+
   const now = new Date();
-  
+
   // Mark all orders as completed if not already
   for (const orderId of trip.order_ids) {
     const order = await orderRepo.getOrderById(orderId);
@@ -354,12 +359,12 @@ const completeTrip = async (transporterId, tripId) => {
       await orderRepo.updateOrderStatus(orderId, 'Completed');
     }
   }
-  
+
   const updatedTrip = await tripRepo.updateTrip(tripId, {
     status: 'Completed',
     actual_end_at: now
   });
-  
+
   return updatedTrip;
 };
 
@@ -369,7 +374,7 @@ const updateTripStatus = async (transporterId, tripId, status) => {
   if (!trip || trip.transporter_id.toString() !== transporterId) {
     throw new AppError(404, "NotFound", "Trip not found or access denied", "ERR_NOT_FOUND");
   }
-  
+
   const updatedTrip = await tripRepo.updateTripStatus(tripId, status);
   return updatedTrip;
 };

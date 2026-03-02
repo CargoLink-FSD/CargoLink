@@ -6,6 +6,7 @@ import { useTransporterSignup } from '../../hooks/auth/useTransporterSignup';
 import { Button } from '../../components/forms';
 import ProgressSteps from '../../components/forms/ProgressSteps';
 import VehiclesEditor from '../../components/transporter/VehiclesEditor';
+import DocumentUploadStep from '../../components/transporter/DocumentUploadStep';
 import { EyeIcon, EyeOffIcon } from '../../components/auth/AuthUI';
 import '../../components/forms/forms.css';
 import '../../styles/Signup.css';
@@ -51,6 +52,13 @@ const TransporterSignupForm = () => {
     navigate,
     handleGoogleSignup,
     handleGoogleError,
+    documentFiles,
+    setDocumentFiles,
+    documentErrors,
+    setDocumentErrors,
+    rcFiles,
+    rcErrors,
+    handleRcFileChange,
   } = state;
 
   return (
@@ -85,7 +93,7 @@ const TransporterSignupForm = () => {
                   />
                   {field.helpText && <span className="help-text">{field.helpText}</span>}
                   {error && <span className="error-message">{error}</span>}
-                  
+
                   {/* Google OAuth button for email field */}
                   {field.showGoogleButton && currentStep === 1 && (
                     <>
@@ -127,6 +135,9 @@ const TransporterSignupForm = () => {
               onRemove={removeVehicle}
               onAdd={addVehicle}
               register={register}
+              rcFiles={rcFiles}
+              rcErrors={rcErrors}
+              onRcFileChange={handleRcFileChange}
             />
             <div className="buttons">
               <Button type="button" variant="outline" onClick={prevStep}>Previous</Button>
@@ -136,6 +147,21 @@ const TransporterSignupForm = () => {
         )}
 
         {currentStep === 4 && (
+          <div className="form-step">
+            <DocumentUploadStep
+              documentFiles={documentFiles}
+              setDocumentFiles={setDocumentFiles}
+              documentErrors={documentErrors}
+              setDocumentErrors={setDocumentErrors}
+            />
+            <div className="buttons">
+              <Button type="button" variant="outline" onClick={prevStep}>Previous</Button>
+              <Button type="button" variant="primary" onClick={nextStep}>Next</Button>
+            </div>
+          </div>
+        )}
+
+        {currentStep === 5 && (
           <div className="form-step">
             <div className="form-group">
               <label className="input-label" htmlFor="password">Password *</label>

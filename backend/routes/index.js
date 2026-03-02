@@ -6,7 +6,10 @@ import orderRoutes from "./orderRoutes.js";
 import tripRoutes from "./tripRoutes.js";
 import paymentRoutes from "./paymentRoutes.js";
 import adminRoutes from "./adminRoutes.js";
+import managerRoutes from "./managerRoutes.js";
 import chatRoutes from "./chatRoutes.js";
+import ticketRoutes from "./ticketRoutes.js";
+import locationRoutes from "./locationRoutes.js";
 
 const router = Router();
 
@@ -17,7 +20,10 @@ router.use("/api/orders", orderRoutes);
 router.use("/api/trips", tripRoutes);
 router.use("/api/payments", paymentRoutes);
 router.use("/api/admin", adminRoutes);
+router.use("/api/manager", managerRoutes);
 router.use("/api/chat", chatRoutes);
+router.use("/api/tickets", ticketRoutes);
+router.use("/api/location", locationRoutes);
 
 router.use((req, res, next) => {
   res.status(404).json({

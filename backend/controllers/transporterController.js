@@ -66,7 +66,7 @@ const updateTransporterProfile = async (req, res, next) => {
       );
     }
     const updates = req.body;
-    
+
     // If a profile picture was uploaded, add the path to updates
     if (req.file) {
       updates.profilePicture = `/uploads/profile-pictures/${req.file.filename}`;
@@ -380,10 +380,64 @@ const updatePaymentInfo = async (req, res, next) => {
   // Placeholder for updating payment info
 };
 
+const uploadDocuments = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const files = req.files;
 
+    if (!files || Object.keys(files).length === 0) {
+      throw new AppError(400, 'ValidationError', 'No documents uploaded', 'ERR_NO_FILES');
+    }
 
+    const transporter = await transporterService.uploadDocuments(transporterId, files);
 
+    res.status(200).json({
+      success: true,
+      data: {
+        verificationStatus: transporter.verificationStatus,
+        documents: transporter.documents,
+      },
+      message: 'Documents uploaded successfully. They are now under review.',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
+const getVerificationStatus = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const transporter = await transporterService.getTransporterProfile(transporterId);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        verificationStatus: transporter.transporter.verificationStatus,
+        isVerified: transporter.transporter.isVerified,
+        documents: transporter.transporter.documents,
+        fleet: (transporter.transporter.fleet || []).map(v => ({ _id: v._id, name: v.name, registration: v.registration })),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const uploadVehicleRc = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const { vehicleId } = req.params;
+    const file = req.file;
+    const result = await transporterService.uploadVehicleRc(transporterId, vehicleId, file);
+    res.status(200).json({
+      success: true,
+      data: result,
+      message: 'Vehicle RC uploaded successfully.',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
 // Export all functions
 export default {
@@ -411,4 +465,7 @@ export default {
   getPaymentInfo,
   updatePaymentInfo,
   getTransporterRatings,
+  uploadDocuments,
+  getVerificationStatus,
+  uploadVehicleRc,
 };

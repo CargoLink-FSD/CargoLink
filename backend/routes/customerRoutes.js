@@ -10,7 +10,7 @@ const customerRouter = Router();
 customerRouter.post("/register", validate(validationSchema.customer), customerController.createCustomer);
 
 // All routes require authentication as customer
-customerRouter.use(authMiddleware(['customer']));
+customerRouter.use(authMiddleware(['transporter', 'customer'])); // Allow both transporter and customer for now, can be restricted to 'customer' if needed
 
 // Dashboard
 customerRouter.get("/dashboard-stats", customerController.getDashboardStats); // Get dashboard statistics

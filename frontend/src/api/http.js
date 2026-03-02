@@ -46,6 +46,7 @@ async function request(path, { method = 'GET', headers, body, credentials = 'inc
   const isAuthEndpoint = path.includes('/auth/login') ||
     path.includes('/auth/signup') ||
     path.includes('/auth/refresh-token') ||
+    path.includes('/auth/verify-2fa') ||
     path.includes('/register');
 
   if (res.status === 401 && !_retry && !isAuthEndpoint) {
