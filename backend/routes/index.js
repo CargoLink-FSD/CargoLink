@@ -7,6 +7,7 @@ import tripRoutes from "./tripRoutes.js";
 import paymentRoutes from "./paymentRoutes.js";
 import adminRoutes from "./adminRoutes.js";
 import chatRoutes from "./chatRoutes.js";
+import locationRoutes from "./locationRoutes.js";
 
 const router = Router();
 
@@ -18,6 +19,7 @@ router.use("/api/trips", tripRoutes);
 router.use("/api/payments", paymentRoutes);
 router.use("/api/admin", adminRoutes);
 router.use("/api/chat", chatRoutes);
+router.use("/api/location", locationRoutes);
 
 router.use((req, res, next) => {
   res.status(404).json({

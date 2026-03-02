@@ -29,12 +29,23 @@ const OrderSchema = new mongoose.Schema(
       state: { type: String, required: true },
       pin: { type: String, required: true },
     },
+    pickup_coordinates: {
+      lat: { type: Number },
+      lng: { type: Number },
+    },
+    delivery_coordinates: {
+      lat: { type: Number },
+      lng: { type: Number },
+    },
     scheduled_at: { type: Date, required: true },
     distance: { type: Number, required: true, min: 0 },
     order_date: { type: Date, default: Date.now },
     max_price: { type: Number, required: true, min: 2000 },
     goods_type: { type: String, required: true },
     weight: { type: Number, required: true },
+    volume: { type: Number, min: 0 },
+    cargo_value: { type: Number, min: 0 },
+    toll_cost: { type: Number, min: 0 },
     truck_type: { type: String, required: true },
     description: { type: String, required: true },
     special_instructions: String,
@@ -55,6 +66,11 @@ const OrderSchema = new mongoose.Schema(
       default: false
     },
     final_price: Number,
+    payment_status: {
+      type: String,
+      enum: ["Unpaid", "Paid"],
+      default: "Unpaid",
+    },
     otp: String,
     assignment: {
       vehicle_id: { type: mongoose.Schema.Types.ObjectId },

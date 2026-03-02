@@ -377,3 +377,101 @@ select.input-field {
     font-size: 0.875rem;
     color: #64748b;
 }
+
+/* Optional label supplement */
+.form-label--optional {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: #94a3b8;
+    margin-left: 0.4rem;
+}
+
+/* ── Price Breakdown Panel ──────────────────────────────────────────────── */
+.price-breakdown {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(34, 211, 238, 0.05));
+    border: 1px solid rgba(99, 102, 241, 0.18);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    margin: 1rem 0;
+}
+
+.price-breakdown__title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--primary, #6366f1);
+    margin: 0 0 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.price-breakdown__list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.price-breakdown__list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.88rem;
+    color: #374151;
+}
+
+.price-breakdown__list li span:last-child {
+    font-weight: 500;
+    white-space: nowrap;
+    margin-left: 0.5rem;
+}
+
+.price-breakdown__note {
+    color: #94a3b8;
+    font-size: 0.8rem !important;
+    font-style: italic;
+}
+
+/* Risk / breakage charge row — highlighted in amber */
+.price-breakdown__risk {
+    background: rgba(245, 158, 11, 0.08);
+    border-left: 3px solid #f59e0b;
+    border-radius: 4px;
+    padding: 0.3rem 0.5rem;
+}
+
+.price-breakdown__badge {
+    display: inline-block;
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border-radius: 4px;
+    padding: 0.1em 0.45em;
+    margin-left: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* Divider before total */
+.price-breakdown__total {
+    border-top: 1px solid rgba(99, 102, 241, 0.2);
+    padding-top: 0.5rem;
+    margin-top: 0.2rem;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    color: var(--primary, #6366f1) !important;
+}
+
+.price-breakdown__total span:last-child {
+    font-size: 1rem !important;
+}
+
+.price-breakdown__hint {
+    font-size: 0.78rem;
+    color: #6b7280;
+    margin: 0;
+    border-top: 1px solid rgba(0,0,0,0.06);
+    padding-top: 0.6rem;
+}

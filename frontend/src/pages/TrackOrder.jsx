@@ -233,26 +233,6 @@ const TrackOrderPage = () => {
 
           <div id="tracking-container" className="tracking-section">
             <div className={`combined-section ${expandedSection ? 'expanded' : ''}`}>
-              <div className={`tracking-card ${expandedSection === 'tracking' ? 'expanded-card' : ''} ${expandedSection && expandedSection !== 'tracking' ? 'hidden-card' : ''}`}>
-                <div class="card">
-                  <div class="card-header">
-                    <h2 class="card-title">Live Tracking</h2>
-                  </div>
-                  <div class="map-container">
-                    <div class="map-placeholder">
-                      <div class="loader"></div>
-                      <p>Loading map...</p>
-                    </div>
-                  </div>
-                  <div class="action-buttons">
-                    <button class="btn btn-outline">View Route</button>
-                  </div>
-                </div>
-              </div>
-              {/* <LiveTracking isExpanded={expandedSection === 'tracking'} onToggleExpand={() => toggleExpand('tracking')}/> */}
-
-
-
               <div className={`chat-card ${expandedSection === 'chat' ? 'expanded-card' : ''} ${expandedSection && expandedSection !== 'chat' ? 'hidden-card' : ''}`}>
                 <ChatWindow orderId={orderId} userType={userType} />
               </div>
