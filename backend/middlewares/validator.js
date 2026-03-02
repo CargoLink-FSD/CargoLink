@@ -309,6 +309,26 @@ const order = [
   ...addressSchema('pickup.'),
   ...addressSchema('delivery.'),
 
+  // Optional coordinate fields from geocoding
+  body('pickup_coordinates')
+    .optional()
+    .isObject().withMessage('pickup_coordinates must be an object'),
+  body('pickup_coordinates.lat')
+    .optional()
+    .isFloat().withMessage('Invalid latitude'),
+  body('pickup_coordinates.lng')
+    .optional()
+    .isFloat().withMessage('Invalid longitude'),
+  body('delivery_coordinates')
+    .optional()
+    .isObject().withMessage('delivery_coordinates must be an object'),
+  body('delivery_coordinates.lat')
+    .optional()
+    .isFloat().withMessage('Invalid latitude'),
+  body('delivery_coordinates.lng')
+    .optional()
+    .isFloat().withMessage('Invalid longitude'),
+
   body('scheduled_at')
     .notEmpty().withMessage('Scheduled pickup time is required')
     .isISO8601().withMessage('Scheduled time must be in ISO format')

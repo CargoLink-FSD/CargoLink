@@ -23,6 +23,20 @@ const parseFormDataJSON = (req, res, next) => {
             // Already an object, skip
         }
     }
+    if (req.body.pickup_coordinates) {
+        try {
+            req.body.pickup_coordinates = JSON.parse(req.body.pickup_coordinates);
+        } catch (e) {
+            // Already an object, skip
+        }
+    }
+    if (req.body.delivery_coordinates) {
+        try {
+            req.body.delivery_coordinates = JSON.parse(req.body.delivery_coordinates);
+        } catch (e) {
+            // Already an object, skip
+        }
+    }
     if (req.body.shipments) {
         try {
             req.body.shipments = JSON.parse(req.body.shipments);
@@ -38,6 +52,12 @@ const parseFormDataJSON = (req, res, next) => {
 
     next();
 };
+
+// Price estimation — open to any authenticated user (customer placing order)
+// POST body: { distance, vehicle_type, weight, volume?, goods_type?,
+//              cargo_value?, insurance_tier?, originCoords?, destCoords? }
+// Fetches live toll data from Google Maps Routes API and returns full breakdown.
+orderRouter.post("/estimate-price", authMiddleware(["customer"]), orderController.estimatePrice);
 
 // Common:
 orderRouter.get("/my-orders", authMiddleware(["customer", "transporter"]), orderController.getUserOrders); // Get user-specific orders

@@ -39,6 +39,10 @@ export default function PlaceOrder() {
     savedAddresses,
     cargoPhoto,
     cargoPhotoPreview,
+    distanceLoading,
+    durationMin,
+    priceBreakdown,
+    priceLoading,
     handleInputChange,
     handleShipmentChange,
     addShipmentItem,
@@ -250,11 +254,22 @@ export default function PlaceOrder() {
                   id="distance"
                   className={`input-field ${errors['transit.distance'] && touched['transit.distance'] ? 'error' : ''}`}
                   value={formData.transit.distance}
-                  onChange={(e) => handleInputChange('transit', 'distance', e.target.value)}
-                  onBlur={() => setFieldTouched('transit.distance')}
+                  readOnly
+                  placeholder={distanceLoading ? 'Calculating...' : 'Auto-calculated from addresses'}
                   min="0"
                   step="0.1"
                 />
+                {distanceLoading && (
+                  <span className="form-info">Calculating distance from addresses...</span>
+                )}
+                {!distanceLoading && formData.transit.distance && durationMin && (
+                  <span className="form-info">
+                    Estimated travel time: {Math.floor(durationMin / 60)}h {durationMin % 60}m
+                  </span>
+                )}
+                {!distanceLoading && !formData.transit.distance && (
+                  <span className="form-info">Fill in both pickup and drop-off addresses to auto-calculate distance</span>
+                )}
                 {errors['transit.distance'] && touched['transit.distance'] && (
                   <span className="error-message">{errors['transit.distance']}</span>
                 )}
@@ -322,6 +337,22 @@ export default function PlaceOrder() {
                 {errors['cargo.weight'] && touched['cargo.weight'] && (
                   <span className="error-message">{errors['cargo.weight']}</span>
                 )}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="volume" className="form-label">
+                  Volume (m³) <span className="form-label--optional">optional — surcharge above 20 m³</span>
+                </label>
+                <input
+                  type="number"
+                  id="volume"
+                  className="input-field"
+                  value={formData.cargo.volume}
+                  onChange={(e) => handleInputChange('cargo', 'volume', e.target.value)}
+                  placeholder="Cargo volume in cubic metres"
+                  min="0"
+                  step="0.1"
+                />
               </div>
 
               <div className="form-group">
@@ -472,22 +503,79 @@ export default function PlaceOrder() {
                     type="text"
                     id="max-price"
                     className={`input-field ${errors['cargo.maxPrice'] && touched['cargo.maxPrice'] ? 'error' : ''}`}
-                    value={formData.cargo.maxPrice ? `₹${formData.cargo.maxPrice}` : ''}
-                    onChange={(e) => handleInputChange('cargo', 'maxPrice', e.target.value)}
-                    onBlur={() => setFieldTouched('cargo.maxPrice')}
-                    placeholder={formData.transit.distance ? "Calculating..." : "Enter distance first"}
+                    value={formData.cargo.maxPrice ? `₹${Number(formData.cargo.maxPrice).toLocaleString('en-IN')}` : ''}
                     readOnly
+                    placeholder={
+                      priceLoading
+                        ? 'Calculating…'
+                        : formData.transit.distance
+                          ? 'Estimating price…'
+                          : 'Fill addresses & cargo details'
+                    }
                   />
-                  <div className="form-info">
-                    {formData.transit.distance ?
-                      `Auto-calculated: ${formData.transit.distance} km × ${formData.transit.distance <= 1000 ? 30 : formData.transit.distance <= 2000 ? 28 : 25} rs/km`
-                      : 'Fill in the Distance field above to auto-calculate the price'}
-                  </div>
+                  {priceLoading && (
+                    <span className="form-info">Fetching live toll & risk data…</span>
+                  )}
                   {errors['cargo.maxPrice'] && touched['cargo.maxPrice'] && (
                     <span className="error-message">{errors['cargo.maxPrice']}</span>
                   )}
                 </div>
               </div>
+
+              {/* Detailed price breakdown */}
+              {priceBreakdown && !priceLoading && (
+                <div className="price-breakdown">
+                  <h3 className="price-breakdown__title">Price Breakdown</h3>
+                  <ul className="price-breakdown__list">
+                    <li>
+                      <span>Base cost ({priceBreakdown.distance_km} km × ₹{priceBreakdown.vehicle_rate_per_km}/km)</span>
+                      <span>₹{priceBreakdown.base_cost?.toLocaleString('en-IN')}</span>
+                    </li>
+                    <li>
+                      <span>Weight factor (×{priceBreakdown.weight_multiplier})</span>
+                      <span className="price-breakdown__note">applied to base cost</span>
+                    </li>
+                    {priceBreakdown.volume_surcharge > 0 && (
+                      <li>
+                        <span>High-volume surcharge ({priceBreakdown.volume_m3} m³)</span>
+                        <span>+₹{priceBreakdown.volume_surcharge?.toLocaleString('en-IN')}</span>
+                      </li>
+                    )}
+                    <li>
+                      <span>Operational cost</span>
+                      <span>₹{priceBreakdown.operational_cost?.toLocaleString('en-IN')}</span>
+                    </li>
+                    {priceBreakdown.risk_charge > 0 && (
+                      <li className="price-breakdown__risk">
+                        <span>
+                          Risk / breakage charge
+                          <span className="price-breakdown__badge"> high-value goods</span>
+                        </span>
+                        <span>+₹{priceBreakdown.risk_charge?.toLocaleString('en-IN')}</span>
+                      </li>
+                    )}
+                    {priceBreakdown.insurance_cost > 0 && (
+                      <li>
+                        <span>Insurance ({(priceBreakdown.insurance_rate * 100).toFixed(1)}%)</span>
+                        <span>+₹{priceBreakdown.insurance_cost?.toLocaleString('en-IN')}</span>
+                      </li>
+                    )}
+                    {priceBreakdown.toll_cost > 0 && (
+                      <li>
+                        <span>Estimated toll cost</span>
+                        <span>+₹{priceBreakdown.toll_cost?.toLocaleString('en-IN')}</span>
+                      </li>
+                    )}
+                    <li className="price-breakdown__total">
+                      <span>Suggested max bid</span>
+                      <span>₹{priceBreakdown.suggested_max_price?.toLocaleString('en-IN')}</span>
+                    </li>
+                  </ul>
+                  <p className="price-breakdown__hint">
+                    Transporters bid below this ceiling. You pay only the accepted bid amount.
+                  </p>
+                </div>
+              )}
 
               <div className="countdown-container">
                 <div className="countdown-label">Bidding will end on</div>
