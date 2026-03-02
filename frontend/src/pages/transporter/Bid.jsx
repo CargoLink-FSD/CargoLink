@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useBids } from '../../hooks/useBids';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
+import { getVerificationStatus } from '../../api/transporter';
 import '../../styles/Bid.css';
 
 export default function BidPage() {
@@ -14,6 +15,14 @@ export default function BidPage() {
     placeBid,
     loadOrders,
   } = useBids();
+
+  const [verified, setVerified] = useState(null); // null = loading, true/false
+
+  useEffect(() => {
+    getVerificationStatus()
+      .then(res => setVerified(res.isVerified === true))
+      .catch(() => setVerified(false));
+  }, []);
 
   // Calculate bidding end time (2 days before scheduled pickup)
   const getBiddingEndTime = (scheduledAt) => {
@@ -61,6 +70,15 @@ export default function BidPage() {
       <Header />
       <div className="main-content-bid">
         <div className="container">
+          {verified === false && (
+            <div style={{
+              background: '#fff3cd', color: '#856404', border: '1px solid #ffc107',
+              borderRadius: '8px', padding: '14px 24px', marginBottom: '16px',
+              fontWeight: 500, fontSize: '0.95rem'
+            }}>
+              ⚠️ Your account is not yet verified. You can browse orders but cannot submit bids until a manager approves your documents.
+            </div>
+          )}
           <div className="page-header">
             <h1 className="page-title">Available Orders</h1>
             <button className="btn btn-primary" onClick={loadOrders} disabled={loading}>
@@ -142,9 +160,10 @@ export default function BidPage() {
                         <button
                           className="btn btn-primary"
                           onClick={() => placeBid(index, bid._id)}
-                          disabled={submitting}
+                          disabled={submitting || verified === false}
+                          title={verified === false ? 'Account not verified' : ''}
                         >
-                          {submitting ? 'Submitting...' : 'Submit Bid'}
+                          {submitting ? 'Submitting...' : verified === false ? 'Not Verified' : 'Submit Bid'}
                         </button>
                       )}
                     </div>

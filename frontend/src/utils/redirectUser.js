@@ -11,6 +11,9 @@ export const redirectAfterLogin = (userType, navigate, delay = 1000) => {
       case 'admin':
         navigate('/admin/');
         break;
+      case 'manager':
+        navigate('/manager/dashboard');
+        break;
       default:
         navigate('/');
     }
@@ -42,6 +45,8 @@ export const getRedirectPath = (userType) => {
       return '/transporter/';
     case 'admin':
       return '/admin/';
+    case 'manager':
+      return '/manager/dashboard';
     default:
       return '/';
   }

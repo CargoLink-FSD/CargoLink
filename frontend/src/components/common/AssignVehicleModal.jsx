@@ -12,7 +12,7 @@ const AssignVehicleModal = ({ isOpen, onClose, order, vehicles, onConfirm }) => 
     } else {
       document.body.style.overflow = 'unset';
     }
-    
+
     return () => {
       document.body.style.overflow = 'unset';
     };
@@ -40,8 +40,8 @@ const AssignVehicleModal = ({ isOpen, onClose, order, vehicles, onConfirm }) => 
       <div className="assign-vehicle-modal-content">
         <div className="assign-vehicle-modal-header">
           <h2>Assign Vehicle</h2>
-          <button 
-            className="assign-vehicle-modal-close" 
+          <button
+            className="assign-vehicle-modal-close"
             onClick={onClose}
             aria-label="Close"
           >
@@ -66,27 +66,40 @@ const AssignVehicleModal = ({ isOpen, onClose, order, vehicles, onConfirm }) => 
             >
               <option value="">-- Select a vehicle --</option>
               {vehicles && vehicles.length > 0 ? (
-                vehicles.map((vehicle) => (
-                  <option key={vehicle._id} value={vehicle._id}>
-                    {vehicle.registration} - {vehicle.truck_type} ({vehicle.status})
-                  </option>
-                ))
+                vehicles.map((vehicle) => {
+                  const rcApproved = vehicle.rc_status === 'approved';
+                  return (
+                    <option
+                      key={vehicle._id}
+                      value={vehicle._id}
+                      disabled={!rcApproved}
+                    >
+                      {vehicle.registration} - {vehicle.truck_type} ({vehicle.status})
+                      {!rcApproved ? ` [RC ${vehicle.rc_status || 'not uploaded'} — cannot assign]` : ''}
+                    </option>
+                  );
+                })
               ) : (
                 <option disabled>No vehicles available</option>
               )}
             </select>
+            {vehicles && vehicles.some(v => v.rc_status !== 'approved') && (
+              <p style={{ color: '#e74c3c', fontSize: '0.82rem', marginTop: '0.35rem' }}>
+                Vehicles with unverified RC cannot be assigned. Upload RC and wait for manager approval.
+              </p>
+            )}
           </div>
         </div>
 
         <div className="assign-vehicle-modal-footer">
-          <button 
-            className="assign-vehicle-btn-cancel" 
+          <button
+            className="assign-vehicle-btn-cancel"
             onClick={onClose}
           >
             Cancel
           </button>
-          <button 
-            className="assign-vehicle-btn-confirm" 
+          <button
+            className="assign-vehicle-btn-confirm"
             onClick={handleConfirm}
             disabled={!selectedVehicle}
           >

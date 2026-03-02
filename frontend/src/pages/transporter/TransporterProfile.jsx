@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { transporterProfileFieldSchemas } from "../../utils/schemas";
 import { useTransporterProfile } from "../../hooks/useTransporterProfile";
 import RatingsTab from "../../components/transporter/RatingsTab";
 import Header from "../../components/common/Header";
-import { Truck, Box, User, MessageSquare, Shield } from "lucide-react";
+import { Truck, Box, User, MessageSquare, Shield, FileText } from "lucide-react";
 import ProfileField from "../../components/profile/ProfileField";
 import SecurityTab from "../../components/profile/SecurityTab";
+import { getVerificationStatus } from "../../api/transporter";
 import "../../styles/profile.css";
 import Footer from "../../components/common/Footer";
 // Transporter Profile Page
@@ -25,6 +26,14 @@ const TransporterProfile = () => {
     updateTransporterPassword,
     uploadTransporterProfilePicture,
   } = useTransporterProfile();
+
+  const [verificationInfo, setVerificationInfo] = useState(null);
+
+  useEffect(() => {
+    getVerificationStatus()
+      .then(res => setVerificationInfo(res))
+      .catch(() => { });
+  }, []);
 
   const handleProfilePictureChange = async (e) => {
     const file = e.target.files[0];
@@ -90,9 +99,9 @@ const TransporterProfile = () => {
               <div className="profile-header-left">
                 <div className="profile-avatar-wrapper">
                   {profile?.profileImage ? (
-                    <img 
-                      src={`http://localhost:3000${profile.profileImage}`} 
-                      alt="Profile" 
+                    <img
+                      src={`http://localhost:3000${profile.profileImage}`}
+                      alt="Profile"
                       className="profile-avatar-large"
                       onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
                     />
@@ -106,9 +115,9 @@ const TransporterProfile = () => {
                       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
                       <circle cx="12" cy="13" r="4"></circle>
                     </svg>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
+                    <input
+                      type="file"
+                      accept="image/*"
                       onChange={handleProfilePictureChange}
                       style={{ display: 'none' }}
                     />
@@ -162,31 +171,36 @@ const TransporterProfile = () => {
           {/* Tab Navigation */}
           <div className="profile-tabs">
             <button
-              className={`profile-tab ${
-                activeTab === "personal" ? "active" : ""
-              }`}
+              className={`profile-tab ${activeTab === "personal" ? "active" : ""
+                }`}
               onClick={() => switchTab("personal")}
             >
               <User size={18} />
               Business Information
             </button>
             <button
-              className={`profile-tab ${
-                activeTab === "ratings" ? "active" : ""
-              }`}
+              className={`profile-tab ${activeTab === "ratings" ? "active" : ""
+                }`}
               onClick={() => switchTab("ratings")}
             >
               <MessageSquare size={18} />
               Ratings & Reviews
             </button>
             <button
-              className={`profile-tab ${
-                activeTab === "security" ? "active" : ""
-              }`}
+              className={`profile-tab ${activeTab === "security" ? "active" : ""
+                }`}
               onClick={() => switchTab("security")}
             >
               <Shield size={18} />
               Security
+            </button>
+            <button
+              className={`profile-tab ${activeTab === "documents" ? "active" : ""
+                }`}
+              onClick={() => switchTab("documents")}
+            >
+              <FileText size={18} />
+              Documents
             </button>
           </div>
 
@@ -213,6 +227,11 @@ const TransporterProfile = () => {
                   updatePasswordAction={updateTransporterPassword}
                   userEmail={profile?.email}
                 />
+              </div>
+            )}
+            {activeTab === "documents" && (
+              <div className="tab-pane active">
+                <DocumentsTab verificationInfo={verificationInfo} />
               </div>
             )}
           </div>
@@ -333,6 +352,107 @@ const TransporterInfo = ({ profile, dispatch, updateTransporterField }) => {
           updateAction={updateTransporterField}
           validateFn={validateField}
         />
+      </div>
+    </div>
+  );
+};
+
+// Documents Tab Component
+const DocumentsTab = ({ verificationInfo }) => {
+  const API_BASE = 'http://localhost:3000';
+
+  const statusBadge = (status) => {
+    const map = {
+      approved: { bg: '#d1fae5', color: '#065f46', label: 'Approved' },
+      rejected: { bg: '#fee2e2', color: '#991b1b', label: 'Rejected' },
+      pending: { bg: '#fef3c7', color: '#92400e', label: 'Pending Review' },
+    };
+    const s = map[status] || map.pending;
+    return (
+      <span style={{
+        display: 'inline-block', padding: '2px 10px', borderRadius: '12px',
+        fontSize: '0.75rem', fontWeight: 600, background: s.bg, color: s.color,
+      }}>{s.label}</span>
+    );
+  };
+
+  const DocRow = ({ label, doc }) => {
+    if (!doc || !doc.url) return (
+      <div className="profile-field-row" style={{ padding: '12px 0', borderBottom: '1px solid #f3f4f6' }}>
+        <span style={{ color: '#6b7280', fontSize: '0.875rem' }}><strong>{label}:</strong> Not uploaded</span>
+      </div>
+    );
+    return (
+      <div className="profile-field-row" style={{ padding: '12px 0', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+        <div>
+          <span style={{ fontWeight: 600, fontSize: '0.875rem', color: '#374151' }}>{label}</span>
+          {doc.adminNote && (
+            <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#dc2626' }}>Note: {doc.adminNote}</p>
+          )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {statusBadge(doc.adminStatus || 'pending')}
+          <a href={`${API_BASE}${doc.url}`} target="_blank" rel="noopener noreferrer"
+            style={{ color: '#4f46e5', fontSize: '0.8rem', fontWeight: 500, textDecoration: 'none' }}>
+            View ↗
+          </a>
+        </div>
+      </div>
+    );
+  };
+
+  if (!verificationInfo) {
+    return (
+      <div className="profile-content-card">
+        <div className="card-header-row"><h2 className="card-title">Verification Documents</h2></div>
+        <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>Loading document status...</p>
+      </div>
+    );
+  }
+
+  const docs = verificationInfo.documents || {};
+  const fleet = verificationInfo.fleet || [];
+  const overallStatus = verificationInfo.verificationStatus || 'unsubmitted';
+
+  const overallMap = {
+    unsubmitted: { text: 'Documents not yet uploaded', bg: '#f3f4f6', color: '#6b7280' },
+    under_review: { text: 'Under Manager Review', bg: '#cce5ff', color: '#004085' },
+    approved: { text: 'Fully Verified', bg: '#d1fae5', color: '#065f46' },
+    rejected: { text: 'One or more documents rejected', bg: '#fee2e2', color: '#991b1b' },
+  };
+  const overall = overallMap[overallStatus] || overallMap.unsubmitted;
+
+  return (
+    <div className="profile-content-card">
+      <div className="card-header-row">
+        <h2 className="card-title">Verification Documents</h2>
+        <span style={{ padding: '4px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, background: overall.bg, color: overall.color }}>
+          {overall.text}
+        </span>
+      </div>
+
+      <div style={{ marginTop: '8px' }}>
+        <DocRow label="PAN Card" doc={docs.pan_card} />
+        <DocRow label="Driving License" doc={docs.driving_license} />
+        {docs.vehicle_rcs && docs.vehicle_rcs.length > 0 && (
+          <>
+            <p style={{ marginTop: '16px', marginBottom: '8px', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
+              Vehicle Registration Certificates
+            </p>
+            {docs.vehicle_rcs.map((rc, idx) => {
+              const vehicle = fleet.find(v => v._id?.toString() === rc.vehicleId?.toString());
+              const label = vehicle?.registration
+                ? `Vehicle RC — ${vehicle.registration}`
+                : `Vehicle RC #${idx + 1}`;
+              return <DocRow key={idx} label={label} doc={rc} />;
+            })}
+          </>
+        )}
+        {(!docs.pan_card && !docs.driving_license && !(docs.vehicle_rcs?.length)) && (
+          <p style={{ color: '#6b7280', fontSize: '0.875rem', padding: '16px 0' }}>
+            No documents uploaded yet. Complete the document upload step to get verified.
+          </p>
+        )}
       </div>
     </div>
   );

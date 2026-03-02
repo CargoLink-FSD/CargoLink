@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authMiddleware } from "../middlewares/auth.js";
+import { authMiddleware, requireVerified } from "../middlewares/auth.js";
 import { validate } from "../middlewares/validator.js";
 import { validationSchema } from "../middlewares/validator.js";
 import orderController from "../controllers/orderController.js";
@@ -85,7 +85,7 @@ orderRouter.get("/:orderId/bids", authMiddleware(["customer"]), orderController.
 orderRouter.post("/:orderId/bids/:bidId/accept", authMiddleware(["customer"]), orderController.acceptBid); // Accept bid
 orderRouter.delete("/:orderId/bids/:bidId", authMiddleware(["customer"]), orderController.rejectBid); // Reject bid
 
-orderRouter.post("/:orderId/bids", authMiddleware(["transporter"]), validate(validationSchema.bid), orderController.submitBid); // Submit bid
+orderRouter.post("/:orderId/bids", authMiddleware(["transporter"]), requireVerified, validate(validationSchema.bid), orderController.submitBid); // Submit bid
 orderRouter.delete('/:orderId/bids/:bidId', authMiddleware(['transporter']), orderController.withdrawBid); // Withdraw a bid
 
 

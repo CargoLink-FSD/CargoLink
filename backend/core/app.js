@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import router from '../routes/index.js';
 import { requestLogger } from '../middlewares/requestLogger.js';
-import { errorHandler } from '../utils/misc.js';
+import { errorHandler, logger } from '../utils/misc.js';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
@@ -14,18 +14,24 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", 'data:', 'https:'],
-    },
-  },
-  crossOriginEmbedderPolicy: false,
-}));
 
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", "data:", "https:", "http://localhost:3000"],
+      },
+    },
+
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: {
+      policy: "cross-origin",
+    },
+  })
+);
 
 app.use(compression());
 
@@ -36,6 +42,31 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true, 
   legacyHeaders: false,
+  handler: (req, res, _next, options) => {
+    logger.warn('Rate limit exceeded', {
+      ip: req.ip,
+      method: req.method,
+      url: req.originalUrl || req.url,
+      user: req.user || null,
+      windowMs: options.windowMs,
+      limit: options.limit,
+    });
+
+    // express-rate-limit sets RFC standard RateLimit headers when standardHeaders=true.
+    // Also set Retry-After to make frontend/backoff logic easier.
+    const retryAfterSeconds = Math.ceil(options.windowMs / 1000);
+    res.set('Retry-After', String(retryAfterSeconds));
+
+    res.status(options.statusCode).json({
+      success: false,
+      message: options.message || 'Too many requests, please try again later.',
+      errorCode: 'ERR_RATE_LIMIT',
+      statusCode: options.statusCode,
+      data: {
+        retryAfterSeconds,
+      },
+    });
+  },
 });
 app.use(limiter);
 

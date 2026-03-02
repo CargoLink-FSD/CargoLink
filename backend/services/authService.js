@@ -10,6 +10,11 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@cargolink.com";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin@123";
 const ADMIN_ID = "admin";
 
+// Manager credentials (hardcoded - same pattern as admin)
+const MANAGER_EMAIL = process.env.MANAGER_EMAIL || "manager@cargolink.com";
+const MANAGER_PASSWORD = process.env.MANAGER_PASSWORD || "manager@123";
+const MANAGER_ID = "manager";
+
 // In-memory store for refresh tokens (prototype). For production use persistent storage or a blacklist strategy.
 const refreshStore = new Map(); // key: jti, value: { userId, role, expiresAt }
 
@@ -27,6 +32,18 @@ export async function authenticateUser({ email, password, role }) {
       _id: ADMIN_ID,
       email: ADMIN_EMAIL,
       role: 'admin'
+    };
+  }
+
+  // Handle manager authentication
+  if (role === 'manager') {
+    if (email !== MANAGER_EMAIL || password !== MANAGER_PASSWORD) {
+      throw new AppError(401, 'AuthError', 'Invalid manager credentials', 'ERR_INVALID_CREDENTIALS');
+    }
+    return {
+      _id: MANAGER_ID,
+      email: MANAGER_EMAIL,
+      role: 'manager'
     };
   }
 

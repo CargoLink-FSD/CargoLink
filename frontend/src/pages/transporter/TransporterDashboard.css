@@ -296,12 +296,35 @@
   white-space: nowrap;
 }
 
-.status-badge.placed { background: #dbeafe; color: #1d4ed8; }
-.status-badge.assigned { background: #fef3c7; color: #b45309; }
-.status-badge.in-transit { background: #ede9fe; color: #6d28d9; }
-.status-badge.started { background: #cffafe; color: #0e7490; }
-.status-badge.completed { background: #d1fae5; color: #047857; }
-.status-badge.cancelled { background: #fee2e2; color: #b91c1c; }
+.status-badge.placed {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-badge.assigned {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.status-badge.in-transit {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.status-badge.started {
+  background: #cffafe;
+  color: #0e7490;
+}
+
+.status-badge.completed {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.status-badge.cancelled {
+  background: #fee2e2;
+  color: #b91c1c;
+}
 
 /* Fleet Status Badges */
 .fleet-status-badge {
@@ -312,10 +335,25 @@
   white-space: nowrap;
 }
 
-.fleet-status-badge.available { background: #d1fae5; color: #047857; }
-.fleet-status-badge.assigned { background: #fef3c7; color: #b45309; }
-.fleet-status-badge.maintenance { background: #fee2e2; color: #dc2626; }
-.fleet-status-badge.unavailable { background: #f3f4f6; color: #6b7280; }
+.fleet-status-badge.available {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.fleet-status-badge.assigned {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.fleet-status-badge.maintenance {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.fleet-status-badge.unavailable {
+  background: #f3f4f6;
+  color: #6b7280;
+}
 
 /* Action Buttons */
 .action-btn {
@@ -429,7 +467,8 @@
   font-size: 0.875rem;
 }
 
-.job-from, .job-to {
+.job-from,
+.job-to {
   color: #374151;
   font-weight: 500;
 }
@@ -610,7 +649,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .dashboard-loading p {
@@ -678,4 +719,52 @@
   .dashboard-kpi-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Verification Status Banner */
+.verification-banner {
+  max-width: 1400px;
+  margin: 0 auto 16px;
+  padding: 14px 24px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.verification-unsubmitted {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
+}
+
+.verification-under-review {
+  background: #cce5ff;
+  color: #004085;
+  border: 1px solid #b8daff;
+}
+
+.verification-rejected {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.banner-action {
+  flex-shrink: 0;
+  padding: 6px 16px;
+  border-radius: 6px;
+  background: #fff;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid currentColor;
+  transition: opacity 0.2s;
+}
+
+.banner-action:hover {
+  opacity: 0.8;
 }

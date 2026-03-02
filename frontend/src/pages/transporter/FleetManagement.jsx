@@ -12,6 +12,8 @@ import { InputField, Button } from '../../components/forms';
 // Import our new API and Hooks
 import { useFleetManagement } from '../../hooks/fleet/useFleetManagement';
 import { useVehicleForm } from '../../hooks/fleet/useVehicleForm';
+import { uploadVehicleRc } from '../../api/fleet';
+import { getBaseUrl } from '../../api/http';
 
 // Import Styles
 import '../../styles/styles.css';
@@ -20,9 +22,9 @@ import '../../styles/Fleet.css';
 import '../../styles/notification.css';
 
 const FleetManagement = () => {
-  const { vehicles, loading, createVehicle, editVehicle, removeVehicle } = useFleetManagement();
+  const { vehicles, loading, createVehicle, editVehicle, removeVehicle, fetchFleet } = useFleetManagement();
   const { formData, setFormValue, populateForm, resetForm } = useVehicleForm();
-  
+
   const [filters, setFilters] = useState({ search: '', status: 'all', type: 'all' });
 
   // Modal states
@@ -30,8 +32,30 @@ const FleetManagement = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
 
-  const [currentVehicle, setCurrentVehicle] = useState(null); 
+  const [currentVehicle, setCurrentVehicle] = useState(null);
   const [vehicleToDelete, setVehicleToDelete] = useState(null);
+
+  // RC upload state
+  const [rcFile, setRcFile] = useState(null);
+  const [rcError, setRcError] = useState('');
+
+  const handleRcChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) { setRcFile(null); setRcError(''); return; }
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    if (!allowed.includes(file.type)) {
+      setRcError('Only JPEG, PNG, or PDF files are allowed.');
+      setRcFile(null);
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setRcError('File size must be less than 5MB.');
+      setRcFile(null);
+      return;
+    }
+    setRcError('');
+    setRcFile(file);
+  };
 
   // Filter Logic
   const filteredVehicles = vehicles.filter(v => {
@@ -54,12 +78,16 @@ const FleetManagement = () => {
   const openAddModal = () => {
     setCurrentVehicle(null);
     resetForm();
+    setRcFile(null);
+    setRcError('');
     setShowVehicleModal(true);
   };
 
   const openEditModal = (vehicle) => {
     setCurrentVehicle(vehicle);
     populateForm(vehicle);
+    setRcFile(null);
+    setRcError('');
     setShowVehicleModal(true);
   };
 
@@ -79,6 +107,8 @@ const FleetManagement = () => {
     setShowDescriptionModal(false);
     setCurrentVehicle(null);
     setVehicleToDelete(null);
+    setRcFile(null);
+    setRcError('');
   };
 
   const handleFormChange = (e) => {
@@ -88,22 +118,42 @@ const FleetManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (rcError) { alert('Please fix the RC file error before submitting.'); return; }
     try {
-      // Construct payload - Removed current_trip_id
-      const payload = { 
-        ...formData, 
-        truck_type: formData.truck_type, 
+      // Construct payload
+      const payload = {
+        ...formData,
+        truck_type: formData.truck_type,
         registration: formData.registration,
         last_service_date: formData.last_service_date || null,
         next_service_date: formData.next_service_date || null
       };
 
+      let vehicleId;
       if (currentVehicle && (currentVehicle._id || currentVehicle.truck_id)) {
-        const id = currentVehicle._id || currentVehicle.truck_id;
-        await editVehicle(id, payload);
+        vehicleId = currentVehicle._id || currentVehicle.truck_id;
+        await editVehicle(vehicleId, payload);
       } else {
-        await createVehicle(payload);
+        const response = await createVehicle(payload);
+        // The response from createVehicle -> addVehicle API -> { success, data: truckObj }
+        // useFleetManagement.createVehicle returns the raw API response
+        vehicleId = response?.data?._id || response?._id;
       }
+
+      // Upload RC if a new file was selected
+      if (rcFile && vehicleId) {
+        try {
+          const rcForm = new FormData();
+          rcForm.append('rc_file', rcFile);
+          await uploadVehicleRc(vehicleId, rcForm);
+          // Refresh the fleet list to show the new RC status
+          await fetchFleet();
+        } catch (rcErr) {
+          console.error('RC upload failed:', rcErr);
+          alert('Vehicle saved but RC upload failed. You can upload it later.');
+        }
+      }
+
       closeAll();
     } catch (err) {
       console.error(err);
@@ -145,7 +195,7 @@ const FleetManagement = () => {
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
             />
             <button id="search-btn">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
             </button>
           </div>
         </div>
@@ -176,7 +226,7 @@ const FleetManagement = () => {
           <>
             {filteredVehicles.length === 0 ? (
               <div id="fleet-empty" className="empty-state">
-                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5"/><path d="M14 17h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 17h4V5H2v12h3" /><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5" /><path d="M14 17h1" /><circle cx="7.5" cy="17.5" r="2.5" /><circle cx="17.5" cy="17.5" r="2.5" /></svg>
                 <h3>No vehicles in your fleet</h3>
                 <p>Add your first vehicle to start managing your fleet</p>
                 <button id="empty-add-vehicle" className="btn btn-primary" onClick={openAddModal}>Add Vehicle</button>
@@ -203,7 +253,7 @@ const FleetManagement = () => {
                         <span className="label">Type:</span>
                         <span className="value">{vehicle.truck_type || vehicle.type}</span>
                       </div>
-                      
+
                       <div className="info-row">
                         <span className="icon">
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
@@ -242,6 +292,26 @@ const FleetManagement = () => {
                         </span>
                         <span className="label">Order ID:</span>
                         <span className="value">{vehicle.current_trip_id || 'Not Assigned'}</span>
+                      </div>
+
+                      {/* RC Document row */}
+                      <div className="info-row">
+                        <span className="icon">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg>
+                        </span>
+                        <span className="label">RC Document:</span>
+                        {vehicle.rc_url ? (
+                          <span className="value">
+                            <a href={`${getBaseUrl()}${vehicle.rc_url}`} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'underline', marginRight: '6px' }}>View RC</a>
+                            <span style={{
+                              fontSize: '0.75rem', fontWeight: 600, padding: '2px 6px', borderRadius: '9999px',
+                              background: vehicle.rc_status === 'approved' ? '#d1fae5' : vehicle.rc_status === 'rejected' ? '#fee2e2' : '#fef9c3',
+                              color: vehicle.rc_status === 'approved' ? '#065f46' : vehicle.rc_status === 'rejected' ? '#991b1b' : '#78350f'
+                            }}>{vehicle.rc_status || 'pending'}</span>
+                          </span>
+                        ) : (
+                          <span className="value" style={{ color: '#e55', fontSize: '0.85rem' }}>Not uploaded</span>
+                        )}
                       </div>
                     </div>
 
@@ -314,6 +384,33 @@ const FleetManagement = () => {
                   </div>
                 </div>
 
+                {/* Vehicle RC Upload */}
+                <div className="form-group">
+                  <label htmlFor="rc-file">
+                    Vehicle RC (Registration Certificate){currentVehicle ? ' — upload new to replace' : ''}
+                  </label>
+                  {!currentVehicle && (
+                    <p style={{ fontSize: '0.8rem', color: '#666', margin: '2px 0 6px' }}>
+                      Upload RC now or later. Vehicle cannot be assigned until RC is verified by manager.
+                    </p>
+                  )}
+                  <input
+                    id="rc-file"
+                    type="file"
+                    className="input-field"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                    onChange={handleRcChange}
+                  />
+                  {rcError && <span style={{ color: 'red', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>{rcError}</span>}
+                  {rcFile && <span style={{ color: 'green', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>✓ {rcFile.name} selected</span>}
+                  {currentVehicle?.rc_url && !rcFile && (
+                    <span style={{ color: '#555', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
+                      Current RC on file —{' '}
+                      <a href={`${getBaseUrl()}${currentVehicle.rc_url}`} target="_blank" rel="noreferrer" style={{ color: '#2563eb' }}>View</a>
+                    </span>
+                  )}
+                </div>
+
                 <div className="form-actions" style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                   <button type="submit" className="btn btn-primary">{currentVehicle ? 'Update' : 'Save'}</button>
                   <button type="button" className="btn btn-secondary" onClick={closeAll}>Cancel</button>
@@ -350,7 +447,7 @@ const FleetManagement = () => {
                 )}
               </div>
               <div className="form-actions" style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
-                 <button type="button" className="btn btn-secondary close-description" onClick={closeAll}>Close</button>
+                <button type="button" className="btn btn-secondary close-description" onClick={closeAll}>Close</button>
               </div>
             </div>
           </div>
