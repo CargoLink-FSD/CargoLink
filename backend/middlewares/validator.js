@@ -3,7 +3,7 @@ import { AppError, logger } from "../utils/misc.js";
 
 export const validate = (validationSchema) => {
   return async (req, res, next) => {
-  // Run each validation rule sequentially
+    // Run each validation rule sequentially
     for (const validationRule of validationSchema) {
       await validationRule.run(req);
     }
@@ -11,8 +11,8 @@ export const validate = (validationSchema) => {
     // Check if there are any validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        const error = new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION', errors.array());
-        return next(error);
+      const error = new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION', errors.array());
+      return next(error);
     }
     req.body = matchedData(req, { locations: ['body'] });
     next();
@@ -141,7 +141,7 @@ const vehicleSchema = (prefix = '') => [
   body(prefix + 'name')
     .trim().notEmpty().withMessage('Vehicle name is required'),
 
-    body(prefix + 'truck_type')
+  body(prefix + 'truck_type')
     .trim().notEmpty().withMessage('Vehicle type is required'),
 
   body(prefix + 'registration')
@@ -227,19 +227,19 @@ const updateTransporter = [
     .notEmpty().withMessage('GST number cannot be empty')
     .matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/).withMessage('Invalid GST number'),
 
-    body('street')
-      .optional().trim()
-      .notEmpty().withMessage('Street cannot be empty'),
-    body('city')
-      .optional().trim()
-      .notEmpty().withMessage('City cannot be empty'),
-    body('state')
-      .optional().trim()
-      .notEmpty().withMessage('State cannot be empty'),
-    body('pin')
-      .optional().trim()
-      .notEmpty().withMessage('Pin code cannot be empty')
-      .matches(/^[1-9][0-9]{5}$/).withMessage('Invalid pin code')
+  body('street')
+    .optional().trim()
+    .notEmpty().withMessage('Street cannot be empty'),
+  body('city')
+    .optional().trim()
+    .notEmpty().withMessage('City cannot be empty'),
+  body('state')
+    .optional().trim()
+    .notEmpty().withMessage('State cannot be empty'),
+  body('pin')
+    .optional().trim()
+    .notEmpty().withMessage('Pin code cannot be empty')
+    .matches(/^[1-9][0-9]{5}$/).withMessage('Invalid pin code')
 
 ];
 
@@ -254,7 +254,7 @@ const updateTruck = [
     .optional()
     .trim().notEmpty().withMessage('Vehicle cannot be empty'),
 
-    body('truck_type')
+  body('truck_type')
     .optional()
     .trim().notEmpty().withMessage('Vehicle cannot be empty'),
 
@@ -274,12 +274,12 @@ const updateTruck = [
 ]
 
 // Auth related schemas
-const login =  [
+const login = [
   body('email').isEmail().withMessage('Valid email required'),
   body('password').notEmpty().withMessage('Password required'),
-  body('role').isIn(['customer','transporter','admin']).withMessage('Role must be customer, transporter or admin'),
+  body('role').isIn(['customer', 'transporter', 'admin', 'manager']).withMessage('Role must be customer, transporter, admin or manager'),
 ]
-const forgotPassword =  [
+const forgotPassword = [
   body('email').trim().isEmail().withMessage('Valid email required'),
   body('userType').trim().isIn(['customer', 'transporter']).withMessage('Valid user type required (customer or transporter)'),
 ]
@@ -300,9 +300,9 @@ const password = [
 
 const bid = [
   body('bidAmount')
-  .isInt({ min: 1 }).withMessage('Bid amount must be a positive integer'),
+    .isInt({ min: 1 }).withMessage('Bid amount must be a positive integer'),
   body('notes')
-  .optional().isString().withMessage('Notes must be a string')
+    .optional().isString().withMessage('Notes must be a string')
 ]
 
 const order = [
@@ -340,8 +340,8 @@ const order = [
   body('weight')
     .notEmpty().withMessage('Weight is required')
     .isFloat({ gt: 0 }).withMessage('Weight must be a positive number'),
- 
-    body('description')
+
+  body('description')
     .trim().notEmpty().withMessage('Cargo description is required'),
 
   // Shipment items
@@ -358,17 +358,17 @@ const order = [
 
 
 export const validationSchema = {
-    customer,
-    updateCustomer,
-    address,
-    transporter,
-    updateTransporter,
-    truck,
-    updateTruck,
-    login,
-    forgotPassword,
-    resetPassword,
-    password,
-    order,
-    bid,
+  customer,
+  updateCustomer,
+  address,
+  transporter,
+  updateTransporter,
+  truck,
+  updateTruck,
+  login,
+  forgotPassword,
+  resetPassword,
+  password,
+  order,
+  bid,
 }

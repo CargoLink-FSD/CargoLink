@@ -44,11 +44,25 @@ export const getTransporterDashboardStats = async () => {
   return response.data;
 };
 
+// Upload verification documents (FormData with files)
+export const uploadDocuments = async (formData) => {
+  const response = await http.post('/api/transporters/documents', formData);
+  return response.data;
+};
+
+// Get verification status
+export const getVerificationStatus = async () => {
+  const response = await http.get('/api/transporters/verification-status');
+  return response.data;
+};
+
 export default {
   getTransporterProfile,
   updateTransporterProfile,
   uploadTransporterProfilePicture,
   updateTransporterPassword,
-  getTransporterRatings,    // ← don't forget to add it here too
+  getTransporterRatings,
   getTransporterDashboardStats,
+  uploadDocuments,
+  getVerificationStatus,
 };

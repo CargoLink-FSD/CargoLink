@@ -33,6 +33,17 @@ adminRouter.get("/orders/:orderId/bid-count", adminController.getBidCountForOrde
 // User Management Routes
 // ============================================
 adminRouter.get("/users", adminController.getAllUsers); // Get all users (customers/transporters) with filters
+adminRouter.get("/users/:role/:id", adminController.getUserDetail); // Get individual user detail
 adminRouter.delete("/users/:role/:id", adminController.deleteUser); // Delete a user (customer or transporter)
+
+// ============================================
+// Fleet Overview Routes
+// ============================================
+adminRouter.get("/fleet", adminController.getFleetOverview); // Get all vehicles across all transporters
+
+// ============================================
+// Tickets Overview Routes
+// ============================================
+adminRouter.get("/tickets", adminController.getTicketsOverview); // Get all support tickets (read-only)
 
 export default adminRouter;

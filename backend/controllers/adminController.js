@@ -20,7 +20,7 @@ const getDashboardStats = async (req, res, next) => {
 const getOrdersPerDay = async (req, res, next) => {
   try {
     const stats = await adminService.getDashboardStats();
-    
+
     res.status(200).json({
       success: true,
       data: stats.ordersPerDay,
@@ -34,7 +34,7 @@ const getOrdersPerDay = async (req, res, next) => {
 const getRevenuePerDay = async (req, res, next) => {
   try {
     const stats = await adminService.getDashboardStats();
-    
+
     res.status(200).json({
       success: true,
       data: stats.revenuePerDay,
@@ -48,7 +48,7 @@ const getRevenuePerDay = async (req, res, next) => {
 const getTopTransporters = async (req, res, next) => {
   try {
     const stats = await adminService.getDashboardStats();
-    
+
     res.status(200).json({
       success: true,
       data: stats.topTransporters,
@@ -62,7 +62,7 @@ const getTopTransporters = async (req, res, next) => {
 const getOrderStatusDistribution = async (req, res, next) => {
   try {
     const stats = await adminService.getDashboardStats();
-    
+
     res.status(200).json({
       success: true,
       data: stats.orderStatusDistribution,
@@ -76,7 +76,7 @@ const getOrderStatusDistribution = async (req, res, next) => {
 const getFleetUtilization = async (req, res, next) => {
   try {
     const stats = await adminService.getDashboardStats();
-    
+
     res.status(200).json({
       success: true,
       data: stats.fleetUtilization,
@@ -90,7 +90,7 @@ const getFleetUtilization = async (req, res, next) => {
 const getNewCustomersPerMonth = async (req, res, next) => {
   try {
     const stats = await adminService.getDashboardStats();
-    
+
     res.status(200).json({
       success: true,
       data: stats.newCustomersPerMonth,
@@ -104,7 +104,7 @@ const getNewCustomersPerMonth = async (req, res, next) => {
 const getMostRequestedTruckTypes = async (req, res, next) => {
   try {
     const stats = await adminService.getDashboardStats();
-    
+
     res.status(200).json({
       success: true,
       data: stats.truckTypes,
@@ -118,7 +118,7 @@ const getMostRequestedTruckTypes = async (req, res, next) => {
 const getPendingVsCompletedOrders = async (req, res, next) => {
   try {
     const stats = await adminService.getDashboardStats();
-    
+
     res.status(200).json({
       success: true,
       data: stats.orderRatio,
@@ -132,7 +132,7 @@ const getPendingVsCompletedOrders = async (req, res, next) => {
 const getAverageBidAmount = async (req, res, next) => {
   try {
     const stats = await adminService.getDashboardStats();
-    
+
     res.status(200).json({
       success: true,
       data: { avg_bid: stats.avgBidAmount },
@@ -158,8 +158,8 @@ const getAllOrders = async (req, res, next) => {
 
     const formattedOrders = orders.map(order => ({
       order_id: order._id,
-      customer_name: order.customer_id 
-        ? `${order.customer_id.firstName} ${order.customer_id.lastName}` 
+      customer_name: order.customer_id
+        ? `${order.customer_id.firstName} ${order.customer_id.lastName}`
         : 'N/A',
       customer_email: order.customer_id?.email || 'N/A',
       transporter_name: order.assigned_transporter_id?.name || 'Not Assigned',
@@ -356,6 +356,42 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
+// Fleet Overview
+const getFleetOverview = async (req, res, next) => {
+  try {
+    const data = await adminService.getFleetOverview();
+    res.status(200).json({ success: true, data, message: "Fleet overview fetched successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Tickets Overview
+const getTicketsOverview = async (req, res, next) => {
+  try {
+    const data = await adminService.getTicketsOverview();
+    res.status(200).json({ success: true, data, message: "Tickets overview fetched successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Individual User Detail
+const getUserDetail = async (req, res, next) => {
+  try {
+    const { role, id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
+        { type: "field", value: id, msg: "Not a valid user ID", path: "id", location: "params" }
+      );
+    }
+    const detail = await adminService.getUserDetail(role, id);
+    res.status(200).json({ success: true, data: detail, message: "User detail fetched successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export default {
   // Dashboard Analytics
   getDashboardStats,
@@ -368,14 +404,21 @@ export default {
   getMostRequestedTruckTypes,
   getPendingVsCompletedOrders,
   getAverageBidAmount,
-  
+
   // Order Management
   getAllOrders,
   getOrderDetails,
   getBidsForOrder,
   getBidCountForOrder,
-  
+
   // User Management
   getAllUsers,
-  deleteUser
+  deleteUser,
+  getUserDetail,
+
+  // Fleet
+  getFleetOverview,
+
+  // Tickets
+  getTicketsOverview
 };

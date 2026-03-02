@@ -52,14 +52,21 @@ export const scheduleMaintenance = async (vehicleId, nextServiceDate) => {
   return response.data;
 };
 
-export default { 
-  getFleet, 
-  getVehicle, 
-  addVehicle, 
-  updateVehicle, 
+export const uploadVehicleRc = async (vehicleId, formData) => {
+  // Do NOT set Content-Type — browser auto-sets the correct multipart boundary
+  const response = await http.post(`/api/transporters/fleet/${vehicleId}/upload-rc`, formData);
+  return response.data;
+};
+
+export default {
+  getFleet,
+  getVehicle,
+  addVehicle,
+  updateVehicle,
   deleteVehicle,
   setTruckMaintenance,
   setTruckAvailable,
   setTruckUnavailable,
-  scheduleMaintenance
+  scheduleMaintenance,
+  uploadVehicleRc
 };

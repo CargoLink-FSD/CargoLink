@@ -107,11 +107,11 @@ const resendVerification = async (req, res, next) => {
 const googleLogin = async (req, res, next) => {
   try {
     const { credential, role } = req.body;
-    
+
     if (!credential) {
       throw new AppError(400, 'AuthError', 'Google credential required', 'ERR_GOOGLE_INPUT');
     }
-    
+
     if (!role) {
       throw new AppError(400, 'AuthError', 'Role required', 'ERR_GOOGLE_INPUT');
     }
@@ -121,7 +121,7 @@ const googleLogin = async (req, res, next) => {
       idToken: credential,
       audience: GOOGLE_CLIENT_ID,
     });
-    
+
     const payload = ticket.getPayload();
     const email = payload.email;
 
@@ -131,7 +131,7 @@ const googleLogin = async (req, res, next) => {
 
     // Try to find user by email and role
     const user = await authService.findUserByEmailAndRole(email, role);
-    
+
     if (!user) {
       throw new AppError(404, 'AuthError', 'No account found with this email. Please sign up first.', 'ERR_USER_NOT_FOUND');
     }
@@ -148,7 +148,7 @@ const googleLogin = async (req, res, next) => {
 const googleVerify = async (req, res, next) => {
   try {
     const { credential } = req.body;
-    
+
     if (!credential) {
       throw new AppError(400, 'AuthError', 'Google credential required', 'ERR_GOOGLE_INPUT');
     }
@@ -158,7 +158,7 @@ const googleVerify = async (req, res, next) => {
       idToken: credential,
       audience: GOOGLE_CLIENT_ID,
     });
-    
+
     const payload = ticket.getPayload();
     const email = payload.email;
 

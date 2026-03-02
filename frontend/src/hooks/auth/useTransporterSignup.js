@@ -10,13 +10,15 @@ import { redirectAfterSignup } from '../../utils/redirectUser';
 import { useStepForm } from './useStepForm';
 import { transporterStep1Schema, transporterStep2Schema, transporterStep3Schema, transporterStep4Schema, transporterSignupSchema } from '../../utils/schemas';
 import * as authApi from '../../api/auth';
+import { uploadDocuments } from '../../api/transporter';
 
 // Define validation schema for each step
 const steps = [
   { fields: ['name', 'primary_contact', 'secondary_contact', 'email'], schema: transporterStep1Schema },
   { fields: ['gst_in', 'pan', 'street_address', 'city', 'state', 'pin'], schema: transporterStep2Schema },
   { fields: ['vehicles'], schema: transporterStep3Schema },
-  { fields: ['password', 'confirmPassword', 'terms'], schema: transporterStep4Schema },
+  { fields: [], schema: null }, // Step 4: Document upload (validated separately)
+  { fields: ['password', 'confirmPassword', 'terms'], schema: transporterStep4Schema }, // Step 5: Password
 ];
 
 export const useTransporterSignup = () => {
@@ -27,7 +29,15 @@ export const useTransporterSignup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const { currentStep, totalSteps, nextStep: goNext, prevStep } = useStepForm(4);
+  const { currentStep, totalSteps, nextStep: goNext, prevStep } = useStepForm(5);
+
+  // Document upload state (PAN + DL only)
+  const [documentFiles, setDocumentFiles] = useState({});
+  const [documentErrors, setDocumentErrors] = useState({});
+
+  // Vehicle RC files state (stored separately, keyed as vehicle_rc_0, vehicle_rc_1, etc.)
+  const [rcFiles, setRcFiles] = useState({});
+  const [rcErrors, setRcErrors] = useState({});
 
   // Initialize form with react-hook-form and Zod validation
   const { register, handleSubmit, watch, formState: { errors }, trigger, control, setError, clearErrors, getValues, setValue } = useForm({
@@ -40,27 +50,88 @@ export const useTransporterSignup = () => {
   // Manage dynamic vehicle array fields
   const { fields, append, remove } = useFieldArray({ control, name: 'vehicles' });
 
+  // Validate document files for step 5 (PAN + DL only)
+  const validateDocuments = () => {
+    const errs = {};
+    if (!documentFiles.pan_card) errs.pan_card = 'PAN Card is required';
+    if (!documentFiles.driving_license) errs.driving_license = 'Driving License is required';
+    setDocumentErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  // Validate vehicle RCs at step 3
+  const validateRcFiles = () => {
+    const vehicleCount = getValues('vehicles').length;
+    const errs = {};
+    for (let i = 0; i < vehicleCount; i++) {
+      if (!rcFiles[`vehicle_rc_${i}`]) {
+        errs[`vehicle_rc_${i}`] = 'Vehicle RC is required';
+      }
+    }
+    setRcErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  // Handle RC file change from VehiclesEditor
+  const handleRcFileChange = (index, file, error) => {
+    const key = `vehicle_rc_${index}`;
+    if (error) {
+      setRcErrors(prev => ({ ...prev, [key]: error }));
+      setRcFiles(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
+    } else {
+      setRcErrors(prev => ({ ...prev, [key]: null }));
+      setRcFiles(prev => ({ ...prev, [key]: file }));
+    }
+  };
+
   // Handle form submission
   const onSubmit = async (data) => {
+    // Validate documents at step 5
+    if (!validateDocuments()) {
+      showError('Please upload all required documents.');
+      return;
+    }
+
     setLoading(true);
     try {
-      // Dispatch signup action with formatted data
-      await dispatch(signupUser({ 
-        signupData: { 
+      // Step 1: Register the transporter account
+      await dispatch(signupUser({
+        signupData: {
           ...data,
           // Map frontend field to backend expected key
           street: data.street_address,
-          vehicles: data.vehicles.map(v => ({ 
+          vehicles: data.vehicles.map(v => ({
             name: v.name,
             truck_type: v.type,
             registration: v.registrationNumber,
             capacity: parseFloat(v.capacity),
             manufacture_year: v.manufacture_year,
-          })) 
+          }))
         },
-        userType: 'transporter' 
+        userType: 'transporter'
       })).unwrap();
-      showSuccess('Registration successful!');
+
+      // Step 2: Upload documents using the newly obtained auth token
+      try {
+        const formData = new FormData();
+        if (documentFiles.pan_card) formData.append('pan_card', documentFiles.pan_card);
+        if (documentFiles.driving_license) formData.append('driving_license', documentFiles.driving_license);
+
+        // Append vehicle RC files from rcFiles state
+        const vehicleCount = data.vehicles.length;
+        for (let i = 0; i < vehicleCount; i++) {
+          if (rcFiles[`vehicle_rc_${i}`]) {
+            formData.append(`vehicle_rc_${i}`, rcFiles[`vehicle_rc_${i}`]);
+          }
+        }
+
+        await uploadDocuments(formData);
+        showSuccess('Registration successful! Documents uploaded for verification.');
+      } catch (docError) {
+        // Registration succeeded but doc upload failed — still redirect
+        showSuccess('Registration successful! You can upload documents later from your dashboard.');
+      }
+
       redirectAfterSignup('transporter', navigate);
     } catch (error) {
       // Handle validation errors from server
@@ -85,10 +156,35 @@ export const useTransporterSignup = () => {
   // Validate current step before proceeding to next
   const nextStep = async () => {
     const step = steps[currentStep - 1];
+
+    // Step 4 is document upload — validate pan+dl before advancing
+    if (currentStep === 4) {
+      const docsValid = validateDocuments();
+      if (!docsValid) {
+        showError('Please upload all required documents (PAN Card & Driving License).');
+        return;
+      }
+      goNext();
+      return;
+    }
+
     const fields = step.fields;
 
     // RHF validation for current fields
     const rhfValid = await trigger(fields);
+
+    // For step 3 (vehicles), also validate RC files
+    if (currentStep === 3) {
+      const rcValid = validateRcFiles();
+      if (!rcValid && !rhfValid) {
+        showError('Please fix the errors before continuing.');
+        return;
+      }
+      if (!rcValid) {
+        showError('Please upload the Vehicle RC for each vehicle.');
+        return;
+      }
+    }
 
     // Zod step schema validation to surface field-level messages
     const values = getValues();
@@ -119,7 +215,7 @@ export const useTransporterSignup = () => {
       const response = await authApi.googleVerify({
         credential: credentialResponse.credential,
       });
-      
+
       // Populate only the email field
       setValue('email', response.email, { shouldValidate: true });
       showSuccess('Email fetched from Google. Please complete the rest of the form.');
@@ -157,5 +253,12 @@ export const useTransporterSignup = () => {
     setError,
     handleGoogleSignup,
     handleGoogleError,
+    documentFiles,
+    setDocumentFiles,
+    documentErrors,
+    setDocumentErrors,
+    rcFiles,
+    rcErrors,
+    handleRcFileChange,
   };
 };
