@@ -41,8 +41,10 @@ import FleetManagement from '../pages/transporter/FleetManagement';
 import VehicleDetails from '../pages/transporter/VehicleDetails';
 
 import ManagerLogin from '../pages/manager/ManagerLogin';
+import ManagerRegister from '../pages/manager/ManagerRegister';
 import ManagerDashboard from '../pages/manager/ManagerDashboard';
 import ManagerSupport from '../pages/manager/ManagerSupport';
+import ManagerManagement from '../pages/admin/ManagerManagement';
 import SupportTickets from '../pages/support/SupportTickets';
 import TicketDetail from '../pages/support/TicketDetail';
 
@@ -125,6 +127,7 @@ export default function AppRoutes() {
         <Route path="/admin/users" element={<UserManagement />} />
         <Route path="/admin/fleet" element={<FleetOverview />} />
         <Route path="/admin/tickets" element={<TicketsOverview />} />
+        <Route path="/admin/managers" element={<ManagerManagement />} />
       </Route>
 
 
@@ -132,6 +135,7 @@ export default function AppRoutes() {
 
 
       <Route path="/manager/login" element={<ManagerLogin />} />
+      <Route path="/manager/register" element={<ManagerRegister />} />
 
       <Route element={<ProtectedRoute allowedRoles={['manager']} />}>
         <Route path="/manager" element={<ManagerDashboard />} />

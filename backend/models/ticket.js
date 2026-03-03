@@ -51,6 +51,11 @@ const TicketSchema = new mongoose.Schema(
             enum: ['low', 'medium', 'high'],
             default: 'medium',
         },
+        assignedManager: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Manager',
+            default: null,
+        },
         messages: [MessageSchema],
     },
     { timestamps: true }

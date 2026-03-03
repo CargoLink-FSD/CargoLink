@@ -93,6 +93,7 @@ export default function Header() {
                 <Link className="underline-link" to="/admin/orders" onClick={handleLinkClick}>Orders</Link>
                 <Link className="underline-link" to="/admin/fleet" onClick={handleLinkClick}>Fleet</Link>
                 <Link className="underline-link" to="/admin/tickets" onClick={handleLinkClick}>Tickets</Link>
+                <Link className="underline-link" to="/admin/managers" onClick={handleLinkClick}>Managers</Link>
                 <div className="profile-dropdown">
                   <span className="profile-name">Admin</span>
                   <div className="dropdown-content">

@@ -8,8 +8,9 @@ const getUserOrders = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const role = req.user.role;
+    const { search, status } = req.query;
 
-    const orders = await orderService.getOrdersByUser(userId, role);
+    const orders = await orderService.getOrdersByUser(userId, role, { search, status });
 
     res.status(200).json({
       success: true,
@@ -394,12 +395,12 @@ const estimatePrice = async (req, res, next) => {
       distance,
       vehicle_type,
       weight,
-      volume,          
+      volume,
       goods_type,
-      cargo_value,     
+      cargo_value,
       insurance_tier,
-      originCoords,    
-      destCoords,      
+      originCoords,
+      destCoords,
     } = req.body;
 
     if (!distance || !vehicle_type || !weight) {

@@ -24,9 +24,14 @@ export async function estimatePrice(params) {
 
 /**
  * Fetch all orders for the authenticated customer
+ * @param {{ search?: string, status?: string }} params
  */
-export async function getCustomerOrders() {
-  const response = await http.get('/api/orders/my-orders');
+export async function getCustomerOrders({ search = '', status = 'all' } = {}) {
+  const query = new URLSearchParams();
+  if (search) query.set('search', search);
+  if (status && status !== 'all') query.set('status', status);
+  const qs = query.toString() ? `?${query.toString()}` : '';
+  const response = await http.get(`/api/orders/my-orders${qs}`);
   console.log('Backend response:', response);
   return response.data || [];
 }

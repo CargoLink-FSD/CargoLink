@@ -4,8 +4,14 @@ import managerController from "../controllers/managerController.js";
 
 const managerRouter = Router();
 
-// All manager routes require manager authentication
+// ─── Public: Registration via invitation code ────────────
+managerRouter.post("/register", managerController.register);
+
+// All other manager routes require manager authentication
 managerRouter.use(authMiddleware(["manager"]));
+
+// Manager profile
+managerRouter.get("/profile", managerController.getProfile);
 
 // Verification queue - list all transporters with documents under review
 managerRouter.get("/verification-queue", managerController.getVerificationQueue);

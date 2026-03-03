@@ -7,6 +7,7 @@ import {
     managerReply,
     managerUpdateStatus,
 } from '../../api/tickets';
+import { getManagerProfile } from '../../api/manager';
 import { useNotification } from '../../context/NotificationContext';
 import Header from '../../components/common/Header';
 import './ManagerSupport.css';
@@ -55,6 +56,7 @@ export default function ManagerSupport() {
     const [replyText, setReplyText] = useState('');
     const [sending, setSending] = useState(false);
     const [statusUpdating, setStatusUpdating] = useState(false);
+    const [managerProfile, setManagerProfile] = useState(null);
 
     /* ─── Load List ─── */
     const loadData = useCallback(async () => {
@@ -65,12 +67,14 @@ export default function ManagerSupport() {
             if (filters.userRole) activeFilters.userRole = filters.userRole;
             if (filters.priority) activeFilters.priority = filters.priority;
 
-            const [ticketData, statsData] = await Promise.all([
+            const [ticketData, statsData, profileData] = await Promise.all([
                 getAllTickets(activeFilters),
                 getTicketStats(),
+                getManagerProfile(),
             ]);
             setTickets(Array.isArray(ticketData) ? ticketData : ticketData.tickets || []);
             setStats(statsData);
+            setManagerProfile(profileData);
         } catch (err) {
             showError(err?.message || 'Failed to load tickets');
         } finally {
@@ -145,6 +149,23 @@ export default function ManagerSupport() {
         <>
             <Header />
             <div className="mgr-support-container">
+                {/* ── Manager Profile Banner ── */}
+                {managerProfile && (
+                    <div className="mgr-profile-banner">
+                        <div className="mgr-profile-info">
+                            <span className="mgr-profile-name">👤 {managerProfile.name}</span>
+                            <span className="mgr-profile-email">{managerProfile.email}</span>
+                            {managerProfile.categories && (
+                                <div className="mgr-profile-categories">
+                                    {managerProfile.categories.map(c => (
+                                        <span key={c} className="mgr-cat-chip">{c.replace(/_/g, ' ')}</span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* ── Stats Cards ── */}
                 {stats && (
                     <div className="mgr-stats-row">

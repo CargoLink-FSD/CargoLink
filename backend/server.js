@@ -3,6 +3,7 @@ import { connectDB } from './core/db.js';
 import { createWebsocketServer } from './core/ws.js';
 import { logger, errorHandler } from './utils/misc.js';
 import { PORT, MONGO_URI } from './core/index.js';
+import managerService from './services/managerService.js';
 
 // Handle uncaught exceptions (synchronous errors outside request cycle)
 process.on('uncaughtException', (err) => {
@@ -18,6 +19,9 @@ process.on('unhandledRejection', (reason, promise) => {
 (async () => {
   try {
     await connectDB(MONGO_URI);
+
+    // Seed default manager if not exists
+    await managerService.seedDefaultManager();
 
     const server = app.listen(PORT, '0.0.0.0', () =>
       logger.info(`Server running on http://localhost:${PORT}`),

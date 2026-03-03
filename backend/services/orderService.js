@@ -3,10 +3,10 @@ import bidRepo from "../repositories/bidRepo.js"
 import { AppError, logger } from "../utils/misc.js"
 
 
-const getOrdersByUser = async (userId, role) => {
+const getOrdersByUser = async (userId, role, filters = {}) => {
     let orders;
     if (role === 'customer') {
-        orders = await orderRepo.getOrdersByCustomer(userId);
+        orders = await orderRepo.getOrdersByCustomer(userId, filters);
     } else if (role === 'transporter') {
         orders = await orderRepo.getOrdersByTransporter(userId);
         orders.forEach(order => {
