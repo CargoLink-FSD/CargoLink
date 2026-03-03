@@ -39,11 +39,13 @@ const ActiveTrip = () => {
 
   // Map
   const [mapReady, setMapReady] = useState(false);
+  const [driverLocationReady, setDriverLocationReady] = useState(false);
   const mapRef = useRef(null);
   const leafletMap = useRef(null);
   const markersRef = useRef([]);
   const polylineRef = useRef(null);
-  const locationMarkerRef = useRef(null);
+  const driverMarkerRef = useRef(null);
+  const driverLocationRef = useRef(null);
   const locationWatchRef = useRef(null);
 
   const showToast = (msg, type = 'error') => {
@@ -65,6 +67,19 @@ const ActiveTrip = () => {
   }, [tripId]);
 
   useEffect(() => { loadTrip(); }, [loadTrip]);
+
+  // ─── Get Driver Location ───
+  useEffect(() => {
+    if (!navigator.geolocation) { setDriverLocationReady(true); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        driverLocationRef.current = [pos.coords.latitude, pos.coords.longitude];
+        setDriverLocationReady(true);
+      },
+      () => setDriverLocationReady(true),
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  }, []);
 
   // ─── Load Leaflet ───
   useEffect(() => {
@@ -99,13 +114,35 @@ const ActiveTrip = () => {
     leafletMap.current = map;
   }, [mapReady]);
 
+  // ─── Driver Location Marker ───
+  useEffect(() => {
+    if (!driverLocationReady || !mapReady) return;
+    const L = window.L;
+    const map = leafletMap.current;
+    if (!L || !map || !driverLocationRef.current) return;
+    const [lat, lng] = driverLocationRef.current;
+    const icon = L.divIcon({
+      className: '',
+      html: '<div class="at-driver-marker"><span class="at-driver-icon">🚛</span><div class="at-driver-pulse"></div></div>',
+      iconSize: [40, 40], iconAnchor: [20, 20],
+    });
+    if (driverMarkerRef.current) {
+      driverMarkerRef.current.setLatLng([lat, lng]);
+    } else {
+      driverMarkerRef.current = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).addTo(map);
+      driverMarkerRef.current.bindPopup('📍 Your location');
+    }
+    return () => {
+      if (driverMarkerRef.current) { driverMarkerRef.current.remove(); driverMarkerRef.current = null; }
+    };
+  }, [driverLocationReady, mapReady]);
+
   // ─── Update Map Markers ───
   useEffect(() => {
     const L = window.L;
     const map = leafletMap.current;
     if (!L || !map || !trip?.stops) return;
 
-    // Clear old markers
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
     if (polylineRef.current) { polylineRef.current.remove(); polylineRef.current = null; }
@@ -127,16 +164,35 @@ const ActiveTrip = () => {
       markersRef.current.push(marker);
     });
 
-    // Route polyline via OSRM
-    if (validStops.length >= 2) {
-      const coords = validStops.map(s => `${s.address.coordinates[1]},${s.address.coordinates[0]}`).join(';');
-      fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`)
+    const remainingStops = trip.stops.filter(
+      (s, i) => i >= currentIdx && s.address?.coordinates?.length === 2 && s.status !== 'Completed',
+    );
+    const stopsForRoute = remainingStops.length >= 1 ? remainingStops : validStops;
+
+    // FIX: OSRM expects lng,lat (longitude first), not lat,lng
+    const osrmParts = [];
+    if (driverLocationRef.current) {
+      const [dLat, dLng] = driverLocationRef.current;
+      osrmParts.push(`${dLng},${dLat}`); // ✅ lng,lat
+    }
+    stopsForRoute.forEach(s => {
+      // coordinates stored as [lat, lng] — swap to lng,lat for OSRM
+      const [lat, lng] = s.address.coordinates;
+      osrmParts.push(`${lng},${lat}`); // ✅ lng,lat
+    });
+
+    if (osrmParts.length >= 2) {
+      fetch(`https://router.project-osrm.org/route/v1/driving/${osrmParts.join(';')}?overview=full&geometries=geojson`)
         .then(r => r.json())
         .then(data => {
           if (data.code === 'Ok' && data.routes?.[0]) {
             const routeCoords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
             polylineRef.current = L.polyline(routeCoords, { color: '#6366f1', weight: 4, opacity: 0.8 }).addTo(map);
-            map.fitBounds(L.latLngBounds(routeCoords), { padding: [40, 40], maxZoom: 13 });
+            const allPoints = [
+              ...(driverLocationRef.current ? [driverLocationRef.current] : []),
+              ...routeCoords,
+            ];
+            map.fitBounds(L.latLngBounds(allPoints), { padding: [50, 50], maxZoom: 13 });
           }
         })
         .catch(() => {});
@@ -144,7 +200,7 @@ const ActiveTrip = () => {
       const bounds = L.latLngBounds(markersRef.current.map(m => m.getLatLng()));
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
     }
-  }, [trip, mapReady]);
+  }, [trip, mapReady, driverLocationReady]);
 
   // ─── Live Location ───
   useEffect(() => {
@@ -153,21 +209,10 @@ const ActiveTrip = () => {
 
     const sendLocation = (pos) => {
       const { latitude, longitude } = pos.coords;
+      driverLocationRef.current = [latitude, longitude];
       updateTripLocation(tripId, { lat: latitude, lng: longitude }).catch(() => {});
-
-      // Update marker on map
-      const L = window.L;
-      const map = leafletMap.current;
-      if (L && map) {
-        if (locationMarkerRef.current) locationMarkerRef.current.setLatLng([latitude, longitude]);
-        else {
-          const icon = L.divIcon({
-            className: '',
-            html: '<div class="at-live-dot"><div class="at-live-pulse"></div></div>',
-            iconSize: [20, 20], iconAnchor: [10, 10],
-          });
-          locationMarkerRef.current = L.marker([latitude, longitude], { icon, zIndexOffset: 1000 }).addTo(map);
-        }
+      if (driverMarkerRef.current) {
+        driverMarkerRef.current.setLatLng([latitude, longitude]);
       }
     };
 
@@ -177,7 +222,6 @@ const ActiveTrip = () => {
       });
     }
 
-    // Also send every 30s
     const interval = setInterval(() => {
       navigator.geolocation?.getCurrentPosition(sendLocation, () => {});
     }, 30000);
@@ -185,7 +229,6 @@ const ActiveTrip = () => {
     return () => {
       if (locationWatchRef.current) navigator.geolocation.clearWatch(locationWatchRef.current);
       clearInterval(interval);
-      if (locationMarkerRef.current) { locationMarkerRef.current.remove(); locationMarkerRef.current = null; }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip?._id, trip?.status]);
@@ -259,9 +302,21 @@ const ActiveTrip = () => {
     finally { setActionLoading(false); }
   };
 
-  // ─── Derive current stop ───
+  // ─── Open modals safely (no setTimeout, no stopPropagation needed) ───
+  const openOtpModal = (type, stopId) => {
+    setOtpAction({ type, stopId });
+    setOtpValue('');
+    setShowOtpModal(true);
+  };
+
+  const openDelayModal = () => {
+    setShowDelayModal(true);
+  };
+
   const currentStopIndex = trip?.current_stop_index ?? 0;
 
+  console.log("rendering");
+  
   // ─── Render ───
   if (loading) {
     return (
@@ -315,7 +370,13 @@ const ActiveTrip = () => {
               <button className="btn btn-outline btn-sm" onClick={handleClearDelay} disabled={actionLoading}>Clear Delay</button>
             )}
             {isActive && (
-              <button className="btn btn-outline btn-sm btn-danger-outline" onClick={() => setShowDelayModal(true)}>⚠ Delay</button>
+              // FIX: removed e.stopPropagation() and setTimeout — they were preventing the modal from staying open
+              <button
+                className="btn btn-outline btn-sm btn-danger-outline"
+                onClick={openDelayModal}
+              >
+                ⚠ Delay
+              </button>
             )}
           </div>
         </div>
@@ -325,7 +386,6 @@ const ActiveTrip = () => {
           {/* Map */}
           <div className="at-map-section">
             <div ref={mapRef} className="at-leaflet-map" />
-            {/* Trip info overlay */}
             <div className="at-map-info">
               <div className="at-info-item"><span className="at-info-label">Vehicle</span><span>{trip.assigned_vehicle_id?.registration || '—'}</span></div>
               <div className="at-info-item"><span className="at-info-label">Distance</span><span>{trip.total_distance_km || 0} km</span></div>
@@ -345,7 +405,6 @@ const ActiveTrip = () => {
               {trip.stops?.map((stop, idx) => {
                 const isCurrent = idx === currentStopIndex && isActive;
                 const isDoneStop = stop.status === 'Completed';
-                const isPending = stop.status === 'Pending';
                 const isArrived = stop.status === 'Arrived';
 
                 return (
@@ -370,16 +429,13 @@ const ActiveTrip = () => {
                       </div>
                       {stop.order_id && <div className="at-stop-ref">Order #{typeof stop.order_id === 'string' ? stop.order_id.slice(-6) : stop.order_id._id?.slice(-6)}</div>}
 
-                      {/* Action buttons for current stop */}
-                      {isCurrent && isPending && (
-                        <button className="btn btn-primary btn-sm at-stop-action" onClick={() => handleArriveAtStop(stop._id)} disabled={actionLoading}>
-                          📍 Arrive Here
-                        </button>
-                      )}
-                      {isCurrent && isArrived && (stop.type === 'Pickup' || stop.type === 'Dropoff') && (
-                        <button className="btn btn-primary btn-sm at-stop-action"
-                          onClick={() => { setOtpAction({ type: stop.type, stopId: stop._id }); setShowOtpModal(true); setOtpValue(''); }}
-                          disabled={actionLoading}>
+                      {/* FIX: removed e.stopPropagation() and setTimeout from button click */}
+                      {isCurrent && (stop.type === 'Pickup' || stop.type === 'Dropoff') && (
+                        <button
+                          className="btn btn-primary btn-sm at-stop-action"
+                          onClick={() => openOtpModal(stop.type, stop._id)}
+                          disabled={actionLoading}
+                        >
                           🔑 Verify OTP ({stop.type})
                         </button>
                       )}

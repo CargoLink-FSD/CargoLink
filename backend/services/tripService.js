@@ -3,14 +3,17 @@ import tripRepo from "../repositories/tripRepo.js";
 import orderRepo from "../repositories/orderRepo.js";
 import truckRepo from "../repositories/truckRepo.js";
 import driverRepo from "../repositories/driverRepo.js";
+import { calculateRoute } from "../utils/osrm.js";
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+const LOADING_DELAY_MINUTES = 30; // fixed delay per pickup/dropoff for loading/unloading
 
 // ─── Transporter: Create Trip ──────────────────────────────────────────────────
 
 const createTrip = async (transporterId, tripData) => {
-  const { order_ids, stops, planned_start_at, planned_end_at, total_distance_km } = tripData;
+  const { order_ids, stops, planned_start_at, assigned_vehicle_id, assigned_driver_id } = tripData;
 
+  // ── Validate orders ──
   if (order_ids && order_ids.length > 0) {
     for (const orderId of order_ids) {
       const order = await orderRepo.getOrderById(orderId);
@@ -28,16 +31,146 @@ const createTrip = async (transporterId, tripData) => {
     }
   }
 
-  return await tripRepo.createTrip({
+  // ── Validate vehicle ──
+  let vehicleId = assigned_vehicle_id || null;
+  if (vehicleId) {
+    const truck = await truckRepo.getTruck(transporterId, vehicleId);
+    if (!truck) throw new AppError(404, "NotFound", "Vehicle not found", "ERR_NOT_FOUND");
+  }
+
+  // ── Validate driver ──
+  let driverId = assigned_driver_id || null;
+  if (driverId) {
+    const driver = await driverRepo.findDriverById(driverId);
+    if (!driver || driver.transporter_id?.toString() !== transporterId) {
+      throw new AppError(404, "NotFound", "Driver not found or not in your team", "ERR_NOT_FOUND");
+    }
+  }
+
+  // ── Calculate route from OSRM using stop coordinates ──
+  let processedStops = (stops || []).map((s, i) => ({ ...s, sequence: s.sequence || i + 1 }));
+  let totalDistanceKm = tripData.total_distance_km || 0;
+  let totalDurationMinutes = tripData.total_duration_minutes || 0;
+  let plannedEndAt = tripData.planned_end_at;
+
+  const stopsWithCoords = processedStops.filter(
+    s => s.address?.coordinates?.length === 2
+  );
+
+  if (stopsWithCoords.length >= 2) {
+    try {
+      const coords = processedStops
+        .filter(s => s.address?.coordinates?.length === 2)
+        .map(s => s.address.coordinates); // [lng, lat]
+
+      const routeData = await calculateRoute(coords);
+      totalDistanceKm = routeData.distance_km;
+
+      // Count loading stops for total delay
+      const loadingStopCount = processedStops.filter(
+        s => s.type === 'Pickup' || s.type === 'Dropoff'
+      ).length;
+      totalDurationMinutes = routeData.duration_minutes + loadingStopCount * LOADING_DELAY_MINUTES;
+
+      // Calculate ETA for each stop
+      if (planned_start_at) {
+        const startTime = new Date(planned_start_at);
+        let cumulativeMinutes = 0;
+        let legIdx = 0;
+
+        processedStops = processedStops.map((stop, idx) => {
+          // Driving time from the previous stop
+          if (idx > 0 && stop.address?.coordinates?.length === 2) {
+            if (routeData.legs[legIdx]) {
+              cumulativeMinutes += routeData.legs[legIdx].duration_minutes;
+              legIdx++;
+            }
+          }
+          // Add loading/unloading delay for the previous stop
+          if (idx > 0 && (processedStops[idx - 1].type === 'Pickup' || processedStops[idx - 1].type === 'Dropoff')) {
+            cumulativeMinutes += LOADING_DELAY_MINUTES;
+          }
+
+          const eta = new Date(startTime.getTime() + cumulativeMinutes * 60 * 1000);
+          return { ...stop, eta_at: eta, scheduled_arrival_at: eta };
+        });
+
+        // Calculate planned end: last stop ETA + loading delay if it's pickup/dropoff
+        const lastStop = processedStops[processedStops.length - 1];
+        if (lastStop?.eta_at) {
+          const lastDelay = (lastStop.type === 'Pickup' || lastStop.type === 'Dropoff')
+            ? LOADING_DELAY_MINUTES * 60 * 1000 : 0;
+          plannedEndAt = new Date(new Date(lastStop.eta_at).getTime() + lastDelay);
+        } else {
+          plannedEndAt = new Date(startTime.getTime() + totalDurationMinutes * 60 * 1000);
+        }
+      }
+    } catch (err) {
+      logger.warn('OSRM route calculation failed, using frontend values', { error: err.message });
+    }
+  }
+
+  // ── Check driver availability (schedule overlap) ──
+  if (driverId && planned_start_at && plannedEndAt) {
+    const driverBlocks = await driverRepo.getScheduleBlocks(
+      driverId, new Date(planned_start_at).toISOString(), new Date(plannedEndAt).toISOString()
+    );
+    const hasOverlap = driverBlocks.some(b =>
+      new Date(b.startTime) < new Date(plannedEndAt) && new Date(b.endTime) > new Date(planned_start_at)
+    );
+    if (hasOverlap) {
+      throw new AppError(409, "ConflictError", "Driver has a schedule conflict during this time period", "ERR_SCHEDULE_OVERLAP");
+    }
+  }
+
+  // ── Check vehicle availability (schedule overlap) ──
+  if (vehicleId && planned_start_at && plannedEndAt) {
+    const vehicleBlocks = await truckRepo.getFleetScheduleBlocks(
+      transporterId, vehicleId, new Date(planned_start_at).toISOString(), new Date(plannedEndAt).toISOString()
+    );
+    const hasOverlap = vehicleBlocks.some(b =>
+      new Date(b.startTime) < new Date(plannedEndAt) && new Date(b.endTime) > new Date(planned_start_at)
+    );
+    if (hasOverlap) {
+      throw new AppError(409, "ConflictError", "Vehicle has a schedule conflict during this time period", "ERR_SCHEDULE_OVERLAP");
+    }
+  }
+
+  // ── Create the trip ──
+  const trip = await tripRepo.createTrip({
     transporter_id: transporterId,
     order_ids: order_ids || [],
-    stops: stops || [],
+    assigned_vehicle_id: vehicleId,
+    assigned_driver_id: driverId,
+    stops: processedStops,
     planned_start_at,
-    planned_end_at,
-    total_distance_km,
-    total_duration_minutes: tripData.total_duration_minutes,
+    planned_end_at: plannedEndAt,
+    total_distance_km: totalDistanceKm,
+    total_duration_minutes: totalDurationMinutes,
     status: 'Planned',
   });
+
+  // ── Add schedule blocks for driver & vehicle ──
+  if (driverId && planned_start_at && plannedEndAt) {
+    await driverRepo.addScheduleBlock(driverId, {
+      title: 'Trip', type: 'trip',
+      startTime: new Date(planned_start_at),
+      endTime: new Date(plannedEndAt),
+      order_id: order_ids?.[0],
+      notes: `Trip ${trip._id}`,
+    });
+  }
+  if (vehicleId && planned_start_at && plannedEndAt) {
+    await truckRepo.addFleetScheduleBlock(transporterId, vehicleId, {
+      title: 'Trip', type: 'trip',
+      startTime: new Date(planned_start_at),
+      endTime: new Date(plannedEndAt),
+      order_id: order_ids?.[0],
+      notes: `Trip ${trip._id}`,
+    });
+  }
+
+  return trip;
 };
 
 const getTrips = async (transporterId, queryParams) => {
@@ -235,7 +368,7 @@ const scheduleTrip = async (transporterId, tripId) => {
 
   const stops = trip.stops.map(s => {
     const stop = s.toObject ? s.toObject() : { ...s };
-    if (stop.type === 'Pickup' || stop.type === 'Dropoff') stop.otp = generateOTP();
+    // OTPs are stored on the Order document (generated when the bid is accepted)
     stop.status = 'Pending';
     return stop;
   });
@@ -330,32 +463,16 @@ const startTrip = async (driverId, tripId) => {
     return stop;
   });
 
-  for (const stop of stops) {
-    if (stop.type === 'Pickup' && stop.order_id) {
-      await orderRepo.updateOrderStatus(stop.order_id, 'In Transit');
-    }
+  // Only set the first stop's order to 'In Transit' so the customer can start tracking
+  const firstStop = stops[0];
+  if (firstStop?.type === 'Pickup' && firstStop?.order_id) {
+    const firstOrderId = firstStop.order_id?._id || firstStop.order_id;
+    await orderRepo.updateOrderStatus(firstOrderId, 'In Transit');
   }
 
   return await tripRepo.updateTrip(tripId, {
     status: 'In Transit', actual_start_at: new Date(), current_stop_index: 0, stops,
   });
-};
-
-const arriveAtStop = async (driverId, tripId, stopId) => {
-  const trip = await tripRepo.getTripById(tripId);
-  if (!trip || (trip.assigned_driver_id?._id || trip.assigned_driver_id)?.toString() !== driverId) {
-    throw new AppError(404, "NotFound", "Trip not found", "ERR_NOT_FOUND");
-  }
-  if (!['In Transit', 'Delayed'].includes(trip.status)) {
-    throw new AppError(400, "InvalidOperation", "Trip must be in transit", "ERR_INVALID_OPERATION");
-  }
-  const stop = trip.stops.id(stopId);
-  if (!stop) throw new AppError(404, "NotFound", "Stop not found", "ERR_NOT_FOUND");
-  if (stop.status !== 'En Route') {
-    throw new AppError(400, "InvalidOperation", "Stop must be en route", "ERR_INVALID_OPERATION");
-  }
-  await tripRepo.updateStopStatus(tripId, stopId, { status: 'Arrived', actual_arrival_at: new Date() });
-  return await tripRepo.getTripById(tripId);
 };
 
 const confirmPickup = async (driverId, tripId, stopId, otp) => {
@@ -366,11 +483,16 @@ const confirmPickup = async (driverId, tripId, stopId, otp) => {
   const stop = trip.stops.id(stopId);
   if (!stop) throw new AppError(404, "NotFound", "Stop not found", "ERR_NOT_FOUND");
   if (stop.type !== 'Pickup') throw new AppError(400, "InvalidOperation", "Not a pickup stop", "ERR_INVALID_OPERATION");
-  if (stop.status !== 'Arrived') throw new AppError(400, "InvalidOperation", "Arrive first", "ERR_INVALID_OPERATION");
-  if (stop.otp !== otp) throw new AppError(400, "InvalidOperation", "Invalid OTP", "ERR_INVALID_OTP");
 
-  await tripRepo.updateStopStatus(tripId, stopId, { status: 'Completed', actual_departure_at: new Date(), otp: null });
-  if (stop.order_id) await orderRepo.updateOrderStatus(stop.order_id, 'In Transit');
+  // Verify OTP against the order's pickup_otp
+  const orderId = stop.order_id?._id || stop.order_id;
+  if (!orderId) throw new AppError(400, "InvalidOperation", "No order linked to this stop", "ERR_INVALID_OPERATION");
+  const order = await orderRepo.getOrderById(orderId);
+  if (!order || order.pickup_otp !== otp) {
+    throw new AppError(400, "InvalidOperation", "Invalid OTP", "ERR_INVALID_OTP");
+  }
+
+  await tripRepo.updateStopStatus(tripId, stopId, { status: 'Completed', actual_departure_at: new Date() });
   return await _advanceToNextStop(tripId);
 };
 
@@ -382,23 +504,17 @@ const confirmDelivery = async (driverId, tripId, stopId, otp) => {
   const stop = trip.stops.id(stopId);
   if (!stop) throw new AppError(404, "NotFound", "Stop not found", "ERR_NOT_FOUND");
   if (stop.type !== 'Dropoff') throw new AppError(400, "InvalidOperation", "Not a delivery stop", "ERR_INVALID_OPERATION");
-  if (stop.status !== 'Arrived') throw new AppError(400, "InvalidOperation", "Arrive first", "ERR_INVALID_OPERATION");
-  if (stop.otp !== otp) throw new AppError(400, "InvalidOperation", "Invalid OTP", "ERR_INVALID_OTP");
 
-  await tripRepo.updateStopStatus(tripId, stopId, { status: 'Completed', actual_departure_at: new Date(), otp: null });
-  if (stop.order_id) await orderRepo.updateOrderStatus(stop.order_id, 'Completed');
-  return await _advanceToNextStop(tripId);
-};
-
-const departFromStop = async (driverId, tripId, stopId) => {
-  const trip = await tripRepo.getTripById(tripId);
-  if (!trip || (trip.assigned_driver_id?._id || trip.assigned_driver_id)?.toString() !== driverId) {
-    throw new AppError(404, "NotFound", "Trip not found", "ERR_NOT_FOUND");
+  // Verify OTP against the order's delivery_otp
+  const orderId = stop.order_id?._id || stop.order_id;
+  if (!orderId) throw new AppError(400, "InvalidOperation", "No order linked to this stop", "ERR_INVALID_OPERATION");
+  const order = await orderRepo.getOrderById(orderId);
+  if (!order || order.delivery_otp !== otp) {
+    throw new AppError(400, "InvalidOperation", "Invalid OTP", "ERR_INVALID_OTP");
   }
-  const stop = trip.stops.id(stopId);
-  if (!stop) throw new AppError(404, "NotFound", "Stop not found", "ERR_NOT_FOUND");
-  if (stop.status !== 'Arrived') throw new AppError(400, "InvalidOperation", "Must be arrived", "ERR_INVALID_OPERATION");
+
   await tripRepo.updateStopStatus(tripId, stopId, { status: 'Completed', actual_departure_at: new Date() });
+  await orderRepo.updateOrderStatus(orderId, 'Completed');
   return await _advanceToNextStop(tripId);
 };
 
@@ -531,6 +647,14 @@ const _advanceToNextStop = async (tripId) => {
   }
 
   await tripRepo.updateStopStatus(tripId, stops[nextIndex]._id, { status: 'En Route' });
+
+  // If the next stop is a Pickup, set its order to 'In Transit' so the customer can track it
+  const nextStop = stops[nextIndex];
+  if (nextStop?.type === 'Pickup' && nextStop?.order_id) {
+    const nextOrderId = nextStop.order_id?._id || nextStop.order_id;
+    await orderRepo.updateOrderStatus(nextOrderId, 'In Transit');
+  }
+
   return await tripRepo.updateTrip(tripId, { current_stop_index: nextIndex });
 };
 
@@ -560,7 +684,7 @@ export default {
   assignVehicle, unassignVehicle, assignDriver, unassignDriver,
   scheduleTrip, cancelTrip, completeTrip,
   getDriverTrips, getDriverTripDetails, startTrip,
-  arriveAtStop, confirmPickup, confirmDelivery, departFromStop,
+  confirmPickup, confirmDelivery,
   declareDelay, clearDelay, updateTripLocation,
   getOrderTracking,
   getAssignableOrders, getAvailableDrivers, getAvailableVehicles,

@@ -13,8 +13,8 @@ export function usePlaceOrder() {
 
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [formData, setFormData] = useState({
-    pickup: { street: '', city: '', state: '', pin: '' },
-    delivery: { street: '', city: '', state: '', pin: '' },
+    pickup: { street: '', city: '', state: '', pin: '', coordinates: null },
+    delivery: { street: '', city: '', state: '', pin: '', coordinates: null },
     transit: { date: '', time: '', distance: '' },
     cargo: { type: '', vehicle: '', weight: '', description: '', maxPrice: '' },
     shipments: [{ name: '', quantity: '', price: '' }]
@@ -66,6 +66,56 @@ export function usePlaceOrder() {
       cargo: { ...prev.cargo, vehicle: recommendedVehicle }
     }));
   }, [formData.cargo.type, formData.cargo.weight]);
+
+  // Auto-calculate distance when both locations have coordinates
+  useEffect(() => {
+    const pickupCoords = formData.pickup.coordinates;
+    const deliveryCoords = formData.delivery.coordinates;
+    if (!pickupCoords || !deliveryCoords) return;
+    if (pickupCoords.length !== 2 || deliveryCoords.length !== 2) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const coords = `${pickupCoords[0]},${pickupCoords[1]};${deliveryCoords[0]},${deliveryCoords[1]}`;
+        const res = await fetch(
+          `https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`
+        );
+        const data = await res.json();
+        if (cancelled) return;
+        if (data.code === 'Ok' && data.routes?.length) {
+          const distKm = (data.routes[0].distance / 1000).toFixed(1);
+          setFormData(prev => ({
+            ...prev,
+            transit: { ...prev.transit, distance: distKm },
+          }));
+        }
+      } catch {
+        // silently ignore
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [formData.pickup.coordinates, formData.delivery.coordinates]);
+
+  // Handle location set from map picker
+  const handleLocationSet = (type, { coordinates, address }) => {
+    setFormData(prev => {
+      const updated = { ...prev };
+      if (coordinates) {
+        updated[type] = { ...updated[type], coordinates };
+      }
+      if (address) {
+        updated[type] = {
+          ...updated[type],
+          street: address.street || updated[type].street,
+          city: address.city || updated[type].city,
+          state: address.state || updated[type].state,
+          pin: address.pin || updated[type].pin,
+        };
+      }
+      return updated;
+    });
+  };
 
   // Get recommended vehicle based on goods type and weight
   const getRecommendedVehicle = (type, weight) => {
@@ -232,7 +282,7 @@ export function usePlaceOrder() {
     if (addressIndex === '') {
       setFormData(prev => ({
         ...prev,
-        [type]: { street: '', city: '', state: '', pin: '' }
+        [type]: { street: '', city: '', state: '', pin: '', coordinates: null }
       }));
       return;
     }
@@ -245,7 +295,8 @@ export function usePlaceOrder() {
           street: address.street || '',
           city: address.city || '',
           state: address.state || '',
-          pin: address.pin || ''
+          pin: address.pin || '',
+          coordinates: address.coordinates || null,
         }
       }));
     }
@@ -332,8 +383,14 @@ export function usePlaceOrder() {
 
     // Prepare order data for backend
     const orderData = {
-      pickup: formData.pickup,
-      delivery: formData.delivery,
+      pickup: {
+        ...formData.pickup,
+        coordinates: formData.pickup.coordinates || undefined,
+      },
+      delivery: {
+        ...formData.delivery,
+        coordinates: formData.delivery.coordinates || undefined,
+      },
       scheduled_at: new Date(`${formData.transit.date}T${formData.transit.time}`).toISOString(),
       distance: parseFloat(formData.transit.distance),
       max_price: parseFloat(formData.cargo.maxPrice),
@@ -408,6 +465,7 @@ export function usePlaceOrder() {
     getBiddingEndTime,
     handleCargoPhotoChange,
     removeCargoPhoto,
+    handleLocationSet,
     navigate
   };
 }

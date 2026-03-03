@@ -33,15 +33,15 @@ import VehicleDetails from '../pages/transporter/VehicleDetails';
 import DriverManagement from '../pages/transporter/DriverManagement';
 import TripPlanner from '../pages/transporter/TripPlanner';
 import TripManagement from '../pages/transporter/TripManagement';
+import TripInfo from '../pages/transporter/TripInfo';
 
 import DriverSignupForm from '../pages/driver/DriverSignupForm';
 import DriverDashboard from '../pages/driver/DriverDashboard';
 import DriverProfile from '../pages/driver/DriverProfile';
 import DriverSchedule from '../pages/driver/DriverSchedule';
-import JoinTransporter from '../pages/driver/JoinTransporter';
-
-import ActiveTrip from '../pages/driver/ActiveTrip';
 import DriverTrips from '../pages/driver/DriverTrips';
+import JoinTransporter from '../pages/driver/JoinTransporter';
+import ActiveTrip from '../pages/driver/ActiveTrip';
 
 import About from '../pages/static/About';
 import Services from '../pages/static/Services';
@@ -117,6 +117,7 @@ export default function AppRoutes() {
         <Route path="/transporter/drivers" element={<DriverManagement />} />
         <Route path="/transporter/trips" element={<TripManagement />} />
         <Route path="/transporter/trips/create" element={<TripPlanner />} />
+        <Route path="/transporter/trips/:tripId" element={<TripInfo />} />
       </Route>
 
 

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
-import { getDriverTrips } from '../../api/trips';
+import { getDriverTrips, startTrip } from '../../api/trips';
 import '../../styles/DriverTrips.css';
 
 const STATUS_CONFIG = {
@@ -25,6 +25,7 @@ const DriverTrips = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('active'); // 'active' | 'all' | status
+  const [startingTripId, setStartingTripId] = useState(null);
 
   const loadTrips = useCallback(async () => {
     try {
@@ -39,6 +40,19 @@ const DriverTrips = () => {
   }, []);
 
   useEffect(() => { loadTrips(); }, [loadTrips]);
+
+  const handleStartTrip = useCallback(async (e, id) => {
+    e.stopPropagation();
+    setStartingTripId(id);
+    try {
+      await startTrip(id);
+      await loadTrips();
+    } catch (err) {
+      console.error('Failed to start trip:', err.message);
+    } finally {
+      setStartingTripId(null);
+    }
+  }, [loadTrips]);
 
   const activeTrips = trips.filter(t => ['Scheduled', 'In Transit', 'Delayed'].includes(t.status));
   const filteredTrips = filter === 'active' ? activeTrips
@@ -112,6 +126,25 @@ const DriverTrips = () => {
                       <span className="dt-progress-text">Stop {(trip.current_stop_index || 0) + 1} of {trip.stops?.length}</span>
                     </div>
                   )}
+                  <div className="dt-card-actions" onClick={e => e.stopPropagation()}>
+                    {trip.status === 'Scheduled' && (
+                      <button
+                        className="dt-action-btn dt-action-btn--start"
+                        onClick={(e) => handleStartTrip(e, trip._id)}
+                        disabled={startingTripId === trip._id}
+                      >
+                        {startingTripId === trip._id ? '⏳ Starting...' : '▶ Start Trip'}
+                      </button>
+                    )}
+                    {isActive && (
+                      <button
+                        className="dt-action-btn dt-action-btn--open"
+                        onClick={(e) => { e.stopPropagation(); navigate(`/driver/trips/${trip._id}`); }}
+                      >
+                        🗺 Open Active Trip
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}

@@ -3,6 +3,7 @@ import bidRepo from "../repositories/bidRepo.js"
 import Fleet from "../models/fleet.js"
 import { AppError, logger } from "../utils/misc.js"
 
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 const getOrdersByUser = async (userId, role) => {
     let orders;
@@ -93,6 +94,12 @@ const acceptBid = async (customerId, orderId, bidId) => {
     if (!order) {
         throw new AppError(403, "Forbidden", "Order already assigned or cannot be updated", "ERR_FORBIDDEN");
     }
+
+    // Generate OTPs for pickup and delivery confirmation
+    await orderRepo.updateOrderStatus(order._id, 'Assigned', {
+        pickup_otp: generateOTP(),
+        delivery_otp: generateOTP(),
+    });
 
     await bidRepo.deleteBidsForOrder(orderId);
 

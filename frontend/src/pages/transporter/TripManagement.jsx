@@ -21,7 +21,7 @@ const formatDate = (iso) => {
 };
 
 // ─── Trip Card ────────────────────────────────────────────────────────────────
-function TripCard({ trip, onView, onCancel, onComplete, onDelete }) {
+function TripCard({ trip, onView, onInfo, onCancel, onComplete, onDelete }) {
   const s = STATUS_CONFIG[trip.status] || { label: trip.status, color: '#6366f1' };
   const firstStop = trip.stops?.[0];
   const lastStop = trip.stops?.[trip.stops.length - 1];
@@ -55,6 +55,7 @@ function TripCard({ trip, onView, onCancel, onComplete, onDelete }) {
       </div>
       <div className="tm-card-actions">
         <button className="btn btn-outline btn-sm" onClick={() => onView(trip)}>View</button>
+        <button className="btn btn-outline btn-sm" onClick={() => onInfo(trip)}>📍 Route & ETA</button>
         {trip.status === 'Planned' && <button className="btn btn-outline btn-sm btn-danger-outline" onClick={() => onDelete(trip)}>Delete</button>}
         {['Planned', 'Scheduled'].includes(trip.status) && <button className="btn btn-outline btn-sm btn-danger-outline" onClick={() => onCancel(trip)}>Cancel</button>}
         {['In Transit', 'Delayed'].includes(trip.status) && <button className="btn btn-primary btn-sm" onClick={() => onComplete(trip)}>Complete</button>}
@@ -233,7 +234,9 @@ const TripManagement = () => {
           <div className="orders-grid">
             {filteredTrips.map(trip => (
               <TripCard key={trip._id} trip={trip}
-                onView={setSelectedTrip} onCancel={handleCancel}
+                onView={setSelectedTrip}
+                onInfo={(t) => navigate(`/transporter/trips/${t._id}`)}
+                onCancel={handleCancel}
                 onComplete={handleComplete} onDelete={handleDelete} />
             ))}
           </div>

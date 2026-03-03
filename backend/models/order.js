@@ -42,6 +42,9 @@ const OrderSchema = new mongoose.Schema(
     special_instructions: String,
     cargo_photo: { type: String }, // Path to uploaded cargo photo
 
+    pickup_otp: { type: String },    // OTP for pickup confirmation (driver enters when customer shows it)
+    delivery_otp: { type: String },  // OTP for delivery confirmation (receiver shows to driver)
+
     status: {
       type: String,
       enum: ["Placed", "Assigned", "In Transit", "Completed", "Cancelled"],

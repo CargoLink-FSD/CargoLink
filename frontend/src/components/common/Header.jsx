@@ -89,7 +89,7 @@ export default function Header() {
             {isAuthenticated && userType === 'driver' && (
               <>
                 <Link className="underline-link" to="/driver/dashboard" onClick={handleLinkClick}>Dashboard</Link>
-                <Link className="underline-link" to="/driver/my-trips" onClick={handleLinkClick}>Trips</Link>
+                <Link className="underline-link" to="/driver/trips" onClick={handleLinkClick}>Trips</Link>
                 <Link className="underline-link" to="/driver/schedule" onClick={handleLinkClick}>Schedule</Link>
                 <Link className="underline-link" to="/driver/join-transporter" onClick={handleLinkClick}>Join Transporter</Link>
                 <Link className="underline-link" to="/driver/profile" onClick={handleLinkClick}>Profile</Link>

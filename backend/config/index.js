@@ -7,7 +7,7 @@ export const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/Car
 // JWT configuration with sensible defaults; secrets should be overridden in production
 export const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'dev-access-secret-change';
 export const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret-change';
-export const JWT_ACCESS_EXPIRY = process.env.JWT_ACCESS_EXPIRY || '30m';
+export const JWT_ACCESS_EXPIRY = process.env.JWT_ACCESS_EXPIRY || '60m';
 export const JWT_REFRESH_EXPIRY = process.env.JWT_REFRESH_EXPIRY || '7d';
 
 // Google OAuth configuration

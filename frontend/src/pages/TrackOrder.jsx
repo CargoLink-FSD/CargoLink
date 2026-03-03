@@ -11,6 +11,24 @@ import { getOrderTracking } from '../api/trips';
 
 import '../styles/TrackOrder.css';
 
+// ─── OTP display block (copy on click) ─────────────────────────────────────────
+const OtpBlock = ({ label, otp, hint, color }) => {
+  const [copied, setCopied] = React.useState(false);
+  const handleCopy = () => {
+    navigator.clipboard?.writeText(otp).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); });
+  };
+  return (
+    <div className="to-otp-block" style={{ '--otp-color': color }}>
+      <div className="to-otp-label">{label}</div>
+      <div className="to-otp-value" onClick={handleCopy} title="Click to copy">
+        {otp}
+        <span className="to-otp-copy">{copied ? '✓' : '📋'}</span>
+      </div>
+      <div className="to-otp-sub">{hint}</div>
+    </div>
+  );
+};
+
 const TrackOrderPage = () => {
   const { orderId } = useParams();
   const dispatch = useDispatch();
@@ -157,7 +175,7 @@ const TrackOrderPage = () => {
     const map = leafletMap.current;
     if (!L || !map) return;
 
-    const driverCoords = tracking?.current_location?.coordinates;
+    const driverCoords = tracking?.trip?.current_location?.coordinates;
     if (driverCoords?.length === 2) {
       if (driverMarkerRef.current) {
         driverMarkerRef.current.setLatLng(driverCoords);
@@ -171,7 +189,7 @@ const TrackOrderPage = () => {
         driverMarkerRef.current.bindPopup('<b>Driver Location</b>');
       }
     }
-  }, [tracking?.current_location, mapReady]);
+  }, [tracking?.trip?.current_location, mapReady]);
 
   const [expandedSection, setExpandedSection] = useState(null);
 
@@ -310,6 +328,72 @@ const TrackOrderPage = () => {
             </div>
 
             <div className="right-column">
+
+              {/* ─── OTP Confirmation Codes ─── */}
+              {userType === 'customer' && ['Assigned', 'In Transit'].includes(currentOrder.status) &&
+                (currentOrder.pickup_otp || currentOrder.delivery_otp) && (
+                <div className="card to-otp-card">
+                  <div className="card-header">
+                    <h2 className="card-title">🔐 Confirmation Codes</h2>
+                  </div>
+                  <p className="to-otp-hint">Show these codes to the driver when they arrive. Keep them safe.</p>
+                  <div className="to-otp-grid">
+                    {currentOrder.pickup_otp && (
+                      <OtpBlock label="📦 Pickup OTP" otp={currentOrder.pickup_otp}
+                        hint="Give to driver at pickup location" color="#22c55e" />
+                    )}
+                    {currentOrder.delivery_otp && (
+                      <OtpBlock label="🏠 Delivery OTP" otp={currentOrder.delivery_otp}
+                        hint="Receiver gives to driver at delivery" color="#6366f1" />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ─── Stop Progress (from tracking) ─── */}
+              {tracking?.stops?.length > 0 && (
+                <div className="card to-stops-card">
+                  <div className="card-header">
+                    <h2 className="card-title">📍 Trip Progress</h2>
+                  </div>
+                  <div className="to-stops-list">
+                    {tracking.stops.map((stop, idx) => {
+                      const isDone = stop.status === 'Completed';
+                      const isActive = stop.status === 'En Route' || stop.status === 'Arrived';
+                      const isDelay = stop.type === 'Delay';
+                      return (
+                        <div key={stop._id || idx} className={`to-stop-row ${isDone ? 'done' : isActive ? 'active' : ''}`}>
+                          <div className="to-stop-dot-wrap">
+                            <div className={`to-stop-dot ${isDone ? 'done' : isActive ? 'active' : ''} ${isDelay ? 'delay' : ''}`}>
+                              {isDone ? '✓' : isDelay ? '⚠' : idx + 1}
+                            </div>
+                            {idx < tracking.stops.length - 1 && <div className="to-stop-line" />}
+                          </div>
+                          <div className="to-stop-body">
+                            <div className="to-stop-meta">
+                              <span className={`to-stop-type ${stop.type?.toLowerCase()}`}>
+                                {stop.type === 'Pickup' ? '↑ Pickup' : stop.type === 'Dropoff' ? '↓ Dropoff' : stop.type === 'Delay' ? '⚠ Delay' : '● Waypoint'}
+                              </span>
+                              {stop.eta_at && <span className="to-stop-eta">{new Date(stop.eta_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>}
+                            </div>
+                            <div className="to-stop-addr">
+                              {stop.address?.city && <strong>{stop.address.city}</strong>}
+                              {stop.address?.state && <span>, {stop.address.state}</span>}
+                            </div>
+                            {isDone && stop.actual_arrival_at && (
+                              <div className="to-stop-done-time">Arrived {new Date(stop.actual_arrival_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</div>
+                            )}
+                            {isDelay && stop.delay_reason && (
+                              <div className="to-stop-delay-reason">⚠ {stop.delay_reason}</div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <UserActions order={currentOrder} userRole={userType} />
             </div>
           </div>
@@ -372,12 +456,13 @@ const TrackOrderPage = () => {
                   <div className="map-container" style={{ height: '350px' }}>
                     <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
                   </div>
-                  {tracking && (
+                  {tracking?.trip && (
                     <div style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', color: '#4b5563', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                      <span><strong>Status:</strong> {tracking.status || '—'}</span>
-                      {tracking.assigned_vehicle_id?.registration && <span><strong>Vehicle:</strong> {tracking.assigned_vehicle_id.registration}</span>}
-                      {tracking.current_stop_index != null && <span><strong>Stop:</strong> {tracking.current_stop_index + 1} / {tracking.stops?.length || '?'}</span>}
-                      {tracking.current_location?.updated_at && <span><strong>Updated:</strong> {new Date(tracking.current_location.updated_at).toLocaleTimeString('en-IN')}</span>}
+                      <span><strong>Status:</strong> {tracking.trip.status || '—'}</span>
+                      {tracking.trip.assigned_vehicle?.registration && <span><strong>Vehicle:</strong> {tracking.trip.assigned_vehicle.registration}</span>}
+                      {tracking.trip.assigned_driver && <span><strong>Driver:</strong> {tracking.trip.assigned_driver.firstName} {tracking.trip.assigned_driver.lastName}</span>}
+                      {tracking.stops?.length > 0 && <span><strong>Progress:</strong> {tracking.stops.filter(s => s.status === 'Completed').length} / {tracking.stops.length} stops</span>}
+                      {tracking.trip.current_location?.updated_at && <span><strong>Updated:</strong> {new Date(tracking.trip.current_location.updated_at).toLocaleTimeString('en-IN')}</span>}
                     </div>
                   )}
                 </div>

@@ -159,6 +159,32 @@
   50% { transform: scale(1.5); opacity: 0; }
 }
 
+/* ─── Driver Location Marker (truck icon) ──────────────────────────────────── */
+.at-driver-marker {
+  position: relative;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.at-driver-icon {
+  font-size: 1.55rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+}
+
+.at-driver-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.2);
+  animation: atDriverPulse 2.2s ease-in-out infinite;
+}
+
+@keyframes atDriverPulse {
+  0%, 100% { transform: scale(0.7); opacity: 1; }
+  50%       { transform: scale(1.6); opacity: 0; }
+}
+
 /* ─── Stops Panel ──────────────────────────────────────────────────────────── */
 .at-stops-panel {
   background: white;
@@ -378,4 +404,48 @@
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+/* Force modal overlay/content to be visible above all other UI (override other conflicting rules) */
+.modal-overlay {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(15, 23, 42, 0.6) !important;
+  z-index: 12000 !important; /* above toasts and map */
+  padding: 1rem !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+/* Ensure the modal content sits above overlay and is visible/clickable */
+.modal-content {
+  display: block !important;
+  position: relative !important;
+  z-index: 12010 !important;
+  background: #fff !important;
+  border-radius: 12px !important;
+  box-shadow: 0 20px 50px rgba(2,6,23,0.35) !important;
+  max-height: 90vh !important;
+  overflow: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Optional: hide overlay only when explicitly hidden via .modal-overlay.hidden */
+.modal-overlay.hidden {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
