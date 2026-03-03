@@ -1,4 +1,5 @@
 import orderService from "../services/orderService.js";
+import pricingService from "../services/pricingService.js";
 import mongoose from "mongoose";
 import { logger, AppError } from "../utils/misc.js";
 import { geocodeAddress } from "../utils/osrm.js";
@@ -8,8 +9,9 @@ const getUserOrders = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const role = req.user.role;
+    const { search, status } = req.query;
 
-    const orders = await orderService.getOrdersByUser(userId, role);
+    const orders = await orderService.getOrdersByUser(userId, role, { search, status });
 
     res.status(200).json({
       success: true,
@@ -419,6 +421,54 @@ const confirmDelivery = async (req, res, next) => {
   }
 };
 
+const estimatePrice = async (req, res, next) => {
+  try {
+    const {
+      distance,
+      vehicle_type,
+      weight,
+      volume,
+      goods_type,
+      cargo_value,
+      insurance_tier,
+      originCoords,
+      destCoords,
+    } = req.body;
+
+    if (!distance || !vehicle_type || !weight) {
+      throw new AppError(
+        400,
+        'ValidationError',
+        'Input Validation failed',
+        'ERR_VALIDATION',
+        [
+          { msg: 'distance, vehicle_type, and weight are required', location: 'body' },
+        ]
+      );
+    }
+
+    const breakdown = await pricingService.calculatePrice({
+      distance: parseFloat(distance),
+      vehicle_type,
+      weight: parseFloat(weight),
+      volume: volume != null ? parseFloat(volume) : null,
+      goods_type: goods_type || 'general',
+      cargo_value: cargo_value ? parseFloat(cargo_value) : 0,
+      insurance_tier: insurance_tier || 'none',
+      originCoords: originCoords || null,
+      destCoords: destCoords || null,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: breakdown,
+      message: 'Price estimate calculated successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export default {
   getUserOrders,
   placeOrder,
@@ -436,4 +486,5 @@ export default {
   submitBid,
   withdrawBid,
   getOrderDetails,
+  estimatePrice,
 };

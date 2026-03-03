@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { placeNewOrder } from '../store/slices/ordersSlice';
 import { getCustomerAddresses } from '../api/customer';
+import { calculateDistance as apiCalculateDistance } from '../api/location';
+import { estimatePrice as apiEstimatePrice } from '../api/orders';
 import { useNotification } from '../context/NotificationContext';
 
 export function usePlaceOrder() {
@@ -16,14 +18,28 @@ export function usePlaceOrder() {
     pickup: { street: '', city: '', state: '', pin: '', coordinates: null },
     delivery: { street: '', city: '', state: '', pin: '', coordinates: null },
     transit: { date: '', time: '', distance: '' },
-    cargo: { type: '', vehicle: '', weight: '', description: '', maxPrice: '' },
+    cargo: { type: '', vehicle: '', weight: '', volume: '', description: '', maxPrice: '' },
     shipments: [{ name: '', quantity: '', price: '' }]
   });
+
+  // Store coordinates from geocoding
+  const [pickupCoords, setPickupCoords] = useState(null);
+  const [deliveryCoords, setDeliveryCoords] = useState(null);
+  const [distanceLoading, setDistanceLoading] = useState(false);
+  const [durationMin, setDurationMin] = useState(null);
+
+  // Price breakdown returned by the backend pricing engine
+  const [priceBreakdown, setPriceBreakdown] = useState(null);
+  const [priceLoading, setPriceLoading] = useState(false);
 
   const [cargoPhoto, setCargoPhoto] = useState(null);
   const [cargoPhotoPreview, setCargoPhotoPreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+
+  // Debounce timer refs
+  const distanceTimerRef = useRef(null);
+  const priceTimerRef = useRef(null);
 
   // Load saved addresses on mount
   useEffect(() => {
@@ -38,19 +54,127 @@ export function usePlaceOrder() {
     loadAddresses();
   }, []);
 
-  // Auto-calculate max price based on distance
+  // Helper: check if address is complete
+  const isAddressComplete = useCallback((addr) => {
+    return addr.street?.trim() && addr.city?.trim() && addr.state?.trim() && addr.pin?.trim() && /^[1-9][0-9]{5}$/.test(addr.pin);
+  }, []);
+
+  // Auto-calculate distance from Google Maps when both addresses are filled
   useEffect(() => {
-    const distance = parseFloat(formData.transit.distance);
-    if (!isNaN(distance) && distance > 0) {
-      let pricePerKm = distance <= 1000 ? 30 : distance <= 2000 ? 28 : 25;
-      const calculatedPrice = distance * pricePerKm;
-      const maxPrice = Math.max(calculatedPrice, 2000).toFixed(2);
-      setFormData(prev => ({
-        ...prev,
-        cargo: { ...prev.cargo, maxPrice }
-      }));
+    // Clear previous timer
+    if (distanceTimerRef.current) {
+      clearTimeout(distanceTimerRef.current);
     }
-  }, [formData.transit.distance]);
+
+    if (!isAddressComplete(formData.pickup) || !isAddressComplete(formData.delivery)) {
+      return;
+    }
+
+    // Debounce 800ms to avoid rapid API calls
+    distanceTimerRef.current = setTimeout(async () => {
+      setDistanceLoading(true);
+      try {
+        const result = await apiCalculateDistance(formData.pickup, formData.delivery);
+        setPickupCoords(result.pickupCoords);
+        setDeliveryCoords(result.deliveryCoords);
+        setDurationMin(result.durationMin);
+        setFormData(prev => ({
+          ...prev,
+          transit: { ...prev.transit, distance: String(result.distanceKm) }
+        }));
+        // Clear any distance errors
+        setErrors(prev => ({ ...prev, 'transit.distance': '' }));
+      } catch (error) {
+        console.error('Distance calculation failed:', error);
+        showError('Could not calculate distance. Please check the addresses.');
+        // Reset distance so user knows
+        setPickupCoords(null);
+        setDeliveryCoords(null);
+        setDurationMin(null);
+      } finally {
+        setDistanceLoading(false);
+      }
+    }, 800);
+
+    return () => {
+      if (distanceTimerRef.current) clearTimeout(distanceTimerRef.current);
+    };
+  }, [
+    formData.pickup.street, formData.pickup.city, formData.pickup.state, formData.pickup.pin,
+    formData.delivery.street, formData.delivery.city, formData.delivery.state, formData.delivery.pin
+  ]);
+
+  // Auto-calculate max price via backend pricing engine
+  // Triggers whenever distance, vehicle, weight, goods type, volume, or shipments change.
+  useEffect(() => {
+    if (priceTimerRef.current) clearTimeout(priceTimerRef.current);
+
+    const distance = parseFloat(formData.transit.distance);
+    const weight = parseFloat(formData.cargo.weight);
+
+    // Need at least distance + weight to get a meaningful estimate
+    if (!distance || distance <= 0 || !weight || weight <= 0) {
+      setPriceBreakdown(null);
+      setFormData(prev => ({ ...prev, cargo: { ...prev.cargo, maxPrice: '' } }));
+      return;
+    }
+
+    // Compute declared cargo value (sum of quantity × price for each shipment item)
+    const cargoValue = formData.shipments.reduce((sum, item) => {
+      const qty = parseFloat(item.quantity) || 0;
+      const unitPrice = parseFloat(item.price) || 0;
+      return sum + qty * unitPrice;
+    }, 0);
+
+    priceTimerRef.current = setTimeout(async () => {
+      setPriceLoading(true);
+      try {
+        const breakdown = await apiEstimatePrice({
+          distance,
+          vehicle_type: formData.cargo.vehicle || 'truck-medium',
+          // weight in the UI is in tonnes; backend expects kg
+          weight: weight * 1000,
+          volume: formData.cargo.volume ? parseFloat(formData.cargo.volume) : null,
+          goods_type: formData.cargo.type || 'general',
+          cargo_value: cargoValue,
+          insurance_tier: 'none', // user doesn't pick tier at order time; insurance baked into risk charge
+          originCoords: pickupCoords || null,
+          destCoords: deliveryCoords || null,
+        });
+
+        setPriceBreakdown(breakdown);
+        setFormData(prev => ({
+          ...prev,
+          cargo: { ...prev.cargo, maxPrice: String(breakdown.suggested_max_price) }
+        }));
+        setErrors(prev => ({ ...prev, 'cargo.maxPrice': '' }));
+      } catch (err) {
+        console.error('Price estimation failed:', err);
+        // Fall back to simple formula so the form remains usable
+        const fallback = Math.max(distance * 20, 2000);
+        setPriceBreakdown(null);
+        setFormData(prev => ({
+          ...prev,
+          cargo: { ...prev.cargo, maxPrice: String(Math.round(fallback)) }
+        }));
+      } finally {
+        setPriceLoading(false);
+      }
+    }, 800);
+
+    return () => { if (priceTimerRef.current) clearTimeout(priceTimerRef.current); };
+  }, [
+    formData.transit.distance,
+    formData.cargo.vehicle,
+    formData.cargo.weight,
+    formData.cargo.type,
+    formData.cargo.volume,
+    // Re-estimate when any shipment item's quantity or price changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    JSON.stringify(formData.shipments.map(s => ({ q: s.quantity, p: s.price }))),
+    pickupCoords,
+    deliveryCoords,
+  ]);
 
   // Auto-recommend vehicle type based on goods type and weight
   useEffect(() => {
@@ -395,7 +519,13 @@ export function usePlaceOrder() {
       distance: parseFloat(formData.transit.distance),
       max_price: parseFloat(formData.cargo.maxPrice),
       goods_type: formData.cargo.type,
-      weight: parseFloat(formData.cargo.weight),
+      weight: parseFloat(formData.cargo.weight) * 1000, // store in kg on backend
+      volume: formData.cargo.volume ? parseFloat(formData.cargo.volume) : undefined,
+      // Declared goods value (sum of all items)
+      cargo_value: formData.shipments.reduce((sum, item) => {
+        return sum + (parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0);
+      }, 0),
+      toll_cost: priceBreakdown?.toll_cost ?? undefined,
       truck_type: formData.cargo.vehicle,
       description: formData.cargo.description,
       shipments: formData.shipments.map(item => ({
@@ -455,6 +585,10 @@ export function usePlaceOrder() {
     savedAddresses,
     cargoPhoto,
     cargoPhotoPreview,
+    distanceLoading,
+    durationMin,
+    priceBreakdown,
+    priceLoading,
     handleInputChange,
     handleShipmentChange,
     addShipmentItem,

@@ -1,32 +1,39 @@
 import paymentService from "../services/paymentService.js";
+import { AppError } from "../utils/misc.js";
+
 
 const initiatePayment = async (req, res, next) => {
   try {
     const { orderId } = req.params;
-    // req.user.id is provided by authMiddleware
-    const paymentIntent = await paymentService.createPaymentIntent(orderId, req.user.id);
-    res.status(200).json({ success: true, data: paymentIntent });
+    const result = await paymentService.createPaymentOrder(orderId, req.user.id);
+    res.status(200).json({ success: true, data: result });
   } catch (error) {
     next(error);
   }
 };
 
-const processPayment = async (req, res, next) => {
+
+const verifyPayment = async (req, res, next) => {
   try {
     const { orderId } = req.params;
-    const { transactionId, method } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
-    const result = await paymentService.confirmPayment(orderId, {
-      transactionId,
-      method,
-      customerId: req.user.id
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      throw new AppError(400, 'ValidationError', 'Missing Razorpay payment details', 'ERR_VALIDATION');
+    }
+
+    const result = await paymentService.verifyPayment(orderId, {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
     });
 
-    res.status(200).json({ success: true, message: "Payment successful", data: result });
+    res.status(200).json({ success: true, message: "Payment verified successfully", data: result });
   } catch (error) {
     next(error);
   }
 };
+
 
 const submitReview = async (req, res, next) => {
   try {
@@ -40,6 +47,7 @@ const submitReview = async (req, res, next) => {
   }
 };
 
+
 const getPaymentHistory = async (req, res, next) => {
   try {
     const history = await paymentService.getHistory(req.user.id, req.user.role);
@@ -49,9 +57,11 @@ const getPaymentHistory = async (req, res, next) => {
   }
 };
 
+
 const requestPayout = async (req, res, next) => {
-  res.status(501).json({ message: "Payout processing integrated with gateway" });
+  res.status(501).json({ message: "Payout processing will be integrated with Razorpay Route" });
 };
+
 
 const downloadInvoice = async (req, res, next) => {
   res.status(501).json({ message: "Invoice generation service pending" });
@@ -59,7 +69,7 @@ const downloadInvoice = async (req, res, next) => {
 
 export default {
   initiatePayment,
-  processPayment,
+  verifyPayment,
   submitReview,
   requestPayout,
   getPaymentHistory,

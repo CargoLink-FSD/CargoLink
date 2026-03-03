@@ -1,177 +1,399 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { useNotification } from '../../context/NotificationContext';
 import http from '../../api/http';
 import Header from '../../components/common/Header';
-import './UserManagement.css';
+import Footer from '../../components/common/Footer';
+import './AdminStyles.css';
+
+const API_BASE = 'http://localhost:3000';
 
 export default function UserManagement() {
   const { showNotification } = useNotification();
-  
-  const [currentFilter, setCurrentFilter] = useState('customer');
+  const [tab, setTab] = useState('customer');
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('date');
 
-  useEffect(() => {
-    fetchUsers();
-  }, [currentFilter, searchTerm, sortBy]);
+  // Detail modal
+  const [detail, setDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await http.get(`/api/admin/users?role=${currentFilter}&search=${searchTerm}&sort=${sortBy}`);
-      setUsers(response.data.users || []);
+      const res = await http.get(`/api/admin/users?role=${tab}&search=${search}&sort=${sortBy}`);
+      setUsers(res.data.users || []);
     } catch (err) {
-      console.error('Error fetching users:', err);
       showNotification({ message: 'Failed to load users', type: 'error' });
     } finally {
       setLoading(false);
     }
-  };
+  }, [tab, search, sortBy]);
+
+  useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
   const deleteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user?')) {
-      return;
-    }
-
+    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
     try {
-      await http.del(`/api/admin/users/${currentFilter}/${userId}`);
+      await http.del(`/api/admin/users/${tab}/${userId}`);
       showNotification({ message: 'User deleted successfully', type: 'success' });
       fetchUsers();
     } catch (err) {
-      console.error('Error deleting user:', err);
       showNotification({ message: 'Failed to delete user', type: 'error' });
     }
   };
 
-  const filterUsers = (role) => {
-    setCurrentFilter(role);
-    setSearchTerm('');
+  const openDetail = async (userId) => {
+    setDetailLoading(true);
+    setDetail(null);
+    try {
+      const endpoint = tab === 'customer'
+        ? `/api/admin/users/customer/${userId}`
+        : `/api/admin/users/transporter/${userId}`;
+      const res = await http.get(endpoint);
+      setDetail(res.data);
+    } catch (err) {
+      showNotification({ message: 'Failed to load details', type: 'error' });
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
-  if (loading && users.length === 0) {
-    return (
-      <>
-        <Header />
-        <div className="users-container">
-          <div className="loading-state">
-            <div className="spinner"></div>
-            <p>Loading users...</p>
-          </div>
-        </div>
-      </>
-    );
-  }
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
   return (
     <>
       <Header />
-      <div className="main-content users-container">
-        <div className="page-header">
-          <h1 className="page-title">Manage Users</h1>
+      <div className="admin-container">
+        <div className="adm-page-header">
+          <h1 className="adm-page-title">User Management</h1>
+          <p className="adm-page-subtitle">Manage customers and transporters</p>
         </div>
 
-        <div className="tab-switch">
-          <button
-            className={`btn tab-btn ${currentFilter === 'customer' ? 'active' : ''}`}
-            onClick={() => filterUsers('customer')}
-          >
+        {/* Tabs */}
+        <div className="adm-tabs">
+          <button className={`adm-tab ${tab === 'customer' ? 'active' : ''}`} onClick={() => { setTab('customer'); setSearch(''); }}>
             Customers
           </button>
-          <button
-            className={`btn tab-btn ${currentFilter === 'transporter' ? 'active' : ''}`}
-            onClick={() => filterUsers('transporter')}
-          >
+          <button className={`adm-tab ${tab === 'transporter' ? 'active' : ''}`} onClick={() => { setTab('transporter'); setSearch(''); }}>
             Transporters
           </button>
         </div>
 
-        <div className="filter-bar">
-          <div className="search-box">
-            <input
-              type="text"
-              id="searchInput"
-              placeholder="Search by name, email or ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div>
-            <select
-              id="sortFilter"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-            >
-              <option value="date">Sort By Date Joined</option>
-              <option value="name">Sort By Name</option>
-              <option value="id">Sort By ID</option>
-            </select>
-          </div>
+        {/* Filters */}
+        <div className="adm-filter-bar">
+          <input
+            className="adm-search-input"
+            placeholder="Search by name, email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <select className="adm-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <option value="date">Sort by Date</option>
+            <option value="name">Sort by Name</option>
+            <option value="id">Sort by ID</option>
+          </select>
+          <button className="adm-btn adm-btn-outline" onClick={fetchUsers}>Refresh</button>
         </div>
 
-        <div className="table-wrapper">
-          <table className="users-table">
-            <thead>
-              <tr>
-                <th className="header-cell">ID</th>
-                <th className="header-cell">User</th>
-                <th className="header-cell">Email</th>
-                <th className="header-cell">Phone</th>
-                <th className="header-cell">No of orders</th>
-                <th className="header-cell">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.length === 0 ? (
-                <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '2rem' }}>
-                    No Users Found
-                  </td>
-                </tr>
-              ) : currentFilter === 'customer' ? (
-                users.map((user) => (
-                  <tr key={user.customer_id}>
-                    <td>{user.customer_id}</td>
-                    <td>{user.first_name} {user.last_name}</td>
-                    <td>{user.email}</td>
-                    <td>{user.phone || 'N/A'}</td>
-                    <td>{user.noOfOrders || 0}</td>
-                    <td>
-                      <div className="action-icons">
-                        <span
-                          className="action-icon delete-icon"
-                          onClick={() => deleteUser(user.customer_id)}
-                          title="Delete user"
-                        ></span>
-                      </div>
-                    </td>
+        {/* Table */}
+        {loading ? (
+          <div className="adm-loading"><div className="adm-spinner" /><p>Loading users...</p></div>
+        ) : (
+          <div className="adm-card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div className="adm-table-wrap">
+              <table className="adm-table">
+                <thead>
+                  <tr>
+                    <th>{tab === 'customer' ? 'Name' : 'Company'}</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Orders</th>
+                    <th>Joined</th>
+                    <th style={{ textAlign: 'center' }}>Actions</th>
                   </tr>
-                ))
-              ) : (
-                users.map((user) => (
-                  <tr key={user.transporter_id}>
-                    <td>{user.transporter_id}</td>
-                    <td>{user.name}</td>
-                    <td>{user.email}</td>
-                    <td>{user.primary_contact || 'N/A'}</td>
-                    <td>{user.noOfOrders || 0}</td>
-                    <td>
-                      <div className="action-icons">
-                        <span
-                          className="action-icon delete-icon"
-                          onClick={() => deleteUser(user.transporter_id)}
-                          title="Delete user"
-                        ></span>
+                </thead>
+                <tbody>
+                  {users.length === 0 ? (
+                    <tr><td colSpan={6} className="adm-empty">No users found</td></tr>
+                  ) : (
+                    users.map((u) => {
+                      const id = u.customer_id || u.transporter_id || u._id;
+                      const name = tab === 'customer' ? `${u.first_name} ${u.last_name}` : u.name;
+                      return (
+                        <tr key={id}>
+                          <td style={{ fontWeight: 600 }}>{name}</td>
+                          <td>{u.email}</td>
+                          <td>{u.phone || u.primary_contact || '—'}</td>
+                          <td>{u.noOfOrders || 0}</td>
+                          <td>{formatDate(u.createdAt)}</td>
+                          <td style={{ textAlign: 'center' }}>
+                            <button className="adm-btn adm-btn-primary adm-btn-sm" style={{ marginRight: 8 }} onClick={() => openDetail(id)}>View</button>
+                            <button className="adm-btn adm-btn-danger adm-btn-sm" onClick={() => deleteUser(id)}>Delete</button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Detail Modal */}
+        {(detail || detailLoading) && (
+          <div className="adm-modal-overlay" onClick={() => { setDetail(null); setDetailLoading(false); }}>
+            <div className="adm-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 900 }}>
+              <div className="adm-modal-header">
+                <h3>{tab === 'customer' ? 'Customer Details' : 'Transporter Details'}</h3>
+                <button className="adm-modal-close" onClick={() => { setDetail(null); setDetailLoading(false); }}>&times;</button>
+              </div>
+              <div className="adm-modal-body">
+                {detailLoading ? (
+                  <div className="adm-loading"><div className="adm-spinner" /><p>Loading...</p></div>
+                ) : detail && tab === 'customer' ? (
+                  <>
+                    <div className="adm-detail-grid">
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Name</span>
+                        <span className="adm-detail-value">{detail.firstName} {detail.lastName}</span>
                       </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Email</span>
+                        <span className="adm-detail-value">{detail.email}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Phone</span>
+                        <span className="adm-detail-value">{detail.phone || '—'}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Gender</span>
+                        <span className="adm-detail-value">{detail.gender || '—'}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Total Orders</span>
+                        <span className="adm-detail-value">{detail.totalOrders}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Completed</span>
+                        <span className="adm-detail-value">{detail.completedOrders}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Total Spent</span>
+                        <span className="adm-detail-value">₹{(detail.totalSpent || 0).toLocaleString()}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Joined</span>
+                        <span className="adm-detail-value">{formatDate(detail.createdAt)}</span>
+                      </div>
+                    </div>
+
+                    {detail.orders?.length > 0 && (
+                      <>
+                        <h4 style={{ margin: '16px 0 8px', color: '#1e293b' }}>Order History ({detail.orders.length})</h4>
+                        <div className="adm-table-wrap">
+                          <table className="adm-table">
+                            <thead>
+                              <tr>
+                                <th>Route</th>
+                                <th>Goods</th>
+                                <th>Status</th>
+                                <th>Price</th>
+                                <th>Date</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {detail.orders.slice(0, 10).map((o) => (
+                                <tr key={o._id}>
+                                  <td>{o.pickup?.city} → {o.delivery?.city}</td>
+                                  <td>{o.goods_type}</td>
+                                  <td><span className={`adm-badge ${o.status === 'Completed' ? 'green' : o.status === 'Cancelled' ? 'red' : 'blue'}`}>{o.status}</span></td>
+                                  <td>₹{(o.final_price || o.max_price || 0).toLocaleString()}</td>
+                                  <td>{formatDate(o.createdAt)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : detail && tab === 'transporter' ? (
+                  <>
+                    <div className="adm-detail-grid">
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Company</span>
+                        <span className="adm-detail-value">{detail.name}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Email</span>
+                        <span className="adm-detail-value">{detail.email}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Contact</span>
+                        <span className="adm-detail-value">{detail.primary_contact || '—'}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">GST</span>
+                        <span className="adm-detail-value">{detail.gst_in || '—'}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Location</span>
+                        <span className="adm-detail-value">{[detail.city, detail.state].filter(Boolean).join(', ') || '—'}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Verification</span>
+                        <span className="adm-detail-value">
+                          <span className={`adm-badge ${detail.isVerified ? 'green' : detail.verificationStatus === 'under_review' ? 'orange' : 'gray'}`}>
+                            {detail.verificationStatus || 'unsubmitted'}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Total Orders</span>
+                        <span className="adm-detail-value">{detail.totalOrders}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Completed</span>
+                        <span className="adm-detail-value">{detail.completedOrders}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Rating</span>
+                        <span className="adm-detail-value">{detail.avgRating ? `${detail.avgRating} ⭐` : '—'}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Joined</span>
+                        <span className="adm-detail-value">{formatDate(detail.createdAt)}</span>
+                      </div>
+                    </div>
+
+                    {/* Fleet */}
+                    {detail.fleet?.length > 0 && (
+                      <>
+                        <h4 style={{ margin: '16px 0 8px', color: '#1e293b' }}>Fleet ({detail.fleet.length} vehicles)</h4>
+                        <div className="adm-table-wrap">
+                          <table className="adm-table">
+                            <thead>
+                              <tr>
+                                <th>Vehicle</th>
+                                <th>Reg No.</th>
+                                <th>Type</th>
+                                <th>Capacity</th>
+                                <th>Status</th>
+                                <th>RC</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {detail.fleet.map((v) => (
+                                <tr key={v._id}>
+                                  <td style={{ fontWeight: 600 }}>{v.name}</td>
+                                  <td>{v.registration}</td>
+                                  <td>{v.truck_type}</td>
+                                  <td>{v.capacity} tons</td>
+                                  <td><span className={`adm-badge ${v.status === 'Available' ? 'green' : v.status === 'Assigned' ? 'blue' : 'orange'}`}>{v.status}</span></td>
+                                  <td><span className={`adm-badge ${v.rc_status === 'approved' ? 'green' : v.rc_status === 'rejected' ? 'red' : 'orange'}`}>{v.rc_status || 'pending'}</span></td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Documents */}
+                    {detail.documents && (
+                      <>
+                        <h4 style={{ margin: '16px 0 8px', color: '#1e293b' }}>Documents</h4>
+                        <div className="adm-detail-grid">
+                          <div className="adm-detail-field">
+                            <span className="adm-detail-label">PAN Card</span>
+                            <span className="adm-detail-value">
+                              {detail.documents.pan_card?.url
+                                ? <><span className={`adm-badge ${detail.documents.pan_card.adminStatus === 'approved' ? 'green' : detail.documents.pan_card.adminStatus === 'rejected' ? 'red' : 'orange'}`}>{detail.documents.pan_card.adminStatus}</span> <a href={`${API_BASE}${detail.documents.pan_card.url}`} target="_blank" rel="noreferrer" style={{ marginLeft: 8, color: '#6366f1' }}>View</a></>
+                                : '—'}
+                            </span>
+                          </div>
+                          <div className="adm-detail-field">
+                            <span className="adm-detail-label">Driving License</span>
+                            <span className="adm-detail-value">
+                              {detail.documents.driving_license?.url
+                                ? <><span className={`adm-badge ${detail.documents.driving_license.adminStatus === 'approved' ? 'green' : detail.documents.driving_license.adminStatus === 'rejected' ? 'red' : 'orange'}`}>{detail.documents.driving_license.adminStatus}</span> <a href={`${API_BASE}${detail.documents.driving_license.url}`} target="_blank" rel="noreferrer" style={{ marginLeft: 8, color: '#6366f1' }}>View</a></>
+                                : '—'}
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Orders */}
+                    {detail.orders?.length > 0 && (
+                      <>
+                        <h4 style={{ margin: '16px 0 8px', color: '#1e293b' }}>Recent Orders ({detail.orders.length})</h4>
+                        <div className="adm-table-wrap">
+                          <table className="adm-table">
+                            <thead>
+                              <tr>
+                                <th>Route</th>
+                                <th>Customer</th>
+                                <th>Status</th>
+                                <th>Price</th>
+                                <th>Date</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {detail.orders.slice(0, 10).map((o) => (
+                                <tr key={o._id}>
+                                  <td>{o.pickup?.city} → {o.delivery?.city}</td>
+                                  <td>{o.customer_id ? `${o.customer_id.firstName} ${o.customer_id.lastName}` : '—'}</td>
+                                  <td><span className={`adm-badge ${o.status === 'Completed' ? 'green' : o.status === 'Cancelled' ? 'red' : 'blue'}`}>{o.status}</span></td>
+                                  <td>₹{(o.final_price || o.max_price || 0).toLocaleString()}</td>
+                                  <td>{formatDate(o.createdAt)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Reviews */}
+                    {detail.reviews?.length > 0 && (
+                      <>
+                        <h4 style={{ margin: '16px 0 8px', color: '#1e293b' }}>Reviews ({detail.reviews.length})</h4>
+                        <div className="adm-table-wrap">
+                          <table className="adm-table">
+                            <thead>
+                              <tr>
+                                <th>Customer</th>
+                                <th>Rating</th>
+                                <th>Comment</th>
+                                <th>Date</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {detail.reviews.slice(0, 10).map((r) => (
+                                <tr key={r._id}>
+                                  <td>{r.customer_id ? `${r.customer_id.firstName} ${r.customer_id.lastName}` : '—'}</td>
+                                  <td>{'⭐'.repeat(r.rating)}</td>
+                                  <td style={{ whiteSpace: 'normal', maxWidth: 300 }}>{r.comment}</td>
+                                  <td>{formatDate(r.createdAt)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+      <Footer />
     </>
   );
 }

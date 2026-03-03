@@ -12,7 +12,12 @@ const getDashboardStats = async () => {
         newCustomersPerMonth,
         mostRequestedTruckTypes,
         pendingVsCompletedOrders,
-        avgBidAmount
+        avgBidAmount,
+        totalCustomers,
+        totalTransporters,
+        totalVehicles,
+        openTickets,
+        pendingVerifications
     ] = await Promise.all([
         adminRepo.getOrdersPerDay(),
         adminRepo.getRevenuePerDay(),
@@ -22,7 +27,12 @@ const getDashboardStats = async () => {
         adminRepo.getNewCustomersPerMonth(),
         adminRepo.getMostRequestedTruckTypes(),
         adminRepo.getPendingVsCompletedOrders(),
-        adminRepo.getAverageBidAmount()
+        adminRepo.getAverageBidAmount(),
+        adminRepo.getTotalCustomers(),
+        adminRepo.getTotalTransporters(),
+        adminRepo.getTotalVehicles(),
+        adminRepo.getOpenTickets(),
+        adminRepo.getPendingVerifications()
     ]);
 
     return {
@@ -31,6 +41,11 @@ const getDashboardStats = async () => {
         pendingOrders: pendingVsCompletedOrders.pending_orders || 0,
         completedOrders: pendingVsCompletedOrders.completed_orders || 0,
         newCustomers: newCustomersPerMonth.reduce((sum, month) => sum + month.new_customers, 0),
+        totalCustomers,
+        totalTransporters,
+        totalVehicles,
+        openTickets,
+        pendingVerifications,
         ordersPerDay,
         revenuePerDay,
         topTransporters,
@@ -46,7 +61,7 @@ const getDashboardStats = async () => {
 // Order Management
 const getAllOrders = async (filters = {}) => {
     const { search, status, fromDate, toDate, sort = 'date' } = filters;
-    
+
     let query = {};
     let sortOptions = {};
 
@@ -63,7 +78,7 @@ const getAllOrders = async (filters = {}) => {
     }
 
     // Sort options
-    switch(sort) {
+    switch (sort) {
         case 'status':
             sortOptions = { status: 1 };
             break;
@@ -83,7 +98,7 @@ const getAllOrders = async (filters = {}) => {
                 ? `${order.customer_id.firstName} ${order.customer_id.lastName}`.toLowerCase()
                 : '';
             const transporterName = order.assigned_transporter_id?.name?.toLowerCase() || '';
-            
+
             return (
                 customerName.includes(search.toLowerCase()) ||
                 transporterName.includes(search.toLowerCase()) ||
@@ -99,7 +114,7 @@ const getAllOrders = async (filters = {}) => {
 
 const getOrderDetails = async (orderId) => {
     const order = await adminRepo.getOrderById(orderId);
-    
+
     if (!order) {
         throw new AppError(404, "NotFound", "Order not found", "ERR_NOT_FOUND");
     }
@@ -147,7 +162,7 @@ const getAllUsers = async (role, filters = {}) => {
         }
 
         // Sort options for customers
-        switch(sort) {
+        switch (sort) {
             case 'name':
                 sortOptions = { firstName: 1, lastName: 1 };
                 break;
@@ -183,7 +198,7 @@ const getAllUsers = async (role, filters = {}) => {
         }
 
         // Sort options for transporters
-        switch(sort) {
+        switch (sort) {
             case 'name':
                 sortOptions = { name: 1 };
                 break;
@@ -230,17 +245,62 @@ const deleteUser = async (role, userId) => {
     return { message: `${role} deleted successfully` };
 };
 
+// Fleet Overview
+const getFleetOverview = async () => {
+    const vehicles = await adminRepo.getAllFleetVehicles();
+    const stats = {
+        total: vehicles.length,
+        available: vehicles.filter(v => v.status === 'Available').length,
+        assigned: vehicles.filter(v => v.status === 'Assigned').length,
+        maintenance: vehicles.filter(v => v.status === 'In Maintenance').length,
+        unavailable: vehicles.filter(v => v.status === 'Unavailable').length,
+        rcApproved: vehicles.filter(v => v.rc_status === 'approved').length,
+        rcPending: vehicles.filter(v => v.rc_status === 'pending').length,
+        rcRejected: vehicles.filter(v => v.rc_status === 'rejected').length,
+    };
+    return { vehicles, stats };
+};
+
+// Tickets Overview
+const getTicketsOverview = async () => {
+    const [tickets, stats] = await Promise.all([
+        adminRepo.getAllTickets(),
+        adminRepo.getTicketStats()
+    ]);
+    return { tickets, stats };
+};
+
+// Individual User Detail
+const getUserDetail = async (role, userId) => {
+    if (role === 'customer') {
+        const detail = await adminRepo.getCustomerDetail(userId);
+        if (!detail) throw new AppError(404, 'NotFound', 'Customer not found', 'ERR_NOT_FOUND');
+        return detail;
+    } else {
+        const detail = await adminRepo.getTransporterDetail(userId);
+        if (!detail) throw new AppError(404, 'NotFound', 'Transporter not found', 'ERR_NOT_FOUND');
+        return detail;
+    }
+};
+
 export default {
     // Dashboard
     getDashboardStats,
-    
+
     // Orders
     getAllOrders,
     getOrderDetails,
     getBidsForOrder,
     getBidCountForOrder,
-    
+
     // Users
     getAllUsers,
-    deleteUser
+    deleteUser,
+    getUserDetail,
+
+    // Fleet
+    getFleetOverview,
+
+    // Tickets
+    getTicketsOverview
 };

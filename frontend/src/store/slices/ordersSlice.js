@@ -7,9 +7,9 @@ import * as ordersApi from '../../api/orders';
 // Async thunk for fetching customer orders
 export const fetchCustomerOrders = createAsyncThunk(
   'orders/fetchCustomerOrders',
-  async (_, { rejectWithValue }) => {
+  async ({ search = '', status = 'all' } = {}, { rejectWithValue }) => {
     try {
-      const orders = await ordersApi.getCustomerOrders();
+      const orders = await ordersApi.getCustomerOrders({ search, status });
       return orders;
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to fetch orders');

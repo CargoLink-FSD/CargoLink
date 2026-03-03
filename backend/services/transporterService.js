@@ -11,7 +11,7 @@ import mongoose from "mongoose";
 import { AppError, logger } from "../utils/misc.js";
 
 const registerTransporter = async (transporterData) => {
-  
+
   const { vehicles, ...transporterInfo } = transporterData;
 
   const emailExists = await transporterRepo.checkEmailExists(transporterInfo.email);
@@ -34,21 +34,21 @@ const registerTransporter = async (transporterData) => {
   return transporter;
 };
 
-const getTransporterProfile = async (transporterId)  => {
+const getTransporterProfile = async (transporterId) => {
 
   const transporter = await transporterRepo.findTransporterById(transporterId);
   if (!transporter) {
     throw new AppError(404, 'NotFoundError', 'Transporter not found', 'ERR_NOT_FOUND');
   }
-  
+
   const orderCount = await orderRepo.countOrdersByTransporter(transporter._id);
-  
+
   // Use profile picture from database if available
   const profileImage = transporter.profilePicture || null;
   
   const fleetCount = await truckRepo.getFleetCount(transporterId);
 
-  return {transporter, orderCount, profileImage, fleetCount};
+  return { transporter, orderCount, profileImage, fleetCount };
 };
 
 const updateTransporterProfile = async (transporterId, updates) => {
@@ -66,7 +66,7 @@ const updateTransporterProfile = async (transporterId, updates) => {
 const changePassword = async (transporterId, oldPassword, newPassword) => {
 
   logger.debug('Changing password for transporter', { transporterId, oldPassword, newPassword });
-  
+
   const transporter = await transporterRepo.findTransporterById(transporterId);
   if (!transporter) {
     throw new AppError(404, 'NotFoundError', 'Transporter not found', 'ERR_NOT_FOUND');
@@ -76,12 +76,12 @@ const changePassword = async (transporterId, oldPassword, newPassword) => {
   if (!isMatch) {
     throw new AppError(401, 'AuthenticationError', 'Old password is incorrect', 'ERR_AUTH_INVALID');
   }
-  logger.debug('Old password verified, updating to new password', {transporter});
+  logger.debug('Old password verified, updating to new password', { transporter });
   await transporter.updatePassword(newPassword);
 };
 
 
-const getTransporterFleet = async (transporterId)  => {
+const getTransporterFleet = async (transporterId) => {
 
   const fleet = await truckRepo.getFleet(transporterId);
   return {fleet};
@@ -111,6 +111,17 @@ const removeTruck = async (transporterId, truckId) => {
     throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
   }
   const fleet = await truckRepo.deleteTruck(transporterId, truckId);
+
+  // After deleting the vehicle and its RC, recalculate verification status
+  const transporter = await transporterRepo.findTransporterById(transporterId);
+  const docs = transporter.documents;
+  if (docs) {
+    const allApproved = checkAllDocumentsApproved(docs);
+    if (allApproved) {
+      await transporterRepo.updateVerificationStatus(transporterId, 'approved', true);
+    }
+  }
+
   return fleet;
 };
 
@@ -321,13 +332,13 @@ const getDashboardStats = async (transporterId) => {
     throw new AppError(404, 'NotFoundError', 'Transporter not found', 'ERR_NOT_FOUND');
   }
 
-  const transporterObjectId = typeof transporterId === 'string' 
-    ? new mongoose.Types.ObjectId(transporterId) 
+  const transporterObjectId = typeof transporterId === 'string'
+    ? new mongoose.Types.ObjectId(transporterId)
     : transporterId;
 
   // Define active statuses (including 'Started' defensively)
   const activeStatuses = ['Assigned', 'In Transit', 'Started'];
-  
+
   // Get current date/time values
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -426,14 +437,14 @@ const getDashboardStats = async (transporterId) => {
 
   const bidsStats = bidsWithOrders[0] || { totalBids: 0, activeBids: 0, totalBidAmount: 0 };
   const activeBidsCount = bidsStats.activeBids || 0;
-  const avgBidAmount = bidsStats.totalBids > 0 
-    ? Math.round(bidsStats.totalBidAmount / bidsStats.totalBids) 
+  const avgBidAmount = bidsStats.totalBids > 0
+    ? Math.round(bidsStats.totalBidAmount / bidsStats.totalBids)
     : 0;
 
   // ================== FLEET STATS ==================
   const fleet = await truckRepo.getFleet(transporterId);
   const totalVehicles = fleet.length;
-  
+
   const fleetStatusBreakdown = {
     Available: 0,
     Assigned: 0,
@@ -496,7 +507,7 @@ const getDashboardStats = async (transporterId) => {
 
   // ================== TRIPS STATS ==================
   const activeTripsStatuses = ['Scheduled', 'In Transit', 'Delayed'];
-  
+
   const tripsAggregation = await Trip.aggregate([
     { $match: { transporter_id: transporterObjectId } },
     {
@@ -509,7 +520,7 @@ const getDashboardStats = async (transporterId) => {
 
   let activeTripsCount = 0;
   let delayedTripsCount = 0;
-  
+
   tripsAggregation.forEach(item => {
     if (activeTripsStatuses.includes(item._id)) {
       activeTripsCount += item.count;
@@ -526,9 +537,9 @@ const getDashboardStats = async (transporterId) => {
       transporter_id: transporterObjectId,
       status: { $in: activeTripsStatuses }
     })
-    .sort({ 'stops.scheduled_arrival_at': 1 })
-    .select('stops current_stop_sequence')
-    .lean();
+      .sort({ 'stops.scheduled_arrival_at': 1 })
+      .select('stops current_stop_sequence')
+      .lean();
 
     if (activeTrip && activeTrip.stops && activeTrip.stops.length > 0) {
       const currentSeq = activeTrip.current_stop_sequence || 0;
@@ -663,6 +674,97 @@ const getDriverSchedule = async (transporterId, driverId, startDate, endDate) =>
 };
 
 
+const uploadDocuments = async (transporterId, files) => {
+  const transporter = await transporterRepo.findTransporterById(transporterId);
+  if (!transporter) {
+    throw new AppError(404, 'NotFoundError', 'Transporter not found', 'ERR_NOT_FOUND');
+  }
+
+  const docData = {
+    'documents.pan_card': undefined,
+    'documents.driving_license': undefined,
+    'documents.vehicle_rcs': [],
+  };
+
+  // Process pan_card
+  if (files.pan_card && files.pan_card[0]) {
+    docData['documents.pan_card'] = {
+      url: `/uploads/transporter-docs/${files.pan_card[0].filename}`,
+      uploadedAt: new Date(),
+      autoVerified: true,
+      adminStatus: 'pending',
+    };
+  }
+
+  // Process driving_license
+  if (files.driving_license && files.driving_license[0]) {
+    docData['documents.driving_license'] = {
+      url: `/uploads/transporter-docs/${files.driving_license[0].filename}`,
+      uploadedAt: new Date(),
+      autoVerified: true,
+      adminStatus: 'pending',
+    };
+  }
+
+  // Process vehicle_rcs — files named vehicle_rc_0, vehicle_rc_1, etc.
+  const vehicleRcs = [];
+  const fleet = transporter.fleet || [];
+  for (let i = 0; i < fleet.length; i++) {
+    const fieldName = `vehicle_rc_${i}`;
+    if (files[fieldName] && files[fieldName][0]) {
+      const rcUrl = `/uploads/transporter-docs/${files[fieldName][0].filename}`;
+      vehicleRcs.push({
+        url: rcUrl,
+        uploadedAt: new Date(),
+        autoVerified: true,
+        adminStatus: 'pending',
+        vehicleId: fleet[i]._id,
+      });
+
+      // Also update the fleet item's rc_url/rc_status so fleet cards show it
+      await transporterRepo.uploadVehicleRc(transporterId, fleet[i]._id.toString(), rcUrl);
+    }
+  }
+  docData['documents.vehicle_rcs'] = vehicleRcs;
+
+  // Set verification status to under_review
+  docData['verificationStatus'] = 'under_review';
+
+  const updated = await transporterRepo.saveDocuments(transporterId, docData);
+  return updated;
+};
+
+const uploadVehicleRc = async (transporterId, vehicleId, file) => {
+  if (!file) {
+    throw new AppError(400, 'ValidationError', 'RC file is required', 'ERR_VALIDATION');
+  }
+  const rcUrl = `/uploads/transporter-docs/${file.filename}`;
+  const result = await transporterRepo.uploadVehicleRc(transporterId, vehicleId, rcUrl);
+  if (!result) {
+    throw new AppError(404, 'NotFoundError', 'Vehicle not found', 'ERR_NOT_FOUND');
+  }
+
+  // Set verificationStatus to under_review so this transporter appears in the manager queue
+  // Keep isVerified unchanged — don't block bidding for previously verified transporters
+  await transporterRepo.updateVerificationStatus(transporterId, 'under_review', result.isVerified ?? false);
+
+  return { rc_url: rcUrl };
+};
+
+// Helper: check if all submitted documents are approved
+function checkAllDocumentsApproved(docs) {
+  if (!docs) return false;
+  if (!docs.pan_card || docs.pan_card.adminStatus !== 'approved') return false;
+  if (!docs.driving_license || docs.driving_license.adminStatus !== 'approved') return false;
+  // All remaining vehicle_rcs must be approved (empty array is OK — means no vehicles left)
+  if (docs.vehicle_rcs && docs.vehicle_rcs.length > 0) {
+    for (const rc of docs.vehicle_rcs) {
+      if (rc.adminStatus !== 'approved') return false;
+    }
+  }
+  return true;
+}
+
 export default {
   registerTransporter,
   getTransporterProfile,
@@ -690,4 +792,6 @@ export default {
   rejectDriverRequest,
   removeDriver,
   getDriverSchedule,
+  uploadDocuments,
+  uploadVehicleRc,
 };

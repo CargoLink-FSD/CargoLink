@@ -10,15 +10,31 @@ const countOrdersByCustomer = async (customerId) => {
 
 const countOrdersByTransporter = async (transporterId) => {
     return Order.aggregate()
-      .match({ assigned_transporter_id: transporterId }) 
-      .group({ _id: "$status", count: { $sum: 1 } });
-  };
+        .match({ assigned_transporter_id: transporterId })
+        .group({ _id: "$status", count: { $sum: 1 } });
+};
 //         .match({ transporter_id: transporterId })
 //         .group({ _id: "$status", count: { $sum: 1 } })
 // };
 
-const getOrdersByCustomer = async (customerId) => {
-    const orders = await Order.find({ customer_id: customerId });
+const getOrdersByCustomer = async (customerId, { search, status } = {}) => {
+    const query = { customer_id: customerId };
+
+    if (status && status !== 'all') {
+        // Capitalise first letter to match stored values (e.g. "completed" → "Completed")
+        const formatted = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+        query.status = formatted;
+    }
+
+    if (search) {
+        const re = new RegExp(search, 'i');
+        query.$or = [
+            { 'pickup.city': re },
+            { 'delivery.city': re },
+        ];
+    }
+
+    const orders = await Order.find(query).sort({ createdAt: -1 });
     return orders;
 };
 
@@ -180,10 +196,10 @@ const assignVehicleToOrder = async (orderId, assignmentData) => {
  */
 const getCustomerDashboardStats = async (customerId, dateFilters) => {
     const { activeStatuses, startOfMonth, endOfMonth, now, sevenDaysFromNow } = dateFilters;
-    
+
     // Convert customerId to ObjectId if it's a string
-    const customerObjectId = typeof customerId === 'string' 
-        ? new mongoose.Types.ObjectId(customerId) 
+    const customerObjectId = typeof customerId === 'string'
+        ? new mongoose.Types.ObjectId(customerId)
         : customerId;
 
     // Run aggregation for status breakdown and spend calculations
@@ -193,10 +209,10 @@ const getCustomerDashboardStats = async (customerId, dateFilters) => {
             $group: {
                 _id: '$status',
                 count: { $sum: 1 },
-                totalSpend: { 
-                    $sum: { 
-                        $ifNull: ['$final_price', { $ifNull: ['$max_price', 0] }] 
-                    } 
+                totalSpend: {
+                    $sum: {
+                        $ifNull: ['$final_price', { $ifNull: ['$max_price', 0] }]
+                    }
                 }
             }
         }
@@ -229,19 +245,19 @@ const getCustomerDashboardStats = async (customerId, dateFilters) => {
 
     // Get this month's spend
     const [monthlySpendResult] = await Order.aggregate([
-        { 
-            $match: { 
+        {
+            $match: {
                 customer_id: customerObjectId,
                 createdAt: { $gte: startOfMonth, $lte: endOfMonth }
-            } 
+            }
         },
         {
             $group: {
                 _id: null,
-                thisMonthSpend: { 
-                    $sum: { 
-                        $ifNull: ['$final_price', { $ifNull: ['$max_price', 0] }] 
-                    } 
+                thisMonthSpend: {
+                    $sum: {
+                        $ifNull: ['$final_price', { $ifNull: ['$max_price', 0] }]
+                    }
                 }
             }
         }
@@ -260,19 +276,19 @@ const getCustomerDashboardStats = async (customerId, dateFilters) => {
         status: { $in: activeStatuses },
         scheduled_at: { $gte: now, $lte: sevenDaysFromNow }
     })
-    .sort({ scheduled_at: 1 })
-    .limit(5)
-    .select('_id pickup delivery scheduled_at status final_price max_price')
-    .lean();
+        .sort({ scheduled_at: 1 })
+        .limit(5)
+        .select('_id pickup delivery scheduled_at status final_price max_price')
+        .lean();
 
     // Get recent orders (last 10)
     const recentOrders = await Order.find({
         customer_id: customerObjectId
     })
-    .sort({ updatedAt: -1, createdAt: -1 })
-    .limit(10)
-    .select('_id pickup delivery scheduled_at status final_price max_price createdAt updatedAt')
-    .lean();
+        .sort({ updatedAt: -1, createdAt: -1 })
+        .limit(10)
+        .select('_id pickup delivery scheduled_at status final_price max_price createdAt updatedAt')
+        .lean();
 
     // Calculate active orders count
     const activeOrdersCount = activeStatuses.reduce((sum, status) => {

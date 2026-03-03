@@ -1,203 +1,193 @@
-.orders-container {
+/* =========================================================
+   CustomerOrders — all selectors prefixed with "co-" to
+   prevent any bleed-in from other pages' global CSS files.
+   ========================================================= */
+
+/* ── Page wrapper ── */
+.co-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2rem 2rem 3rem;
   min-height: calc(100vh - 200px);
 }
-.order-card-wrapper {
-  position: relative; /* Create a coordinate system for the button */
+
+/* ── Header ── */
+.co-header {
+  margin-bottom: 1rem;
 }
 
+.co-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
 
-.btn-review-trigger {
+/* ── Controls bar (search + select) ── */
+.co-controls {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.co-search-input {
+  height: 44px;
+  flex: 1;
+  padding: 0 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #111827;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.co-search-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.co-status-select {
+  height: 44px;
+  min-width: 160px;
+  padding: 0 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #111827;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.co-status-select:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+/* ── Orders grid ── */
+.co-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ── Card wrapper (anchor for absolute children) ── */
+.co-card-wrap {
+  position: relative;
+}
+
+/* ── Rate transporter button ── */
+.co-review-btn {
   position: absolute;
-  top: 15px;
-  right: 15px;
-  z-index: 100; 
-  background: #ffc107;
-  color: #000;
+  top: 14px;
+  right: 14px;
+  z-index: 10;
+  background: #f59e0b;
+  color: #1a1a1a;
   border: none;
-  padding: 8px 16px;
+  padding: 6px 14px;
   border-radius: 20px;
+  font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  transition: transform 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  transition: background 0.2s, transform 0.15s;
 }
 
-.btn-review-trigger:hover {
-  transform: scale(1.05);
-  background: #ffb300;
+.co-review-btn:hover {
+  background: #d97706;
+  transform: scale(1.04);
 }
 
-/* Modal Overlay Wrapper */
-.modal-overlay-wrapper {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.75);
+/* ── Reviewed badge ── */
+.co-reviewed-badge {
+  display: inline-block;
+  margin-top: 0.6rem;
+  padding: 4px 12px;
+  background: #d1fae5;
+  color: #065f46;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ── Loading state ── */
+.co-loading {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  z-index: 9999;
-  cursor: pointer;
-}
-
-.modal-overlay-wrapper > * {
-  pointer-events: auto;
-}
-.orders-header {
-  margin-bottom: 1.75rem;
-}
-
-.orders-header h1 {
-  margin: 0 0 0.75rem 0;
-  font-size: 2.2rem;
-  color: #111;
-}
-
-.orders-filters {
-  display: flex;
+  padding: 5rem 2rem;
   gap: 1rem;
-  align-items: center;
 }
 
-.search-input,
-.status-filter {
-  padding: 0.75rem 1rem;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s ease, box-shadow 0.15s ease;
-}
-
-.search-input:focus,
-.status-filter:focus {
-  outline: none;
-  border-color: #1976d2;
-}
-
-.search-input {
-  flex: 1;
-  min-width: 250px;
-  box-shadow: none;
-}
-
-.status-filter {
-  min-width: 160px;
-}
-
-.orders-header-row{display:flex;align-items:center;gap:16px}
-
-.search-bar-wrap{flex:1;display:flex;align-items:center}
-
-.search-input{height:48px;border-radius:8px;padding-left:18px}
-
-.orders-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
-  margin-top: 1.25rem;
-}
-
-/* Loading State */
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  text-align: center;
-}
-
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid #f0f0f0;
-  border-top-color: #1976d2;
+.co-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e5e7eb;
+  border-top-color: #4f46e5;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
+  animation: co-spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+@keyframes co-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.loading-state p {
-  color: #666;
-  font-size: 1.1rem;
-}
-
-/* Empty State */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  text-align: center;
-}
-
-.empty-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-  opacity: 0.5;
-}
-
-.empty-state h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.5rem;
-  color: #333;
-}
-
-.empty-state p {
-  color: #666;
+.co-loading p {
+  color: #6b7280;
   font-size: 1rem;
+  margin: 0;
 }
 
-/* Error State */
-.error-state {
+/* ── Empty / Error state ── */
+.co-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
+  padding: 5rem 2rem;
   text-align: center;
+  gap: 0.5rem;
 }
 
-.error-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
+.co-empty h3 {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 1.4rem;
+  color: #1f2937;
 }
 
-.error-state p {
-  color: #d32f2f;
-  font-size: 1.1rem;
+.co-empty p {
+  color: #6b7280;
+  font-size: 0.95rem;
+  margin: 0;
 }
 
-/* Responsive Design */
+/* ── Responsive ── */
 @media (max-width: 768px) {
-  .orders-container {
-    padding: 1rem;
+  .co-page {
+    padding: 1.25rem 1rem 2.5rem;
   }
 
-  .orders-header h1 {
+  .co-header h1 {
     font-size: 1.5rem;
   }
 
-  .orders-filters {
+  .co-controls {
     flex-direction: column;
   }
 
-  .search-input,
-  .status-filter {
+  .co-search-input,
+  .co-status-select {
     width: 100%;
   }
 
-  .orders-grid {
+  .co-grid {
     grid-template-columns: 1fr;
   }
 }

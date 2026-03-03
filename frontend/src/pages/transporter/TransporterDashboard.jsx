@@ -7,6 +7,7 @@ import { getTransporterDashboardStats } from '../../api/transporter';
 import { getTransporterOrders, getAvailableOrders } from '../../api/transporterOrders';
 import { fetchMyBids, withdrawBid } from '../../api/bids';
 import { getFleet } from '../../api/fleet';
+import { getVerificationStatus } from '../../api/transporter';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
 import './TransporterDashboard.css';
@@ -45,7 +46,7 @@ const DonutChart = ({ data, size = 160, strokeWidth = 20 }) => {
       const percentage = value / total;
       const startAngle = cumulativePercentage * 360;
       cumulativePercentage += percentage;
-      
+
       return {
         label,
         value,
@@ -102,19 +103,21 @@ export default function TransporterDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [jobSortBy, setJobSortBy] = useState('date');
+  const [verificationInfo, setVerificationInfo] = useState(null);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Fetch all data in parallel
-      const [statsRes, ordersRes, jobsRes, bidsRes, fleetRes] = await Promise.all([
+      const [statsRes, ordersRes, jobsRes, bidsRes, fleetRes, verifyRes] = await Promise.all([
         getTransporterDashboardStats().catch(e => { console.error('Stats error:', e); return null; }),
         getTransporterOrders().catch(e => { console.error('Orders error:', e); return []; }),
         getAvailableOrders().catch(e => { console.error('Jobs error:', e); return []; }),
         fetchMyBids().catch(e => { console.error('Bids error:', e); return []; }),
-        getFleet().catch(e => { console.error('Fleet error:', e); return []; })
+        getFleet().catch(e => { console.error('Fleet error:', e); return []; }),
+        getVerificationStatus().catch(e => { console.error('Verification error:', e); return null; })
       ]);
 
       setStats(statsRes);
@@ -122,6 +125,7 @@ export default function TransporterDashboard() {
       setAvailableJobs(Array.isArray(jobsRes) ? jobsRes : []);
       setMyBids(Array.isArray(bidsRes) ? bidsRes : []);
       setFleet(Array.isArray(fleetRes) ? fleetRes : []);
+      setVerificationInfo(verifyRes);
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
       setError(err.message || 'Failed to load dashboard data');
@@ -197,7 +201,7 @@ export default function TransporterDashboard() {
     if (!orders || orders.length === 0) return [];
     const now = new Date();
     const sevenDays = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    
+
     return orders
       .filter(order => {
         const scheduled = new Date(order.scheduled_at);
@@ -211,7 +215,7 @@ export default function TransporterDashboard() {
   // Filter orders needing vehicle assignment
   const ordersNeedingVehicle = useMemo(() => {
     if (!orders || orders.length === 0) return [];
-    
+
     return orders
       .filter(order => {
         const isActive = ['Assigned', 'In Transit', 'Started'].includes(order.status);
@@ -224,7 +228,7 @@ export default function TransporterDashboard() {
   // Sort and filter available jobs
   const sortedAvailableJobs = useMemo(() => {
     if (!availableJobs || availableJobs.length === 0) return [];
-    
+
     let sorted = [...availableJobs];
     if (jobSortBy === 'date') {
       sorted.sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
@@ -233,14 +237,14 @@ export default function TransporterDashboard() {
     } else if (jobSortBy === 'distance') {
       sorted.sort((a, b) => (a.distance || 0) - (b.distance || 0));
     }
-    
+
     return sorted.slice(0, 5);
   }, [availableJobs, jobSortBy]);
 
   // Recent bids (sorted by newest)
   const recentBids = useMemo(() => {
     if (!myBids || myBids.length === 0) return [];
-    
+
     return [...myBids]
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .slice(0, 5);
@@ -249,7 +253,7 @@ export default function TransporterDashboard() {
   // Fleet issues (maintenance/unavailable)
   const fleetIssues = useMemo(() => {
     if (!fleet || fleet.length === 0) return [];
-    
+
     return fleet
       .filter(v => v.status === 'In Maintenance' || v.status === 'Unavailable')
       .slice(0, 5);
@@ -299,6 +303,24 @@ export default function TransporterDashboard() {
     <>
       <Header />
       <div style={{ paddingTop: '80px' }}>
+        {/* Verification Status Banner */}
+        {verificationInfo && verificationInfo.verificationStatus === 'unsubmitted' && (
+          <div className="verification-banner verification-unsubmitted">
+            <span>📋 Complete document upload to start bidding on orders.</span>
+            <Link to="/transporter/profile" className="banner-action">Upload Documents</Link>
+          </div>
+        )}
+        {verificationInfo && verificationInfo.verificationStatus === 'under_review' && (
+          <div className="verification-banner verification-under-review">
+            <span>⏳ Your documents are under manager review. You will be notified once verified.</span>
+          </div>
+        )}
+        {verificationInfo && verificationInfo.verificationStatus === 'rejected' && (
+          <div className="verification-banner verification-rejected">
+            <span>❌ One or more of your documents were rejected. Please re-upload to continue.</span>
+            <Link to="/transporter/profile" className="banner-action">Re-upload</Link>
+          </div>
+        )}
         <div className="dashboard-container">
           {/* Dashboard Header */}
           <div className="dashboard-header">
@@ -320,34 +342,34 @@ export default function TransporterDashboard() {
               <div className="kpi-card-value">{orderStats.activeOrders || 0}</div>
               <div className="kpi-card-label">Active Orders</div>
             </div>
-            
+
             <div className="kpi-card">
               <div className="kpi-card-value">{orderStats.upcomingPickupsCount || 0}</div>
               <div className="kpi-card-label">Upcoming Pickups</div>
             </div>
-            
+
             <div className="kpi-card">
               <div className="kpi-card-value">{orderStats.needsVehicleAssignmentCount || 0}</div>
               <div className="kpi-card-label">Needs Vehicle</div>
             </div>
-            
+
             <div className="kpi-card">
               <div className="kpi-card-value">{jobsStats.availableJobsCount || 0}</div>
               <div className="kpi-card-label">Available Jobs</div>
             </div>
-            
+
             <div className="kpi-card">
               <div className="kpi-card-value">
                 {fleetStats.fleetStatusBreakdown?.Available || 0} / {fleetStats.totalVehicles || 0}
               </div>
               <div className="kpi-card-label">Fleet Available</div>
             </div>
-            
+
             <div className="kpi-card">
               <div className="kpi-card-value">{formatCurrency(earningsStats.estimatedEarningsThisMonth)}</div>
               <div className="kpi-card-label">Earnings This Month</div>
             </div>
-            
+
             <div className="kpi-card">
               <div className="kpi-card-value">{formatCurrency(earningsStats.pipelineValue)}</div>
               <div className="kpi-card-label">Pipeline Value</div>
@@ -380,7 +402,7 @@ export default function TransporterDashboard() {
           {/* My Work Today Section */}
           <div className="dashboard-work-section">
             <h2 className="section-title">My Work Today</h2>
-            
+
             <div className="dashboard-panels-grid">
               {/* Upcoming Pickups Panel */}
               <div className="dashboard-panel">
@@ -570,7 +592,7 @@ export default function TransporterDashboard() {
                   <span className="fleet-stat-label">Assigned</span>
                 </div>
               </div>
-              
+
               {fleetIssues.length > 0 && (
                 <>
                   <h3 className="fleet-issues-title">Vehicles Needing Attention</h3>
@@ -589,7 +611,7 @@ export default function TransporterDashboard() {
                   </div>
                 </>
               )}
-              
+
               <Link to="/transporter/fleet" className="panel-view-all">
                 Manage Fleet →
               </Link>

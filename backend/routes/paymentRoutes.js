@@ -13,10 +13,10 @@ paymentRouter.post(
   paymentController.initiatePayment
 ); // Initiate payment for order
 paymentRouter.post(
-  "/orders/:orderId/process",
+  "/orders/:orderId/verify",
   authMiddleware(["customer"]),
-  paymentController.processPayment
-); // Process payment
+  paymentController.verifyPayment
+); // Verify Razorpay payment
 paymentRouter.post(
   "/orders/:orderId/review",
   authMiddleware(["customer"]),

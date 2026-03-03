@@ -1,0 +1,320 @@
+import managerRepo from '../repositories/managerRepo.js';
+import transporterRepo from '../repositories/transporterRepo.js';
+import { AppError, logger, sendMail } from '../utils/misc.js';
+
+// ─── Verification Queue (existing functionality) ─────────
+
+const getVerificationQueue = async () => {
+    const transporters = await transporterRepo.getTransportersForVerification();
+    return transporters;
+};
+
+const approveDocument = async (transporterId, docType) => {
+    const transporter = await transporterRepo.findTransporterById(transporterId);
+    if (!transporter) {
+        throw new AppError(404, 'NotFoundError', 'Transporter not found', 'ERR_NOT_FOUND');
+    }
+
+    if (!transporter.documents) {
+        throw new AppError(400, 'ValidationError', 'No documents found for this transporter', 'ERR_NO_DOCS');
+    }
+
+    let docPath;
+    if (docType === 'pan_card') {
+        docPath = 'documents.pan_card';
+    } else if (docType === 'driving_license') {
+        docPath = 'documents.driving_license';
+    } else if (docType.startsWith('vehicle_rc_')) {
+        const index = parseInt(docType.split('_')[2], 10);
+        if (isNaN(index) || !transporter.documents.vehicle_rcs || index >= transporter.documents.vehicle_rcs.length) {
+            throw new AppError(400, 'ValidationError', 'Invalid vehicle RC index', 'ERR_INVALID_DOC');
+        }
+        docPath = `documents.vehicle_rcs.${index}`;
+    } else {
+        throw new AppError(400, 'ValidationError', 'Invalid document type', 'ERR_INVALID_DOC_TYPE');
+    }
+
+    await transporterRepo.updateDocumentStatus(transporterId, docPath, 'approved', null);
+
+    if (docType.startsWith('vehicle_rc_')) {
+        const index = parseInt(docType.split('_')[2], 10);
+        const t = await transporterRepo.findTransporterById(transporterId);
+        const rcDoc = t.documents?.vehicle_rcs?.[index];
+        if (rcDoc?.vehicleId) {
+            await transporterRepo.updateFleetRcStatus(transporterId, rcDoc.vehicleId.toString(), 'approved');
+        }
+    }
+
+    const updated = await transporterRepo.findTransporterById(transporterId);
+    const docs = updated.documents;
+    const allApproved = checkAllDocumentsApproved(docs);
+
+    if (allApproved) {
+        await transporterRepo.updateVerificationStatus(transporterId, 'approved', true);
+        logger.info(`Transporter ${transporterId} fully verified — all documents approved`);
+    }
+
+    return await transporterRepo.findTransporterById(transporterId);
+};
+
+const rejectDocument = async (transporterId, docType, note) => {
+    const transporter = await transporterRepo.findTransporterById(transporterId);
+    if (!transporter) {
+        throw new AppError(404, 'NotFoundError', 'Transporter not found', 'ERR_NOT_FOUND');
+    }
+
+    if (!transporter.documents) {
+        throw new AppError(400, 'ValidationError', 'No documents found for this transporter', 'ERR_NO_DOCS');
+    }
+
+    let docPath;
+    if (docType === 'pan_card') {
+        docPath = 'documents.pan_card';
+    } else if (docType === 'driving_license') {
+        docPath = 'documents.driving_license';
+    } else if (docType.startsWith('vehicle_rc_')) {
+        const index = parseInt(docType.split('_')[2], 10);
+        if (isNaN(index) || !transporter.documents.vehicle_rcs || index >= transporter.documents.vehicle_rcs.length) {
+            throw new AppError(400, 'ValidationError', 'Invalid vehicle RC index', 'ERR_INVALID_DOC');
+        }
+        docPath = `documents.vehicle_rcs.${index}`;
+    } else {
+        throw new AppError(400, 'ValidationError', 'Invalid document type', 'ERR_INVALID_DOC_TYPE');
+    }
+
+    await transporterRepo.updateDocumentStatus(transporterId, docPath, 'rejected', note || 'Document rejected by manager');
+
+    if (docType.startsWith('vehicle_rc_')) {
+        const index = parseInt(docType.split('_')[2], 10);
+        const t = await transporterRepo.findTransporterById(transporterId);
+        const rcDoc = t.documents?.vehicle_rcs?.[index];
+        if (rcDoc?.vehicleId) {
+            await transporterRepo.updateFleetRcStatus(transporterId, rcDoc.vehicleId.toString(), 'rejected', note || 'Document rejected by manager');
+        }
+    }
+
+    await transporterRepo.updateVerificationStatus(transporterId, 'rejected', false);
+
+    return await transporterRepo.findTransporterById(transporterId);
+};
+
+function checkAllDocumentsApproved(docs) {
+    if (!docs) return false;
+    if (!docs.pan_card || docs.pan_card.adminStatus !== 'approved') return false;
+    if (!docs.driving_license || docs.driving_license.adminStatus !== 'approved') return false;
+    if (!docs.vehicle_rcs || docs.vehicle_rcs.length === 0) return false;
+    for (const rc of docs.vehicle_rcs) {
+        if (rc.adminStatus !== 'approved') return false;
+    }
+    return true;
+}
+
+// ─── Manager Registration via Invitation Code ────────────
+
+const registerManager = async ({ name, email, password, invitationCode }) => {
+    const invitation = await managerRepo.findInvitationByCode(invitationCode);
+    if (!invitation) {
+        throw new AppError(400, 'ValidationError', 'Invalid invitation code', 'ERR_INVALID_CODE');
+    }
+    if (!invitation.isValid()) {
+        throw new AppError(400, 'ValidationError', 'Invitation code has expired or already been used', 'ERR_CODE_EXPIRED');
+    }
+
+    const existing = await managerRepo.findManagerByEmail(email);
+    if (existing) {
+        throw new AppError(409, 'DuplicateKey', 'A manager with this email already exists', 'ERR_DUPLICATE_EMAIL');
+    }
+
+    const manager = await managerRepo.createManager({
+        name,
+        email,
+        password,
+        categories: invitation.categories,
+        invitationCode: invitation._id,
+        isDefault: false,
+    });
+
+    await managerRepo.markInvitationUsed(invitation._id, manager._id);
+
+    logger.info(`New manager registered: ${email} for categories: ${invitation.categories.join(', ')}`);
+
+    return manager;
+};
+
+// ─── Ticket Assignment Engine (Least-Load) ───────────────
+
+const assignTicketToManager = async (ticket) => {
+    const category = ticket.category;
+
+    // 1. Find active managers for this category (sorted by least open tickets)
+    let managers = await managerRepo.getActiveManagersByCategory(category);
+
+    // 2. If no specialized manager, use the default manager
+    if (!managers || managers.length === 0) {
+        const defaultManager = await managerRepo.getDefaultManager();
+        if (defaultManager) {
+            managers = [defaultManager];
+        }
+    }
+
+    // 3. If still no manager found, return null (unassigned)
+    if (!managers || managers.length === 0) {
+        logger.warn(`No manager available for category: ${category}`);
+        return null;
+    }
+
+    // 4. Pick manager with least open tickets (already sorted by openTicketCount asc)
+    const selectedManager = managers[0];
+
+    // 5. Increment their open ticket count
+    await managerRepo.incrementOpenTicketCount(selectedManager._id);
+
+    logger.info(`Ticket assigned to manager ${selectedManager.name} (${selectedManager.email}) for category: ${category}`);
+
+    return selectedManager._id;
+};
+
+// ─── Threshold Check & Alert ─────────────────────────────
+
+const checkThresholdAndAlert = async (category) => {
+    const config = await managerRepo.getThresholdConfig(category);
+    if (!config) return null;
+
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const recentCount = await managerRepo.getTicketCountByCategory(category, oneHourAgo);
+
+    if (recentCount >= config.maxTicketsPerHour && !config.alertSent) {
+        const alertData = {
+            category,
+            ticketCount: recentCount,
+            threshold: config.maxTicketsPerHour,
+            message: `⚠️ Alert: ${recentCount} tickets in category "${category}" in the last hour (threshold: ${config.maxTicketsPerHour}). Consider adding a new manager for this category.`,
+        };
+
+        await managerRepo.markAlertSent(category);
+
+        try {
+            const adminEmail = process.env.ADMIN_EMAIL || 'admin@cargolink.com';
+            await sendMail(
+                adminEmail,
+                `[CargoLink Alert] High ticket volume — ${category}`,
+                alertData.message
+            );
+            logger.info(`Threshold alert sent to admin for category: ${category}`);
+        } catch (err) {
+            logger.error(`Failed to send threshold alert email: ${err.message}`);
+        }
+
+        return alertData;
+    }
+
+    return null;
+};
+
+// ─── Handle ticket status changes ────────────────────────
+
+const handleTicketClosed = async (managerId) => {
+    if (managerId) {
+        await managerRepo.decrementOpenTicketCount(managerId);
+    }
+};
+
+// ─── Get tickets for a specific manager ──────────────────
+
+const getManagerTickets = async (managerId, filters = {}) => {
+    const Ticket = (await import('../models/ticket.js')).default;
+    const query = { assignedManager: managerId };
+    if (filters.status) query.status = filters.status;
+    if (filters.priority) query.priority = filters.priority;
+    return Ticket.find(query).sort({ createdAt: -1 });
+};
+
+const getManagerTicketStats = async (managerId) => {
+    const Ticket = (await import('../models/ticket.js')).default;
+    const [open, inProgress, closed] = await Promise.all([
+        Ticket.countDocuments({ assignedManager: managerId, status: 'open' }),
+        Ticket.countDocuments({ assignedManager: managerId, status: 'in_progress' }),
+        Ticket.countDocuments({ assignedManager: managerId, status: 'closed' }),
+    ]);
+    return { open, inProgress, closed, total: open + inProgress + closed };
+};
+
+// ─── Get manager profile ─────────────────────────────────
+
+const getManagerProfile = async (managerId) => {
+    const manager = await managerRepo.findManagerById(managerId);
+    if (!manager) {
+        throw new AppError(404, 'NotFoundError', 'Manager not found', 'ERR_NOT_FOUND');
+    }
+    return {
+        _id: manager._id,
+        name: manager.name,
+        email: manager.email,
+        categories: manager.categories,
+        status: manager.status,
+        openTicketCount: manager.openTicketCount,
+        totalResolved: manager.totalResolved,
+        isDefault: manager.isDefault,
+        createdAt: manager.createdAt,
+    };
+};
+
+// ─── Seed default manager ────────────────────────────────
+
+const seedDefaultManager = async () => {
+    const existing = await managerRepo.findManagerByEmail('manager@cargolink.com');
+    if (existing) {
+        logger.info('Default manager already exists');
+        return existing;
+    }
+
+    const defaultCategories = [
+        'Shipment Issue',
+        'Payment Issue',
+        'Transporter Complaint',
+        'Customer Complaint',
+        'Technical Issue',
+        'Account Issue',
+        'Other',
+    ];
+
+    const manager = await managerRepo.createManager({
+        name: 'Default Manager',
+        email: 'manager@cargolink.com',
+        password: 'manager@123',
+        categories: defaultCategories,
+        isDefault: true,
+        status: 'active',
+    });
+
+    // Seed default threshold configs
+    for (const cat of defaultCategories) {
+        await managerRepo.upsertThresholdConfig(cat, 10);
+    }
+
+    logger.info('Default manager seeded: manager@cargolink.com');
+    return manager;
+};
+
+export default {
+    // Existing verification
+    getVerificationQueue,
+    approveDocument,
+    rejectDocument,
+
+    // Manager registration
+    registerManager,
+
+    // Ticket assignment
+    assignTicketToManager,
+    checkThresholdAndAlert,
+    handleTicketClosed,
+
+    // Manager ticket operations
+    getManagerTickets,
+    getManagerTicketStats,
+    getManagerProfile,
+
+    // Seeding
+    seedDefaultManager,
+};

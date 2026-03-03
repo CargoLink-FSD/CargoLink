@@ -72,11 +72,18 @@ export const removeFleetScheduleBlock = async (vehicleId, blockId) => {
   return response.data;
 };
 
-export default { 
-  getFleet, 
-  getVehicle, 
-  addVehicle, 
-  updateVehicle, 
+export const uploadVehicleRc = async (vehicleId, formData) => {
+  // Do NOT set Content-Type — browser auto-sets the correct multipart boundary
+  const response = await http.post(`/api/transporters/fleet/${vehicleId}/upload-rc`, formData);
+  return response.data;
+};
+
+
+export default {
+  getFleet,
+  getVehicle,
+  addVehicle,
+  updateVehicle,
   deleteVehicle,
   setTruckMaintenance,
   setTruckAvailable,
@@ -85,4 +92,5 @@ export default {
   getFleetSchedule,
   addFleetScheduleBlock,
   removeFleetScheduleBlock,
+  uploadVehicleRc
 };

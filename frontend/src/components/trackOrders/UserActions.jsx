@@ -35,6 +35,15 @@ const CustomerActions = ({ order }) => {
             <h3>OTP: {order.otp || "0000"}</h3>
           </div>
         </div>
+      ) : order.payment_status === 'Paid' ? (
+        <div className="card update-status-card">
+          <div className="card-header">
+            <h2 className="card-title">Delivery Complete</h2>
+          </div>
+          <div className="action-buttons" style={{ justifyContent: 'center', padding: '12px 0' }}>
+            <span style={{ color: '#2e7d32', fontWeight: 600, fontSize: '1rem' }}>✓ Payment Completed</span>
+          </div>
+        </div>
       ) : (
         <div className="card update-status-card">
           <div className="card-header">
@@ -105,10 +114,6 @@ const TransporterActions = ({ order }) => {
       showNotification({ message: 'Incorrect OTP', type: 'error' });    }
   };
 
-  const handleUpdateLocation = () => {
-    alert('Update location functionality to be implemented');
-  };
-
   const handleCall = (phone) => {
     if (phone && phone !== "N/A") {
       window.open(`tel:${phone}`);
@@ -149,12 +154,10 @@ const TransporterActions = ({ order }) => {
       ) : (
         <div className="card update-status-card">
           <div className="card-header">
-            <h2 className="card-title">Updates</h2>
+            <h2 className="card-title">In Progress</h2>
           </div>
-          <div className="action-buttons">
-            <button className="btn btn-warning" onClick={handleUpdateLocation}>
-              Update Location
-            </button>
+          <div className="action-buttons" style={{ justifyContent: 'center', padding: '12px 0' }}>
+            <span style={{ color: '#555', fontSize: '0.95rem' }}>Order is in transit</span>
           </div>
         </div>
       )}

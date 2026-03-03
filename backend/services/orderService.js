@@ -5,18 +5,18 @@ import { AppError, logger } from "../utils/misc.js"
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-const getOrdersByUser = async (userId, role) => {
+const getOrdersByUser = async (userId, role, filters = {}) => {
     let orders;
     if (role === 'customer') {
-        orders =  await orderRepo.getOrdersByCustomer(userId);
+        orders = await orderRepo.getOrdersByCustomer(userId, filters);
     } else if (role === 'transporter') {
-        orders =  await orderRepo.getOrdersByTransporter(userId);
+        orders = await orderRepo.getOrdersByTransporter(userId);
         orders.forEach(order => {
             delete order.otp;
         });
     }
     return orders;
-    
+
 };
 
 const getOrderDetails = async (orderId, userId, role) => {
@@ -83,10 +83,10 @@ const acceptBid = async (customerId, orderId, bidId) => {
     // Validate bidding window is still open 
     const orderDetails = await orderRepo.getOrderDetailsForCustomer(orderId, customerId);
     const twoDaysFromNow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
-    
+
     if (orderDetails.scheduled_at < twoDaysFromNow) {
-        throw new AppError(400, "ValidationError", 
-            "Bidding window has closed. Cannot accept bids within 2 days of scheduled pickup", 
+        throw new AppError(400, "ValidationError",
+            "Bidding window has closed. Cannot accept bids within 2 days of scheduled pickup",
             "ERR_BIDDING_CLOSED");
     }
 
@@ -131,15 +131,15 @@ const submitBid = async (transporterId, orderId, bidAmount, notes) => {
     // Check if order exists and is open for bidding (must be at least 2 days before pickup)
     const active = await orderRepo.checkActiveOrder(orderId, transporterId);
     if (!active) {
-        throw new AppError(400, "ValidationError", 
-            "Bidding window has closed or order is not available. Bids can only be placed at least 2 days before scheduled pickup", 
+        throw new AppError(400, "ValidationError",
+            "Bidding window has closed or order is not available. Bids can only be placed at least 2 days before scheduled pickup",
             "ERR_BIDDING_CLOSED");
     }
 
     const bid = await bidRepo.createBid({
-        order_id: orderId, 
-        transporter_id: transporterId, 
-        bid_amount: bidAmount, 
+        order_id: orderId,
+        transporter_id: transporterId,
+        bid_amount: bidAmount,
         notes: notes
     });
 
@@ -159,8 +159,8 @@ const withdrawBid = async (bidId, transporterId) => {
 
 const confirmPickup = async (transporterId, orderId, otp) => {
     const order = await orderRepo.verifyOTPAndUpdateStatus(orderId, transporterId, otp);
-    console.log({order, transporterId, orderId, otp});
-    
+    console.log({ order, transporterId, orderId, otp });
+
     if (!order) {
         throw new AppError(400, "InvalidOperation", "Invalid OTP or order not found", "ERR_INVALID_OPERATION");
     }
@@ -183,7 +183,7 @@ const confirmDelivery = async (customerId, orderId) => {
 const startTransit = async (orderId, transporterId) => {
     // Check if order exists and is assigned to this transporter
     const order = await orderRepo.getOrderById(orderId);
-    
+
     if (!order) {
         throw new AppError(404, "NotFound", "Order not found", "ERR_NOT_FOUND");
     }
@@ -208,7 +208,7 @@ const startTransit = async (orderId, transporterId) => {
 const assignVehicleToOrder = async (orderId, vehicleId, transporterId) => {
     // Check if order exists and is assigned to this transporter
     const order = await orderRepo.getOrderById(orderId);
-    
+
     if (!order) {
         throw new AppError(404, "NotFound", "Order not found", "ERR_NOT_FOUND");
     }
@@ -230,6 +230,11 @@ const assignVehicleToOrder = async (orderId, vehicleId, transporterId) => {
     // Check vehicle availability
     if (vehicle.status !== 'Available') {
         throw new AppError(400, "InvalidOperation", "Vehicle is not available", "ERR_INVALID_OPERATION");
+    }
+
+    // Check RC verification — vehicle cannot be assigned until RC is approved by manager
+    if (vehicle.rc_status !== 'approved') {
+        throw new AppError(400, "InvalidOperation", "Vehicle RC must be verified by the manager before it can be assigned", "ERR_RC_NOT_VERIFIED");
     }
 
     // Update vehicle status
@@ -255,6 +260,21 @@ const getTransporterVehicles = async (transporterId) => {
         transporter_id: transporterId,
         status: 'Available'
     });
+        return availableVehicles;
+};
+
+const getAvailableVehicles = async (transporterId) => {
+    const Transporter = (await import('../models/transporter.js')).default;
+
+    const transporter = await Transporter.findById(transporterId).select('fleet');
+    if (!transporter) {
+        throw new AppError(404, "NotFound", "Transporter not found", "ERR_NOT_FOUND");
+    }
+
+    // Filter available vehicles
+    const availableVehicles = transporter.fleet.filter(
+        vehicle => vehicle.status === 'Available'
+    );
 
     return availableVehicles;
 };

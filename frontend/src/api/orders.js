@@ -1,10 +1,37 @@
 import http from './http.js';
 
 /**
- * Fetch all orders for the authenticated customer
+ * Estimate max price for an order using the backend pricing engine.
+ * Includes distance, weight, volume (optional), declared cargo value,
+ * insurance tier, and live toll data from Google Maps Routes API.
+ *
+ * @param {object} params
+ * @param {number} params.distance         km
+ * @param {string} params.vehicle_type
+ * @param {number} params.weight           kg
+ * @param {number} [params.volume]         m³
+ * @param {string} [params.goods_type]
+ * @param {number} [params.cargo_value]    declared INR value
+ * @param {string} [params.insurance_tier] 'none'|'basic'|'standard'|'comprehensive'
+ * @param {object} [params.originCoords]   { lat, lng }
+ * @param {object} [params.destCoords]     { lat, lng }
+ * @returns {Promise<object>} full price breakdown
  */
-export async function getCustomerOrders() {
-  const response = await http.get('/api/orders/my-orders');
+export async function estimatePrice(params) {
+  const response = await http.post('/api/orders/estimate-price', params);
+  return response.data;
+}
+
+/**
+ * Fetch all orders for the authenticated customer
+ * @param {{ search?: string, status?: string }} params
+ */
+export async function getCustomerOrders({ search = '', status = 'all' } = {}) {
+  const query = new URLSearchParams();
+  if (search) query.set('search', search);
+  if (status && status !== 'all') query.set('status', status);
+  const qs = query.toString() ? `?${query.toString()}` : '';
+  const response = await http.get(`/api/orders/my-orders${qs}`);
   console.log('Backend response:', response);
   return response.data || [];
 }
@@ -72,7 +99,7 @@ export async function placeOrder(orderData, cargoPhoto) {
 
   // Append all order data fields
   Object.keys(orderData).forEach(key => {
-    if (key === 'pickup' || key === 'delivery') {
+    if (key === 'pickup' || key === 'delivery' || key === 'pickup_coordinates' || key === 'delivery_coordinates') {
       formData.append(key, JSON.stringify(orderData[key]));
     } else if (key === 'shipments') {
       formData.append(key, JSON.stringify(orderData[key]));

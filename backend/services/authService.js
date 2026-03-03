@@ -1,6 +1,7 @@
 import customerRepo from "../repositories/customerRepo.js";
 import driverRepo from "../repositories/driverRepo.js";
 import transporterRepo from "../repositories/transporterRepo.js";
+import managerRepo from "../repositories/managerRepo.js";
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
@@ -28,6 +29,27 @@ export async function authenticateUser({ email, password, role }) {
       _id: ADMIN_ID,
       email: ADMIN_EMAIL,
       role: 'admin'
+    };
+  }
+
+  // Handle manager authentication (from database)
+  if (role === 'manager') {
+    const manager = await managerRepo.findManagerByEmail(email);
+    if (!manager) {
+      throw new AppError(401, 'AuthError', 'Invalid manager credentials', 'ERR_INVALID_CREDENTIALS');
+    }
+    if (manager.status !== 'active') {
+      throw new AppError(403, 'AuthError', 'Your manager account is inactive. Contact admin.', 'ERR_MANAGER_INACTIVE');
+    }
+    const passwordOk = await manager.verifyPassword(password);
+    if (!passwordOk) {
+      throw new AppError(401, 'AuthError', 'Invalid manager credentials', 'ERR_INVALID_CREDENTIALS');
+    }
+    return {
+      _id: manager._id,
+      email: manager.email,
+      name: manager.name,
+      role: 'manager',
     };
   }
 

@@ -10,9 +10,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const accessLogStream = createStream('access.log', {
-    interval: '30s',
-    path: path.join(path.dirname(''), 'logs'),
-    teeToStdout: true,
+  interval: '10m', // Rotate every 10 minutes
+  path: path.join(path.dirname(''), 'logs'),
+  teeToStdout: true,
 })
 
 
@@ -36,7 +36,7 @@ export class ErrorHandler {
     const { request, source = 'unknown' } = context;
 
     // Default error properties
-    let message = error.statusCode? error.message : 'Internal Server Error';
+    let message = error.statusCode ? error.message : 'Internal Server Error';
     let errorCode = error.errorCode || 'ERR_UNKNOWN';
     let errors = error.errors
     let statusCode = error.statusCode || 500;
@@ -47,23 +47,23 @@ export class ErrorHandler {
       message = 'Input Validation failed';
       errorCode = 'ERR_VALIDATION';
       errors = errors
-    } else if ((error.name === 'MongoServerError' && error.code === 11000) || error.name === 'DuplicateKey'){
+    } else if ((error.name === 'MongoServerError' && error.code === 11000) || error.name === 'DuplicateKey') {
       statusCode = 409;
       message = 'Key already exists';
       errorCode = 'ERR_DUPLICATE_KEY';
-      errors = errors? errors: [{ field: Object.keys(error.keyValue)[0], message: 'Already exists' }];
+      errors = errors ? errors : [{ field: Object.keys(error.keyValue)[0], message: 'Already exists' }];
     } else if (error.name === 'MongoNetworkError' || error.name === 'MongooseServerSelectionError') {
       statusCode = 503;
       message = 'Database connection error';
       errorCode = 'ERR_DB_CONNECTION';
-    } if (error.name === 'NotFoundError'){
+    } if (error.name === 'NotFoundError') {
       statusCode = 404;
       message = 'Resource Not Found';
       errorCode = 'ERR_NOT_FOUND';
     }
 
     // Structured logging
-    if (statusCode === 500){
+    if (statusCode === 500) {
       logger.error(`${error.errorCode}: ${error.message}`, {
         errors: error.errors,
         stack: error.stack,
@@ -90,7 +90,7 @@ export const errorHandler = new ErrorHandler();
 
 
 class Logger {
-// Simple log formatter
+  // Simple log formatter
   log(message, level = "DEBUG", meta = null) {
     const timestamp = new Date().toISOString();
     const logLevelColors = {
@@ -105,40 +105,40 @@ class Logger {
     const color = logLevelColors[level] || '\x1b[0m'; // Default (no color)
 
     // Format the log message
-    const formattedMessage = `${color}${('['+level.toUpperCase()+']').padEnd(8, ' ')}\x1b[0m ${message.padEnd(80, ' ')}  ${timestamp}\t${location} \n`;
+    const formattedMessage = `${color}${('[' + level.toUpperCase() + ']').padEnd(8, ' ')}\x1b[0m ${message.padEnd(80, ' ')}  ${timestamp}\t${location} \n`;
 
     // Output to the rotating file stream
     accessLogStream.write(util.format(formattedMessage));
-    if(meta !== null)
+    if (meta !== null)
       // console.log(meta);
-      accessLogStream.write(util.format(meta)+ '\n');
+      accessLogStream.write(util.format(meta) + '\n');
   }
 
   // Log methods
-  error(message, meta=null) {
+  error(message, meta = null) {
     this.log(message, "ERROR", meta);
   }
 
-  warn(message, meta=null) { 
+  warn(message, meta = null) {
     this.log(message, "WARN", meta);
   }
 
-  info(message, meta=null) {
+  info(message, meta = null) {
     this.log(message, "INFO", meta);
   }
 
-  debug(message, meta=null) {    
+  debug(message, meta = null) {
     this.log(`${message}`, "DEBUG", meta);
   }
 
   getLine(num = 2) {
-      const e = new Error();
-      const regex = /(.*):(\d+):(\d+)/
-      const match = regex.exec(e.stack.split("\n")[num]);
-      const filepath = match[1];      
-      const fileName = path.basename(filepath);
-      const line = match[2];
-      return `${fileName}:${line}`;
+    const e = new Error();
+    const regex = /(.*):(\d+):(\d+)/
+    const match = regex.exec(e.stack.split("\n")[num]);
+    const filepath = match[1];
+    const fileName = path.basename(filepath);
+    const line = match[2];
+    return `${fileName}:${line}`;
   }
 }
 

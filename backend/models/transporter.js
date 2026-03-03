@@ -1,6 +1,45 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
+const DocumentSchema = new mongoose.Schema(
+  {
+    url: { type: String },
+    uploadedAt: { type: Date, default: Date.now },
+    autoVerified: { type: Boolean, default: false },
+    adminStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+    adminNote: { type: String },
+    vehicleId: { type: mongoose.Schema.Types.ObjectId },
+  },
+  { _id: true }
+);
+
+const FleetSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    registration: { type: String, required: true },
+    capacity: { type: Number, required: true, min: 0 },
+    manufacture_year: { type: Number, required: true },
+    truck_type: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ["Available", "Assigned", "In Maintenance", "Unavailable"],
+      default: "Available",
+    },
+    last_service_date: Date,
+    next_service_date: Date,
+    currentLocation: String,
+    current_trip_id: { type: mongoose.Schema.Types.ObjectId, ref: "Trip" },
+    rc_url: { type: String, default: null },
+    rc_status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+    rc_note: { type: String, default: null },
+  },
+  { _id: true },
+);
+
 const TransporterSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
@@ -19,6 +58,18 @@ const TransporterSchema = new mongoose.Schema(
     googleId: { type: String },
     profilePicture: { type: String },
     isEmailVerified: { type: Boolean, default: false },
+    // Document verification fields
+    documents: {
+      pan_card: { type: DocumentSchema, default: undefined },
+      driving_license: { type: DocumentSchema, default: undefined },
+      vehicle_rcs: [DocumentSchema],
+    },
+    verificationStatus: {
+      type: String,
+      enum: ["unsubmitted", "under_review", "approved", "rejected"],
+      default: "unsubmitted",
+    },
+    isVerified: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
