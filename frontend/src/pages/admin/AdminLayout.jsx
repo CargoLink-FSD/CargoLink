@@ -10,6 +10,7 @@ const NAV_ITEMS = [
     { to: '/admin/orders', icon: '📦', label: 'Orders' },
     { to: '/admin/fleet', icon: '🚛', label: 'Fleet' },
     { to: '/admin/tickets', icon: '🎫', label: 'Tickets' },
+    { to: '/admin/managers', icon: '👔', label: 'Managers' },
 ];
 
 export default function AdminLayout() {

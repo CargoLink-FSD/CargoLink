@@ -1,4 +1,5 @@
 import ticketRepo from '../repositories/ticketRepo.js';
+import managerService from './managerService.js';
 import { AppError } from '../utils/misc.js';
 
 const createTicket = async (userId, userRole, userName, userEmail, ticketData) => {
@@ -27,7 +28,17 @@ const createTicket = async (userId, userRole, userName, userEmail, ticketData) =
         ticketPayload.orderId = ticketData.orderId;
     }
 
+    // Assign ticket to a manager (least-load algorithm)
+    const managerId = await managerService.assignTicketToManager({ category: ticketData.category });
+    if (managerId) {
+        ticketPayload.assignedManager = managerId;
+    }
+
     const ticket = await ticketRepo.createTicket(ticketPayload);
+
+    // Check threshold and alert admin if needed
+    await managerService.checkThresholdAndAlert(ticketData.category);
+
     return ticket;
 };
 
@@ -68,15 +79,27 @@ const addUserReply = async (ticketId, userId, userRole, userName, text) => {
 };
 
 // Manager functions
-const getAllTickets = async (filters) => {
+const getAllTickets = async (filters, managerId = null) => {
+    // If managerId is provided, only show tickets assigned to this manager
+    if (managerId) {
+        const Ticket = (await import('../models/ticket.js')).default;
+        const query = { assignedManager: managerId };
+        if (filters.status) query.status = filters.status;
+        if (filters.userRole) query.userRole = filters.userRole;
+        if (filters.priority) query.priority = filters.priority;
+        return Ticket.find(query).sort({ createdAt: -1 });
+    }
     return await ticketRepo.getAllTickets(filters);
 };
 
-const getTicketStats = async () => {
+const getTicketStats = async (managerId = null) => {
+    if (managerId) {
+        return await managerService.getManagerTicketStats(managerId);
+    }
     return await ticketRepo.getTicketStats();
 };
 
-const addManagerReply = async (ticketId, text) => {
+const addManagerReply = async (ticketId, text, managerName = 'Manager') => {
     const ticket = await ticketRepo.getTicketById(ticketId);
     if (!ticket) {
         throw new AppError(404, 'NotFoundError', 'Ticket not found', 'ERR_NOT_FOUND');
@@ -92,7 +115,7 @@ const addManagerReply = async (ticketId, text) => {
 
     return await ticketRepo.addMessage(ticketId, {
         sender: 'manager',
-        senderName: 'Manager',
+        senderName: managerName,
         text,
     });
 };
@@ -106,6 +129,12 @@ const updateTicketStatus = async (ticketId, status) => {
     if (ticket.status === 'closed') {
         throw new AppError(400, 'ValidationError', 'Closed tickets cannot be modified', 'ERR_TICKET_CLOSED');
     }
+
+    // If closing the ticket, decrement the assigned manager's open ticket count
+    if (status === 'closed' && ticket.assignedManager) {
+        await managerService.handleTicketClosed(ticket.assignedManager);
+    }
+
     return await ticketRepo.updateTicketStatus(ticketId, status);
 };
 

@@ -1,0 +1,335 @@
+/* Manager Management Page Styles */
+
+.mgmt-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    background: #f1f5f9;
+    border-radius: 10px;
+    padding: 4px;
+    width: fit-content;
+}
+
+.mgmt-tab {
+    padding: 10px 24px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: #64748b;
+    transition: all 0.2s;
+}
+
+.mgmt-tab.active {
+    background: #fff;
+    color: #6366f1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.mgmt-tab:hover:not(.active) {
+    color: #334155;
+}
+
+.mgmt-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.mgmt-card-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: #1e293b;
+}
+
+.mgmt-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+/* Category chips */
+.cat-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-width: 280px;
+}
+
+.cat-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #ede9fe;
+    color: #6d28d9;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Invitation code styling */
+.invite-code {
+    font-family: 'Courier New', monospace;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #6366f1;
+    background: #f0f0ff;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+}
+
+.copy-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 2px 6px;
+    margin-left: 6px;
+    border-radius: 4px;
+    transition: background 0.15s;
+}
+
+.copy-btn:hover {
+    background: #f1f5f9;
+}
+
+/* Generated code display */
+.generated-code-box {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.code-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 20px 0;
+    padding: 16px 24px;
+    background: #f0f0ff;
+    border: 2px dashed #6366f1;
+    border-radius: 12px;
+}
+
+.code-display code {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #6366f1;
+    letter-spacing: 3px;
+    font-family: 'Courier New', monospace;
+}
+
+.copy-btn-large {
+    padding: 8px 16px;
+    background: #6366f1;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: background 0.15s;
+}
+
+.copy-btn-large:hover {
+    background: #4f46e5;
+}
+
+.code-note {
+    color: #64748b;
+    font-size: 0.85rem;
+    margin-top: 12px;
+}
+
+/* Form fields in modals */
+.form-field {
+    margin-bottom: 16px;
+}
+
+.form-field label {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 8px;
+}
+
+.adm-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+}
+
+.adm-input:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Category checkbox grid */
+.cat-checkbox-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.cat-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 0.85rem;
+    color: #334155;
+}
+
+.cat-checkbox:hover {
+    border-color: #6366f1;
+    background: #faf5ff;
+}
+
+.cat-checkbox input[type="checkbox"] {
+    accent-color: #6366f1;
+    width: 16px;
+    height: 16px;
+}
+
+/* Volume cards for threshold visualization */
+.volume-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+    padding: 20px;
+}
+
+.volume-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.2s;
+}
+
+.volume-card.alert {
+    border-color: #ef4444;
+    background: #fef2f2;
+}
+
+.volume-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.volume-cat {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #1e293b;
+}
+
+.alert-badge {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #ef4444;
+    background: #fee2e2;
+    padding: 2px 10px;
+    border-radius: 12px;
+}
+
+.volume-bar-container {
+    height: 8px;
+    background: #f1f5f9;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.volume-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.volume-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.82rem;
+    color: #64748b;
+}
+
+.volume-actions {
+    display: flex;
+    gap: 6px;
+}
+
+/* Danger button */
+.adm-btn-danger {
+    background: #ef4444;
+    color: #fff;
+    border: none;
+}
+
+.adm-btn-danger:hover {
+    background: #dc2626;
+}
+
+/* Green stat card */
+.adm-stat-card.green {
+    border-left: 4px solid #10b981;
+}
+
+.adm-stat-card.green .adm-stat-value {
+    color: #10b981;
+}
+
+/* Red badge */
+.adm-badge.red {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* Green badge */
+.adm-badge.green {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+@media (max-width: 768px) {
+    .mgmt-tabs {
+        width: 100%;
+    }
+
+    .mgmt-tab {
+        flex: 1;
+        padding: 8px 12px;
+        font-size: 0.82rem;
+    }
+
+    .cat-checkbox-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .volume-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mgmt-card-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+}

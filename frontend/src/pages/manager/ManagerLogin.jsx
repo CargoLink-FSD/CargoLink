@@ -89,6 +89,13 @@ export default function ManagerLogin() {
             <button type="submit" className="manager-login-btn" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
+
+            <p style={{ textAlign: 'center', marginTop: 16, fontSize: '0.88rem', color: '#64748b' }}>
+              Have an invitation code?{' '}
+              <a href="/manager/register" style={{ color: '#6366f1', fontWeight: 600, textDecoration: 'none' }}>
+                Register here
+              </a>
+            </p>
           </form>
         </div>
       </div>

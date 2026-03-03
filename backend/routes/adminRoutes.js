@@ -46,4 +46,22 @@ adminRouter.get("/fleet", adminController.getFleetOverview); // Get all vehicles
 // ============================================
 adminRouter.get("/tickets", adminController.getTicketsOverview); // Get all support tickets (read-only)
 
+// ============================================
+// Manager Management Routes
+// ============================================
+adminRouter.get("/managers", adminController.getAllManagers); // Get all managers with stats
+adminRouter.post("/managers/invite", adminController.generateInvitationCode); // Generate invitation code
+adminRouter.get("/managers/invitations", adminController.getAllInvitationCodes); // Get all invitation codes
+adminRouter.patch("/managers/:id/status", adminController.updateManagerStatus); // Activate/deactivate manager
+adminRouter.patch("/managers/:id/categories", adminController.updateManagerCategories); // Update manager categories
+adminRouter.delete("/managers/:id", adminController.deleteManager); // Delete a manager
+
+// ============================================
+// Threshold Configuration Routes
+// ============================================
+adminRouter.get("/thresholds", adminController.getThresholdConfigs); // Get all threshold configs
+adminRouter.put("/thresholds", adminController.updateThresholdConfig); // Update a threshold config
+adminRouter.post("/thresholds/reset-alert", adminController.resetThresholdAlert); // Reset alert for a category
+adminRouter.get("/ticket-volume", adminController.getTicketVolumeByCategory); // Get ticket volume analytics
+
 export default adminRouter;

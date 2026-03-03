@@ -1,7 +1,19 @@
 // Manager API Endpoints
-// All manager-related API calls for verification dashboard
+// All manager-related API calls for verification dashboard and registration
 
 import { http } from './http';
+
+// Register a new manager via invitation code
+export const registerManager = async ({ name, email, password, invitationCode }) => {
+  const response = await http.post('/api/manager/register', { name, email, password, invitationCode });
+  return response.data;
+};
+
+// Get manager profile
+export const getManagerProfile = async () => {
+  const response = await http.get('/api/manager/profile');
+  return response.data;
+};
 
 // Get all transporters with documents under review
 export const getVerificationQueue = async () => {
@@ -22,6 +34,8 @@ export const rejectDocument = async (transporterId, docType, note) => {
 };
 
 export default {
+  registerManager,
+  getManagerProfile,
   getVerificationQueue,
   approveDocument,
   rejectDocument,
