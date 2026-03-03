@@ -9,6 +9,7 @@ const AddressSchema = new mongoose.Schema(
     state: { type: String, required: true },
     pin: { type: String, required: true },
     phone: String,
+    coordinates: { type: [Number], default: undefined },
   },
   { _id: false },
 );

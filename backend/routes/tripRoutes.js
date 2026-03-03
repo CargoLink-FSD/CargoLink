@@ -1,31 +1,55 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.js";
-import { validate } from "../middlewares/validator.js";
-import { validationSchema } from "../middlewares/validator.js";
-// import tripController from "../controllers/tripController.js";
-
+import { validate, validationSchema } from "../middlewares/validator.js";
+import tripController from "../controllers/tripController.js";
 
 const tripRouter = Router();
 
-// tripRouter.get('/:tripId', authMiddleware(["transporter", "driver"]),  tripController.getTripInfo); // Get specific trip details
+// ── Transporter Routes ──────────────────────────────────────────────────────
 
-// // Transporter CRUD
-// tripRouter.post('/', authMiddleware(["transporter"]), validate(validationSchema.trip),  tripController.createTrip); // Create new trip
-// tripRouter.get('/', authMiddleware(["transporter"]), tripController.getTrips); // Get all trips
-// tripRouter.put('/:tripId', authMiddleware(["transporter"]), validate(validationSchema.updateTrip),  tripController.updateTrip); // Update trip
-// tripRouter.delete('/:tripId', authMiddleware(["transporter"]), tripController.deleteTrip); // Delete trip
+// Resources (must be before /:tripId to avoid param collision)
+tripRouter.get('/resources/assignable-orders', authMiddleware(["transporter"]), tripController.getAssignableOrders);
+tripRouter.get('/resources/available-drivers', authMiddleware(["transporter"]), tripController.getAvailableDrivers);
+tripRouter.get('/resources/available-vehicles', authMiddleware(["transporter"]), tripController.getAvailableVehicles);
+
+// CRUD
+tripRouter.post('/', authMiddleware(["transporter"]), tripController.createTrip);
+tripRouter.get('/', authMiddleware(["transporter"]), tripController.getTrips);
+tripRouter.get('/:tripId', authMiddleware(["transporter", "driver"]), tripController.getTripDetails);
+tripRouter.put('/:tripId', authMiddleware(["transporter"]), tripController.updateTrip);
+tripRouter.delete('/:tripId', authMiddleware(["transporter"]), tripController.deleteTrip);
+
+// Trip lifecycle
+tripRouter.post('/:tripId/schedule', authMiddleware(["transporter"]), tripController.scheduleTrip);
+tripRouter.post('/:tripId/cancel', authMiddleware(["transporter"]), tripController.cancelTrip);
+tripRouter.post('/:tripId/complete', authMiddleware(["transporter"]), tripController.completeTrip);
+
+// Trip assignments (granular)
+tripRouter.post('/:tripId/orders', authMiddleware(["transporter"]), tripController.assignOrder);
+tripRouter.delete('/:tripId/orders/:orderId', authMiddleware(["transporter"]), tripController.removeOrderFromTrip);
+tripRouter.post('/:tripId/vehicle', authMiddleware(["transporter"]), tripController.assignVehicle);
+tripRouter.delete('/:tripId/vehicle', authMiddleware(["transporter"]), tripController.unassignVehicle);
+tripRouter.post('/:tripId/driver', authMiddleware(["transporter"]), tripController.assignDriver);
+tripRouter.delete('/:tripId/driver', authMiddleware(["transporter"]), tripController.unassignDriver);
 
 
-// // Auto-assign orders (algorithm) probably not used
-// tripRouter.post('/:tripId/auto-assign', tripController.autoAssignOrders);
+// ── Driver Routes ───────────────────────────────────────────────────────────
+
+tripRouter.get('/driver/my-trips', authMiddleware(["driver"]), tripController.getDriverTrips);
+tripRouter.get('/driver/:tripId', authMiddleware(["driver"]), tripController.getDriverTripDetails);
+tripRouter.post('/driver/:tripId/start', authMiddleware(["driver"]), tripController.startTrip);
+tripRouter.post('/driver/:tripId/stops/:stopId/arrive', authMiddleware(["driver"]), tripController.arriveAtStop);
+tripRouter.post('/driver/:tripId/stops/:stopId/confirm-pickup', authMiddleware(["driver"]), tripController.confirmPickup);
+tripRouter.post('/driver/:tripId/stops/:stopId/confirm-delivery', authMiddleware(["driver"]), tripController.confirmDelivery);
+tripRouter.post('/driver/:tripId/stops/:stopId/depart', authMiddleware(["driver"]), tripController.departFromStop);
+tripRouter.post('/driver/:tripId/delay', authMiddleware(["driver"]), tripController.declareDelay);
+tripRouter.post('/driver/:tripId/clear-delay', authMiddleware(["driver"]), tripController.clearDelay);
+tripRouter.post('/driver/:tripId/location', authMiddleware(["driver"]), tripController.updateTripLocation);
 
 
-// // Driver View and Actions 
-// tripRouter.get("/my-trips", tripController.getTrips); // View all trips assigned to the driver
-// tripRouter.post(":tripId/confirm-pickup", tripController.confirmPickup); // Confirm order pick-up
-// tripRouter.post(":tripId/confirm-delivery", tripController.confirmDelivery); // Confirm delivery completion
-// tripRouter.post(":tripId/update-location", validate(validationSchema.location), tripController.updateCurrentLocation); // Update current location during transit
-// tripRouter.post(":tripId/report-deley", validate(validationSchema.delay), tripController.reportDelay); // Report delay or issue during transit
+// ── Customer Routes ─────────────────────────────────────────────────────────
+
+tripRouter.get('/track/:orderId', authMiddleware(["customer"]), tripController.getOrderTracking);
 
 
 export default tripRouter;
