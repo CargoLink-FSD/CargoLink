@@ -156,21 +156,25 @@ const updateVerificationStatus = async (transporterId, verificationStatus, isVer
 };
 
 const uploadVehicleRc = async (transporterId, vehicleId, rcUrl) => {
-  // Update rc_url in the fleet item and push to documents.vehicle_rcs for manager review
-  const transporter = await Transporter.findOneAndUpdate(
-    { _id: transporterId, 'fleet._id': vehicleId },
+  // Update rc_url in the Fleet collection document
+  const Fleet = (await import('../models/fleet.js')).default;
+  const vehicle = await Fleet.findOneAndUpdate(
+    { _id: vehicleId, transporter_id: transporterId },
     {
       $set: {
-        'fleet.$.rc_url': rcUrl,
-        'fleet.$.rc_status': 'pending',
-        'fleet.$.rc_note': null,
+        rc_url: rcUrl,
+        rc_status: 'pending',
+        rc_note: null,
       },
     },
     { new: true }
   );
+  if (!vehicle) return null;
+
+  // Also push / replace in transporter documents.vehicle_rcs (for manager dashboard)
+  const transporter = await Transporter.findById(transporterId);
   if (!transporter) return null;
 
-  // Also push / replace in documents.vehicle_rcs (for manager dashboard)
   const existing = transporter.documents?.vehicle_rcs?.find(
     (rc) => rc.vehicleId?.toString() === vehicleId.toString()
   );
@@ -190,10 +194,11 @@ const uploadVehicleRc = async (transporterId, vehicleId, rcUrl) => {
 };
 
 const updateFleetRcStatus = async (transporterId, vehicleId, status, note = null) => {
-  const update = { 'fleet.$.rc_status': status };
-  if (note) update['fleet.$.rc_note'] = note;
-  return await Transporter.findOneAndUpdate(
-    { _id: transporterId, 'fleet._id': vehicleId },
+  const Fleet = (await import('../models/fleet.js')).default;
+  const update = { rc_status: status };
+  if (note) update.rc_note = note;
+  return await Fleet.findOneAndUpdate(
+    { _id: vehicleId, transporter_id: transporterId },
     { $set: update },
     { new: true }
   );
