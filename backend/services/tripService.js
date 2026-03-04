@@ -147,8 +147,15 @@ const createTrip = async (transporterId, tripData) => {
     planned_end_at: plannedEndAt,
     total_distance_km: totalDistanceKm,
     total_duration_minutes: totalDurationMinutes,
-    status: 'Planned',
+    status: 'Scheduled',
   });
+
+  // ── Update all orders to "Scheduled" ──
+  if (order_ids && order_ids.length > 0) {
+    for (const orderId of order_ids) {
+      await orderRepo.updateOrderStatus(orderId, 'Scheduled');
+    }
+  }
 
   // ── Add schedule blocks for driver & vehicle ──
   if (driverId && planned_start_at && plannedEndAt) {
@@ -190,8 +197,8 @@ const updateTrip = async (transporterId, tripId, updateData) => {
   if (!trip || trip.transporter_id.toString() !== transporterId) {
     throw new AppError(404, "NotFound", "Trip not found", "ERR_NOT_FOUND");
   }
-  if (!['Planned', 'Scheduled'].includes(trip.status)) {
-    throw new AppError(400, "InvalidOperation", "Can only update planned/scheduled trips", "ERR_INVALID_OPERATION");
+  if (trip.status !== 'Scheduled') {
+    throw new AppError(400, "InvalidOperation", "Can only update scheduled trips", "ERR_INVALID_OPERATION");
   }
   const allowed = {};
   if (updateData.stops) allowed.stops = updateData.stops;
@@ -207,8 +214,15 @@ const deleteTrip = async (transporterId, tripId) => {
   if (!trip || trip.transporter_id.toString() !== transporterId) {
     throw new AppError(404, "NotFound", "Trip not found", "ERR_NOT_FOUND");
   }
-  if (trip.status !== 'Planned') {
-    throw new AppError(400, "InvalidOperation", "Can only delete planned trips", "ERR_INVALID_OPERATION");
+  if (trip.status !== 'Scheduled') {
+    throw new AppError(400, "InvalidOperation", "Can only delete scheduled trips", "ERR_INVALID_OPERATION");
+  }
+  // Revert orders back to Assigned
+  for (const orderId of trip.order_ids) {
+    const order = await orderRepo.getOrderById(orderId);
+    if (order && order.status === 'Scheduled') {
+      await orderRepo.updateOrderStatus(orderId, 'Assigned');
+    }
   }
   if (trip.assigned_vehicle_id) {
     await _removeVehicleTripBlock(transporterId, trip.assigned_vehicle_id._id || trip.assigned_vehicle_id, tripId);
@@ -219,163 +233,6 @@ const deleteTrip = async (transporterId, tripId) => {
   await tripRepo.deleteTrip(tripId);
 };
 
-// ─── Transporter: Order management ─────────────────────────────────────────────
-
-const assignOrder = async (transporterId, tripId, orderId) => {
-  const trip = await tripRepo.getTripById(tripId);
-  if (!trip || trip.transporter_id.toString() !== transporterId) {
-    throw new AppError(404, "NotFound", "Trip not found", "ERR_NOT_FOUND");
-  }
-  if (trip.status !== 'Planned') {
-    throw new AppError(400, "InvalidOperation", "Can only add orders to planned trips", "ERR_INVALID_OPERATION");
-  }
-  const order = await orderRepo.getOrderById(orderId);
-  if (!order || order.assigned_transporter_id?.toString() !== transporterId) {
-    throw new AppError(404, "NotFound", "Order not found or not assigned to you", "ERR_NOT_FOUND");
-  }
-  if (order.status !== 'Assigned') {
-    throw new AppError(400, "InvalidOperation", "Order must be Assigned", "ERR_INVALID_OPERATION");
-  }
-  const existingTrip = await tripRepo.getTripByOrderId(orderId);
-  if (existingTrip && existingTrip._id.toString() !== tripId) {
-    throw new AppError(400, "InvalidOperation", "Order already in another trip", "ERR_INVALID_OPERATION");
-  }
-  return await tripRepo.addOrderToTrip(tripId, orderId);
-};
-
-const removeOrderFromTrip = async (transporterId, tripId, orderId) => {
-  const trip = await tripRepo.getTripById(tripId);
-  if (!trip || trip.transporter_id.toString() !== transporterId) {
-    throw new AppError(404, "NotFound", "Trip not found", "ERR_NOT_FOUND");
-  }
-  if (trip.status !== 'Planned') {
-    throw new AppError(400, "InvalidOperation", "Can only remove orders from planned trips", "ERR_INVALID_OPERATION");
-  }
-  return await tripRepo.removeOrderFromTrip(tripId, orderId);
-};
-
-// ─── Transporter: Assign Vehicle (creates schedule block) ──────────────────────
-
-const assignVehicle = async (transporterId, tripId, vehicleId) => {
-  const trip = await tripRepo.getTripById(tripId);
-  if (!trip || trip.transporter_id.toString() !== transporterId) {
-    throw new AppError(404, "NotFound", "Trip not found", "ERR_NOT_FOUND");
-  }
-  if (!['Planned', 'Scheduled'].includes(trip.status)) {
-    throw new AppError(400, "InvalidOperation", "Cannot assign vehicle now", "ERR_INVALID_OPERATION");
-  }
-  const truck = await truckRepo.getTruck(transporterId, vehicleId);
-  if (!truck) throw new AppError(404, "NotFound", "Vehicle not found", "ERR_NOT_FOUND");
-
-  const activeTripWithVehicle = await tripRepo.getActiveTripByVehicle(vehicleId);
-  if (activeTripWithVehicle && activeTripWithVehicle._id.toString() !== tripId) {
-    throw new AppError(400, "InvalidOperation", "Vehicle in another active trip", "ERR_INVALID_OPERATION");
-  }
-
-  if (trip.assigned_vehicle_id) {
-    const prevId = trip.assigned_vehicle_id._id || trip.assigned_vehicle_id;
-    await _removeVehicleTripBlock(transporterId, prevId, tripId);
-  }
-
-  if (trip.planned_start_at && trip.planned_end_at) {
-    await truckRepo.addFleetScheduleBlock(transporterId, vehicleId, {
-      title: 'Trip', type: 'trip',
-      startTime: trip.planned_start_at, endTime: trip.planned_end_at,
-      order_id: trip.order_ids[0], notes: `Trip ${tripId}`,
-    });
-  }
-  return await tripRepo.assignVehicleToTrip(tripId, vehicleId);
-};
-
-const unassignVehicle = async (transporterId, tripId) => {
-  const trip = await tripRepo.getTripById(tripId);
-  if (!trip || trip.transporter_id.toString() !== transporterId) {
-    throw new AppError(404, "NotFound", "Trip not found", "ERR_NOT_FOUND");
-  }
-  if (!['Planned', 'Scheduled'].includes(trip.status)) {
-    throw new AppError(400, "InvalidOperation", "Cannot unassign vehicle now", "ERR_INVALID_OPERATION");
-  }
-  if (trip.assigned_vehicle_id) {
-    const vehicleId = trip.assigned_vehicle_id._id || trip.assigned_vehicle_id;
-    await _removeVehicleTripBlock(transporterId, vehicleId, tripId);
-  }
-  return await tripRepo.unassignVehicleFromTrip(tripId);
-};
-
-// ─── Transporter: Assign Driver (creates schedule block) ───────────────────────
-
-const assignDriver = async (transporterId, tripId, driverId) => {
-  const trip = await tripRepo.getTripById(tripId);
-  if (!trip || trip.transporter_id.toString() !== transporterId) {
-    throw new AppError(404, "NotFound", "Trip not found", "ERR_NOT_FOUND");
-  }
-  if (!['Planned', 'Scheduled'].includes(trip.status)) {
-    throw new AppError(400, "InvalidOperation", "Cannot assign driver now", "ERR_INVALID_OPERATION");
-  }
-  const driver = await driverRepo.findDriverById(driverId);
-  if (!driver || driver.transporter_id?.toString() !== transporterId) {
-    throw new AppError(404, "NotFound", "Driver not found or not in your team", "ERR_NOT_FOUND");
-  }
-  const activeTripWithDriver = await tripRepo.getActiveTripByDriver(driverId);
-  if (activeTripWithDriver && activeTripWithDriver._id.toString() !== tripId) {
-    throw new AppError(400, "InvalidOperation", "Driver in another active trip", "ERR_INVALID_OPERATION");
-  }
-
-  if (trip.assigned_driver_id) {
-    const prevId = trip.assigned_driver_id._id || trip.assigned_driver_id;
-    await _removeDriverTripBlock(prevId, tripId);
-  }
-
-  if (trip.planned_start_at && trip.planned_end_at) {
-    await driverRepo.addScheduleBlock(driverId, {
-      title: 'Trip', type: 'trip',
-      startTime: trip.planned_start_at, endTime: trip.planned_end_at,
-      order_id: trip.order_ids[0], notes: `Trip ${tripId}`,
-    });
-  }
-  return await tripRepo.assignDriverToTrip(tripId, driverId);
-};
-
-const unassignDriver = async (transporterId, tripId) => {
-  const trip = await tripRepo.getTripById(tripId);
-  if (!trip || trip.transporter_id.toString() !== transporterId) {
-    throw new AppError(404, "NotFound", "Trip not found", "ERR_NOT_FOUND");
-  }
-  if (!['Planned', 'Scheduled'].includes(trip.status)) {
-    throw new AppError(400, "InvalidOperation", "Cannot unassign driver now", "ERR_INVALID_OPERATION");
-  }
-  if (trip.assigned_driver_id) {
-    const driverId = trip.assigned_driver_id._id || trip.assigned_driver_id;
-    await _removeDriverTripBlock(driverId, tripId);
-  }
-  return await tripRepo.unassignDriverFromTrip(tripId);
-};
-
-// ─── Transporter: Schedule Trip ────────────────────────────────────────────────
-
-const scheduleTrip = async (transporterId, tripId) => {
-  const trip = await tripRepo.getTripById(tripId);
-  if (!trip || trip.transporter_id.toString() !== transporterId) {
-    throw new AppError(404, "NotFound", "Trip not found", "ERR_NOT_FOUND");
-  }
-  if (trip.status !== 'Planned') {
-    throw new AppError(400, "InvalidOperation", "Trip must be Planned", "ERR_INVALID_OPERATION");
-  }
-  if (!trip.assigned_vehicle_id) throw new AppError(400, "InvalidOperation", "Assign a vehicle first", "ERR_INVALID_OPERATION");
-  if (!trip.assigned_driver_id) throw new AppError(400, "InvalidOperation", "Assign a driver first", "ERR_INVALID_OPERATION");
-  if (!trip.order_ids.length) throw new AppError(400, "InvalidOperation", "Add at least one order", "ERR_INVALID_OPERATION");
-  if (!trip.stops.length) throw new AppError(400, "InvalidOperation", "Define stops first", "ERR_INVALID_OPERATION");
-
-  const stops = trip.stops.map(s => {
-    const stop = s.toObject ? s.toObject() : { ...s };
-    // OTPs are stored on the Order document (generated when the bid is accepted)
-    stop.status = 'Pending';
-    return stop;
-  });
-
-  return await tripRepo.updateTrip(tripId, { status: 'Scheduled', stops });
-};
-
 const cancelTrip = async (transporterId, tripId) => {
   const trip = await tripRepo.getTripById(tripId);
   if (!trip || trip.transporter_id.toString() !== transporterId) {
@@ -383,6 +240,13 @@ const cancelTrip = async (transporterId, tripId) => {
   }
   if (['Completed', 'Cancelled'].includes(trip.status)) {
     throw new AppError(400, "InvalidOperation", "Cannot cancel", "ERR_INVALID_OPERATION");
+  }
+  // Revert orders back to Assigned
+  for (const orderId of trip.order_ids) {
+    const order = await orderRepo.getOrderById(orderId);
+    if (order && !['Completed', 'Cancelled'].includes(order.status)) {
+      await orderRepo.updateOrderStatus(orderId, 'Assigned');
+    }
   }
   if (trip.assigned_vehicle_id) {
     await _removeVehicleTripBlock(transporterId, trip.assigned_vehicle_id._id || trip.assigned_vehicle_id, tripId);
@@ -398,8 +262,8 @@ const completeTrip = async (transporterId, tripId) => {
   if (!trip || trip.transporter_id.toString() !== transporterId) {
     throw new AppError(404, "NotFound", "Trip not found", "ERR_NOT_FOUND");
   }
-  if (!['In Transit', 'Delayed'].includes(trip.status)) {
-    throw new AppError(400, "InvalidOperation", "Trip must be in transit", "ERR_INVALID_OPERATION");
+  if (trip.status !== 'Active') {
+    throw new AppError(400, "InvalidOperation", "Trip must be active", "ERR_INVALID_OPERATION");
   }
   for (const orderId of trip.order_ids) {
     const order = await orderRepo.getOrderById(orderId);
@@ -463,15 +327,15 @@ const startTrip = async (driverId, tripId) => {
     return stop;
   });
 
-  // Only set the first stop's order to 'In Transit' so the customer can start tracking
+  // Set the first stop's order to 'Started' (pickup is the current stop)
   const firstStop = stops[0];
   if (firstStop?.type === 'Pickup' && firstStop?.order_id) {
     const firstOrderId = firstStop.order_id?._id || firstStop.order_id;
-    await orderRepo.updateOrderStatus(firstOrderId, 'In Transit');
+    await orderRepo.updateOrderStatus(firstOrderId, 'Started');
   }
 
   return await tripRepo.updateTrip(tripId, {
-    status: 'In Transit', actual_start_at: new Date(), current_stop_index: 0, stops,
+    status: 'Active', actual_start_at: new Date(), current_stop_index: 0, stops,
   });
 };
 
@@ -493,6 +357,8 @@ const confirmPickup = async (driverId, tripId, stopId, otp) => {
   }
 
   await tripRepo.updateStopStatus(tripId, stopId, { status: 'Completed', actual_departure_at: new Date() });
+  // Pickup confirmed → order is now "In Transit"
+  await orderRepo.updateOrderStatus(orderId, 'In Transit');
   return await _advanceToNextStop(tripId);
 };
 
@@ -525,8 +391,8 @@ const declareDelay = async (driverId, tripId, delayData) => {
   if (!trip || (trip.assigned_driver_id?._id || trip.assigned_driver_id)?.toString() !== driverId) {
     throw new AppError(404, "NotFound", "Trip not found", "ERR_NOT_FOUND");
   }
-  if (!['In Transit', 'Delayed'].includes(trip.status)) {
-    throw new AppError(400, "InvalidOperation", "Trip must be in transit", "ERR_INVALID_OPERATION");
+  if (trip.status !== 'Active') {
+    throw new AppError(400, "InvalidOperation", "Trip must be active", "ERR_INVALID_OPERATION");
   }
 
   const { delay_minutes, reason, coordinates } = delayData;
@@ -550,7 +416,7 @@ const declareDelay = async (driverId, tripId, delayData) => {
     return stop;
   });
 
-  return await tripRepo.updateTrip(tripId, { status: 'Delayed', stops, current_stop_index: currentIndex + 1 });
+  return await tripRepo.updateTrip(tripId, { stops, current_stop_index: currentIndex + 1 });
 };
 
 const clearDelay = async (driverId, tripId, stopId) => {
@@ -569,10 +435,6 @@ const clearDelay = async (driverId, tripId, stopId) => {
     throw new AppError(400, "InvalidOperation", "Not a delay stop", "ERR_INVALID_OPERATION");
   }
   await tripRepo.updateStopStatus(tripId, stop._id, { status: 'Completed', actual_departure_at: new Date() });
-
-  const updatedTrip = await tripRepo.getTripById(tripId);
-  const hasActiveDelay = updatedTrip.stops.some(s => s.type === 'Delay' && s.status === 'Arrived');
-  if (!hasActiveDelay) await tripRepo.updateTrip(tripId, { status: 'In Transit' });
   return await _advanceToNextStop(tripId);
 };
 
@@ -583,8 +445,8 @@ const updateTripLocation = async (driverId, tripId, coordinates) => {
   if (!trip || (trip.assigned_driver_id?._id || trip.assigned_driver_id)?.toString() !== driverId) {
     throw new AppError(404, "NotFound", "Trip not found", "ERR_NOT_FOUND");
   }
-  if (!['In Transit', 'Delayed'].includes(trip.status)) {
-    throw new AppError(400, "InvalidOperation", "Trip must be in transit", "ERR_INVALID_OPERATION");
+  if (trip.status !== 'Active') {
+    throw new AppError(400, "InvalidOperation", "Trip must be active", "ERR_INVALID_OPERATION");
   }
   return await tripRepo.updateTripLocation(tripId, coordinates);
 };
@@ -648,11 +510,14 @@ const _advanceToNextStop = async (tripId) => {
 
   await tripRepo.updateStopStatus(tripId, stops[nextIndex]._id, { status: 'En Route' });
 
-  // If the next stop is a Pickup, set its order to 'In Transit' so the customer can track it
+  // If the next stop is a Pickup, set its order to 'Started' (pickup is the current stop)
   const nextStop = stops[nextIndex];
   if (nextStop?.type === 'Pickup' && nextStop?.order_id) {
     const nextOrderId = nextStop.order_id?._id || nextStop.order_id;
-    await orderRepo.updateOrderStatus(nextOrderId, 'In Transit');
+    const order = await orderRepo.getOrderById(nextOrderId);
+    if (order && order.status === 'Scheduled') {
+      await orderRepo.updateOrderStatus(nextOrderId, 'Started');
+    }
   }
 
   return await tripRepo.updateTrip(tripId, { current_stop_index: nextIndex });
@@ -680,9 +545,7 @@ const _removeDriverTripBlock = async (driverId, tripId) => {
 
 export default {
   createTrip, getTrips, getTripDetails, updateTrip, deleteTrip,
-  assignOrder, removeOrderFromTrip,
-  assignVehicle, unassignVehicle, assignDriver, unassignDriver,
-  scheduleTrip, cancelTrip, completeTrip,
+  cancelTrip, completeTrip,
   getDriverTrips, getDriverTripDetails, startTrip,
   confirmPickup, confirmDelivery,
   declareDelay, clearDelay, updateTripLocation,

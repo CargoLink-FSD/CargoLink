@@ -38,55 +38,6 @@ async function deleteTrip(req, res, next) {
   } catch (err) { next(err); }
 }
 
-async function assignOrder(req, res, next) {
-  try {
-    const trip = await tripServices.assignOrder(req.user.id, req.params.tripId, req.body.orderId);
-    res.status(200).json({ success: true, data: trip });
-  } catch (err) { next(err); }
-}
-
-async function removeOrderFromTrip(req, res, next) {
-  try {
-    const trip = await tripServices.removeOrderFromTrip(req.user.id, req.params.tripId, req.params.orderId);
-    res.status(200).json({ success: true, data: trip });
-  } catch (err) { next(err); }
-}
-
-async function assignVehicle(req, res, next) {
-  try {
-    const trip = await tripServices.assignVehicle(req.user.id, req.params.tripId, req.body.vehicleId);
-    res.status(200).json({ success: true, data: trip });
-  } catch (err) { next(err); }
-}
-
-async function unassignVehicle(req, res, next) {
-  try {
-    const trip = await tripServices.unassignVehicle(req.user.id, req.params.tripId);
-    res.status(200).json({ success: true, data: trip });
-  } catch (err) { next(err); }
-}
-
-async function assignDriver(req, res, next) {
-  try {
-    const trip = await tripServices.assignDriver(req.user.id, req.params.tripId, req.body.driverId);
-    res.status(200).json({ success: true, data: trip });
-  } catch (err) { next(err); }
-}
-
-async function unassignDriver(req, res, next) {
-  try {
-    const trip = await tripServices.unassignDriver(req.user.id, req.params.tripId);
-    res.status(200).json({ success: true, data: trip });
-  } catch (err) { next(err); }
-}
-
-async function scheduleTrip(req, res, next) {
-  try {
-    const trip = await tripServices.scheduleTrip(req.user.id, req.params.tripId);
-    res.status(200).json({ success: true, data: trip });
-  } catch (err) { next(err); }
-}
-
 async function cancelTrip(req, res, next) {
   try {
     const trip = await tripServices.cancelTrip(req.user.id, req.params.tripId);
@@ -205,9 +156,7 @@ async function getOrderTracking(req, res, next) {
 
 export default {
   createTrip, getTrips, getTripDetails, updateTrip, deleteTrip,
-  assignOrder, removeOrderFromTrip,
-  assignVehicle, unassignVehicle, assignDriver, unassignDriver,
-  scheduleTrip, cancelTrip, completeTrip,
+  cancelTrip, completeTrip,
   getAssignableOrders, getAvailableDrivers, getAvailableVehicles,
   getDriverTrips, getDriverTripDetails, startTrip,
   arriveAtStop, confirmPickup, confirmDelivery, departFromStop,

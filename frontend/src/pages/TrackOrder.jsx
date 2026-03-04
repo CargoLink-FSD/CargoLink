@@ -22,7 +22,7 @@ const OtpBlock = ({ label, otp, hint, color }) => {
       <div className="to-otp-label">{label}</div>
       <div className="to-otp-value" onClick={handleCopy} title="Click to copy">
         {otp}
-        <span className="to-otp-copy">{copied ? '✓' : '📋'}</span>
+        <span className="to-otp-copy">{copied ? 'Copied' : 'Copy'}</span>
       </div>
       <div className="to-otp-sub">{hint}</div>
     </div>
@@ -125,35 +125,46 @@ const TrackOrderPage = () => {
     const delivery = currentOrder.delivery;
     const points = [];
 
+    // Helper: GeoJSON [lng,lat] -> Leaflet [lat,lng]
+    const toLatLng = (c) => {
+      const a = Number(c[0]), b = Number(c[1]);
+      // If first value > 90, it's longitude (GeoJSON order) — swap
+      if (Math.abs(a) > 90 && Math.abs(b) <= 90) return [b, a];
+      if (a > 50 && b < 40) return [b, a];
+      return [a, b];
+    };
+
     // Pickup marker
     if (pickup?.coordinates?.length === 2) {
+      const ll = toLatLng(pickup.coordinates);
       const pickupIcon = L.divIcon({
         className: '',
         html: '<div style="width:14px;height:14px;background:#22c55e;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
         iconSize: [14, 14], iconAnchor: [7, 7],
       });
-      const m = L.marker(pickup.coordinates, { icon: pickupIcon }).addTo(map);
+      const m = L.marker(ll, { icon: pickupIcon }).addTo(map);
       m.bindPopup(`<b>Pickup</b><br/>${pickup.city || ''}, ${pickup.state || ''}`);
       markersRef.current.push(m);
-      points.push(pickup.coordinates);
+      points.push(pickup.coordinates); // keep original for OSRM
     }
 
     // Delivery marker
     if (delivery?.coordinates?.length === 2) {
+      const ll = toLatLng(delivery.coordinates);
       const deliveryIcon = L.divIcon({
         className: '',
         html: '<div style="width:14px;height:14px;background:#ef4444;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
         iconSize: [14, 14], iconAnchor: [7, 7],
       });
-      const m = L.marker(delivery.coordinates, { icon: deliveryIcon }).addTo(map);
+      const m = L.marker(ll, { icon: deliveryIcon }).addTo(map);
       m.bindPopup(`<b>Delivery</b><br/>${delivery.city || ''}, ${delivery.state || ''}`);
       markersRef.current.push(m);
-      points.push(delivery.coordinates);
+      points.push(delivery.coordinates); // keep original for OSRM
     }
 
-    // OSRM route
+    // OSRM route (needs lng,lat which is already how GeoJSON stores them)
     if (points.length === 2) {
-      const coords = points.map(p => `${p[1]},${p[0]}`).join(';');
+      const coords = points.map(p => `${p[0]},${p[1]}`).join(';');
       fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`)
         .then(r => r.json())
         .then(data => {
@@ -163,7 +174,7 @@ const TrackOrderPage = () => {
             map.fitBounds(L.latLngBounds(routeCoords), { padding: [40, 40], maxZoom: 13 });
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     } else if (points.length > 0) {
       map.setView(points[0], 12);
     }
@@ -177,15 +188,18 @@ const TrackOrderPage = () => {
 
     const driverCoords = tracking?.trip?.current_location?.coordinates;
     if (driverCoords?.length === 2) {
+      // GeoJSON [lng,lat] -> Leaflet [lat,lng]
+      const a = Number(driverCoords[0]), b = Number(driverCoords[1]);
+      const ll = (Math.abs(a) > 90 && Math.abs(b) <= 90) ? [b, a] : (a > 50 && b < 40) ? [b, a] : [a, b];
       if (driverMarkerRef.current) {
-        driverMarkerRef.current.setLatLng(driverCoords);
+        driverMarkerRef.current.setLatLng(ll);
       } else {
         const icon = L.divIcon({
           className: '',
           html: '<div style="width:16px;height:16px;background:#3b82f6;border-radius:50%;border:3px solid white;box-shadow:0 0 0 3px rgba(59,130,246,0.3), 0 2px 8px rgba(59,130,246,0.4);position:relative"><div style="position:absolute;inset:-8px;border-radius:50%;background:rgba(59,130,246,0.15);animation:livePulse 2s ease-in-out infinite"></div></div>',
           iconSize: [16, 16], iconAnchor: [8, 8],
         });
-        driverMarkerRef.current = L.marker(driverCoords, { icon, zIndexOffset: 1000 }).addTo(map);
+        driverMarkerRef.current = L.marker(ll, { icon, zIndexOffset: 1000 }).addTo(map);
         driverMarkerRef.current.bindPopup('<b>Driver Location</b>');
       }
     }
@@ -335,31 +349,31 @@ const TrackOrderPage = () => {
             <div className="right-column">
 
               {/* ─── OTP Confirmation Codes ─── */}
-              {userType === 'customer' && ['Assigned', 'In Transit'].includes(currentOrder.status) &&
+              {userType === 'customer' && ['Assigned', 'Scheduled', 'Started', 'In Transit'].includes(currentOrder.status) &&
                 (currentOrder.pickup_otp || currentOrder.delivery_otp) && (
-                <div className="card to-otp-card">
-                  <div className="card-header">
-                    <h2 className="card-title">🔐 Confirmation Codes</h2>
+                  <div className="card to-otp-card">
+                    <div className="card-header">
+                      <h2 className="card-title">Confirmation Codes</h2>
+                    </div>
+                    <p className="to-otp-hint">Show these codes to the driver when they arrive. Keep them safe.</p>
+                    <div className="to-otp-grid">
+                      {currentOrder.pickup_otp && (
+                        <OtpBlock label="Pickup OTP" otp={currentOrder.pickup_otp}
+                          hint="Give to driver at pickup location" color="#22c55e" />
+                      )}
+                      {currentOrder.delivery_otp && (
+                        <OtpBlock label="Delivery OTP" otp={currentOrder.delivery_otp}
+                          hint="Receiver gives to driver at delivery" color="#6366f1" />
+                      )}
+                    </div>
                   </div>
-                  <p className="to-otp-hint">Show these codes to the driver when they arrive. Keep them safe.</p>
-                  <div className="to-otp-grid">
-                    {currentOrder.pickup_otp && (
-                      <OtpBlock label="📦 Pickup OTP" otp={currentOrder.pickup_otp}
-                        hint="Give to driver at pickup location" color="#22c55e" />
-                    )}
-                    {currentOrder.delivery_otp && (
-                      <OtpBlock label="🏠 Delivery OTP" otp={currentOrder.delivery_otp}
-                        hint="Receiver gives to driver at delivery" color="#6366f1" />
-                    )}
-                  </div>
-                </div>
-              )}
+                )}
 
               {/* ─── Stop Progress (from tracking) ─── */}
               {tracking?.stops?.length > 0 && (
                 <div className="card to-stops-card">
                   <div className="card-header">
-                    <h2 className="card-title">📍 Trip Progress</h2>
+                    <h2 className="card-title">Trip Progress</h2>
                   </div>
                   <div className="to-stops-list">
                     {tracking.stops.map((stop, idx) => {

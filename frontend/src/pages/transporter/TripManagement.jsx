@@ -7,10 +7,8 @@ import { getTrips, cancelTrip, completeTrip as completeTripApi, deleteTrip } fro
 import '../../styles/TripManagement.css';
 
 const STATUS_CONFIG = {
-  Planned:     { label: 'Planned',    color: '#6366f1' },
   Scheduled:   { label: 'Scheduled',  color: '#1976d2' },
-  'In Transit':{ label: 'In Transit', color: '#388e3c' },
-  Delayed:     { label: 'Delayed',    color: '#c62828' },
+  Active:      { label: 'Active',     color: '#388e3c' },
   Completed:   { label: 'Completed',  color: '#00796b' },
   Cancelled:   { label: 'Cancelled',  color: '#757575' },
 };
@@ -55,10 +53,10 @@ function TripCard({ trip, onView, onInfo, onCancel, onComplete, onDelete }) {
       </div>
       <div className="tm-card-actions">
         <button className="btn btn-outline btn-sm" onClick={() => onView(trip)}>View</button>
-        <button className="btn btn-outline btn-sm" onClick={() => onInfo(trip)}>📍 Route & ETA</button>
-        {trip.status === 'Planned' && <button className="btn btn-outline btn-sm btn-danger-outline" onClick={() => onDelete(trip)}>Delete</button>}
-        {['Planned', 'Scheduled'].includes(trip.status) && <button className="btn btn-outline btn-sm btn-danger-outline" onClick={() => onCancel(trip)}>Cancel</button>}
-        {['In Transit', 'Delayed'].includes(trip.status) && <button className="btn btn-primary btn-sm" onClick={() => onComplete(trip)}>Complete</button>}
+        <button className="btn btn-outline btn-sm" onClick={() => onInfo(trip)}>Route & ETA</button>
+        {trip.status === 'Scheduled' && <button className="btn btn-outline btn-sm btn-danger-outline" onClick={() => onDelete(trip)}>Delete</button>}
+        {trip.status === 'Scheduled' && <button className="btn btn-outline btn-sm btn-danger-outline" onClick={() => onCancel(trip)}>Cancel</button>}
+        {trip.status === 'Active' && <button className="btn btn-primary btn-sm" onClick={() => onComplete(trip)}>Complete</button>}
       </div>
     </div>
   );
@@ -178,11 +176,10 @@ const TripManagement = () => {
   return (
     <>
       <Header />
-      <br /><br />
-      <div className="orders-container">
+      <div className="tripManagement-container">
         {/* Header */}
-        <div className="orders-header">
-          <div className="orders-header-row">
+        <div className="trips-header">
+          <div className="trips-header-row">
             <h1>My Trips</h1>
             <button className="btn-create-trip" onClick={() => navigate('/transporter/trips/create')}>+ Create Trip</button>
           </div>
@@ -201,7 +198,7 @@ const TripManagement = () => {
         </div>
 
         {/* Filters */}
-        <div className="orders-filters">
+        <div className="trips-filters">
           <input type="text" placeholder="Search by trip ID, vehicle, or city..."
             value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="search-input" />
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="status-filter">
@@ -218,12 +215,11 @@ const TripManagement = () => {
         )}
 
         {!loading && error && (
-          <div className="empty-state"><h3>Error</h3><p>{error}</p><button className="btn btn-primary" onClick={loadTrips}>Retry</button></div>
+          <div className="tm-empty-state"><h3>Error</h3><p>{error}</p><button className="btn btn-primary" onClick={loadTrips}>Retry</button></div>
         )}
 
         {!loading && !error && filteredTrips.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-icon">🚛</div>
+          <div className="tm-empty-state">
             <h3>No trips found</h3>
             <p>{trips.length === 0 ? 'Create your first trip to get started.' : 'No trips match your filters.'}</p>
             {trips.length === 0 && <button className="btn btn-primary" onClick={() => navigate('/transporter/trips/create')}>Create Trip</button>}
@@ -231,7 +227,7 @@ const TripManagement = () => {
         )}
 
         {!loading && !error && filteredTrips.length > 0 && (
-          <div className="orders-grid">
+          <div className="trips-grid">
             {filteredTrips.map(trip => (
               <TripCard key={trip._id} trip={trip}
                 onView={setSelectedTrip}

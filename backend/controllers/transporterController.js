@@ -618,6 +618,7 @@ const uploadVehicleRc = async (req, res, next) => {
     const transporterId = req.user.id;
     const { vehicleId } = req.params;
     const file = req.file;
+    logger.debug('Upload Vehicle RC request received', { transporterId, vehicleId, file });
     const result = await transporterService.uploadVehicleRc(transporterId, vehicleId, file);
     res.status(200).json({
       success: true,

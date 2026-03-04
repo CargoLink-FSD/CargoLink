@@ -82,32 +82,6 @@ export const rejectOrderBid = createAsyncThunk(
   }
 );
 
-// Async thunk for confirming pickup
-export const confirmOrderPickup = createAsyncThunk(
-  'orders/confirmPickup',
-  async (orderId, { rejectWithValue }) => {
-    try {
-      await ordersApi.confirmPickup(orderId);
-      return orderId;
-    } catch (error) {
-      return rejectWithValue(error.message || 'Failed to confirm pickup');
-    }
-  }
-);
-
-// Async thunk for confirming delivery
-export const confirmDelivery = createAsyncThunk(
-  'orders/confirmDelivery',
-  async (orderId, { rejectWithValue }) => {
-    try {
-      await ordersApi.confirmDelivery(orderId);
-      return orderId;
-    } catch (error) {
-      return rejectWithValue(error.message || 'Failed to confirm delivery');
-    }
-  }
-);
-
 // Async thunk for placing a new order
 export const placeNewOrder = createAsyncThunk(
   'orders/placeOrder',
@@ -242,35 +216,6 @@ const ordersSlice = createSlice({
         state.error = null;
       })
       .addCase(rejectOrderBid.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      // Confirm pickup
-      .addCase(confirmOrderPickup.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(confirmOrderPickup.fulfilled, (state, action) => {
-        state.loading = false;
-        state.currentOrder.status = 'In Transit';
-        state.error = null;
-      })
-      .addCase(confirmOrderPickup.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      // Confirm delivery
-      .addCase(confirmDelivery.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(confirmDelivery.fulfilled, (state, action) => {
-        state.loading = false;
-        state.error = null;
-      })
-      .addCase(confirmDelivery.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

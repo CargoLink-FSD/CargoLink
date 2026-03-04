@@ -11,15 +11,7 @@ const registerDriver = async (driverData) => {
   if (emailExists)
     throw new AppError(409, "DuplicateKey", 'Email already in use', "ERR_DUP_EMAIL", [{ field: 'email', message: 'Already exisits' }]);
 
-  if (address) {
-    driverInfo.addresses = [{
-      ...address,
-      address_label: 'Home',
-      contact_phone: address.contact_phone || driverData.phone,
-    }];
-  }
-
-  const driver = await driverRepo.createDriver(driverInfo);
+  const driver = await driverRepo.createDriver(driverData);
   return driver;
 };
 

@@ -6,9 +6,10 @@
 }
 
 .driver-mgmt-container {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 2rem;
+  min-height: calc(100vh - 200px);
 }
 
 .driver-mgmt-header {
@@ -27,6 +28,9 @@
   margin: 0;
   font-size: 0.95rem;
 }
+
+
+
 
 /* ─── Tabs ──────────────────────────────────────────────────────────────────── */
 

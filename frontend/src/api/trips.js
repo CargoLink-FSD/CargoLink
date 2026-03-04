@@ -32,11 +32,6 @@ export const deleteTrip = async (tripId) => {
 
 // ─── Trip Lifecycle ─────────────────────────────────────────────────────────────
 
-export const scheduleTrip = async (tripId) => {
-  const response = await http.post(`/api/trips/${tripId}/schedule`);
-  return response.data;
-};
-
 export const cancelTrip = async (tripId) => {
   const response = await http.post(`/api/trips/${tripId}/cancel`);
   return response.data;
@@ -127,7 +122,7 @@ export const getOrderTracking = async (orderId) => {
 
 export default {
   getTrips, getTripDetails, createTrip, updateTrip, deleteTrip,
-  scheduleTrip, cancelTrip, completeTrip,
+  cancelTrip, completeTrip,
   getAssignableOrders, getAvailableDrivers, getAvailableVehicles,
   getDriverTrips, getDriverTripDetails, startTrip,
   arriveAtStop, confirmPickup, confirmDelivery, departFromStop,

@@ -95,7 +95,7 @@ export default function AppRoutes() {
 
 
       {/* Customer Routes */}
-      
+
       <Route path="/customer/signup" element={<CustomerSignupForm />} />
 
       <Route element={<ProtectedRoute allowedRoles={['customer']} />}>
@@ -112,7 +112,7 @@ export default function AppRoutes() {
 
 
       {/* Transporter Routes */}
-      
+
       <Route path="/transporter/signup" element={<TransporterSignupForm />} />
 
       <Route element={<ProtectedRoute allowedRoles={['transporter']} />}>
@@ -148,12 +148,12 @@ export default function AppRoutes() {
         <Route path="/driver/schedule" element={<DriverSchedule />} />
       </Route>
 
-     
+
       {/* Manager Routes */}
 
 
       {/* Admin Routes */}
-      
+
       <Route path="/admin/login" element={placeholder('Admin Login')} />
 
       <Route element={<ProtectedRoute allowedRoles={['admin']} />}>

@@ -83,6 +83,12 @@ const DriverSchema = new mongoose.Schema({
   state: String,
   pin: String,
 
+  address : {
+    street: String,
+    city: String,
+    state: String,
+    pin: String,
+  }
 }, { timestamps: true });
 
 DriverSchema.pre("save", async function (next) {

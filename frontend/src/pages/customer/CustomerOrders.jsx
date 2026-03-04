@@ -56,10 +56,7 @@ export default function CustomerOrders() {
   return (
     <>
       <Header />
-      <br />
-      <br />
-      <br />
-      <div className="co-page">
+      <div className="customerOrders-container co-page">
         {/* ── Header ── */}
         <div className="co-header">
           <h1>My Orders</h1>
@@ -82,6 +79,8 @@ export default function CustomerOrders() {
             <option value="all">All Statuses</option>
             <option value="placed">Placed</option>
             <option value="assigned">Assigned</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="started">Started</option>
             <option value="in transit">In Transit</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
