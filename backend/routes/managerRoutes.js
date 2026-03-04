@@ -13,13 +13,17 @@ managerRouter.use(authMiddleware(["manager"]));
 // Manager profile
 managerRouter.get("/profile", managerController.getProfile);
 
-// Verification queue - list all transporters with documents under review
+// Verification queue - unified list of all pending documents (transporters + drivers)
 managerRouter.get("/verification-queue", managerController.getVerificationQueue);
 
-// Approve a specific document for a transporter
-managerRouter.patch("/transporters/:id/documents/:docType/approve", managerController.approveDocument);
+// Approve a specific document (body: { entityType: 'transporter' | 'driver' })
+managerRouter.patch("/verify/:id/documents/:docType/approve", managerController.approveDocument);
 
-// Reject a specific document for a transporter (body: { note: string })
+// Reject a specific document (body: { note: string, entityType: 'transporter' | 'driver' })
+managerRouter.patch("/verify/:id/documents/:docType/reject", managerController.rejectDocument);
+
+// Keep legacy routes for backward compatibility
+managerRouter.patch("/transporters/:id/documents/:docType/approve", managerController.approveDocument);
 managerRouter.patch("/transporters/:id/documents/:docType/reject", managerController.rejectDocument);
 
 export default managerRouter;

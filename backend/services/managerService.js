@@ -1,15 +1,174 @@
 import managerRepo from '../repositories/managerRepo.js';
 import transporterRepo from '../repositories/transporterRepo.js';
+import driverRepo from '../repositories/driverRepo.js';
 import { AppError, logger, sendMail } from '../utils/misc.js';
 
-// ─── Verification Queue (existing functionality) ─────────
+// ─── Verification Queue (combined: transporters + drivers) ─────────
 
-const getVerificationQueue = async () => {
+const getVerificationQueue = async (managerId = null) => {
     const transporters = await transporterRepo.getTransportersForVerification();
-    return transporters;
+    const drivers = await driverRepo.getDriversForVerification();
+
+    // Format into a unified list
+    const queue = [];
+
+    for (const t of transporters) {
+        const docs = t.documents || {};
+        // Add PAN card + DL as transporter_verification items
+        if (docs.pan_card) {
+            queue.push({
+                _id: t._id,
+                entityType: 'transporter',
+                verificationType: 'transporter_verification',
+                name: t.name,
+                email: t.email,
+                docType: 'pan_card',
+                docLabel: 'PAN Card',
+                url: docs.pan_card.url,
+                uploadedAt: docs.pan_card.uploadedAt,
+                status: docs.pan_card.adminStatus,
+                note: docs.pan_card.adminNote,
+                refData: [
+                    t.pan && { label: 'PAN Number', value: t.pan },
+                    t.gst_in && { label: 'GST', value: t.gst_in },
+                    t.primary_contact && { label: 'Contact', value: t.primary_contact },
+                ].filter(Boolean),
+            });
+        }
+        if (docs.driving_license) {
+            queue.push({
+                _id: t._id,
+                entityType: 'transporter',
+                verificationType: 'transporter_verification',
+                name: t.name,
+                email: t.email,
+                docType: 'driving_license',
+                docLabel: 'Driving License',
+                url: docs.driving_license.url,
+                uploadedAt: docs.driving_license.uploadedAt,
+                status: docs.driving_license.adminStatus,
+                note: docs.driving_license.adminNote,
+                refData: [
+                    { label: 'Name', value: t.name },
+                    t.primary_contact && { label: 'Contact', value: t.primary_contact },
+                ].filter(Boolean),
+            });
+        }
+        // Vehicle RCs
+        if (docs.vehicle_rcs && docs.vehicle_rcs.length > 0) {
+            docs.vehicle_rcs.forEach((rc, index) => {
+                const vehicle = t.fleet?.find(v => v._id?.toString() === rc.vehicleId?.toString());
+                queue.push({
+                    _id: t._id,
+                    entityType: 'transporter',
+                    verificationType: 'vehicle_verification',
+                    name: t.name,
+                    email: t.email,
+                    docType: `vehicle_rc_${index}`,
+                    docLabel: vehicle ? `Vehicle RC — ${vehicle.name || ''} (${vehicle.registration || ''})` : `Vehicle RC #${index + 1}`,
+                    url: rc.url,
+                    uploadedAt: rc.uploadedAt,
+                    status: rc.adminStatus,
+                    note: rc.adminNote,
+                    vehicleId: rc.vehicleId,
+                    refData: vehicle ? [
+                        { label: 'Registration', value: vehicle.registration },
+                        { label: 'Type', value: vehicle.truck_type },
+                        vehicle.capacity && { label: 'Capacity', value: `${vehicle.capacity} kg` },
+                    ].filter(Boolean) : [],
+                });
+            });
+        }
+    }
+
+    for (const d of drivers) {
+        const docs = d.documents || {};
+        if (docs.pan_card) {
+            queue.push({
+                _id: d._id,
+                entityType: 'driver',
+                verificationType: 'driver_verification',
+                name: `${d.firstName || ''} ${d.lastName || ''}`.trim(),
+                email: d.email,
+                docType: 'pan_card',
+                docLabel: 'PAN Card',
+                url: docs.pan_card.url,
+                uploadedAt: docs.pan_card.uploadedAt,
+                status: docs.pan_card.adminStatus,
+                note: docs.pan_card.adminNote,
+                refData: [
+                    d.phone && { label: 'Phone', value: d.phone },
+                    d.licenseNumber && { label: 'License', value: d.licenseNumber },
+                ].filter(Boolean),
+            });
+        }
+        if (docs.driving_license) {
+            queue.push({
+                _id: d._id,
+                entityType: 'driver',
+                verificationType: 'driver_verification',
+                name: `${d.firstName || ''} ${d.lastName || ''}`.trim(),
+                email: d.email,
+                docType: 'driving_license',
+                docLabel: 'Driving License',
+                url: docs.driving_license.url,
+                uploadedAt: docs.driving_license.uploadedAt,
+                status: docs.driving_license.adminStatus,
+                note: docs.driving_license.adminNote,
+                refData: [
+                    d.licenseNumber && { label: 'License #', value: d.licenseNumber },
+                    d.phone && { label: 'Phone', value: d.phone },
+                    (d.city || d.state) && { label: 'Location', value: [d.city, d.state].filter(Boolean).join(', ') },
+                ].filter(Boolean),
+            });
+        }
+    }
+
+    // If managerId provided, filter by manager's verification categories
+    if (managerId) {
+        const manager = await managerRepo.findManagerById(managerId);
+        if (manager && !manager.isDefault) {
+            const allowedTypes = manager.verificationCategories || [];
+            if (allowedTypes.length > 0) {
+                return queue.filter(item => allowedTypes.includes(item.verificationType));
+            }
+        }
+    }
+
+    // Sort: pending first, then by uploadedAt ascending (oldest first)
+    queue.sort((a, b) => {
+        if (a.status === 'pending' && b.status !== 'pending') return -1;
+        if (a.status !== 'pending' && b.status === 'pending') return 1;
+        return new Date(a.uploadedAt) - new Date(b.uploadedAt);
+    });
+
+    return queue;
 };
 
-const approveDocument = async (transporterId, docType) => {
+// Keep the old raw transporter queue for backward compatibility
+const getRawTransporterQueue = async () => {
+    return await transporterRepo.getTransportersForVerification();
+};
+
+const approveDocument = async (entityId, entityType, docType) => {
+    if (entityType === 'driver') {
+        return await approveDriverDocument(entityId, docType);
+    }
+    // Default: transporter
+    return await approveTransporterDocument(entityId, docType);
+};
+
+const rejectDocument = async (entityId, entityType, docType, note) => {
+    if (entityType === 'driver') {
+        return await rejectDriverDocument(entityId, docType, note);
+    }
+    // Default: transporter
+    return await rejectTransporterDocument(entityId, docType, note);
+};
+
+// ─── Transporter Document Approval ───────────────────────
+
+const approveTransporterDocument = async (transporterId, docType) => {
     const transporter = await transporterRepo.findTransporterById(transporterId);
     if (!transporter) {
         throw new AppError(404, 'NotFoundError', 'Transporter not found', 'ERR_NOT_FOUND');
@@ -57,7 +216,7 @@ const approveDocument = async (transporterId, docType) => {
     return await transporterRepo.findTransporterById(transporterId);
 };
 
-const rejectDocument = async (transporterId, docType, note) => {
+const rejectTransporterDocument = async (transporterId, docType, note) => {
     const transporter = await transporterRepo.findTransporterById(transporterId);
     if (!transporter) {
         throw new AppError(404, 'NotFoundError', 'Transporter not found', 'ERR_NOT_FOUND');
@@ -109,6 +268,69 @@ function checkAllDocumentsApproved(docs) {
     return true;
 }
 
+function checkDriverDocumentsApproved(docs) {
+    if (!docs) return false;
+    if (!docs.pan_card || docs.pan_card.adminStatus !== 'approved') return false;
+    if (!docs.driving_license || docs.driving_license.adminStatus !== 'approved') return false;
+    return true;
+}
+
+// ─── Driver Document Approval ────────────────────────────
+
+const approveDriverDocument = async (driverId, docType) => {
+    const driver = await driverRepo.findDriverById(driverId);
+    if (!driver) {
+        throw new AppError(404, 'NotFoundError', 'Driver not found', 'ERR_NOT_FOUND');
+    }
+    if (!driver.documents) {
+        throw new AppError(400, 'ValidationError', 'No documents found for this driver', 'ERR_NO_DOCS');
+    }
+
+    let docPath;
+    if (docType === 'pan_card') {
+        docPath = 'documents.pan_card';
+    } else if (docType === 'driving_license') {
+        docPath = 'documents.driving_license';
+    } else {
+        throw new AppError(400, 'ValidationError', 'Invalid document type for driver', 'ERR_INVALID_DOC_TYPE');
+    }
+
+    await driverRepo.updateDocumentStatus(driverId, docPath, 'approved', null);
+
+    const updated = await driverRepo.findDriverById(driverId);
+    if (checkDriverDocumentsApproved(updated.documents)) {
+        await driverRepo.updateVerificationStatus(driverId, 'approved', true);
+        logger.info(`Driver ${driverId} fully verified — all documents approved`);
+    }
+
+    return { entityType: 'driver', _id: updated._id, verificationStatus: updated.verificationStatus, isVerified: updated.isVerified, documents: updated.documents };
+};
+
+const rejectDriverDocument = async (driverId, docType, note) => {
+    const driver = await driverRepo.findDriverById(driverId);
+    if (!driver) {
+        throw new AppError(404, 'NotFoundError', 'Driver not found', 'ERR_NOT_FOUND');
+    }
+    if (!driver.documents) {
+        throw new AppError(400, 'ValidationError', 'No documents found for this driver', 'ERR_NO_DOCS');
+    }
+
+    let docPath;
+    if (docType === 'pan_card') {
+        docPath = 'documents.pan_card';
+    } else if (docType === 'driving_license') {
+        docPath = 'documents.driving_license';
+    } else {
+        throw new AppError(400, 'ValidationError', 'Invalid document type for driver', 'ERR_INVALID_DOC_TYPE');
+    }
+
+    await driverRepo.updateDocumentStatus(driverId, docPath, 'rejected', note || 'Document rejected by manager');
+    await driverRepo.updateVerificationStatus(driverId, 'rejected', false);
+
+    const updated = await driverRepo.findDriverById(driverId);
+    return { entityType: 'driver', _id: updated._id, verificationStatus: updated.verificationStatus, isVerified: updated.isVerified, documents: updated.documents };
+};
+
 // ─── Manager Registration via Invitation Code ────────────
 
 const registerManager = async ({ name, email, password, invitationCode }) => {
@@ -130,6 +352,7 @@ const registerManager = async ({ name, email, password, invitationCode }) => {
         email,
         password,
         categories: invitation.categories,
+        verificationCategories: invitation.verificationCategories || [],
         invitationCode: invitation._id,
         isDefault: false,
     });
@@ -251,9 +474,12 @@ const getManagerProfile = async (managerId) => {
         name: manager.name,
         email: manager.email,
         categories: manager.categories,
+        verificationCategories: manager.verificationCategories,
         status: manager.status,
         openTicketCount: manager.openTicketCount,
         totalResolved: manager.totalResolved,
+        openVerificationCount: manager.openVerificationCount,
+        totalVerified: manager.totalVerified,
         isDefault: manager.isDefault,
         createdAt: manager.createdAt,
     };
@@ -278,11 +504,18 @@ const seedDefaultManager = async () => {
         'Other',
     ];
 
+    const defaultVerificationCategories = [
+        'transporter_verification',
+        'driver_verification',
+        'vehicle_verification',
+    ];
+
     const manager = await managerRepo.createManager({
         name: 'Default Manager',
         email: 'manager@cargolink.com',
         password: 'manager@123',
         categories: defaultCategories,
+        verificationCategories: defaultVerificationCategories,
         isDefault: true,
         status: 'active',
     });
@@ -297,8 +530,9 @@ const seedDefaultManager = async () => {
 };
 
 export default {
-    // Existing verification
+    // Verification (unified queue)
     getVerificationQueue,
+    getRawTransporterQueue,
     approveDocument,
     rejectDocument,
 

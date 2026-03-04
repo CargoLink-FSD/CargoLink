@@ -13,13 +13,14 @@ const ALL_CATEGORIES = [
     'Payment Issue',
     'Transporter Complaint',
     'Customer Complaint',
+    'Driver Complaint',
     'Technical Issue',
     'Account Issue',
     'Other',
 ];
 
 // Categories that should show the order dropdown
-const ORDER_CATEGORIES = ['Shipment Issue', 'Payment Issue', 'Transporter Complaint', 'Customer Complaint'];
+const ORDER_CATEGORIES = ['Shipment Issue', 'Payment Issue', 'Transporter Complaint', 'Customer Complaint', 'Driver Complaint'];
 
 export default function SupportTickets() {
     const navigate = useNavigate();
@@ -29,6 +30,7 @@ export default function SupportTickets() {
     const CATEGORIES = ALL_CATEGORIES.filter((c) => {
         if (user?.role === 'transporter' && c === 'Transporter Complaint') return false;
         if (user?.role === 'customer' && c === 'Customer Complaint') return false;
+        if (user?.role === 'driver' && c === 'Driver Complaint') return false;
         return true;
     });
     const [tickets, setTickets] = useState([]);

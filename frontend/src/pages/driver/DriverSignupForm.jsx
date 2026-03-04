@@ -6,6 +6,7 @@ import { useDriverSignup } from '../../hooks/auth/useDriverSignup';
 import { Button } from '../../components/forms';
 import ProgressSteps from '../../components/forms/ProgressSteps';
 import { EyeIcon, EyeOffIcon } from '../../components/auth/AuthUI';
+import DriverDocumentUploadStep from '../../components/driver/DriverDocumentUploadStep';
 import '../../components/forms/forms.css';
 import '../../styles/Signup.css';
 
@@ -13,7 +14,7 @@ const stepConfigs = [
   [
     { label: 'First Name', type: 'text', name: 'firstName', placeholder: 'Enter your first name', required: true },
     { label: 'Last Name', type: 'text', name: 'lastName', placeholder: 'Enter your last name', required: true },
-    { label: 'Gender', type: 'select', name: 'gender', placeholder: 'Select your gender', required: true, options: [ { value: 'Male', label: 'Male' }, { value: 'Female', label: 'Female' }, { value: 'Other', label: 'Other' } ] },
+    { label: 'Gender', type: 'select', name: 'gender', placeholder: 'Select your gender', required: true, options: [{ value: 'Male', label: 'Male' }, { value: 'Female', label: 'Female' }, { value: 'Other', label: 'Other' }] },
     { label: 'Email', type: 'email', name: 'email', placeholder: 'Enter your email', required: true, showGoogleButton: true },
   ],
   [
@@ -45,6 +46,10 @@ const DriverSignupForm = () => {
     navigate,
     handleGoogleSignup,
     handleGoogleError,
+    documentFiles,
+    setDocumentFiles,
+    documentErrors,
+    setDocumentErrors,
   } = state;
 
   return (
@@ -59,7 +64,7 @@ const DriverSignupForm = () => {
           <div className="form-step">
             {stepConfigs[currentStep - 1].map((field, idx) => {
               const error = errors?.[field.name]?.message || '';
-              
+
               if (field.type === 'select') {
                 return (
                   <div key={`${currentStep}-${idx}`} className="form-group">
@@ -96,7 +101,7 @@ const DriverSignupForm = () => {
                     {...register(field.name)}
                   />
                   {error && <span className="error-message">{error}</span>}
-                  
+
                   {/* Google OAuth button for email field */}
                   {field.showGoogleButton && currentStep === 1 && (
                     <>
@@ -131,6 +136,21 @@ const DriverSignupForm = () => {
         )}
 
         {currentStep === 3 && (
+          <div className="form-step">
+            <DriverDocumentUploadStep
+              documentFiles={documentFiles}
+              setDocumentFiles={setDocumentFiles}
+              documentErrors={documentErrors}
+              setDocumentErrors={setDocumentErrors}
+            />
+            <div className="buttons">
+              <Button type="button" variant="outline" onClick={prevStep}>Previous</Button>
+              <Button type="button" variant="primary" onClick={nextStep}>Next</Button>
+            </div>
+          </div>
+        )}
+
+        {currentStep === 4 && (
           <div className="form-step">
             <div className="form-group">
               <label className="input-label" htmlFor="password">Password *</label>

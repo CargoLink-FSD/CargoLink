@@ -81,6 +81,18 @@ export const withdrawApplication = async (applicationId) => {
   return response;
 };
 
+// ─── Document Upload & Verification ────────────────────────────────────────────
+
+export const uploadDriverDocuments = async (formData) => {
+  const response = await http.post('/api/drivers/documents', formData);
+  return response;
+};
+
+export const getDriverVerificationStatus = async () => {
+  const response = await http.get('/api/drivers/verification-status');
+  return response.data;
+};
+
 export default {
   getDriverProfile,
   updateDriverProfile,
@@ -94,4 +106,6 @@ export default {
   applyToTransporter,
   getApplications,
   withdrawApplication,
+  uploadDriverDocuments,
+  getDriverVerificationStatus,
 };

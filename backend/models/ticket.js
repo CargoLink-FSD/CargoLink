@@ -4,7 +4,7 @@ const MessageSchema = new mongoose.Schema(
     {
         sender: {
             type: String,
-            enum: ['customer', 'transporter', 'manager'],
+            enum: ['customer', 'transporter', 'driver', 'manager'],
             required: true,
         },
         senderName: { type: String },
@@ -18,8 +18,8 @@ const TicketSchema = new mongoose.Schema(
     {
         ticketId: { type: String, unique: true },
         userId: { type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'userModel' },
-        userModel: { type: String, enum: ['Customer', 'Transporter'], required: true },
-        userRole: { type: String, enum: ['customer', 'transporter'], required: true },
+        userModel: { type: String, enum: ['Customer', 'Transporter', 'Driver'], required: true },
+        userRole: { type: String, enum: ['customer', 'transporter', 'driver'], required: true },
         userName: { type: String, required: true },
         userEmail: { type: String, required: true },
         category: {
@@ -29,6 +29,7 @@ const TicketSchema = new mongoose.Schema(
                 'Payment Issue',
                 'Transporter Complaint',
                 'Customer Complaint',
+                'Driver Complaint',
                 'Technical Issue',
                 'Account Issue',
                 'Other',

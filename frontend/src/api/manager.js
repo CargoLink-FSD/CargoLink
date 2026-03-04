@@ -15,21 +15,21 @@ export const getManagerProfile = async () => {
   return response.data;
 };
 
-// Get all transporters with documents under review
+// Get unified verification queue (transporters + drivers)
 export const getVerificationQueue = async () => {
   const response = await http.get('/api/manager/verification-queue');
   return response.data;
 };
 
-// Approve a specific document for a transporter
-export const approveDocument = async (transporterId, docType) => {
-  const response = await http.patch(`/api/manager/transporters/${transporterId}/documents/${docType}/approve`);
+// Approve a specific document (entityType: 'transporter' or 'driver')
+export const approveDocument = async (entityId, docType, entityType = 'transporter') => {
+  const response = await http.patch(`/api/manager/verify/${entityId}/documents/${docType}/approve`, { entityType });
   return response.data;
 };
 
-// Reject a specific document for a transporter with a reason
-export const rejectDocument = async (transporterId, docType, note) => {
-  const response = await http.patch(`/api/manager/transporters/${transporterId}/documents/${docType}/reject`, { note });
+// Reject a specific document with a reason (entityType: 'transporter' or 'driver')
+export const rejectDocument = async (entityId, docType, note, entityType = 'transporter') => {
+  const response = await http.patch(`/api/manager/verify/${entityId}/documents/${docType}/reject`, { note, entityType });
   return response.data;
 };
 

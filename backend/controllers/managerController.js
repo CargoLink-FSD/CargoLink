@@ -48,10 +48,11 @@ const getProfile = async (req, res, next) => {
 
 const getVerificationQueue = async (req, res, next) => {
   try {
-    const transporters = await managerService.getVerificationQueue();
+    const managerId = req.user.id;
+    const queue = await managerService.getVerificationQueue(managerId);
     res.status(200).json({
       success: true,
-      data: transporters,
+      data: queue,
       message: 'Verification queue fetched successfully',
     });
   } catch (err) {
@@ -62,13 +63,15 @@ const getVerificationQueue = async (req, res, next) => {
 const approveDocument = async (req, res, next) => {
   try {
     const { id, docType } = req.params;
-    const transporter = await managerService.approveDocument(id, docType);
+    const { entityType } = req.body; // 'transporter' or 'driver'
+    const result = await managerService.approveDocument(id, entityType || 'transporter', docType);
     res.status(200).json({
       success: true,
       data: {
-        verificationStatus: transporter.verificationStatus,
-        isVerified: transporter.isVerified,
-        documents: transporter.documents,
+        entityType: result.entityType || 'transporter',
+        verificationStatus: result.verificationStatus,
+        isVerified: result.isVerified,
+        documents: result.documents,
       },
       message: 'Document approved successfully',
     });
@@ -80,19 +83,20 @@ const approveDocument = async (req, res, next) => {
 const rejectDocument = async (req, res, next) => {
   try {
     const { id, docType } = req.params;
-    const { note } = req.body;
+    const { note, entityType } = req.body;
 
     if (!note || !note.trim()) {
       throw new AppError(400, 'ValidationError', 'Rejection reason is required', 'ERR_MISSING_NOTE');
     }
 
-    const transporter = await managerService.rejectDocument(id, docType, note);
+    const result = await managerService.rejectDocument(id, entityType || 'transporter', docType, note);
     res.status(200).json({
       success: true,
       data: {
-        verificationStatus: transporter.verificationStatus,
-        isVerified: transporter.isVerified,
-        documents: transporter.documents,
+        entityType: result.entityType || 'transporter',
+        verificationStatus: result.verificationStatus,
+        isVerified: result.isVerified,
+        documents: result.documents,
       },
       message: 'Document rejected successfully',
     });
