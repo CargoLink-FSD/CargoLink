@@ -69,7 +69,8 @@
 }
 
 .support-empty .empty-icon {
-    font-size: 3rem;
+    display: flex;
+    justify-content: center;
     margin-bottom: 12px;
 }
 
@@ -98,17 +99,17 @@
     color: #2c3e50;
 }
 
-.form-row {
+.support-container .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
 }
 
-.form-group {
+.support-container .form-group {
     margin-bottom: 14px;
 }
 
-.form-group label {
+.support-container .form-group label {
     display: block;
     font-size: 0.85rem;
     font-weight: 600;
@@ -116,9 +117,9 @@
     margin-bottom: 6px;
 }
 
-.form-group select,
-.form-group input,
-.form-group textarea {
+.support-container .form-group select,
+.support-container .form-group input,
+.support-container .form-group textarea {
     width: 100%;
     padding: 10px 12px;
     border: 1px solid #d1d5db;
@@ -130,9 +131,9 @@
     transition: border-color 0.2s;
 }
 
-.form-group select:focus,
-.form-group input:focus,
-.form-group textarea:focus {
+.support-container .form-group select:focus,
+.support-container .form-group input:focus,
+.support-container .form-group textarea:focus {
     border-color: #4f46e5;
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
@@ -463,7 +464,9 @@
 }
 
 .photo-upload-btn {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     padding: 8px 18px;
     background: #f0f4ff;
     border: 1px dashed #4f46e5;
@@ -500,6 +503,9 @@
 }
 
 .remove-photo-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     padding: 4px 12px;
     background: #fee2e2;
     color: #991b1b;
@@ -538,7 +544,7 @@
 
 /* ─── Responsive ─── */
 @media (max-width: 640px) {
-    .form-row {
+    .support-container .form-row {
         grid-template-columns: 1fr;
     }
 

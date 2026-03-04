@@ -1,0 +1,543 @@
+/* ═══════════════════════════════════════════════════════════
+   QuoteBuilder.css — Professional quotation form styling
+   Inspired by real packers & movers quotation sheets
+   ═══════════════════════════════════════════════════════════ */
+
+.qb-wrapper {
+  padding-top: 90px;
+  padding-bottom: 60px;
+  min-height: 100vh;
+  background: #f4f6f8;
+}
+
+.qb-container {
+  width: clamp(70%, 960px, 95%);
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* ── Header ── */
+.qb-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.qb-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #555;
+  transition: all 0.2s;
+}
+
+.qb-back-btn:hover {
+  background: #f0f0f0;
+  transform: translateX(-2px);
+}
+
+.qb-title {
+  font-size: 1.75rem;
+  color: #222;
+  margin: 0;
+}
+
+.qb-subtitle {
+  font-size: 0.9rem;
+  color: #888;
+  margin: 0.25rem 0 0;
+}
+
+/* ── Order Summary Card ── */
+.qb-order-summary {
+  background: #fff;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-left: 4px solid #f5a623;
+}
+
+.qb-order-summary h3 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.qb-order-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem 2rem;
+}
+
+.qb-order-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.qb-label {
+  font-size: 0.78rem;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.qb-max-price {
+  font-weight: 700;
+  color: #e74c3c;
+  font-size: 1.05rem;
+}
+
+.qb-flag {
+  display: inline-block;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 9999px;
+  padding: 1px 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.qb-hint-ref {
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* ── Quote Table ── */
+.qb-form {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.qb-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.qb-table thead tr {
+  background: linear-gradient(135deg, #f5a623, #e89b0e);
+}
+
+.qb-table th {
+  padding: 0.9rem 1rem;
+  text-align: left;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.qb-col-sno {
+  width: 60px;
+  text-align: center !important;
+}
+
+.qb-col-charges {
+  width: 260px;
+}
+
+.qb-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+  font-size: 0.93rem;
+  color: #444;
+}
+
+.qb-table td:first-child {
+  text-align: center;
+  color: #888;
+  font-weight: 600;
+}
+
+.qb-table tbody tr:hover {
+  background: #fffdf5;
+}
+
+/* ── Line-item labels ── */
+.qb-item-label {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.15rem;
+}
+
+.qb-item-hint {
+  font-size: 0.78rem;
+  color: #aaa;
+}
+
+.qb-required {
+  color: #e74c3c;
+  font-weight: 700;
+}
+
+/* ── Inputs ── */
+.qb-input {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.qb-input:focus {
+  outline: none;
+  border-color: #f5a623;
+  box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.15);
+}
+
+.qb-input--small {
+  max-width: 120px;
+}
+
+.qb-input--label {
+  border-style: dashed;
+  font-style: italic;
+}
+
+.qb-select {
+  padding: 0.55rem 0.75rem;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fff;
+  cursor: pointer;
+  min-width: 80px;
+}
+
+.qb-select:focus {
+  outline: none;
+  border-color: #f5a623;
+}
+
+/* ── Input groups ── */
+.qb-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.qb-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  color: #777;
+  user-select: none;
+}
+
+.qb-toggle input[type='checkbox'] {
+  accent-color: #f5a623;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.qb-toggle-text {
+  font-size: 0.82rem;
+}
+
+.qb-included-badge {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  flex: 1;
+  text-align: center;
+}
+
+/* ── Risk row ── */
+.qb-risk-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.qb-risk-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.qb-risk-row label {
+  font-size: 0.82rem;
+  color: #777;
+  min-width: 110px;
+}
+
+.qb-risk-result {
+  font-weight: 700;
+  color: #e67e22;
+  font-size: 0.95rem;
+  padding-top: 0.25rem;
+}
+
+/* ── GST row ── */
+.qb-gst-inputs {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.qb-gst-computed {
+  font-weight: 600;
+  color: #555;
+}
+
+/* ── Custom item row ── */
+.qb-row-custom td {
+  background: #fefef5;
+}
+
+.qb-btn-remove {
+  background: #ffebee;
+  color: #c62828;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.qb-btn-remove:hover {
+  background: #ffcdd2;
+}
+
+/* ── Add custom button ── */
+.qb-row-add td {
+  border-bottom: none;
+}
+
+.qb-btn-add {
+  background: none;
+  border: 1.5px dashed #ccc;
+  color: #888;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.qb-btn-add:hover {
+  border-color: #f5a623;
+  color: #f5a623;
+}
+
+/* ── Summary rows ── */
+.qb-row-subtotal td {
+  background: #f9f9f9;
+  border-top: 2px solid #e0e0e0;
+  font-size: 0.95rem;
+}
+
+.qb-row-gst-total td {
+  background: #f9f9f9;
+  color: #555;
+}
+
+.qb-row-total td {
+  background: linear-gradient(135deg, #fff8e1, #fff3c4);
+  border-top: 2px solid #f5a623;
+  font-size: 1.1rem;
+}
+
+.qb-grand-total {
+  font-size: 1.2rem;
+  color: #2e7d32;
+}
+
+.qb-grand-total--over {
+  color: #c62828;
+}
+
+/* ── Warning ── */
+.qb-warning {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
+  border-radius: 0 0 8px 8px;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* ── Notes ── */
+.qb-notes-section {
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.qb-notes-label {
+  display: block;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.qb-textarea {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.qb-textarea:focus {
+  outline: none;
+  border-color: #f5a623;
+  box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.15);
+}
+
+/* ── Actions ── */
+.qb-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.qb-btn {
+  padding: 0.7rem 1.75rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.qb-btn--primary {
+  background: linear-gradient(135deg, #f5a623, #e68a00);
+  color: #fff;
+}
+
+.qb-btn--primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 166, 35, 0.35);
+}
+
+.qb-btn--primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.qb-btn--secondary {
+  background: #f5f5f5;
+  color: #555;
+}
+
+.qb-btn--secondary:hover {
+  background: #e8e8e8;
+}
+
+/* ── Empty state ── */
+.qb-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.qb-empty h2 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.qb-empty p {
+  color: #888;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .qb-container {
+    width: 95%;
+  }
+
+  .qb-order-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .qb-col-charges {
+    width: 180px;
+  }
+
+  .qb-input-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+
+  .qb-risk-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .qb-gst-inputs {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .qb-actions {
+    flex-direction: column;
+  }
+
+  .qb-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .qb-table th,
+  .qb-table td {
+    padding: 0.5rem 0.5rem;
+  }
+
+  .qb-col-sno {
+    width: 40px;
+  }
+
+  .qb-col-charges {
+    width: 140px;
+  }
+
+  .qb-order-grid {
+    grid-template-columns: 1fr;
+  }
+}

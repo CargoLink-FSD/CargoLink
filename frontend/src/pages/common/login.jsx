@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
+import { Lock } from 'lucide-react';
 import { useAuthLogin } from '../../hooks/auth/useAuthLogin';
 import { EyeIcon, EyeOffIcon } from '../../components/auth/AuthUI';
 import AuthLayout from '../../components/auth/AuthLayout';
@@ -39,7 +40,9 @@ function Login() {
         subtitle={`Enter the 6-digit code sent to ${twoFAState.maskedEmail}`}
       >
         <div className="otp-verification">
-          <div className="otp-icon">🔐</div>
+          <div className="otp-icon" aria-hidden="true">
+            <Lock size={40} />
+          </div>
 
           <div className="otp-inputs" onPaste={handleOtpPaste}>
             {twoFAState.otp.map((digit, idx) => (

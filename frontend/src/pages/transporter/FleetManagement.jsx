@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Check } from 'lucide-react';
 
 // Import Header and Footer
 import Header from '../../components/common/Header';
@@ -176,6 +177,9 @@ const FleetManagement = () => {
   return (
     <div className="fleet-management-page">
       <Header />
+      <br />
+      <br />
+      <br />
 
       <main className="container main-content">
         {/* Page Header */}
@@ -402,7 +406,12 @@ const FleetManagement = () => {
                     onChange={handleRcChange}
                   />
                   {rcError && <span style={{ color: 'red', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>{rcError}</span>}
-                  {rcFile && <span style={{ color: 'green', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>✓ {rcFile.name} selected</span>}
+                  {rcFile && (
+                    <span style={{ color: 'green', fontSize: '0.85rem', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Check size={16} aria-hidden="true" />
+                      <span>{rcFile.name} selected</span>
+                    </span>
+                  )}
                   {currentVehicle?.rc_url && !rcFile && (
                     <span style={{ color: '#555', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
                       Current RC on file —{' '}

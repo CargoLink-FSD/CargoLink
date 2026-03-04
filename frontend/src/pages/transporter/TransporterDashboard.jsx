@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { CircleX, Clock, FileText } from 'lucide-react';
 import { getTransporterDashboardStats } from '../../api/transporter';
 import { getTransporterOrders, getAvailableOrders } from '../../api/transporterOrders';
 import { fetchMyBids, withdrawBid } from '../../api/bids';
@@ -306,18 +307,27 @@ export default function TransporterDashboard() {
         {/* Verification Status Banner */}
         {verificationInfo && verificationInfo.verificationStatus === 'unsubmitted' && (
           <div className="verification-banner verification-unsubmitted">
-            <span>📋 Complete document upload to start bidding on orders.</span>
+            <span>
+              <FileText size={16} aria-hidden="true" />
+              <span>Complete document upload to start bidding on orders.</span>
+            </span>
             <Link to="/transporter/profile" className="banner-action">Upload Documents</Link>
           </div>
         )}
         {verificationInfo && verificationInfo.verificationStatus === 'under_review' && (
           <div className="verification-banner verification-under-review">
-            <span>⏳ Your documents are under manager review. You will be notified once verified.</span>
+            <span>
+              <Clock size={16} aria-hidden="true" />
+              <span>Your documents are under manager review. You will be notified once verified.</span>
+            </span>
           </div>
         )}
         {verificationInfo && verificationInfo.verificationStatus === 'rejected' && (
           <div className="verification-banner verification-rejected">
-            <span>❌ One or more of your documents were rejected. Please re-upload to continue.</span>
+            <span>
+              <CircleX size={16} aria-hidden="true" />
+              <span>One or more of your documents were rejected. Please re-upload to continue.</span>
+            </span>
             <Link to="/transporter/profile" className="banner-action">Re-upload</Link>
           </div>
         )}

@@ -224,12 +224,19 @@ const TripPlanner = () => {
   // ─── Derived ───
   const vehicle = vehicles.find(v => v._id === selectedVehicle);
   const driver = drivers.find(d => d._id === selectedDriver);
+  
+  //changed
+  const vehicleCapacityTons = vehicle?.capacity != null ? Number(vehicle.capacity) : null;
+  const vehicleCapacityKg = vehicleCapacityTons != null && !Number.isNaN(vehicleCapacityTons)
+    ? vehicleCapacityTons * 1000
+    : null;
 
   const totalWeight = orders
     .filter(o => selectedOrders.includes(o._id))
     .reduce((s, o) => s + (o.weight || 0), 0);
-
-  const capacityUsed = vehicle ? (totalWeight / vehicle.capacity) * 100 : 0;
+  
+   //changed
+  const capacityUsed = vehicleCapacityKg ? (totalWeight / vehicleCapacityKg) * 100 : 0;
   const overCapacity = capacityUsed > 100;
 
   const stopsWithMeta = (() => {
@@ -428,7 +435,7 @@ const TripPlanner = () => {
                     <div className="tp-weight-row" style={{ marginTop: '0.35rem' }}>
                       <span className="detail-label" style={{ marginBottom: 0, fontSize: '0.78rem' }}>Capacity used</span>
                       <span className={overCapacity ? 'tp-text--warning' : 'tp-text--ok'} style={{ fontSize: '0.82rem', fontWeight: 600 }}>
-                        {Math.round(capacityUsed)}% of {vehicle.capacity} kg{overCapacity ? ' ⚠' : ''}
+                        {Math.round(capacityUsed)}% of {vehicleCapacityTons} tons{overCapacity ? ' ⚠' : ''}
                       </span>
                     </div>
                   </>
@@ -477,7 +484,7 @@ const TripPlanner = () => {
                   <button className={`tp-select-btn ${selectedVehicle ? 'has-value' : ''}`}
                     onClick={() => { setShowVehicleMenu(v => !v); setShowDriverMenu(false); }}>
                     {vehicle
-                      ? <><span className="tp-sel-icon">🚛</span><span className="tp-sel-main">{vehicle.registration}</span><span className="tp-sel-sub">{vehicle.truck_type} · {vehicle.capacity} kg</span></>
+                      ? <><span className="tp-sel-icon">🚛</span><span className="tp-sel-main">{vehicle.registration}</span><span className="tp-sel-sub">{vehicle.truck_type} · {vehicleCapacityTons} tons</span></>
                       : <span className="tp-sel-placeholder">Select vehicle…</span>}
                     <span className="tp-chevron">▾</span>
                   </button>
@@ -488,7 +495,7 @@ const TripPlanner = () => {
                           onClick={() => { setSelectedVehicle(v._id); setShowVehicleMenu(false); }}>
                           <div>
                             <div className="tp-dd-main">{v.registration}</div>
-                            <div className="tp-dd-sub">{v.truck_type} · {v.capacity} kg · {v.name}</div>
+                            <div className="tp-dd-sub">{v.truck_type} · {v.capacity} tons · {v.name}</div>
                           </div>
                           <span className={`tp-badge tp-badge--ok`}>{v.status || 'Available'}</span>
                         </div>
@@ -557,8 +564,8 @@ const TripPlanner = () => {
             ) : (
               <div className="tp-tl-list">
                 {stopsWithMeta.map((stop, idx) => {
-                  const overLoad = vehicle && stop.runningLoad > vehicle.capacity;
-                  const loadPct = vehicle ? Math.min((stop.runningLoad / vehicle.capacity) * 100, 100) : 0;
+                  const overLoad = vehicleCapacityKg != null && stop.runningLoad > vehicleCapacityKg;
+                  const loadPct = vehicleCapacityKg ? Math.min((stop.runningLoad / vehicleCapacityKg) * 100, 100) : 0;
                   return (
                     <div key={stop.id}>
                       {idx > 0 && (

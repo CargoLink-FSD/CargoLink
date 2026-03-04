@@ -22,6 +22,11 @@ paymentRouter.post(
   authMiddleware(["customer"]),
   paymentController.submitReview
 );
+paymentRouter.get(
+  "/orders/:orderId/review",
+  authMiddleware(["customer", "transporter"]),
+  paymentController.getOrderReview
+);
 // ===== Transporter Routes =====
 paymentRouter.post(
   "/payout",

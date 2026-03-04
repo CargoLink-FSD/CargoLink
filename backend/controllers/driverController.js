@@ -37,7 +37,7 @@ const getDriverProfile = async (req, res, next) => {
       memberSince: driver.createdAt,
       gender: driver.gender,
       licenseNumber: driver.licenseNumber,
-       streetAddress: driver.street || '',
+      streetAddress: driver.street || '',
       city: driver.city || '',
       state: driver.state || '',
       pin: driver.pin || '',

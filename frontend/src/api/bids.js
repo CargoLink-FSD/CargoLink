@@ -10,11 +10,12 @@ export async function fetchMyBids() {
   return response.data || [];
 }
 
-export async function submitBid(orderId, bidAmount, notes = '') {
-  const response = await http.post(`/api/orders/${orderId}/bids`, {
-    bidAmount,
-    notes,
-  });
+export async function submitBid(orderId, bidAmount, notes = '', quoteBreakdown = null) {
+  const body = { bidAmount, notes };
+  if (quoteBreakdown) {
+    body.quoteBreakdown = quoteBreakdown;
+  }
+  const response = await http.post(`/api/orders/${orderId}/bids`, body);
   return response.data || response;
 }
 

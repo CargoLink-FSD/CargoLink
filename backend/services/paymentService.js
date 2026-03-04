@@ -93,10 +93,18 @@ export default {
       throw new AppError(404, 'NotFound', 'Payment record not found', 'ERR_NOT_FOUND');
     }
 
-    // 3. Update order payment_status and mark as Completed
+    // 3. Update order payment_status + status
+    // NOTE: Frontend treats "Pay Now" as delivery completion, so once final payment
+    // is verified we mark the order as Completed as well (unless cancelled).
     const order = await orderModel.findById(orderId);
+    if (!order) {
+      throw new AppError(404, 'NotFound', 'Order not found', 'ERR_NOT_FOUND');
+    }
+
     order.payment_status = 'Paid';
-    order.status = 'Completed';
+    if (order.status !== 'Cancelled' && order.status !== 'Completed') {
+      order.status = 'Completed';
+    }
     await order.save();
 
     return {
@@ -104,6 +112,7 @@ export default {
       status: payment.status,
       payment_type: payment.payment_type,
       order_payment_status: order.payment_status,
+      order_status: order.status,
     };
   },
 
@@ -115,6 +124,10 @@ export default {
 
     if (!order || order.status !== "Completed") {
       throw new AppError(400, 'InvalidOperation', 'You can only review completed orders', 'ERR_INVALID_OPERATION');
+    }
+
+    if (order.payment_status !== 'Paid') {
+      throw new AppError(400, 'InvalidOperation', 'Please complete the final payment before submitting a review', 'ERR_INVALID_OPERATION');
     }
 
     if (order.is_reviewed) {
@@ -136,6 +149,26 @@ export default {
     order.is_reviewed = true;
     await order.save();
 
+    return review;
+  },
+
+  /**
+   * Get review for an order (for Order Details)
+   */
+  getOrderReview: async (orderId, userId, role) => {
+    const order = await orderModel.findById(orderId);
+    if (!order) {
+      throw new AppError(404, 'NotFound', 'Order not found', 'ERR_NOT_FOUND');
+    }
+
+    if (role === 'customer' && order.customer_id.toString() !== userId) {
+      throw new AppError(403, 'Forbidden', 'Not your order', 'ERR_FORBIDDEN');
+    }
+    if (role === 'transporter' && order.assigned_transporter_id?.toString() !== userId) {
+      throw new AppError(403, 'Forbidden', 'Not authorized for this order', 'ERR_FORBIDDEN');
+    }
+
+    const review = await Review.findOne({ order_id: orderId });
     return review;
   },
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Mail, Package } from 'lucide-react';
 import {
     getAllTickets,
     getTicketStats,
@@ -256,7 +257,9 @@ export default function ManagerSupport() {
                             <p className="mgr-loading">Loading ticket...</p>
                         ) : !selectedTicket ? (
                             <div className="mgr-detail-empty">
-                                <div className="empty-icon">📩</div>
+                                <div className="empty-icon" aria-hidden="true">
+                                    <Mail size={44} />
+                                </div>
                                 <p>Select a ticket from the list to view details</p>
                             </div>
                         ) : (
@@ -294,7 +297,10 @@ export default function ManagerSupport() {
                                 {/* Order Details Card */}
                                 {selectedTicket.orderDetails && (
                                     <div className="mgr-order-card">
-                                        <h4 className="mgr-order-card-title">📦 Related Order</h4>
+                                        <h4 className="mgr-order-card-title">
+                                            <Package size={16} aria-hidden="true" />
+                                            <span>Related Order</span>
+                                        </h4>
                                         <div className="mgr-order-grid">
                                             <div className="mgr-order-field">
                                                 <span className="mgr-order-label">Route</span>

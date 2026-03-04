@@ -434,6 +434,23 @@ const getTransporterRatings = async (req, res, next) => {
   }
 };
 
+const getPublicProfile = async (req, res, next) => {
+  try {
+    const transporterId = req.params.transporterId;
+    if (!mongoose.Types.ObjectId.isValid(transporterId)) {
+      throw new AppError(400, "ValidationError", "Invalid transporter ID", "ERR_VALIDATION");
+    }
+    const profileData = await transporterService.getTransporterPublicProfile(transporterId);
+    res.status(200).json({
+      success: true,
+      data: profileData,
+      message: 'Transporter public profile fetched successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // Service Locations
 const getServiceLocations = async (req, res, next) => {
   // Placeholder for getting service locations
@@ -644,6 +661,7 @@ export default {
   getPaymentInfo,
   updatePaymentInfo,
   getTransporterRatings,
+  getPublicProfile,
   uploadDocuments,
   getVerificationStatus,
   uploadVehicleRc,

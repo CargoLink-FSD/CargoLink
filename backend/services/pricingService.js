@@ -7,12 +7,10 @@
 //   TollCost      = real toll data from Google Maps Routes API v2
 //   MaxPrice      = Operational + Insurance + TollCost   (≥ MIN_PRICE floor)
 
-import { GOOGLE_MAPS_API_KEY } from '../config/index.js';
-import { logger } from '../utils/misc.js';
-
-const ROUTES_API_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
+import { getTollCost } from './tollService.js';
 
 const VEHICLE_RATES = {
+    // Legacy/display labels
     'Mini Truck (Up to 1 Ton)': 15,
     'Pickup Truck (1-3 Tons)': 18,
     'Light Lorry (3-7 Tons)': 22,
@@ -21,8 +19,32 @@ const VEHICLE_RATES = {
     'Container (40ft)': 45,
     'Refrigerated Truck': 50,
     'Flatbed Trailer': 40,
+
+    // Frontend slugs (PlaceOrder)
+    van: 15,
+    'truck-small': 18,
+    'truck-medium': 22,
+    'truck-large': 30,
+    refrigerated: 50,
+    flatbed: 40,
+    container: 35,
+    any: 20,
+
+    // Other common slugs seen in fleet editors
+    'mini-truck': 15,
+    pickup: 18,
     default: 20,
 };
+
+const VEHICLE_RATES_LOWER = Object.fromEntries(
+    Object.entries(VEHICLE_RATES).map(([k, v]) => [String(k).toLowerCase(), v])
+);
+
+function getVehicleRate(vehicleType) {
+    const key = String(vehicleType || '').trim();
+    if (!key) return VEHICLE_RATES.default;
+    return VEHICLE_RATES[key] ?? VEHICLE_RATES_LOWER[key.toLowerCase()] ?? VEHICLE_RATES.default;
+}
 
 function getWeightMultiplier(weightKg) {
     const tons = (weightKg || 0) / 1000;
@@ -76,87 +98,6 @@ function getRiskCharge(cargoValue) {
     return cargoValue * 0.03;
 }
 
-// ── Toll lookup via Google Maps Routes APi
-async function getTollCost(originCoords, destCoords) {
-    if (!GOOGLE_MAPS_API_KEY) {
-        logger.warn('GOOGLE_MAPS_API_KEY not set — toll lookup skipped');
-        return 0;
-    }
-
-    try {
-        const requestBody = {
-            origin: {
-                location: {
-                    latLng: {
-                        latitude: originCoords.lat,
-                        longitude: originCoords.lng,
-                    },
-                },
-            },
-            destination: {
-                location: {
-                    latLng: {
-                        latitude: destCoords.lat,
-                        longitude: destCoords.lng,
-                    },
-                },
-            },
-            travelMode: 'DRIVE',
-            extraComputations: ['TOLLS'],
-            routeModifiers: {
-                vehicleInfo: { emissionType: 'GASOLINE' },
-                tollPasses: [],
-            },
-        };
-
-        const res = await fetch(ROUTES_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
-                'X-Goog-FieldMask': 'routes.travelAdvisory.tollInfo,routes.distanceMeters',
-            },
-            body: JSON.stringify(requestBody),
-        });
-
-        const data = await res.json();
-
-        if (!data.routes?.length) {
-            logger.warn('Routes API returned no routes for toll lookup');
-            return 0;
-        }
-
-        const tollInfo = data.routes[0].travelAdvisory?.tollInfo;
-        if (!tollInfo?.estimatedPrice?.length) {
-            // Route exists but has no tolls
-            return 0;
-        }
-
-        // Prefer INR; fall back to first currency entry available
-        const priceEntry =
-            tollInfo.estimatedPrice.find((p) => p.currencyCode === 'INR') ||
-            tollInfo.estimatedPrice[0];
-
-        // Routes API encodes money as { units: "string", nanos: number }
-        const amount =
-            parseFloat(priceEntry.units || 0) + (priceEntry.nanos || 0) / 1e9;
-
-        const toll = Math.round(amount);
-        logger.info('Toll cost fetched from Routes API', {
-            toll,
-            currency: priceEntry.currencyCode,
-        });
-
-        return toll;
-    } catch (err) {
-        logger.warn('Toll API call failed — defaulting toll cost to 0', {
-            error: err.message,
-        });
-        return 0;
-    }
-}
-
-
 async function calculatePrice({
     distance,
     vehicle_type,
@@ -169,7 +110,7 @@ async function calculatePrice({
     destCoords = null,
 }) {
     // 1. Base cost
-    const vehicleRate = VEHICLE_RATES[vehicle_type] || VEHICLE_RATES.default;
+    const vehicleRate = getVehicleRate(vehicle_type);
     const baseCost = distance * vehicleRate;
 
     // 2. Multipliers

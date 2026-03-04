@@ -82,6 +82,7 @@ orderRouter.post('/:orderId/confirm-delivery', authMiddleware(['customer']), ord
 
 // Bids
 orderRouter.get("/:orderId/bids", authMiddleware(["customer"]), orderController.getCurrentBids); // Get bids for order
+orderRouter.get("/:orderId/bids/:bidId/quote-pdf", authMiddleware(["customer"]), orderController.downloadBidQuotePdf); // Download bid quote as PDF
 orderRouter.post("/:orderId/bids/:bidId/accept", authMiddleware(["customer"]), orderController.acceptBid); // Accept bid
 orderRouter.delete("/:orderId/bids/:bidId", authMiddleware(["customer"]), orderController.rejectBid); // Reject bid
 
