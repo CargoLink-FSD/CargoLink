@@ -1,12 +1,14 @@
 import transporterRepo from "../repositories/transporterRepo.js";
+import truckRepo from "../repositories/truckRepo.js";
+import driverRepo from "../repositories/driverRepo.js";
 import Review from "../models/review.js";
 import orderRepo from "../repositories/orderRepo.js";
 import Order from "../models/order.js";
 import Bid from "../models/bids.js";
 import Trip from "../models/trip.js";
+import Fleet from "../models/fleet.js";
 import mongoose from "mongoose";
 import { AppError, logger } from "../utils/misc.js";
-import { get } from "mongoose";
 
 const registerTransporter = async (transporterData) => {
 
@@ -22,9 +24,12 @@ const registerTransporter = async (transporterData) => {
       [{ field: "email", message: "Already exisits" }]
     );
 
-  transporterData = { ...transporterInfo, fleet: vehicles }
+  const transporter = await transporterRepo.createTransporter(transporterInfo);
 
-  const transporter = await transporterRepo.createTransporter(transporterData);
+  // Create fleet documents in the separate Fleet collection
+  if (vehicles && vehicles.length > 0) {
+    await truckRepo.addTrucks(transporter._id, vehicles);
+  }
 
   return transporter;
 };
@@ -40,8 +45,8 @@ const getTransporterProfile = async (transporterId) => {
 
   // Use profile picture from database if available
   const profileImage = transporter.profilePicture || null;
-
-  const fleetCount = transporter.fleet.length;
+  
+  const fleetCount = await truckRepo.getFleetCount(transporterId);
 
   return { transporter, orderCount, profileImage, fleetCount };
 };
@@ -78,25 +83,22 @@ const changePassword = async (transporterId, oldPassword, newPassword) => {
 
 const getTransporterFleet = async (transporterId) => {
 
-  const fleet = await transporterRepo.getFleet(transporterId);
-  if (!fleet) {
-    throw new AppError(404, 'NotFoundError', 'Customer not found', 'ERR_NOT_FOUND');
-  }
-  return { fleet };
+  const fleet = await truckRepo.getFleet(transporterId);
+  return {fleet};
 };
 
 const addFleet = async (transporterId, truckInfo) => {
 
-  const truck = await transporterRepo.addTruck(transporterId, truckInfo);
+  const truck = await truckRepo.addTruck(transporterId, truckInfo);
 
   return truck;
 };
 
 const getTruckDetails = async (transporterId, truckId) => {
 
-  const truck = await transporterRepo.getTruck(transporterId, truckId);
-  logger.debug('Fetched truck details', { truck });
-  if (!truck) {
+  const truck = await truckRepo.getTruck(transporterId, truckId);
+  logger.debug('Fetched truck details', {truck});
+  if (!truck){
     throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
   }
   return truck;
@@ -104,11 +106,11 @@ const getTruckDetails = async (transporterId, truckId) => {
 
 const removeTruck = async (transporterId, truckId) => {
 
-  const truck = await transporterRepo.getTruck(transporterId, truckId);
-  if (!truck) {
+  const truck = await truckRepo.getTruck(transporterId, truckId);
+  if (!truck){
     throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
   }
-  const fleet = await transporterRepo.deleteTruck(transporterId, truckId);
+  const fleet = await truckRepo.deleteTruck(transporterId, truckId);
 
   // After deleting the vehicle and its RC, recalculate verification status
   const transporter = await transporterRepo.findTransporterById(transporterId);
@@ -124,16 +126,16 @@ const removeTruck = async (transporterId, truckId) => {
 };
 
 const updateTruck = async (transporterId, truckId, updates) => {
-  const truck = await transporterRepo.getTruck(transporterId, truckId);
-  if (!truck) {
+  const truck = await truckRepo.getTruck(transporterId, truckId);
+  if (!truck){
     throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
   }
-  const updatedTruck = transporterRepo.updateTruckInFleet(transporterId, truckId, updates);
+  const updatedTruck = await truckRepo.updateTruck(transporterId, truckId, updates);
   return updatedTruck;
 }
 
 const setTruckMaintenance = async (transporterId, truckId) => {
-  const truck = await transporterRepo.getTruck(transporterId, truckId);
+  const truck = await truckRepo.getTruck(transporterId, truckId);
   if (!truck) {
     throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
   }
@@ -148,12 +150,12 @@ const setTruckMaintenance = async (transporterId, truckId) => {
     next_service_date: null
   };
 
-  const updatedTruck = await transporterRepo.updateTruckInFleet(transporterId, truckId, updates);
+  const updatedTruck = await truckRepo.updateTruck(transporterId, truckId, updates);
   return updatedTruck;
 };
 
 const setTruckAvailable = async (transporterId, truckId) => {
-  const truck = await transporterRepo.getTruck(transporterId, truckId);
+  const truck = await truckRepo.getTruck(transporterId, truckId);
   if (!truck) {
     throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
   }
@@ -162,12 +164,12 @@ const setTruckAvailable = async (transporterId, truckId) => {
     status: 'Available'
   };
 
-  const updatedTruck = await transporterRepo.updateTruckInFleet(transporterId, truckId, updates);
+  const updatedTruck = await truckRepo.updateTruck(transporterId, truckId, updates);
   return updatedTruck;
 };
 
 const setTruckUnavailable = async (transporterId, truckId) => {
-  const truck = await transporterRepo.getTruck(transporterId, truckId);
+  const truck = await truckRepo.getTruck(transporterId, truckId);
   if (!truck) {
     throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
   }
@@ -176,12 +178,12 @@ const setTruckUnavailable = async (transporterId, truckId) => {
     status: 'Unavailable'
   };
 
-  const updatedTruck = await transporterRepo.updateTruckInFleet(transporterId, truckId, updates);
+  const updatedTruck = await truckRepo.updateTruck(transporterId, truckId, updates);
   return updatedTruck;
 };
 
 const scheduleMaintenance = async (transporterId, truckId, nextServiceDate) => {
-  const truck = await transporterRepo.getTruck(transporterId, truckId);
+  const truck = await truckRepo.getTruck(transporterId, truckId);
   if (!truck) {
     throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
   }
@@ -194,9 +196,101 @@ const scheduleMaintenance = async (transporterId, truckId, nextServiceDate) => {
     next_service_date: new Date(nextServiceDate)
   };
 
-  const updatedTruck = await transporterRepo.updateTruckInFleet(transporterId, truckId, updates);
+  const updatedTruck = await truckRepo.updateTruck(transporterId, truckId, updates);
   return updatedTruck;
 };
+
+// ─── Fleet Schedule ─────────────────────────────────────────────────────────────
+
+const getFleetSchedule = async (transporterId, truckId, startDate, endDate) => {
+  const truck = await truckRepo.getTruck(transporterId, truckId);
+  if (!truck) {
+    throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
+  }
+
+  const start = startDate || new Date().toISOString();
+  const end = endDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
+  const blocks = await truckRepo.getFleetScheduleBlocks(transporterId, truckId, start, end);
+  return { blocks, startDate: start, endDate: end, truckName: truck.name };
+};
+
+const addFleetScheduleBlock = async (transporterId, truckId, blockData) => {
+  const truck = await truckRepo.getTruck(transporterId, truckId);
+  if (!truck) {
+    throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
+  }
+
+  const { startTime, endTime, title, notes, type } = blockData;
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+
+  if (end <= start) {
+    throw new AppError(400, 'ValidationError', 'End time must be after start time', 'ERR_VALIDATION');
+  }
+
+  // Check for overlaps with existing blocks
+  const existingBlocks = truck.scheduleBlocks || [];
+  const hasOverlap = existingBlocks.some((b) => {
+    const bStart = new Date(b.startTime);
+    const bEnd = new Date(b.endTime);
+    return start < bEnd && end > bStart;
+  });
+
+  if (hasOverlap) {
+    throw new AppError(409, 'ConflictError', 'Schedule block overlaps with an existing block', 'ERR_SCHEDULE_OVERLAP');
+  }
+
+  const blockType = type || 'unavailable';
+  if (!['maintenance', 'unavailable', 'trip'].includes(blockType)) {
+    throw new AppError(400, 'ValidationError', 'Invalid block type', 'ERR_VALIDATION');
+  }
+
+  const block = {
+    title: title || blockType.charAt(0).toUpperCase() + blockType.slice(1),
+    type: blockType,
+    startTime: start,
+    endTime: end,
+    notes: notes || '',
+  };
+
+  // Update truck status based on block type if it covers current time
+  const now = new Date();
+  if (start <= now && end >= now) {
+    let statusUpdate = null;
+    if (blockType === 'maintenance') statusUpdate = 'In Maintenance';
+    else if (blockType === 'unavailable') statusUpdate = 'Unavailable';
+    else if (blockType === 'trip') statusUpdate = 'Assigned';
+
+    if (statusUpdate) {
+      await truckRepo.updateTruck(transporterId, truckId, { status: statusUpdate });
+    }
+  }
+
+  const newBlock = await truckRepo.addFleetScheduleBlock(transporterId, truckId, block);
+  return newBlock;
+};
+
+const removeFleetScheduleBlock = async (transporterId, truckId, blockId) => {
+  const truck = await truckRepo.getTruck(transporterId, truckId);
+  if (!truck) {
+    throw new AppError(404, 'NotFoundError', 'Truck not found', 'ERR_NOT_FOUND');
+  }
+
+  const block = (truck.scheduleBlocks || []).find((b) => b._id.toString() === blockId);
+  if (!block) {
+    throw new AppError(404, 'NotFoundError', 'Schedule block not found', 'ERR_NOT_FOUND');
+  }
+
+  await truckRepo.removeFleetScheduleBlock(transporterId, truckId, blockId);
+
+  // If the removed block was covering current time, reset status to Available
+  const now = new Date();
+  if (new Date(block.startTime) <= now && new Date(block.endTime) >= now) {
+    await truckRepo.updateTruck(transporterId, truckId, { status: 'Available' });
+  }
+};
+
 const getTransporterRatings = async (transporterId) => {
   const reviews = await Review.find({ transporter_id: transporterId })
     .populate('customer_id', 'firstName lastName')
@@ -348,7 +442,7 @@ const getDashboardStats = async (transporterId) => {
     : 0;
 
   // ================== FLEET STATS ==================
-  const fleet = transporter.fleet || [];
+  const fleet = await truckRepo.getFleet(transporterId);
   const totalVehicles = fleet.length;
 
   const fleetStatusBreakdown = {
@@ -493,6 +587,90 @@ const getDashboardStats = async (transporterId) => {
       nextStop
     }
   };
+};
+
+// ─── Driver Management ─────────────────────────────────────────────────────────
+
+const getDrivers = async (transporterId) => {
+  const transporter = await transporterRepo.findTransporterById(transporterId);
+  if (!transporter) {
+    throw new AppError(404, 'NotFoundError', 'Transporter not found', 'ERR_NOT_FOUND');
+  }
+  const drivers = await driverRepo.findDriversByTransporter(transporterId);
+  return drivers;
+};
+
+const getDriverRequests = async (transporterId) => {
+  const transporter = await transporterRepo.findTransporterById(transporterId);
+  if (!transporter) {
+    throw new AppError(404, 'NotFoundError', 'Transporter not found', 'ERR_NOT_FOUND');
+  }
+  const requests = await driverRepo.getPendingApplicationsForTransporter(transporterId);
+  return requests;
+};
+
+const acceptDriverRequest = async (transporterId, applicationId) => {
+  const application = await driverRepo.findApplicationById(applicationId);
+  if (!application) {
+    throw new AppError(404, 'NotFoundError', 'Application not found', 'ERR_NOT_FOUND');
+  }
+  if (application.transporter_id._id.toString() !== transporterId) {
+    throw new AppError(403, 'ForbiddenError', 'Not your application to manage', 'ERR_FORBIDDEN');
+  }
+  if (application.status !== 'Pending') {
+    throw new AppError(400, 'ValidationError', 'Application is no longer pending', 'ERR_VALIDATION');
+  }
+
+  // Accept the application
+  const updated = await driverRepo.updateApplicationStatus(applicationId, 'Accepted');
+  // Associate driver with transporter
+  await driverRepo.setDriverTransporter(application.driver_id._id, transporterId);
+
+  return updated;
+};
+
+const rejectDriverRequest = async (transporterId, applicationId, rejectionReason) => {
+  const application = await driverRepo.findApplicationById(applicationId);
+  if (!application) {
+    throw new AppError(404, 'NotFoundError', 'Application not found', 'ERR_NOT_FOUND');
+  }
+  if (application.transporter_id._id.toString() !== transporterId) {
+    throw new AppError(403, 'ForbiddenError', 'Not your application to manage', 'ERR_FORBIDDEN');
+  }
+  if (application.status !== 'Pending') {
+    throw new AppError(400, 'ValidationError', 'Application is no longer pending', 'ERR_VALIDATION');
+  }
+
+  const updated = await driverRepo.updateApplicationStatus(applicationId, 'Rejected', rejectionReason);
+  return updated;
+};
+
+const removeDriver = async (transporterId, driverId) => {
+  const driver = await driverRepo.findDriverById(driverId);
+  if (!driver) {
+    throw new AppError(404, 'NotFoundError', 'Driver not found', 'ERR_NOT_FOUND');
+  }
+  if (!driver.transporter_id || driver.transporter_id.toString() !== transporterId) {
+    throw new AppError(400, 'ValidationError', 'Driver is not associated with your company', 'ERR_VALIDATION');
+  }
+
+  await driverRepo.removeDriverFromTransporter(driverId);
+};
+
+const getDriverSchedule = async (transporterId, driverId, startDate, endDate) => {
+  const driver = await driverRepo.findDriverById(driverId);
+  if (!driver) {
+    throw new AppError(404, 'NotFoundError', 'Driver not found', 'ERR_NOT_FOUND');
+  }
+  if (!driver.transporter_id || driver.transporter_id.toString() !== transporterId) {
+    throw new AppError(403, 'ForbiddenError', 'Driver is not associated with your company', 'ERR_FORBIDDEN');
+  }
+
+  const start = startDate || new Date().toISOString();
+  const end = endDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
+  const blocks = await driverRepo.getScheduleBlocks(driverId, start, end);
+  return { blocks, startDate: start, endDate: end, driverName: `${driver.firstName} ${driver.lastName}` };
 };
 
 
@@ -655,9 +833,20 @@ export default {
   setTruckAvailable,
   setTruckUnavailable,
   scheduleMaintenance,
+  getFleetSchedule,
+  addFleetScheduleBlock,
+  removeFleetScheduleBlock,
   getTransporterRatings,
   getTransporterPublicProfile,
   getDashboardStats,
+
+  // Driver Management
+  getDrivers,
+  getDriverRequests,
+  acceptDriverRequest,
+  rejectDriverRequest,
+  removeDriver,
+  getDriverSchedule,
   uploadDocuments,
   uploadVehicleRc,
 };

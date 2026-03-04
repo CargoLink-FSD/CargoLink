@@ -2,6 +2,7 @@ import request from 'supertest';
 import mongoose from 'mongoose';
 import app from '../../core/app.js';
 import Transporter from '../../models/transporter.js';
+import Fleet from '../../models/fleet.js';
 import { createMockTransporterInput, createMockVehicle } from '../factories/transporter.factory.js';
 
 let authToken;
@@ -58,13 +59,12 @@ describe('Transporter Routes Tests', () => {
           .expect(201);
 
       expect(response.body).toHaveProperty('success', true);
-      expect(response.body.data.fleet).toHaveLength(1);
-      expect(response.body.data.fleet[0].name).toBe('truck 1');
 
-      // Verify in database
-      const transporter = await Transporter.findById(response.body.data._id);
-      expect(transporter.fleet).toHaveLength(1);
-      expect(transporter.fleet[0].name).toBe('truck 1');
+      // Verify vehicles stored in separate Fleet collection
+      const transporter = await Transporter.findOne({ email: transporterData.email });
+      const fleet = await Fleet.find({ transporter_id: transporter._id });
+      expect(fleet).toHaveLength(1);
+      expect(fleet[0].name).toBe('truck 1');
     });
 
     it('should create transporter with multiple vehicles', async () => {
@@ -77,13 +77,13 @@ describe('Transporter Routes Tests', () => {
           .expect(201);
 
       expect(response.body).toHaveProperty('success', true);
-      expect(response.body.data.fleet).toHaveLength(2);
 
-      // Verify in database
-      const transporter = await Transporter.findById(response.body.data._id);
-      expect(transporter.fleet).toHaveLength(2);
-      expect(transporter.fleet[0].name).toBe('truck 1');
-      expect(transporter.fleet[1].name).toBe('truck 2');
+      // Verify vehicles stored in separate Fleet collection
+      const transporter = await Transporter.findOne({ email: transporterData.email });
+      const fleet = await Fleet.find({ transporter_id: transporter._id });
+      expect(fleet).toHaveLength(2);
+      expect(fleet[0].name).toBe('truck 1');
+      expect(fleet[1].name).toBe('truck 2');
     });
 
     it('should reject transporters without vehicles', async () => {

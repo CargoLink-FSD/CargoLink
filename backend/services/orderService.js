@@ -1,7 +1,9 @@
 import orderRepo from "../repositories/orderRepo.js"
 import bidRepo from "../repositories/bidRepo.js"
+import Fleet from "../models/fleet.js"
 import { AppError, logger } from "../utils/misc.js"
 
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 const getOrdersByUser = async (userId, role, filters = {}) => {
     let orders;
@@ -92,6 +94,12 @@ const acceptBid = async (customerId, orderId, bidId) => {
     if (!order) {
         throw new AppError(403, "Forbidden", "Order already assigned or cannot be updated", "ERR_FORBIDDEN");
     }
+
+    // Generate OTPs for pickup and delivery confirmation
+    await orderRepo.updateOrderStatus(order._id, 'Assigned', {
+        pickup_otp: generateOTP(),
+        delivery_otp: generateOTP(),
+    });
 
     await bidRepo.deleteBidsForOrder(orderId);
 
@@ -223,9 +231,6 @@ const startTransit = async (orderId, transporterId) => {
 };
 
 const assignVehicleToOrder = async (orderId, vehicleId, transporterId) => {
-    // Import transporter model
-    const Transporter = (await import('../models/transporter.js')).default;
-
     // Check if order exists and is assigned to this transporter
     const order = await orderRepo.getOrderById(orderId);
 
@@ -241,13 +246,8 @@ const assignVehicleToOrder = async (orderId, vehicleId, transporterId) => {
         throw new AppError(400, "InvalidOperation", "Only assigned orders can have vehicles assigned", "ERR_INVALID_OPERATION");
     }
 
-    // Find transporter and vehicle
-    const transporter = await Transporter.findById(transporterId);
-    if (!transporter) {
-        throw new AppError(404, "NotFound", "Transporter not found", "ERR_NOT_FOUND");
-    }
-
-    const vehicle = transporter.fleet.id(vehicleId);
+    // Find vehicle from separate Fleet collection
+    const vehicle = await Fleet.findOne({ _id: vehicleId, transporter_id: transporterId });
     if (!vehicle) {
         throw new AppError(404, "NotFound", "Vehicle not found in your fleet", "ERR_NOT_FOUND");
     }
@@ -265,7 +265,7 @@ const assignVehicleToOrder = async (orderId, vehicleId, transporterId) => {
     // Update vehicle status
     vehicle.status = 'Assigned';
     vehicle.current_trip_id = orderId;
-    await transporter.save();
+    await vehicle.save();
 
     // Assign vehicle to order
     const assignmentData = {
@@ -280,6 +280,15 @@ const assignVehicleToOrder = async (orderId, vehicleId, transporterId) => {
 };
 
 const getTransporterVehicles = async (transporterId) => {
+    // Query available vehicles from separate Fleet collection
+    const availableVehicles = await Fleet.find({
+        transporter_id: transporterId,
+        status: 'Available'
+    });
+        return availableVehicles;
+};
+
+const getAvailableVehicles = async (transporterId) => {
     const Transporter = (await import('../models/transporter.js')).default;
 
     const transporter = await Transporter.findById(transporterId).select('fleet');

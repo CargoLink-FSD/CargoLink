@@ -1,5 +1,7 @@
 import customerRepo from "../repositories/customerRepo.js";
+import driverRepo from "../repositories/driverRepo.js";
 import transporterRepo from "../repositories/transporterRepo.js";
+import managerRepo from "../repositories/managerRepo.js";
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
@@ -9,11 +11,6 @@ import { AppError, logger } from '../utils/misc.js';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@cargolink.com";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin@123";
 const ADMIN_ID = "admin";
-
-// Manager credentials (hardcoded - same pattern as admin)
-const MANAGER_EMAIL = process.env.MANAGER_EMAIL || "manager@cargolink.com";
-const MANAGER_PASSWORD = process.env.MANAGER_PASSWORD || "manager@123";
-const MANAGER_ID = "manager";
 
 // In-memory store for refresh tokens (prototype). For production use persistent storage or a blacklist strategy.
 const refreshStore = new Map(); // key: jti, value: { userId, role, expiresAt }
@@ -35,15 +32,24 @@ export async function authenticateUser({ email, password, role }) {
     };
   }
 
-  // Handle manager authentication
+  // Handle manager authentication (from database)
   if (role === 'manager') {
-    if (email !== MANAGER_EMAIL || password !== MANAGER_PASSWORD) {
+    const manager = await managerRepo.findManagerByEmail(email);
+    if (!manager) {
+      throw new AppError(401, 'AuthError', 'Invalid manager credentials', 'ERR_INVALID_CREDENTIALS');
+    }
+    if (manager.status !== 'active') {
+      throw new AppError(403, 'AuthError', 'Your manager account is inactive. Contact admin.', 'ERR_MANAGER_INACTIVE');
+    }
+    const passwordOk = await manager.verifyPassword(password);
+    if (!passwordOk) {
       throw new AppError(401, 'AuthError', 'Invalid manager credentials', 'ERR_INVALID_CREDENTIALS');
     }
     return {
-      _id: MANAGER_ID,
-      email: MANAGER_EMAIL,
-      role: 'manager'
+      _id: manager._id,
+      email: manager.email,
+      name: manager.name,
+      role: 'manager',
     };
   }
 
@@ -52,6 +58,8 @@ export async function authenticateUser({ email, password, role }) {
     user = await customerRepo.findByEmail(email);
   } else if (role === 'transporter') {
     user = await transporterRepo.findByEmail(email);
+  } else if (role === 'driver') {
+    user = await driverRepo.findByEmail(email);
   } else {
     throw new AppError(400, 'AuthError', 'Unsupported role', 'ERR_UNSUPPORTED_ROLE');
   }
@@ -138,6 +146,8 @@ export async function findUserByEmailAndRole(email, role) {
     return await customerRepo.findByEmail(email);
   } else if (role === 'transporter') {
     return await transporterRepo.findByEmail(email);
+  } else if (role === 'driver') {
+    return await driverRepo.findByEmail(email);
   }
   return null;
 }

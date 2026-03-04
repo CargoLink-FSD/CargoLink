@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { usePlaceOrder } from '../../hooks/usePlaceOrder';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
+import LocationPicker from '../../components/common/LocationPicker';
 import { Button } from '../../components/forms';
 import '../../styles/PlaceOrder.css';
 
@@ -53,7 +54,8 @@ export default function PlaceOrder() {
     setFieldTouched,
     getBiddingEndTime,
     handleCargoPhotoChange,
-    removeCargoPhoto
+    removeCargoPhoto,
+    handleLocationSet
   } = usePlaceOrder();
 
   return (
@@ -140,6 +142,13 @@ export default function PlaceOrder() {
                 {errors['pickup.pin'] && touched['pickup.pin'] && (
                   <span className="error-message">{errors['pickup.pin']}</span>
                 )}
+
+                <LocationPicker
+                  label="Pickup"
+                  address={formData.pickup}
+                  coordinates={formData.pickup.coordinates}
+                  onLocationSet={(data) => handleLocationSet('pickup', data)}
+                />
               </div>
 
               {/* Drop-off Location */}
@@ -212,6 +221,13 @@ export default function PlaceOrder() {
                 {errors['delivery.pin'] && touched['delivery.pin'] && (
                   <span className="error-message">{errors['delivery.pin']}</span>
                 )}
+
+                <LocationPicker
+                  label="Delivery"
+                  address={formData.delivery}
+                  coordinates={formData.delivery.coordinates}
+                  onLocationSet={(data) => handleLocationSet('delivery', data)}
+                />
               </div>
             </div>
 

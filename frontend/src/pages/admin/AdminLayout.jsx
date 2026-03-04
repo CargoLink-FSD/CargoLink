@@ -20,6 +20,7 @@ const NAV_ITEMS = [
     { to: '/admin/orders', icon: Package, label: 'Orders' },
     { to: '/admin/fleet', icon: Truck, label: 'Fleet' },
     { to: '/admin/tickets', icon: Ticket, label: 'Tickets' },
+    { to: '/admin/managers', icon: '👔', label: 'Managers' },
 ];
 
 export default function AdminLayout() {

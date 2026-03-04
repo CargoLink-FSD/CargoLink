@@ -2,6 +2,7 @@ import ticketService from '../services/ticketService.js';
 import Customer from '../models/customer.js';
 import Transporter from '../models/transporter.js';
 import Order from '../models/order.js';
+import Manager from '../models/manager.js';
 
 // ─── User endpoints (customer / transporter) ────────────────
 
@@ -80,7 +81,10 @@ const getAllTickets = async (req, res, next) => {
         if (req.query.status) filters.status = req.query.status;
         if (req.query.userRole) filters.userRole = req.query.userRole;
         if (req.query.priority) filters.priority = req.query.priority;
-        const tickets = await ticketService.getAllTickets(filters);
+
+        // Pass the logged-in manager's ID so they only see their assigned tickets
+        const managerId = req.user.id;
+        const tickets = await ticketService.getAllTickets(filters, managerId);
         res.status(200).json({ success: true, data: tickets });
     } catch (err) {
         next(err);
@@ -89,7 +93,8 @@ const getAllTickets = async (req, res, next) => {
 
 const getTicketStats = async (req, res, next) => {
     try {
-        const stats = await ticketService.getTicketStats();
+        const managerId = req.user.id;
+        const stats = await ticketService.getTicketStats(managerId);
         res.status(200).json({ success: true, data: stats });
     } catch (err) {
         next(err);
@@ -136,7 +141,11 @@ const managerGetTicket = async (req, res, next) => {
 
 const managerReply = async (req, res, next) => {
     try {
-        const ticket = await ticketService.addManagerReply(req.params.id, req.body.text);
+        // Get manager name from DB
+        const manager = await Manager.findById(req.user.id).select('name');
+        const managerName = manager?.name || 'Manager';
+
+        const ticket = await ticketService.addManagerReply(req.params.id, req.body.text, managerName);
         res.status(200).json({ success: true, data: ticket, message: 'Reply sent' });
     } catch (err) {
         next(err);

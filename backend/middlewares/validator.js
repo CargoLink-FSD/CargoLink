@@ -277,11 +277,11 @@ const updateTruck = [
 const login = [
   body('email').isEmail().withMessage('Valid email required'),
   body('password').notEmpty().withMessage('Password required'),
-  body('role').isIn(['customer', 'transporter', 'admin', 'manager']).withMessage('Role must be customer, transporter, admin or manager'),
+  body('role').isIn(['customer','transporter','driver','admin', 'manager']).withMessage('Role must be customer, transporter, driver, manager or admin'),
 ]
 const forgotPassword = [
   body('email').trim().isEmail().withMessage('Valid email required'),
-  body('userType').trim().isIn(['customer', 'transporter']).withMessage('Valid user type required (customer or transporter)'),
+  body('userType').trim().isIn(['customer', 'transporter', 'driver']).withMessage('Valid user type required (customer, transporter, driver)'),
 ]
 const resetPassword = [
   body('token').notEmpty().withMessage('Reset token required'),
@@ -400,6 +400,133 @@ const order = [
     .isFloat({ gt: 0 }).withMessage('Item price must be a positive number'),
 ]
 
+const driver = [
+  body('firstName')
+    .trim()
+    .notEmpty().withMessage('First name is required')
+    .isLength({ min: 2, max: 50 }).withMessage('First name must be 2-50 characters')
+    .matches(/^[A-Za-z\s'-]+$/).withMessage('First name can only contain letters, spaces, hyphens and apostrophes'),
+  body('lastName')
+    .trim()
+    .notEmpty().withMessage('Last name is required')
+    .isLength({ min: 2, max: 50 }).withMessage('Last name must be 2-50 characters')
+    .matches(/^[A-Za-z\s'-]+$/).withMessage('Last name can only contain letters, spaces, hyphens and apostrophes'),
+  body('email')
+    .isEmail().normalizeEmail().withMessage('Invalid email format'),
+  body('phone')
+    .trim()
+    .replace(' ', '')
+    .notEmpty().withMessage('Phone number is required')
+    .matches(/^(\+?91|0)?[6-9]\d{9}$/).withMessage('Invalid Indian phone number'),
+  body('gender')
+    .notEmpty().withMessage('Gender is required')
+    .isIn(['Male', 'Female', 'Other']).withMessage('Gender must be Male, Female, or Other'),
+  body('password')
+    .notEmpty().withMessage('Password is required')
+    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+    .matches(/[A-Z]/).withMessage('Password must contain at least one uppercase letter')
+    .matches(/[0-9]/).withMessage('Password must contain at least one number'),
+  body('licenseNumber')
+    .trim()
+    .notEmpty().withMessage('License number is required'),
+
+  ...addressSchema(''),
+];
+
+
+const updateDriver = [
+  body('firstName')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 2, max: 50 }).withMessage('First name must be 2-50 characters')
+    .matches(/^[A-Za-z\s'-]+$/).withMessage('First name can only contain letters, spaces, hyphens and apostrophes'),
+  body('lastName')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 2, max: 50 }).withMessage('Last name must be 2-50 characters')
+    .matches(/^[A-Za-z\s'-]+$/).withMessage('Last name can only contain letters, spaces, hyphens and apostrophes'),
+  body('email')
+    .optional({ checkFalsy: true })
+    .isEmail().withMessage('Invalid email address'),
+  body('phone')
+    .optional({ checkFalsy: true })
+    .trim()
+    .matches(/^(\+?91|0)?[6-9]\d{9}$/).withMessage('Invalid Indian phone number'),
+  body('gender')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isIn(['Male', 'Female', 'Other']).withMessage('Gender must be Male, Female or Other'),
+  body('licenseNumber')
+    .optional({ checkFalsy: true })
+    .trim()
+    .notEmpty().withMessage('License number cannot be empty'),
+  body('address')
+    .optional({ checkFalsy: true })
+    .trim()
+    .notEmpty().withMessage('Address cannot be empty'),
+  body('city')
+    .optional({ checkFalsy: true })
+    .trim()
+    .notEmpty().withMessage('City cannot be empty'),
+  body('state')
+    .optional({ checkFalsy: true })
+    .trim()
+    .notEmpty().withMessage('State cannot be empty'),
+  body('pin')
+    .optional({ checkFalsy: true })
+    .trim()
+    .notEmpty().withMessage('PIN code cannot be empty')
+    .matches(/^[1-9][0-9]{5}$/).withMessage('Invalid pin code'),
+];
+
+const scheduleBlock = [
+  body('startTime')
+    .notEmpty().withMessage('Start time is required')
+    .isISO8601().withMessage('Start time must be in ISO format'),
+  body('endTime')
+    .notEmpty().withMessage('End time is required')
+    .isISO8601().withMessage('End time must be in ISO format')
+    .custom((value, { req }) => {
+      if (new Date(value) <= new Date(req.body.startTime)) {
+        throw new Error('End time must be after start time');
+      }
+      return true;
+    }),
+  body('title')
+    .optional()
+    .trim()
+    .isLength({ max: 100 }).withMessage('Title must be under 100 characters'),
+  body('notes')
+    .optional()
+    .trim()
+    .isLength({ max: 500 }).withMessage('Notes must be under 500 characters'),
+];
+
+const fleetScheduleBlock = [
+  body('startTime')
+    .notEmpty().withMessage('Start time is required')
+    .isISO8601().withMessage('Start time must be in ISO format'),
+  body('endTime')
+    .notEmpty().withMessage('End time is required')
+    .isISO8601().withMessage('End time must be in ISO format')
+    .custom((value, { req }) => {
+      if (new Date(value) <= new Date(req.body.startTime)) {
+        throw new Error('End time must be after start time');
+      }
+      return true;
+    }),
+  body('type')
+    .notEmpty().withMessage('Block type is required')
+    .isIn(['maintenance', 'unavailable', 'trip']).withMessage('Type must be maintenance, unavailable, or trip'),
+  body('title')
+    .optional()
+    .trim()
+    .isLength({ max: 100 }).withMessage('Title must be under 100 characters'),
+  body('notes')
+    .optional()
+    .trim()
+    .isLength({ max: 500 }).withMessage('Notes must be under 500 characters'),
+];
 
 
 export const validationSchema = {
@@ -416,4 +543,8 @@ export const validationSchema = {
   password,
   order,
   bid,
+    driver,
+    updateDriver,
+    scheduleBlock,
+    fleetScheduleBlock,
 }

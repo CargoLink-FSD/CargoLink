@@ -2,6 +2,7 @@ import orderService from "../services/orderService.js";
 import pricingService from "../services/pricingService.js";
 import mongoose from "mongoose";
 import { logger, AppError } from "../utils/misc.js";
+import { geocodeAddress } from "../utils/osrm.js";
 import orderRepo from "../repositories/orderRepo.js";
 import bidRepo from "../repositories/bidRepo.js";
 import generateQuotePdf from "../utils/generateQuotePdf.js";
@@ -53,6 +54,37 @@ const placeOrder = async (req, res, next) => {
   try {
     const orderData = req.body;
     orderData.customer_id = req.user.id;
+
+    // Parse JSON strings from FormData (multer sends text fields as strings)
+    if (typeof orderData.pickup === 'string') {
+      try { orderData.pickup = JSON.parse(orderData.pickup); } catch (_) {}
+    }
+    if (typeof orderData.delivery === 'string') {
+      try { orderData.delivery = JSON.parse(orderData.delivery); } catch (_) {}
+    }
+    if (typeof orderData.shipments === 'string') {
+      try { orderData.shipments = JSON.parse(orderData.shipments); } catch (_) {}
+    }
+
+    // Geocode pickup if coordinates not provided
+    if (orderData.pickup && !orderData.pickup.coordinates?.length) {
+      const addr = [orderData.pickup.street, orderData.pickup.city, orderData.pickup.state, orderData.pickup.pin]
+        .filter(Boolean).join(', ');
+      const result = await geocodeAddress(addr);
+      if (result) {
+        orderData.pickup.coordinates = [result.lng, result.lat];
+      }
+    }
+
+    // Geocode delivery if coordinates not provided
+    if (orderData.delivery && !orderData.delivery.coordinates?.length) {
+      const addr = [orderData.delivery.street, orderData.delivery.city, orderData.delivery.state, orderData.delivery.pin]
+        .filter(Boolean).join(', ');
+      const result = await geocodeAddress(addr);
+      if (result) {
+        orderData.delivery.coordinates = [result.lng, result.lat];
+      }
+    }
 
     // If a cargo photo was uploaded, add the path to orderData
     if (req.file) {

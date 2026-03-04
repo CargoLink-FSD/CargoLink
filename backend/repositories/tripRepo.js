@@ -1,158 +1,166 @@
 import tripModel from "../models/trip.js";
-import mongoose from "mongoose";
 
-// Create Trip
-const createTrip = async (tripData) => {
-  const trip = new tripModel(tripData);
-  return await trip.save();
-};
-
-// Get Trips by Transporter
-const getTripsByTransporter = async (transporterId, queryParams = {}) => {
-  const filter = { transporter_id: transporterId };
-  
-  if (queryParams.status) {
-    filter.status = queryParams.status;
-  }
-  
-  const trips = await tripModel
-    .find(filter)
-    .populate('order_ids', 'pickup delivery goods_type status final_price')
-    .populate('assigned_vehicle_id')
-    .sort({ createdAt: -1 });
-  
-  return trips;
-};
-
-// Get Trip by ID
-const getTripById = async (tripId) => {
-  return await tripModel
-    .findById(tripId)
+const populateTrip = (query) => {
+  return query
     .populate({
       path: 'order_ids',
-      populate: {
-        path: 'customer_id',
-        select: 'name phone email'
-      }
+      populate: { path: 'customer_id', select: 'firstName lastName phone email' }
     })
-    .populate('assigned_vehicle_id');
+    .populate('assigned_vehicle_id', 'name registration truck_type capacity status')
+    .populate('assigned_driver_id', 'firstName lastName phone email status');
 };
 
-// Update Trip
+const createTrip = async (tripData) => {
+  const trip = new tripModel(tripData);
+  const saved = await trip.save();
+  return populateTrip(tripModel.findById(saved._id));
+};
+
+const getTripsByTransporter = async (transporterId, queryParams = {}) => {
+  const filter = { transporter_id: transporterId };
+  if (queryParams.status) filter.status = queryParams.status;
+  return await populateTrip(tripModel.find(filter)).sort({ createdAt: -1 });
+};
+
+const getTripsByDriver = async (driverId, queryParams = {}) => {
+  const filter = { assigned_driver_id: driverId };
+  if (queryParams.status) filter.status = queryParams.status;
+  return await populateTrip(tripModel.find(filter)).sort({ createdAt: -1 });
+};
+
+const getTripById = async (tripId) => {
+  return await populateTrip(tripModel.findById(tripId));
+};
+
 const updateTrip = async (tripId, updateData) => {
-  return await tripModel.findByIdAndUpdate(
-    tripId,
-    updateData,
-    { new: true, runValidators: true }
-  ).populate('order_ids').populate('assigned_vehicle_id');
+  const updated = await tripModel.findByIdAndUpdate(tripId, updateData, { new: true, runValidators: true });
+  return updated ? populateTrip(tripModel.findById(updated._id)) : null;
 };
 
-// Delete Trip
 const deleteTrip = async (tripId) => {
   return await tripModel.findByIdAndDelete(tripId);
 };
 
-// Add Order to Trip
 const addOrderToTrip = async (tripId, orderId) => {
-  return await tripModel.findByIdAndUpdate(
-    tripId,
-    { $addToSet: { order_ids: orderId } },
-    { new: true }
-  ).populate('order_ids').populate('assigned_vehicle_id');
+  await tripModel.findByIdAndUpdate(tripId, { $addToSet: { order_ids: orderId } });
+  return populateTrip(tripModel.findById(tripId));
 };
 
-// Add Multiple Orders to Trip
 const addMultipleOrdersToTrip = async (tripId, orderIds) => {
-  return await tripModel.findByIdAndUpdate(
-    tripId,
-    { $addToSet: { order_ids: { $each: orderIds } } },
-    { new: true }
-  ).populate('order_ids').populate('assigned_vehicle_id');
+  await tripModel.findByIdAndUpdate(tripId, { $addToSet: { order_ids: { $each: orderIds } } });
+  return populateTrip(tripModel.findById(tripId));
 };
 
-// Remove Order from Trip
 const removeOrderFromTrip = async (tripId, orderId) => {
-  return await tripModel.findByIdAndUpdate(
-    tripId,
-    { $pull: { order_ids: orderId } },
-    { new: true }
-  ).populate('order_ids').populate('assigned_vehicle_id');
+  await tripModel.findByIdAndUpdate(tripId, { $pull: { order_ids: orderId } });
+  return populateTrip(tripModel.findById(tripId));
 };
 
-// Assign Truck to Trip
-const assignTruckToTrip = async (tripId, truckId) => {
-  return await tripModel.findByIdAndUpdate(
-    tripId,
-    { assigned_vehicle_id: truckId },
-    { new: true }
-  ).populate('order_ids').populate('assigned_vehicle_id');
+const assignVehicleToTrip = async (tripId, vehicleId) => {
+  await tripModel.findByIdAndUpdate(tripId, { assigned_vehicle_id: vehicleId });
+  return populateTrip(tripModel.findById(tripId));
 };
 
-// Unassign Truck from Trip
-const unassignTruckFromTrip = async (tripId) => {
-  return await tripModel.findByIdAndUpdate(
-    tripId,
-    { $unset: { assigned_vehicle_id: 1 } },
-    { new: true }
-  ).populate('order_ids').populate('assigned_vehicle_id');
+const unassignVehicleFromTrip = async (tripId) => {
+  await tripModel.findByIdAndUpdate(tripId, { $unset: { assigned_vehicle_id: 1 } });
+  return populateTrip(tripModel.findById(tripId));
 };
 
-// Get Trip by Order ID
+const assignDriverToTrip = async (tripId, driverId) => {
+  await tripModel.findByIdAndUpdate(tripId, { assigned_driver_id: driverId });
+  return populateTrip(tripModel.findById(tripId));
+};
+
+const unassignDriverFromTrip = async (tripId) => {
+  await tripModel.findByIdAndUpdate(tripId, { $unset: { assigned_driver_id: 1 } });
+  return populateTrip(tripModel.findById(tripId));
+};
+
 const getTripByOrderId = async (orderId) => {
   return await tripModel.findOne({ order_ids: orderId });
 };
 
-// Get Active Trip by Truck
-const getActiveTripByTruck = async (truckId) => {
+const getActiveTripByVehicle = async (vehicleId) => {
   return await tripModel.findOne({
-    assigned_vehicle_id: truckId,
-    status: { $in: ['Scheduled', 'In Transit'] }
+    assigned_vehicle_id: vehicleId,
+    status: { $in: ['Scheduled', 'In Transit', 'Delayed'] }
   });
 };
 
-// Update Trip Location
+const getActiveTripByDriver = async (driverId) => {
+  return await tripModel.findOne({
+    assigned_driver_id: driverId,
+    status: { $in: ['Scheduled', 'In Transit', 'Delayed'] }
+  });
+};
+
 const updateTripLocation = async (tripId, coordinates) => {
   return await tripModel.findByIdAndUpdate(
     tripId,
-    { current_location_coordinates: coordinates },
+    { 'current_location.coordinates': coordinates, 'current_location.updated_at': new Date() },
     { new: true }
   );
 };
 
-// Update Trip Status
 const updateTripStatus = async (tripId, status) => {
-  return await tripModel.findByIdAndUpdate(
-    tripId,
-    { status: status },
-    { new: true }
-  ).populate('order_ids').populate('assigned_vehicle_id');
+  await tripModel.findByIdAndUpdate(tripId, { status });
+  return populateTrip(tripModel.findById(tripId));
 };
 
-// Get Trip by Order ID with Details
+const updateStopStatus = async (tripId, stopId, updates) => {
+  const setObj = {};
+  for (const [key, val] of Object.entries(updates)) {
+    setObj[`stops.$.${key}`] = val;
+  }
+  return await tripModel.findOneAndUpdate(
+    { _id: tripId, 'stops._id': stopId },
+    { $set: setObj },
+    { new: true }
+  );
+};
+
+const addStopToTrip = async (tripId, stop, afterIndex) => {
+  const trip = await tripModel.findById(tripId);
+  if (!trip) return null;
+  trip.stops.splice(afterIndex + 1, 0, stop);
+  trip.stops.forEach((s, i) => { s.sequence = i + 1; });
+  await trip.save();
+  return populateTrip(tripModel.findById(tripId));
+};
+
 const getTripByOrderIdWithDetails = async (orderId) => {
   return await tripModel
-    .findOne({ order_ids: orderId })
-    .populate({
-      path: 'transporter_id',
-      select: 'company_name phone email'
-    })
-    .populate('assigned_vehicle_id');
+    .findOne({ order_ids: orderId, status: { $in: ['Scheduled', 'In Transit', 'Delayed'] } })
+    .populate({ path: 'transporter_id', select: 'name primary_contact email' })
+    .populate('assigned_vehicle_id', 'name registration truck_type')
+    .populate('assigned_driver_id', 'firstName lastName phone');
+};
+
+const getCompletedTripsByDriver = async (driverId) => {
+  return await tripModel.countDocuments({ assigned_driver_id: driverId, status: 'Completed' });
 };
 
 export default {
   createTrip,
   getTripsByTransporter,
+  getTripsByDriver,
   getTripById,
   updateTrip,
   deleteTrip,
   addOrderToTrip,
   addMultipleOrdersToTrip,
   removeOrderFromTrip,
-  assignTruckToTrip,
-  unassignTruckFromTrip,
+  assignVehicleToTrip,
+  unassignVehicleFromTrip,
+  assignDriverToTrip,
+  unassignDriverFromTrip,
   getTripByOrderId,
-  getActiveTripByTruck,
+  getActiveTripByVehicle,
+  getActiveTripByDriver,
   updateTripLocation,
   updateTripStatus,
+  updateStopStatus,
+  addStopToTrip,
   getTripByOrderIdWithDetails,
+  getCompletedTripsByDriver,
 };

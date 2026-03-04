@@ -8,6 +8,52 @@
   min-height: 100vh;
 }
 
+/* ─── Manager Welcome Banner ─── */
+.mgr-welcome-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+  color: white;
+  border-radius: 14px;
+  padding: 20px 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+}
+
+.mgr-welcome-info h2 {
+  margin: 0 0 4px;
+  font-size: 1.4rem;
+}
+
+.mgr-welcome-email {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.mgr-welcome-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.mgr-welcome-cat-chip {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
+
+.mgr-welcome-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: right;
+  font-size: 0.95rem;
+}
+
 .manager-dashboard-header {
   display: flex;
   align-items: center;

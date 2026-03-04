@@ -1,5 +1,7 @@
 import adminService from "../services/adminService.js";
+import managerRepo from "../repositories/managerRepo.js";
 import mongoose from "mongoose";
+import Fleet from "../models/fleet.js";
 import { AppError } from "../utils/misc.js";
 
 // Dashboard Analytics
@@ -195,12 +197,13 @@ const getOrderDetails = async (req, res, next) => {
 
     const order = await adminService.getOrderDetails(orderId);
 
-    // Find the truck assigned to this order if transporter is assigned
+    // Find the truck assigned to this order from separate Fleet collection
     let truckInfo = null;
-    if (order.assigned_transporter_id && order.assigned_transporter_id.fleet) {
-      const truck = order.assigned_transporter_id.fleet.find(
-        f => f.current_order_id?.toString() === orderId
-      );
+    if (order.assigned_transporter_id) {
+      const truck = await Fleet.findOne({
+        transporter_id: order.assigned_transporter_id._id,
+        current_trip_id: orderId
+      });
       if (truck) {
         truckInfo = {
           name: truck.name,
@@ -257,12 +260,13 @@ const getBidsForOrder = async (req, res, next) => {
 
     const bids = await adminService.getBidsForOrder(orderId);
 
-    const formattedBids = bids.map(bid => {
+    const formattedBids = await Promise.all(bids.map(async (bid) => {
       let truckInfo = null;
-      if (bid.transporter_id && bid.transporter_id.fleet) {
-        const truck = bid.transporter_id.fleet.find(
-          f => f.current_order_id?.toString() === orderId
-        );
+      if (bid.transporter_id) {
+        const truck = await Fleet.findOne({
+          transporter_id: bid.transporter_id._id,
+          current_trip_id: orderId
+        });
         if (truck) {
           truckInfo = {
             name: truck.name,
@@ -284,7 +288,7 @@ const getBidsForOrder = async (req, res, next) => {
         notes: bid.notes,
         createdAt: bid.createdAt
       };
-    });
+    }));
 
     res.status(200).json({
       success: true,
@@ -376,6 +380,229 @@ const getTicketsOverview = async (req, res, next) => {
   }
 };
 
+// ============================================
+// Manager Management
+// ============================================
+
+// Get all managers
+const getAllManagers = async (req, res, next) => {
+  try {
+    const managers = await managerRepo.getAllManagers();
+    const stats = await managerRepo.getManagerStats();
+    res.status(200).json({
+      success: true,
+      data: { managers, stats },
+      message: "Managers fetched successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Generate invitation code for a new manager
+const generateInvitationCode = async (req, res, next) => {
+  try {
+    const { categories, expiresInHours = 24 } = req.body;
+
+    if (!categories || !Array.isArray(categories) || categories.length === 0) {
+      throw new AppError(400, "ValidationError", "At least one category is required", "ERR_VALIDATION");
+    }
+
+    const validCategories = [
+      'Shipment Issue', 'Payment Issue', 'Transporter Complaint',
+      'Customer Complaint', 'Technical Issue', 'Account Issue', 'Other',
+    ];
+    const invalidCats = categories.filter(c => !validCategories.includes(c));
+    if (invalidCats.length > 0) {
+      throw new AppError(400, "ValidationError", `Invalid categories: ${invalidCats.join(', ')}`, "ERR_VALIDATION");
+    }
+
+    const expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000);
+
+    const invitation = await managerRepo.createInvitationCode({
+      categories,
+      expiresAt,
+      createdBy: 'admin',
+    });
+
+    res.status(201).json({
+      success: true,
+      data: invitation,
+      message: `Invitation code generated: ${invitation.code}`,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Get all invitation codes
+const getAllInvitationCodes = async (req, res, next) => {
+  try {
+    const codes = await managerRepo.getAllInvitationCodes();
+    res.status(200).json({
+      success: true,
+      data: codes,
+      message: "Invitation codes fetched successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Update manager status (activate/deactivate)
+const updateManagerStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError(400, "ValidationError", "Invalid manager ID", "ERR_VALIDATION");
+    }
+
+    if (!['active', 'inactive'].includes(status)) {
+      throw new AppError(400, "ValidationError", "Status must be 'active' or 'inactive'", "ERR_VALIDATION");
+    }
+
+    const manager = await managerRepo.updateManager(id, { status });
+    if (!manager) {
+      throw new AppError(404, "NotFound", "Manager not found", "ERR_NOT_FOUND");
+    }
+
+    res.status(200).json({
+      success: true,
+      data: manager,
+      message: `Manager ${status === 'active' ? 'activated' : 'deactivated'} successfully`,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Update manager categories
+const updateManagerCategories = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { categories } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError(400, "ValidationError", "Invalid manager ID", "ERR_VALIDATION");
+    }
+
+    if (!categories || !Array.isArray(categories)) {
+      throw new AppError(400, "ValidationError", "Categories must be an array", "ERR_VALIDATION");
+    }
+
+    const manager = await managerRepo.updateManager(id, { categories });
+    if (!manager) {
+      throw new AppError(404, "NotFound", "Manager not found", "ERR_NOT_FOUND");
+    }
+
+    res.status(200).json({
+      success: true,
+      data: manager,
+      message: "Manager categories updated successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Delete a manager
+const deleteManager = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError(400, "ValidationError", "Invalid manager ID", "ERR_VALIDATION");
+    }
+
+    const manager = await managerRepo.findManagerById(id);
+    if (!manager) {
+      throw new AppError(404, "NotFound", "Manager not found", "ERR_NOT_FOUND");
+    }
+
+    if (manager.isDefault) {
+      throw new AppError(400, "ValidationError", "Cannot delete the default manager", "ERR_DEFAULT_MANAGER");
+    }
+
+    await managerRepo.deleteManager(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Manager deleted successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ============================================
+// Threshold Configuration
+// ============================================
+
+const getThresholdConfigs = async (req, res, next) => {
+  try {
+    const configs = await managerRepo.getAllThresholdConfigs();
+    res.status(200).json({
+      success: true,
+      data: configs,
+      message: "Threshold configs fetched successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateThresholdConfig = async (req, res, next) => {
+  try {
+    const { category, maxTicketsPerHour } = req.body;
+
+    if (!category || !maxTicketsPerHour) {
+      throw new AppError(400, "ValidationError", "Category and maxTicketsPerHour are required", "ERR_VALIDATION");
+    }
+
+    const config = await managerRepo.upsertThresholdConfig(category, maxTicketsPerHour);
+    res.status(200).json({
+      success: true,
+      data: config,
+      message: "Threshold updated successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const resetThresholdAlert = async (req, res, next) => {
+  try {
+    const { category } = req.body;
+    if (!category) {
+      throw new AppError(400, "ValidationError", "Category is required", "ERR_VALIDATION");
+    }
+    const config = await managerRepo.resetAlert(category);
+    res.status(200).json({
+      success: true,
+      data: config,
+      message: "Alert reset successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Ticket volume analytics
+const getTicketVolumeByCategory = async (req, res, next) => {
+  try {
+    const volume = await managerRepo.getTicketVolumeByCategory();
+    res.status(200).json({
+      success: true,
+      data: volume,
+      message: "Ticket volume fetched successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // Individual User Detail
 const getUserDetail = async (req, res, next) => {
   try {
@@ -420,5 +647,19 @@ export default {
   getFleetOverview,
 
   // Tickets
-  getTicketsOverview
+  getTicketsOverview,
+
+  // Manager Management
+  getAllManagers,
+  generateInvitationCode,
+  getAllInvitationCodes,
+  updateManagerStatus,
+  updateManagerCategories,
+  deleteManager,
+
+  // Threshold
+  getThresholdConfigs,
+  updateThresholdConfig,
+  resetThresholdAlert,
+  getTicketVolumeByCategory,
 };

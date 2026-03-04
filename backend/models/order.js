@@ -22,12 +22,14 @@ const OrderSchema = new mongoose.Schema(
       city: { type: String, required: true },
       state: { type: String, required: true },
       pin: { type: String, required: true },
+      coordinates: { type: [Number], default: undefined },
     },
     delivery: {
       street: { type: String, required: true },
       city: { type: String, required: true },
       state: { type: String, required: true },
       pin: { type: String, required: true },
+      coordinates: { type: [Number], default: undefined },
     },
     pickup_coordinates: {
       lat: { type: Number },
@@ -50,6 +52,9 @@ const OrderSchema = new mongoose.Schema(
     description: { type: String, required: true },
     special_instructions: String,
     cargo_photo: { type: String }, // Path to uploaded cargo photo
+
+    pickup_otp: { type: String },    // OTP for pickup confirmation (driver enters when customer shows it)
+    delivery_otp: { type: String },  // OTP for delivery confirmation (receiver shows to driver)
 
     status: {
       type: String,

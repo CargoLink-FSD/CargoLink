@@ -74,12 +74,30 @@ export default function Header() {
                 <Link className="underline-link" to="/transporter/my-bids" onClick={handleLinkClick}>My Bids</Link>
                 <Link className="underline-link" to="/transporter/bid" onClick={handleLinkClick}>Place Bid</Link>
                 <Link className="underline-link" to="/transporter/orders" onClick={handleLinkClick}>My Orders</Link>
+                <Link className="underline-link" to="/transporter/trips" onClick={handleLinkClick}>Trips</Link>
                 <Link className="underline-link" to="/transporter/fleet" onClick={handleLinkClick}>Manage Fleet</Link>
+                <Link className="underline-link" to="/transporter/drivers" onClick={handleLinkClick}>Manage Drivers</Link>
                 <Link className="underline-link" to="/transporter/profile" onClick={handleLinkClick}>Profile</Link>
                 <div className="profile-dropdown">
                   <span className="profile-name">Transporter</span>
                   <div className="dropdown-content">
                     <Link to="/support/tickets" className="dropdown-link" onClick={handleLinkClick}>Need Help?</Link>
+                    <button onClick={handleLogout} className="logout-link">Logout</button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {isAuthenticated && userType === 'driver' && (
+              <>
+                <Link className="underline-link" to="/driver/dashboard" onClick={handleLinkClick}>Dashboard</Link>
+                <Link className="underline-link" to="/driver/trips" onClick={handleLinkClick}>Trips</Link>
+                <Link className="underline-link" to="/driver/schedule" onClick={handleLinkClick}>Schedule</Link>
+                <Link className="underline-link" to="/driver/join-transporter" onClick={handleLinkClick}>Join Transporter</Link>
+                <Link className="underline-link" to="/driver/profile" onClick={handleLinkClick}>Profile</Link>
+                <div className="profile-dropdown">
+                  <span className="profile-name">Driver</span>
+                  <div className="dropdown-content">
                     <button onClick={handleLogout} className="logout-link">Logout</button>
                   </div>
                 </div>
@@ -93,6 +111,7 @@ export default function Header() {
                 <Link className="underline-link" to="/admin/orders" onClick={handleLinkClick}>Orders</Link>
                 <Link className="underline-link" to="/admin/fleet" onClick={handleLinkClick}>Fleet</Link>
                 <Link className="underline-link" to="/admin/tickets" onClick={handleLinkClick}>Tickets</Link>
+                <Link className="underline-link" to="/admin/managers" onClick={handleLinkClick}>Managers</Link>
                 <div className="profile-dropdown">
                   <span className="profile-name">Admin</span>
                   <div className="dropdown-content">
@@ -137,6 +156,10 @@ export default function Header() {
             <p>Manage your fleet and access available shipping requests</p>
           </Link>
 
+          <Link to="/login?type=driver" className="login-card" onClick={() => { closeLoginModal(); handleLinkClick(); }}>
+            <h3>Login as Driver</h3>
+            <p>Execute order shipment and manage trip schedule</p>
+          </Link>
           <Link to="/login?type=admin" className="login-card" onClick={() => { closeLoginModal(); handleLinkClick(); }}>
             <h3>Login as Admin</h3>
             <p>Access administrative controls and manage platform settings.</p>

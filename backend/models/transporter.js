@@ -53,7 +53,6 @@ const TransporterSchema = new mongoose.Schema(
     secondary_contact: String,
     email: { type: String, required: true, unique: true },
     password: { type: String },
-    fleet: [FleetSchema],
     // OAuth fields
     authProvider: { type: String, enum: ["google", "local"], default: "local" },
     googleId: { type: String },

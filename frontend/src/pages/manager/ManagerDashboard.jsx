@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { getVerificationQueue, approveDocument, rejectDocument, getManagerProfile } from '../../api/manager';
 import { Check, CircleCheck } from 'lucide-react';
-import { getVerificationQueue, approveDocument, rejectDocument } from '../../api/manager';
 import { useNotification } from '../../context/NotificationContext';
 import Header from '../../components/common/Header';
 import './ManagerDashboard.css';
@@ -40,12 +40,17 @@ export default function ManagerDashboard() {
   const [actionLoading, setActionLoading] = useState(null); // track which doc action is in progress
   const [rejectModal, setRejectModal] = useState(null); // { transporterId, docType, transporterName }
   const [rejectNote, setRejectNote] = useState('');
+  const [managerProfile, setManagerProfile] = useState(null);
 
   const loadQueue = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getVerificationQueue();
+      const [data, profile] = await Promise.all([
+        getVerificationQueue(),
+        getManagerProfile(),
+      ]);
       setTransporters(data || []);
+      setManagerProfile(profile);
     } catch (err) {
       showError(err?.message || 'Failed to load verification queue');
     } finally {
@@ -179,6 +184,27 @@ export default function ManagerDashboard() {
     <>
       <Header />
       <div className="manager-dashboard-container">
+        {/* Manager Profile Welcome */}
+        {managerProfile && (
+          <div className="mgr-welcome-banner">
+            <div className="mgr-welcome-info">
+              <h2>Welcome, {managerProfile.name}!</h2>
+              <span className="mgr-welcome-email">{managerProfile.email}</span>
+              {managerProfile.categories && (
+                <div className="mgr-welcome-cats">
+                  {managerProfile.categories.map(c => (
+                    <span key={c} className="mgr-welcome-cat-chip">{c.replace(/_/g, ' ')}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="mgr-welcome-stats">
+              <span><strong>{managerProfile.openTicketCount ?? 0}</strong> open tickets</span>
+              <span><strong>{managerProfile.totalResolved ?? 0}</strong> resolved</span>
+            </div>
+          </div>
+        )}
+
         <div className="manager-dashboard-header">
           <h1>Verification Dashboard</h1>
           <p className="subtitle">Review and manage transporter document submissions</p>

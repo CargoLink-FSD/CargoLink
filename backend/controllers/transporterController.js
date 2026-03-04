@@ -150,7 +150,6 @@ const addTruck = async (req, res, next) => {
     const truckData = req.body;
 
     const truck = {
-      transporterId,
       name: truckData.name,
       registration: truckData.registration,
       capacity: parseFloat(truckData.capacity),
@@ -343,6 +342,83 @@ const scheduleMaintenance = async (req, res, next) => {
     next(err);
   }
 };
+
+// ─── Fleet Schedule ─────────────────────────────────────────────────────────────
+
+const getFleetSchedule = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const truckId = req.params.truckId;
+    const { startDate, endDate } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(truckId)) {
+      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
+        { type: "field", value: truckId, msg: "Not a valid truck ID", path: "truckId", location: "params" }
+      );
+    }
+
+    const schedule = await transporterService.getFleetSchedule(transporterId, truckId, startDate, endDate);
+
+    res.status(200).json({
+      success: true,
+      data: schedule,
+      message: 'Fleet schedule fetched successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const addFleetScheduleBlock = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const truckId = req.params.truckId;
+
+    if (!mongoose.Types.ObjectId.isValid(truckId)) {
+      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
+        { type: "field", value: truckId, msg: "Not a valid truck ID", path: "truckId", location: "params" }
+      );
+    }
+
+    const block = await transporterService.addFleetScheduleBlock(transporterId, truckId, req.body);
+
+    res.status(201).json({
+      success: true,
+      data: block,
+      message: 'Schedule block added successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const removeFleetScheduleBlock = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const { truckId, blockId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(truckId)) {
+      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
+        { type: "field", value: truckId, msg: "Not a valid truck ID", path: "truckId", location: "params" }
+      );
+    }
+    if (!mongoose.Types.ObjectId.isValid(blockId)) {
+      throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
+        { type: "field", value: blockId, msg: "Not a valid block ID", path: "blockId", location: "params" }
+      );
+    }
+
+    await transporterService.removeFleetScheduleBlock(transporterId, truckId, blockId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Schedule block removed successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const getTransporterRatings = async (req, res, next) => {
   try {
     const transporterId = req.user.id;
@@ -395,6 +471,103 @@ const getPaymentInfo = async (req, res, next) => {
 
 const updatePaymentInfo = async (req, res, next) => {
   // Placeholder for updating payment info
+};
+
+// ─── Driver Management ─────────────────────────────────────────────────────────
+
+const getDrivers = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const drivers = await transporterService.getDrivers(transporterId);
+
+    res.status(200).json({
+      success: true,
+      data: drivers,
+      message: 'Drivers fetched successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getDriverRequests = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const requests = await transporterService.getDriverRequests(transporterId);
+
+    res.status(200).json({
+      success: true,
+      data: requests,
+      message: 'Driver requests fetched successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const acceptDriverRequest = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const { applicationId } = req.params;
+    const application = await transporterService.acceptDriverRequest(transporterId, applicationId);
+
+    res.status(200).json({
+      success: true,
+      data: application,
+      message: 'Driver request accepted successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const rejectDriverRequest = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const { applicationId } = req.params;
+    const { rejectionReason } = req.body;
+    const application = await transporterService.rejectDriverRequest(transporterId, applicationId, rejectionReason);
+
+    res.status(200).json({
+      success: true,
+      data: application,
+      message: 'Driver request rejected',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const removeDriverFromCompany = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const { driverId } = req.params;
+    await transporterService.removeDriver(transporterId, driverId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Driver removed from company',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getDriverSchedule = async (req, res, next) => {
+  try {
+    const transporterId = req.user.id;
+    const { driverId } = req.params;
+    const { startDate, endDate } = req.query;
+    const schedule = await transporterService.getDriverSchedule(transporterId, driverId, startDate, endDate);
+
+    res.status(200).json({
+      success: true,
+      data: schedule,
+      message: 'Driver schedule fetched successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
 };
 
 const uploadDocuments = async (req, res, next) => {
@@ -456,6 +629,9 @@ const uploadVehicleRc = async (req, res, next) => {
   }
 };
 
+
+
+
 // Export all functions
 export default {
   createTransporter,
@@ -474,6 +650,9 @@ export default {
   setTruckAvailable,
   setTruckUnavailable,
   scheduleMaintenance,
+  getFleetSchedule,
+  addFleetScheduleBlock,
+  removeFleetScheduleBlock,
 
   getServiceLocations,
   addServiceLocation,
@@ -486,4 +665,12 @@ export default {
   uploadDocuments,
   getVerificationStatus,
   uploadVehicleRc,
+
+  // Driver Management
+  getDrivers,
+  getDriverRequests,
+  acceptDriverRequest,
+  rejectDriverRequest,
+  removeDriverFromCompany,
+  getDriverSchedule,
 };

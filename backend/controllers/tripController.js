@@ -1,174 +1,216 @@
-// import tripServices from '../services/tripServices.js';
-import { get } from "mongoose";
 import { AppError, logger } from "../utils/misc.js";
 import tripServices from "../services/tripService.js";
 
-// Create Trip
+// ─── Transporter Endpoints ─────────────────────────────────────────────────────
+
 async function createTrip(req, res, next) {
-    try {
-        const trip = await tripServices.createTrip(req.transporter.id, req.body);
-        res.status(201).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const trip = await tripServices.createTrip(req.user.id, req.body);
+    res.status(201).json({ success: true, data: trip });
+  } catch (err) { next(err); }
 }
 
-// Get Trips
 async function getTrips(req, res, next) {
-    try {
-        const trips = await tripServices.getTrips(req.transporter.id, req.query);
-        res.status(200).json({ success: true, data: trips });
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const trips = await tripServices.getTrips(req.user.id, req.query);
+    res.status(200).json({ success: true, data: trips });
+  } catch (err) { next(err); }
 }
 
-// Get Trip Details
 async function getTripDetails(req, res, next) {
-    try {
-        const trip = await tripServices.getTripDetails(req.transporter.id, req.params.tripId);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const trip = await tripServices.getTripDetails(req.user.id, req.params.tripId);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
 }
 
-// Update Trip
 async function updateTrip(req, res, next) {
-    try {
-        const trip = await tripServices.updateTrip(req.transporter.id, req.params.tripId, req.body);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const trip = await tripServices.updateTrip(req.user.id, req.params.tripId, req.body);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
 }
 
-// Delete Trip
 async function deleteTrip(req, res, next) {
-    try {
-        await tripServices.deleteTrip(req.transporter.id, req.params.tripId);
-        res.status(200).json({ success: true, message: 'Trip deleted successfully' });
-    } catch (err) {
-        next(err);
-    }
+  try {
+    await tripServices.deleteTrip(req.user.id, req.params.tripId);
+    res.status(200).json({ success: true, message: 'Trip deleted successfully' });
+  } catch (err) { next(err); }
 }
-// Assign Order to Trip
+
 async function assignOrder(req, res, next) {
-    try {
-        const trip = await tripServices.assignOrder(req.transporter.id, req.params.tripId, req.body.orderId);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const trip = await tripServices.assignOrder(req.user.id, req.params.tripId, req.body.orderId);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
 }
 
-// Remove Order from Trip
 async function removeOrderFromTrip(req, res, next) {
-    try {
-        const trip = await tripServices.removeOrderFromTrip(req.transporter.id, req.params.tripId, req.params.orderId);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const trip = await tripServices.removeOrderFromTrip(req.user.id, req.params.tripId, req.params.orderId);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
 }
 
-// Assign Truck to Trip
-async function assignTruck(req, res, next) {
-    try {
-        const trip = await tripServices.assignTruck(req.transporter.id, req.params.tripId, req.body.truckId);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
+async function assignVehicle(req, res, next) {
+  try {
+    const trip = await tripServices.assignVehicle(req.user.id, req.params.tripId, req.body.vehicleId);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
 }
 
-// Unassign Truck from Trip
-async function unassignTruck(req, res, next) {
-    try {
-        const trip = await tripServices.unassignTruck(req.transporter.id, req.params.tripId);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
+async function unassignVehicle(req, res, next) {
+  try {
+    const trip = await tripServices.unassignVehicle(req.user.id, req.params.tripId);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
 }
 
-// Auto-assign Orders to Trip
-async function autoAssignOrders(req, res, next) {
-    try {
-        const trip = await tripServices.autoAssignOrders(req.transporter.id, req.params.tripId);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
+async function assignDriver(req, res, next) {
+  try {
+    const trip = await tripServices.assignDriver(req.user.id, req.params.tripId, req.body.driverId);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
 }
 
-// Schedule Trip
+async function unassignDriver(req, res, next) {
+  try {
+    const trip = await tripServices.unassignDriver(req.user.id, req.params.tripId);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
+}
+
 async function scheduleTrip(req, res, next) {
-    try {
-        const trip = await tripServices.scheduleTrip(req.transporter.id, req.params.tripId);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const trip = await tripServices.scheduleTrip(req.user.id, req.params.tripId);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
 }
 
-// Start Trip
-async function startTrip(req, res, next) {
-    try {
-        const trip = await tripServices.startTrip(req.transporter.id, req.params.tripId);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
+async function cancelTrip(req, res, next) {
+  try {
+    const trip = await tripServices.cancelTrip(req.user.id, req.params.tripId);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
 }
 
-// Update Trip Location
-async function updateTripLocation(req, res, next) {
-    try {
-        const trip = await tripServices.updateTripLocation(req.transporter.id, req.params.tripId, req.body);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
-}
-
-// Complete Trip
 async function completeTrip(req, res, next) {
-    try {
-        const trip = await tripServices.completeTrip(req.transporter.id, req.params.tripId);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const trip = await tripServices.completeTrip(req.user.id, req.params.tripId);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
 }
 
-// Update Trip Status
-async function updateTripStatus(req, res, next) {
-    try {
-        const trip = await tripServices.updateTripStatus(req.transporter.id, req.params.tripId, req.body.status);
-        res.status(200).json({ success: true, data: trip });
-    } catch (err) {
-        next(err);
-    }
+async function getAssignableOrders(req, res, next) {
+  try {
+    const orders = await tripServices.getAssignableOrders(req.user.id);
+    res.status(200).json({ success: true, data: orders });
+  } catch (err) { next(err); }
 }
 
+async function getAvailableDrivers(req, res, next) {
+  try {
+    const drivers = await tripServices.getAvailableDrivers(req.user.id);
+    res.status(200).json({ success: true, data: drivers });
+  } catch (err) { next(err); }
+}
 
+async function getAvailableVehicles(req, res, next) {
+  try {
+    const vehicles = await tripServices.getAvailableVehicles(req.user.id);
+    res.status(200).json({ success: true, data: vehicles });
+  } catch (err) { next(err); }
+}
 
+// ─── Driver Endpoints ──────────────────────────────────────────────────────────
+
+async function getDriverTrips(req, res, next) {
+  try {
+    const trips = await tripServices.getDriverTrips(req.user.id, req.query);
+    res.status(200).json({ success: true, data: trips });
+  } catch (err) { next(err); }
+}
+
+async function getDriverTripDetails(req, res, next) {
+  try {
+    const trip = await tripServices.getDriverTripDetails(req.user.id, req.params.tripId);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
+}
+
+async function startTrip(req, res, next) {
+  try {
+    const trip = await tripServices.startTrip(req.user.id, req.params.tripId);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
+}
+
+async function arriveAtStop(req, res, next) {
+  try {
+    const trip = await tripServices.arriveAtStop(req.user.id, req.params.tripId, req.params.stopId);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
+}
+
+async function confirmPickup(req, res, next) {
+  try {
+    const trip = await tripServices.confirmPickup(req.user.id, req.params.tripId, req.params.stopId, req.body.otp);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
+}
+
+async function confirmDelivery(req, res, next) {
+  try {
+    const trip = await tripServices.confirmDelivery(req.user.id, req.params.tripId, req.params.stopId, req.body.otp);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
+}
+
+async function departFromStop(req, res, next) {
+  try {
+    const trip = await tripServices.departFromStop(req.user.id, req.params.tripId, req.params.stopId);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
+}
+
+async function declareDelay(req, res, next) {
+  try {
+    const trip = await tripServices.declareDelay(req.user.id, req.params.tripId, req.body);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
+}
+
+async function clearDelay(req, res, next) {
+  try {
+    const trip = await tripServices.clearDelay(req.user.id, req.params.tripId, req.body.stopId || null);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
+}
+
+async function updateTripLocation(req, res, next) {
+  try {
+    const trip = await tripServices.updateTripLocation(req.user.id, req.params.tripId, req.body.coordinates);
+    res.status(200).json({ success: true, data: trip });
+  } catch (err) { next(err); }
+}
+
+// ─── Customer Endpoints ────────────────────────────────────────────────────────
+
+async function getOrderTracking(req, res, next) {
+  try {
+    const tracking = await tripServices.getOrderTracking(req.user.id, req.params.orderId);
+    res.status(200).json({ success: true, data: tracking });
+  } catch (err) { next(err); }
+}
 
 export default {
-    createTrip,
-    getTrips,
-    getTripDetails,
-    updateTrip,
-    deleteTrip,
-    assignOrder,
-    removeOrderFromTrip,
-    assignTruck,
-    unassignTruck,
-    autoAssignOrders,
-    scheduleTrip,
-    startTrip,
-    updateTripLocation,
-    completeTrip,
-    updateTripStatus,
-}
+  createTrip, getTrips, getTripDetails, updateTrip, deleteTrip,
+  assignOrder, removeOrderFromTrip,
+  assignVehicle, unassignVehicle, assignDriver, unassignDriver,
+  scheduleTrip, cancelTrip, completeTrip,
+  getAssignableOrders, getAvailableDrivers, getAvailableVehicles,
+  getDriverTrips, getDriverTripDetails, startTrip,
+  arriveAtStop, confirmPickup, confirmDelivery, departFromStop,
+  declareDelay, clearDelay, updateTripLocation,
+  getOrderTracking,
+};
