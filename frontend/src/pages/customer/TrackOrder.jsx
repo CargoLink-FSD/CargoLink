@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { MapPin } from 'lucide-react';
 import http from '../../api/http';
 import '../../pages/customer/CustomerOrders.css';
 
@@ -44,7 +45,9 @@ export default function TrackOrder(){
         <div className="order-details">
           <div className="route-box">
             <div className="route-left">
-              <span className="icon">📍</span>
+              <span className="icon" aria-hidden="true">
+                <MapPin size={18} />
+              </span>
               <div className="route-text">
                 <div className="from">{data.pickupLocation || data.from || 'N/A'}</div>
                 <div className="to">{data.deliveryLocation || data.to || 'N/A'}</div>

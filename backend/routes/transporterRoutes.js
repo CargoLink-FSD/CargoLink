@@ -13,7 +13,10 @@ const transporterRouter = Router();
 transporterRouter.post("/register", validate(validationSchema.transporter), transporterController.createTransporter);
 
 
-// All routes require authentication as transporter
+// Public profile — accessible by any authenticated user (customer or transporter)
+transporterRouter.get('/:transporterId/public-profile', authMiddleware(['customer', 'transporter']), transporterController.getPublicProfile);
+
+// All routes below require authentication as transporter
 transporterRouter.use(authMiddleware(['transporter']));
 
 // Document upload for verification (up to 10 files: pan_card, driving_license, vehicle_rc_0..N)

@@ -13,6 +13,7 @@ import { logger } from '../utils/misc.js';
 const ROUTES_API_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 
 const VEHICLE_RATES = {
+    // Legacy/display labels
     'Mini Truck (Up to 1 Ton)': 15,
     'Pickup Truck (1-3 Tons)': 18,
     'Light Lorry (3-7 Tons)': 22,
@@ -21,8 +22,32 @@ const VEHICLE_RATES = {
     'Container (40ft)': 45,
     'Refrigerated Truck': 50,
     'Flatbed Trailer': 40,
+
+    // Frontend slugs (PlaceOrder)
+    van: 15,
+    'truck-small': 18,
+    'truck-medium': 22,
+    'truck-large': 30,
+    refrigerated: 50,
+    flatbed: 40,
+    container: 35,
+    any: 20,
+
+    // Other common slugs seen in fleet editors
+    'mini-truck': 15,
+    pickup: 18,
     default: 20,
 };
+
+const VEHICLE_RATES_LOWER = Object.fromEntries(
+    Object.entries(VEHICLE_RATES).map(([k, v]) => [String(k).toLowerCase(), v])
+);
+
+function getVehicleRate(vehicleType) {
+    const key = String(vehicleType || '').trim();
+    if (!key) return VEHICLE_RATES.default;
+    return VEHICLE_RATES[key] ?? VEHICLE_RATES_LOWER[key.toLowerCase()] ?? VEHICLE_RATES.default;
+}
 
 function getWeightMultiplier(weightKg) {
     const tons = (weightKg || 0) / 1000;
@@ -169,7 +194,7 @@ async function calculatePrice({
     destCoords = null,
 }) {
     // 1. Base cost
-    const vehicleRate = VEHICLE_RATES[vehicle_type] || VEHICLE_RATES.default;
+    const vehicleRate = getVehicleRate(vehicle_type);
     const baseCost = distance * vehicleRate;
 
     // 2. Multipliers

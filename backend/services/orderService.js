@@ -88,7 +88,7 @@ const acceptBid = async (customerId, orderId, bidId) => {
             "ERR_BIDDING_CLOSED");
     }
 
-    const order = await orderRepo.assignOrder(orderId, bid.transporter_id, bid.bid_amount);
+    const order = await orderRepo.assignOrder(orderId, bid.transporter_id, bid.bid_amount, bid.quote_breakdown || null);
     if (!order) {
         throw new AppError(403, "Forbidden", "Order already assigned or cannot be updated", "ERR_FORBIDDEN");
     }
@@ -119,7 +119,7 @@ const getTransporterBids = async (transporterId) => {
     return bids;
 };
 
-const submitBid = async (transporterId, orderId, bidAmount, notes) => {
+const submitBid = async (transporterId, orderId, bidAmount, notes, quoteBreakdown) => {
     // Check if order exists and is open for bidding (must be at least 2 days before pickup)
     const active = await orderRepo.checkActiveOrder(orderId, transporterId);
     if (!active) {
@@ -128,12 +128,37 @@ const submitBid = async (transporterId, orderId, bidAmount, notes) => {
             "ERR_BIDDING_CLOSED");
     }
 
-    const bid = await bidRepo.createBid({
+    // Validate quote breakdown if provided
+    if (quoteBreakdown) {
+        if (!quoteBreakdown.transportation_charges || quoteBreakdown.transportation_charges <= 0) {
+            throw new AppError(400, "ValidationError",
+                "Transportation charges are required and must be greater than 0",
+                "ERR_VALIDATION");
+        }
+        if (quoteBreakdown.custom_items && quoteBreakdown.custom_items.length > 5) {
+            throw new AppError(400, "ValidationError",
+                "Maximum 5 custom charge items allowed",
+                "ERR_VALIDATION");
+        }
+        if (quoteBreakdown.gst && ![0, 5, 12, 18, 28].includes(quoteBreakdown.gst.rate_percent)) {
+            throw new AppError(400, "ValidationError",
+                "GST rate must be one of: 0%, 5%, 12%, 18%, 28%",
+                "ERR_VALIDATION");
+        }
+    }
+
+    const bidData = {
         order_id: orderId,
         transporter_id: transporterId,
         bid_amount: bidAmount,
         notes: notes
-    });
+    };
+
+    if (quoteBreakdown) {
+        bidData.quote_breakdown = quoteBreakdown;
+    }
+
+    const bid = await bidRepo.createBid(bidData);
 
     return bid;
 };

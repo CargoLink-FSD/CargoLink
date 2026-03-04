@@ -2,6 +2,9 @@ import orderService from "../services/orderService.js";
 import pricingService from "../services/pricingService.js";
 import mongoose from "mongoose";
 import { logger, AppError } from "../utils/misc.js";
+import orderRepo from "../repositories/orderRepo.js";
+import bidRepo from "../repositories/bidRepo.js";
+import generateQuotePdf from "../utils/generateQuotePdf.js";
 
 
 const getUserOrders = async (req, res, next) => {
@@ -128,6 +131,50 @@ const getCurrentBids = async (req, res, next) => {
     next(err);
   }
 };
+const downloadBidQuotePdf = async (req, res, next) => {
+  try {
+    const customerId = req.user.id;
+    const { orderId, bidId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      throw new AppError(
+        400,
+        "ValidationError",
+        "Invalid orderId",
+        "ERR_VALIDATION"
+      );
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(bidId)) {
+      throw new AppError(
+        400,
+        "ValidationError",
+        "Invalid bidId",
+        "ERR_VALIDATION"
+      );
+    }
+
+    const order = await orderRepo.getOrderDetailsForCustomer(orderId, customerId);
+    if (!order) {
+      throw new AppError(404, "NotFound", "Order not found", "ERR_NOT_FOUND");
+    }
+
+    const bid = await bidRepo.getBidById(bidId);
+    if (!bid || bid.order_id?.toString() !== orderId) {
+      throw new AppError(404, "NotFound", "Bid not found", "ERR_NOT_FOUND");
+    }
+
+    const filename = `quote_${orderId.slice(-8)}_${bidId.slice(-6)}.pdf`;
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+
+    // PDF generation moved to utils
+    generateQuotePdf(res, order, bid);
+  } catch (err) {
+    next(err);
+  }
+};
 
 
 const acceptBid = async (req, res, next) => {
@@ -208,7 +255,7 @@ const submitBid = async (req, res, next) => {
   try {
     const transporterId = req.user.id;
     const orderId = req.params.orderId; //reads orderid from url params
-    const { bidAmount, notes } = req.body;
+    const { bidAmount, notes, quoteBreakdown } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(orderId)) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
@@ -216,7 +263,7 @@ const submitBid = async (req, res, next) => {
       );
     }
 
-    const bid = await orderService.submitBid(transporterId, orderId, bidAmount, notes);
+    const bid = await orderService.submitBid(transporterId, orderId, bidAmount, notes, quoteBreakdown);
 
     res.status(201).json({
       success: true,
@@ -447,6 +494,7 @@ export default {
   confirmPickup,
   confirmDelivery,
   getCurrentBids,
+  downloadBidQuotePdf,
   acceptBid,
   rejectBid,
   getActiveOrders,

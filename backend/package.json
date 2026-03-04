@@ -30,8 +30,10 @@
     "mongoose": "^8.18.3",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.11",
+    "pdfkit": "^0.17.2",
     "razorpay": "^2.9.6",
     "rotating-file-stream": "^3.2.8",
+    "svg-to-pdfkit": "^0.1.8",
     "ws": "^8.13.0"
   },
   "devDependencies": {

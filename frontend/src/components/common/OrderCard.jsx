@@ -15,6 +15,20 @@ export default function OrderCard({
 }) {
   const navigate = useNavigate();
 
+  const truckTypeLabel = (t) => {
+    const map = {
+      van: 'Van',
+      'truck-small': 'Small Truck',
+      'truck-medium': 'Medium Truck',
+      'truck-large': 'Large Truck',
+      refrigerated: 'Refrigerated Truck',
+      flatbed: 'Flatbed Truck',
+      container: 'Container Truck',
+      any: 'Any',
+    };
+    return map[t] || t || 'Not Specified';
+  };
+
   const statusClass = order.status?.toLowerCase().replace(/\s+/g, '-') || 'unknown';
 
   const formatDate = (dateString) => {
@@ -138,7 +152,7 @@ export default function OrderCard({
               <circle cx="7.5" cy="17.5" r="2.5" />
               <circle cx="17.5" cy="17.5" r="2.5" />
             </svg>
-            {order.truck_type || 'Not Specified'}
+            {truckTypeLabel(order.truck_type)}
           </li>
           <li>
             <svg className="li-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

@@ -587,6 +587,60 @@ function checkAllDocumentsApproved(docs) {
   return true;
 }
 
+const getTransporterPublicProfile = async (transporterId) => {
+  const transporter = await transporterRepo.findTransporterById(transporterId);
+  if (!transporter) {
+    throw new AppError(404, 'NotFoundError', 'Transporter not found', 'ERR_NOT_FOUND');
+  }
+
+  // Get ratings
+  const reviews = await Review.find({ transporter_id: transporterId })
+    .populate('customer_id', 'firstName lastName')
+    .populate('order_id', 'pickup.city delivery.city')
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const totalReviews = reviews.length;
+  const sum = reviews.reduce((acc, r) => acc + (r.rating || 0), 0);
+  const averageRating = totalReviews > 0 ? parseFloat((sum / totalReviews).toFixed(1)) : 0;
+
+  // Star distribution
+  const starDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  reviews.forEach(r => { if (r.rating >= 1 && r.rating <= 5) starDistribution[r.rating]++; });
+
+  // Completed orders count
+  const completedOrders = await Order.countDocuments({
+    assigned_transporter_id: transporterId,
+    status: 'Completed'
+  });
+
+  const formattedReviews = reviews.slice(0, 10).map(r => ({
+    id: r._id,
+    customerName: r.customer_id ? `${r.customer_id.firstName} ${r.customer_id.lastName}` : 'Anonymous',
+    rating: r.rating,
+    comment: r.comment,
+    createdAt: r.createdAt,
+    orderInfo: {
+      pickup: r.order_id?.pickup?.city || 'N/A',
+      delivery: r.order_id?.delivery?.city || 'N/A'
+    }
+  }));
+
+  return {
+    name: transporter.name,
+    city: transporter.city || null,
+    state: transporter.state || null,
+    profilePicture: transporter.profilePicture || null,
+    fleetSize: (transporter.fleet || []).length,
+    memberSince: transporter.createdAt,
+    completedOrders,
+    averageRating,
+    totalReviews,
+    starDistribution,
+    reviews: formattedReviews,
+  };
+};
+
 export default {
   registerTransporter,
   getTransporterProfile,
@@ -602,6 +656,7 @@ export default {
   setTruckUnavailable,
   scheduleMaintenance,
   getTransporterRatings,
+  getTransporterPublicProfile,
   getDashboardStats,
   uploadDocuments,
   uploadVehicleRc,

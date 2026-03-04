@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { Eye, EyeOff } from 'lucide-react';
 import { loginUser } from '../../store/slices/authSlice';
 import { useNotification } from '../../context/NotificationContext';
 import Header from '../../components/common/Header';
@@ -81,7 +82,7 @@ export default function ManagerLogin() {
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label="Toggle password visibility"
                 >
-                  {showPassword ? '🙈' : '👁️'}
+                  {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
                 </button>
               </div>
             </div>

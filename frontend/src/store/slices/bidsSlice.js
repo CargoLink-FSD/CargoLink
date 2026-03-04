@@ -53,9 +53,9 @@ export const fetchMyBids = createAsyncThunk(
  */
 export const submitBid = createAsyncThunk(
   'bids/submitBid',
-  async ({ orderId, bidAmount, notes }, { rejectWithValue }) => {
+  async ({ orderId, bidAmount, notes, quoteBreakdown }, { rejectWithValue }) => {
     try {
-      const data = await bidsApi.submitBid(orderId, bidAmount, notes);
+      const data = await bidsApi.submitBid(orderId, bidAmount, notes, quoteBreakdown);
       return { orderId, data };
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to submit bid');

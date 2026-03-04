@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Check, CircleCheck } from 'lucide-react';
 import { getVerificationQueue, approveDocument, rejectDocument } from '../../api/manager';
 import { useNotification } from '../../context/NotificationContext';
 import Header from '../../components/common/Header';
@@ -209,7 +210,9 @@ export default function ManagerDashboard() {
 
         {!loading && documentRows.length === 0 && (
           <div className="empty-state">
-            <div className="empty-icon">✓</div>
+            <div className="empty-icon" aria-hidden="true">
+              <CircleCheck size={44} />
+            </div>
             <h3>No pending documents</h3>
             <p>All transporter documents have been processed or none have been submitted.</p>
           </div>
@@ -298,7 +301,10 @@ export default function ManagerDashboard() {
                           </button>
                         )}
                         {row.status === 'approved' && (
-                          <span className="approved-text">Approved ✓</span>
+                          <span className="approved-text" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <Check size={16} aria-hidden="true" />
+                            <span>Approved</span>
+                          </span>
                         )}
                       </td>
                     </tr>

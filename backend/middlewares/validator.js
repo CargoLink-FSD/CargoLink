@@ -302,7 +302,32 @@ const bid = [
   body('bidAmount')
     .isInt({ min: 1 }).withMessage('Bid amount must be a positive integer'),
   body('notes')
-    .optional().isString().withMessage('Notes must be a string')
+    .optional().isString().withMessage('Notes must be a string'),
+  body('quoteBreakdown')
+    .notEmpty().withMessage('A detailed quote breakdown is required')
+    .isObject().withMessage('Quote breakdown must be an object'),
+  body('quoteBreakdown.transportation_charges')
+    .isFloat({ min: 1 }).withMessage('Transportation charges are required and must be greater than 0'),
+  body('quoteBreakdown.packing_cost')
+    .optional().isFloat({ min: 0 }).withMessage('Packing cost must be a non-negative number'),
+  body('quoteBreakdown.loading_charges')
+    .optional().isFloat({ min: 0 }).withMessage('Loading charges must be a non-negative number'),
+  body('quoteBreakdown.unloading_charges')
+    .optional().isFloat({ min: 0 }).withMessage('Unloading charges must be a non-negative number'),
+  body('quoteBreakdown.unpacking_charges')
+    .optional().isFloat({ min: 0 }).withMessage('Unpacking charges must be a non-negative number'),
+  body('quoteBreakdown.escort_charges')
+    .optional().isFloat({ min: 0 }).withMessage('Escort charges must be a non-negative number'),
+  body('quoteBreakdown.car_transportation')
+    .optional().isFloat({ min: 0 }).withMessage('Car transportation must be a non-negative number'),
+  body('quoteBreakdown.octroi_entry_tax')
+    .optional().isFloat({ min: 0 }).withMessage('Octroi / entry tax must be a non-negative number'),
+  body('quoteBreakdown.storage_charges')
+    .optional().isFloat({ min: 0 }).withMessage('Storage charges must be a non-negative number'),
+  body('quoteBreakdown.gst.rate_percent')
+    .optional().isInt({ min: 0 }).withMessage('GST rate must be a non-negative integer'),
+  body('quoteBreakdown.custom_items')
+    .optional().isArray({ max: 5 }).withMessage('Maximum 5 custom charge items allowed'),
 ]
 
 const order = [

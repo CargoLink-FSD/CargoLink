@@ -101,18 +101,22 @@ const getActiveOrders = async (transporterId) => {
     return orders;
 };
 
-const assignOrder = async (orderId, transporterId, finalPrice) => {
+const assignOrder = async (orderId, transporterId, finalPrice, quoteBreakdown = null) => {
+    const updateData = {
+        assigned_transporter_id: transporterId,
+        final_price: finalPrice,
+        status: 'Assigned',
+        assignment: {} // Initialize empty assignment object
+    };
+    if (quoteBreakdown) {
+        updateData.accepted_quote_breakdown = quoteBreakdown;
+    }
     const updatedOrder = await Order.findOneAndUpdate(
         {
             _id: orderId,
             status: 'Placed'
         },
-        {
-            assigned_transporter_id: transporterId,
-            final_price: finalPrice,
-            status: 'Assigned',
-            assignment: {} // Initialize empty assignment object
-        },
+        updateData,
         { new: true }
     );
     return updatedOrder;

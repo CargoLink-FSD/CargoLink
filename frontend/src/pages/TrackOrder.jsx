@@ -89,7 +89,7 @@ const TrackOrderPage = () => {
 
   if (loading) {
     return (
-      <div className="container">
+      <div className="track-order-page">
         <div id="tracking-loading" className="loading-container">
           <div className="loader"></div>
           <p>Loading tracking information...</p>
@@ -105,7 +105,7 @@ const TrackOrderPage = () => {
   return (
     <>
       <Header />
-      <div className="container">
+      <div className="track-order-page">
         <div id="main-content">
 
           <div id="page-header" className="page-header">
@@ -114,7 +114,12 @@ const TrackOrderPage = () => {
             </h1>
             <div className="status-update">
               <span className="status-label">Status:</span>
-              <span className={`status-badge-${currentOrder.status.toLowerCase().replace(' ', '-')}`}>
+              <span
+                className={`status-badge ${String(currentOrder.status || '')
+                  .toLowerCase()
+                  .replace(/\s+/g, '-')
+                  .replace('in-transit', 'active')}`}
+              >
                 {currentOrder.status}
               </span>
             </div>

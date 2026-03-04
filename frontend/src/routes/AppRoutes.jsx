@@ -21,6 +21,7 @@ import OrderBids from '../pages/customer/OrderBids';
 import PlaceOrder from '../pages/customer/PlaceOrder';
 import TransporterOrders from '../pages/transporter/TransporterOrders';
 import MyBidsPage from '../pages/transporter/MyBids';
+import QuoteBuilder from '../pages/transporter/QuoteBuilder';
 import About from '../pages/static/About';
 import Services from '../pages/static/Services';
 import Contact from '../pages/static/Contact';
@@ -105,6 +106,7 @@ export default function AppRoutes() {
         <Route path="/transporter/orders/:orderId" element={<OrderDetails />} />
         <Route path="/transporter/orders/:orderId/track" element={<TrackOrder />} />
         <Route path="/transporter/bid" element={<BidPage />} />
+        <Route path="/transporter/orders/:orderId/quote" element={<QuoteBuilder />} />
         <Route path="/transporter/my-bids" element={<MyBidsPage />} />
         <Route path="/transporter/assignment" element={placeholder('Assignment: Dashboard')} />
         <Route path="/transporter/assignment/order/:order_id" element={placeholder('Assignment: Order Detail')} />
