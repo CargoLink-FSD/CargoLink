@@ -1,14 +1,20 @@
 /* ─── Trip Planner ──────────────────────────────────────────────────────────── */
 
 .tp-shell {
+  --tp-header-offset: 72px;
+  box-sizing: border-box;
+  height: 100vh;
   min-height: 100vh;
   background: var(--gray-50, #f8f9fa);
+  padding-top: var(--tp-header-offset);
   padding-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .tp-toast {
   position: fixed;
-  top: 80px;
+  top: calc(var(--tp-header-offset, 72px) + 16px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
@@ -37,7 +43,7 @@
   border-bottom: 1px solid var(--gray-200, #e5e7eb);
   gap: 1rem;
   flex-wrap: wrap;
-  margin-top: 64px;
+  flex-shrink: 0;
 }
 
 .tp-topbar-left {
@@ -92,7 +98,8 @@
   display: grid;
   grid-template-columns: 320px 1fr 340px;
   gap: 0;
-  height: calc(100vh - 140px);
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 

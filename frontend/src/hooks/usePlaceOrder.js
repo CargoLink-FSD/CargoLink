@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { placeNewOrder } from '../store/slices/ordersSlice';
 import { getCustomerAddresses } from '../api/customer';
-import { calculateDistance as apiCalculateDistance } from '../api/location';
 import { estimatePrice as apiEstimatePrice } from '../api/orders';
 import { useNotification } from '../context/NotificationContext';
 
@@ -23,8 +22,8 @@ export function usePlaceOrder() {
   });
 
   // Store coordinates from geocoding
-  const [pickupCoords, setPickupCoords] = useState(null);
-  const [deliveryCoords, setDeliveryCoords] = useState(null);
+  const [pickupCoords, setPickupCoords] = useState(null); // { lat, lng }
+  const [deliveryCoords, setDeliveryCoords] = useState(null); // { lat, lng }
   const [distanceLoading, setDistanceLoading] = useState(false);
   const [durationMin, setDurationMin] = useState(null);
 
@@ -38,7 +37,6 @@ export function usePlaceOrder() {
   const [touched, setTouched] = useState({});
 
   // Debounce timer refs
-  const distanceTimerRef = useRef(null);
   const priceTimerRef = useRef(null);
 
   // Load saved addresses on mount
@@ -54,55 +52,45 @@ export function usePlaceOrder() {
     loadAddresses();
   }, []);
 
-  // Helper: check if address is complete
-  const isAddressComplete = useCallback((addr) => {
-    return addr.street?.trim() && addr.city?.trim() && addr.state?.trim() && addr.pin?.trim() && /^[1-9][0-9]{5}$/.test(addr.pin);
-  }, []);
-
-  // Auto-calculate distance from Google Maps when both addresses are filled
+  // Auto-calculate distance using Leaflet when both locations have coordinates.
+  // This avoids OSRM/Maps distance APIs and keeps the main flow Leaflet-driven.
   useEffect(() => {
-    // Clear previous timer
-    if (distanceTimerRef.current) {
-      clearTimeout(distanceTimerRef.current);
+    const pickup = formData.pickup.coordinates;
+    const delivery = formData.delivery.coordinates;
+
+    if (!pickup || !delivery) return;
+    if (pickup.length !== 2 || delivery.length !== 2) return;
+
+    const L = window.L;
+    if (!L?.latLng) return;
+
+    setDistanceLoading(true);
+    try {
+      // Coordinates are stored as [lng, lat]
+      const pickupLatLng = L.latLng(pickup[1], pickup[0]);
+      const deliveryLatLng = L.latLng(delivery[1], delivery[0]);
+
+      const meters = pickupLatLng.distanceTo(deliveryLatLng);
+      const distanceKm = Number((meters / 1000).toFixed(1));
+
+      setPickupCoords({ lat: pickup[1], lng: pickup[0] });
+      setDeliveryCoords({ lat: delivery[1], lng: delivery[0] });
+      setDurationMin(null);
+
+      setFormData(prev => ({
+        ...prev,
+        transit: { ...prev.transit, distance: String(distanceKm) }
+      }));
+      setErrors(prev => ({ ...prev, 'transit.distance': '' }));
+    } catch (error) {
+      console.error('Leaflet distance calculation failed:', error);
+      setPickupCoords(null);
+      setDeliveryCoords(null);
+      setDurationMin(null);
+    } finally {
+      setDistanceLoading(false);
     }
-
-    if (!isAddressComplete(formData.pickup) || !isAddressComplete(formData.delivery)) {
-      return;
-    }
-
-    // Debounce 800ms to avoid rapid API calls
-    distanceTimerRef.current = setTimeout(async () => {
-      setDistanceLoading(true);
-      try {
-        const result = await apiCalculateDistance(formData.pickup, formData.delivery);
-        setPickupCoords(result.pickupCoords);
-        setDeliveryCoords(result.deliveryCoords);
-        setDurationMin(result.durationMin);
-        setFormData(prev => ({
-          ...prev,
-          transit: { ...prev.transit, distance: String(result.distanceKm) }
-        }));
-        // Clear any distance errors
-        setErrors(prev => ({ ...prev, 'transit.distance': '' }));
-      } catch (error) {
-        console.error('Distance calculation failed:', error);
-        showError('Could not calculate distance. Please check the addresses.');
-        // Reset distance so user knows
-        setPickupCoords(null);
-        setDeliveryCoords(null);
-        setDurationMin(null);
-      } finally {
-        setDistanceLoading(false);
-      }
-    }, 800);
-
-    return () => {
-      if (distanceTimerRef.current) clearTimeout(distanceTimerRef.current);
-    };
-  }, [
-    formData.pickup.street, formData.pickup.city, formData.pickup.state, formData.pickup.pin,
-    formData.delivery.street, formData.delivery.city, formData.delivery.state, formData.delivery.pin
-  ]);
+  }, [formData.pickup.coordinates, formData.delivery.coordinates]);
 
   // Auto-calculate max price via backend pricing engine
   // Triggers whenever distance, vehicle, weight, goods type, volume, or shipments change.
@@ -191,35 +179,7 @@ export function usePlaceOrder() {
     }));
   }, [formData.cargo.type, formData.cargo.weight]);
 
-  // Auto-calculate distance when both locations have coordinates
-  useEffect(() => {
-    const pickupCoords = formData.pickup.coordinates;
-    const deliveryCoords = formData.delivery.coordinates;
-    if (!pickupCoords || !deliveryCoords) return;
-    if (pickupCoords.length !== 2 || deliveryCoords.length !== 2) return;
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const coords = `${pickupCoords[0]},${pickupCoords[1]};${deliveryCoords[0]},${deliveryCoords[1]}`;
-        const res = await fetch(
-          `https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`
-        );
-        const data = await res.json();
-        if (cancelled) return;
-        if (data.code === 'Ok' && data.routes?.length) {
-          const distKm = (data.routes[0].distance / 1000).toFixed(1);
-          setFormData(prev => ({
-            ...prev,
-            transit: { ...prev.transit, distance: distKm },
-          }));
-        }
-      } catch {
-        // silently ignore
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [formData.pickup.coordinates, formData.delivery.coordinates]);
+  // (Distance is handled by Leaflet coords effect above)
 
   // Handle location set from map picker
   const handleLocationSet = (type, { coordinates, address }) => {

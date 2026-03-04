@@ -49,7 +49,10 @@ export const useDriverSignup = () => {
           phone: data.phone,
           email: data.email,
           licenseNumber: data.licenseNumber,
-          address: { street: data.address, city: data.city, state: data.state, pin: data.pin },
+          street: data.address,
+          city: data.city,
+          state: data.state,
+          pin: data.pin,
           password: data.password
         },
         userType: 'driver' 

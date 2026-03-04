@@ -272,12 +272,12 @@ export default function PlaceOrder() {
                   className={`input-field ${errors['transit.distance'] && touched['transit.distance'] ? 'error' : ''}`}
                   value={formData.transit.distance}
                   readOnly
-                  placeholder={distanceLoading ? 'Calculating...' : 'Auto-calculated from addresses'}
+                  placeholder={distanceLoading ? 'Calculating...' : 'Auto-calculated from map coordinates'}
                   min="0"
                   step="0.1"
                 />
                 {distanceLoading && (
-                  <span className="form-info">Calculating distance from addresses...</span>
+                  <span className="form-info">Calculating distance from coordinates...</span>
                 )}
                 {!distanceLoading && formData.transit.distance && durationMin && (
                   <span className="form-info">
@@ -285,7 +285,7 @@ export default function PlaceOrder() {
                   </span>
                 )}
                 {!distanceLoading && !formData.transit.distance && (
-                  <span className="form-info">Fill in both pickup and drop-off addresses to auto-calculate distance</span>
+                  <span className="form-info">Pick both locations on the map to auto-calculate distance</span>
                 )}
                 {errors['transit.distance'] && touched['transit.distance'] && (
                   <span className="error-message">{errors['transit.distance']}</span>
