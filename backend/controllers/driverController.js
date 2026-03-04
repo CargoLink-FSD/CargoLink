@@ -43,6 +43,10 @@ const getDriverProfile = async (req, res, next) => {
       pin: driver.pin || '',
       profileImage,
       orderCount,
+      // Document verification info
+      documents: driver.documents || {},
+      verificationStatus: driver.verificationStatus || 'unsubmitted',
+      isVerified: driver.isVerified || false,
     }
 
     logger.debug("Driver Fetched Successfully", driverProfile);
@@ -68,7 +72,7 @@ const updateDriverProfile = async (req, res, next) => {
     }
 
     const updates = req.body;
-    
+
     // If a profile picture was uploaded, add the path to updates
     if (req.file) {
       updates.profilePicture = `/uploads/profile-pictures/${req.file.filename}`;
@@ -239,6 +243,42 @@ const withdrawApplication = async (req, res, next) => {
   }
 };
 
+// ─── Document Upload ───────────────────────────────────────────────────────────
+
+const uploadDocuments = async (req, res, next) => {
+  try {
+    const driverId = req.user.id;
+    const files = req.files;
+    const updated = await driverService.uploadDocuments(driverId, files);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        verificationStatus: updated.verificationStatus,
+        documents: updated.documents,
+      },
+      message: 'Documents uploaded for verification',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getVerificationStatus = async (req, res, next) => {
+  try {
+    const driverId = req.user.id;
+    const status = await driverService.getVerificationStatus(driverId);
+
+    res.status(200).json({
+      success: true,
+      data: status,
+      message: 'Verification status fetched successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 export default {
   createDriver,
@@ -259,4 +299,8 @@ export default {
   applyToTransporter,
   getApplicationStatus,
   withdrawApplication,
+
+  // Documents
+  uploadDocuments,
+  getVerificationStatus,
 }

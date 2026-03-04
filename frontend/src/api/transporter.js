@@ -85,26 +85,31 @@ export const uploadDocuments = async (formData) => {
   const response = await http.post('/api/transporters/documents', formData);
   return response.data;
 };
+  // Upload verification documents (FormData with files)
+  export const uploadDocuments = async (formData) => {
+    const response = await http.post('/api/transporters/documents', formData);
+    return response.data;
+  };
 
-// Get verification status
-export const getVerificationStatus = async () => {
-  const response = await http.get('/api/transporters/verification-status');
-  return response.data;
-};
+  // Get verification status
+  export const getVerificationStatus = async () => {
+    const response = await http.get('/api/transporters/verification-status');
+    return response.data;
+  };
 
-export default {
-  getTransporterProfile,
-  updateTransporterProfile,
-  uploadTransporterProfilePicture,
-  updateTransporterPassword,
-  getTransporterRatings,
-  getTransporterDashboardStats,
-  getDrivers,
-  getDriverRequests,
-  acceptDriverRequest,
-  rejectDriverRequest,
-  removeDriver,
-  getDriverSchedule,
-  uploadDocuments,
-  getVerificationStatus,
-};
+  export default {
+    getTransporterProfile,
+    updateTransporterProfile,
+    uploadTransporterProfilePicture,
+    updateTransporterPassword,
+    getTransporterRatings,
+    getTransporterDashboardStats,
+    getDrivers,
+    getDriverRequests,
+    acceptDriverRequest,
+    rejectDriverRequest,
+    removeDriver,
+    getDriverSchedule,
+    uploadDocuments,
+    getVerificationStatus,
+  };

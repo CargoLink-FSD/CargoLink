@@ -9,13 +9,13 @@ const registerDriver = async (driverData) => {
 
   const emailExists = await driverRepo.checkEmailExists(driverInfo.email);
   if (emailExists)
-    throw new AppError(409, "DuplicateKey", 'Email already in use', "ERR_DUP_EMAIL", [{field: 'email', message:  'Already exisits'}]);
+    throw new AppError(409, "DuplicateKey", 'Email already in use', "ERR_DUP_EMAIL", [{ field: 'email', message: 'Already exisits' }]);
 
   if (address) {
     driverInfo.addresses = [{
-    ...address,
-    address_label: 'Home',
-    contact_phone: address.contact_phone || driverData.phone,
+      ...address,
+      address_label: 'Home',
+      contact_phone: address.contact_phone || driverData.phone,
     }];
   }
 
@@ -23,20 +23,20 @@ const registerDriver = async (driverData) => {
   return driver;
 };
 
-const getDriverProfile = async (driverId)  => {
+const getDriverProfile = async (driverId) => {
 
   const driver = await driverRepo.findDriverById(driverId);
   if (!driver) {
     throw new AppError(404, 'NotFoundError', 'Driver not found', 'ERR_NOT_FOUND');
   }
-  
+
   // const tripsCount = await tripsRepo.countTripsByDriver(driver._id);
   const tripsCount = 0;
 
   // Use profile picture from database if available
   const profileImage = driver.profilePicture || null;
 
-  return {driver, tripsCount, profileImage};
+  return { driver, tripsCount, profileImage };
 };
 
 const updateDriverProfile = async (driverId, updates) => {
@@ -53,7 +53,7 @@ const updateDriverProfile = async (driverId, updates) => {
 const changePassword = async (driverId, oldPassword, newPassword) => {
 
   logger.debug('Changing password for driver', { driverId, oldPassword, newPassword });
-  
+
   const driver = await driverRepo.findDriverById(driverId);
   if (!driver) {
     throw new AppError(404, 'NotFoundError', 'Driver not found', 'ERR_NOT_FOUND');
@@ -63,7 +63,7 @@ const changePassword = async (driverId, oldPassword, newPassword) => {
   if (!isMatch) {
     throw new AppError(401, 'AuthenticationError', 'Old password is incorrect', 'ERR_AUTH_INVALID');
   }
-  logger.debug('Old password verified, updating to new password', {driver});
+  logger.debug('Old password verified, updating to new password', { driver });
   await driver.updatePassword(newPassword);
 };
 
@@ -80,12 +80,12 @@ const getDashboardStats = async (driverId) => {
 
   // Define active statuses
   const activeStatuses = ['Placed', 'Assigned', 'In Transit', 'Started'];
-  
+
   // Get current month date range
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-  
+
   // Get upcoming pickups window (next 7 days)
   const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
@@ -221,6 +221,54 @@ const withdrawApplication = async (driverId, applicationId) => {
   await driverRepo.deleteApplication(applicationId);
 };
 
+// ─── Document Upload ───────────────────────────────────────────────────────────
+
+const uploadDocuments = async (driverId, files) => {
+  const driver = await driverRepo.findDriverById(driverId);
+  if (!driver) {
+    throw new AppError(404, 'NotFoundError', 'Driver not found', 'ERR_NOT_FOUND');
+  }
+
+  const docData = {};
+
+  if (files.pan_card && files.pan_card[0]) {
+    docData['documents.pan_card'] = {
+      url: `/uploads/driver-docs/${files.pan_card[0].filename}`,
+      uploadedAt: new Date(),
+      adminStatus: 'pending',
+    };
+  }
+
+  if (files.driving_license && files.driving_license[0]) {
+    docData['documents.driving_license'] = {
+      url: `/uploads/driver-docs/${files.driving_license[0].filename}`,
+      uploadedAt: new Date(),
+      adminStatus: 'pending',
+    };
+  }
+
+  if (Object.keys(docData).length === 0) {
+    throw new AppError(400, 'ValidationError', 'No document files provided', 'ERR_NO_FILES');
+  }
+
+  docData['verificationStatus'] = 'under_review';
+
+  const updated = await driverRepo.saveDocuments(driverId, docData);
+  return updated;
+};
+
+const getVerificationStatus = async (driverId) => {
+  const driver = await driverRepo.findDriverById(driverId);
+  if (!driver) {
+    throw new AppError(404, 'NotFoundError', 'Driver not found', 'ERR_NOT_FOUND');
+  }
+  return {
+    verificationStatus: driver.verificationStatus,
+    isVerified: driver.isVerified,
+    documents: driver.documents,
+  };
+};
+
 export default {
   registerDriver,
   getDriverProfile,
@@ -239,4 +287,8 @@ export default {
   applyToTransporter,
   getApplicationStatus,
   withdrawApplication,
+
+  // Documents
+  uploadDocuments,
+  getVerificationStatus,
 }

@@ -16,7 +16,7 @@ import './ManagerSupport.css';
 const API_BASE = 'http://localhost:3000';
 
 const STATUS_OPTIONS = ['open', 'in_progress', 'closed'];
-const ROLE_OPTIONS = ['customer', 'transporter'];
+const ROLE_OPTIONS = ['customer', 'transporter', 'driver'];
 const PRIORITY_OPTIONS = ['low', 'medium', 'high'];
 
 const badgeColor = (status) => {

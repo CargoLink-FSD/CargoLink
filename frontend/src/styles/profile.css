@@ -459,6 +459,7 @@
   transition: background 0.2s;
   vertical-align: middle;
 }
+
 .btn-icon-edit:hover,
 .btn-icon-save:hover,
 .btn-icon-cancel:hover {
@@ -672,6 +673,7 @@
     font-size: 28px;
   }
 }
+
 /* Ratings Specific Layout - Does not affect other tabs */
 .ratings-tab-content {
   padding: 20px 0;
@@ -705,6 +707,7 @@
   font-weight: 800;
   color: #111;
 }
+
 .rating-sub-text {
   font-size: 13px;
   color: #666;
@@ -715,9 +718,11 @@
   color: #e5e7eb;
   margin: 0 2px;
 }
+
 .rating-stars-large .star.filled {
   color: #fbbf24;
 }
+
 .rating-count-footer {
   color: #6b7280;
   font-size: 14px;
@@ -728,6 +733,7 @@
   flex: 1;
   max-width: 450px;
 }
+
 .breakdown-header {
   font-size: 18px;
   font-weight: 700;
@@ -740,11 +746,13 @@
   gap: 12px;
   margin-bottom: 10px;
 }
+
 .breakdown-label {
   min-width: 55px;
   font-size: 14px;
   color: #4b5563;
 }
+
 .breakdown-progress-bg {
   flex: 1;
   height: 8px;
@@ -752,11 +760,13 @@
   border-radius: 10px;
   overflow: hidden;
 }
+
 .breakdown-progress-fill {
   height: 100%;
   background: #fbbf24;
   border-radius: 10px;
 }
+
 .breakdown-val {
   font-size: 14px;
   color: #9ca3af;
@@ -769,16 +779,19 @@
   border-top: 1px solid #eee;
   margin: 30px 0;
 }
+
 .reviews-list-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
 }
+
 .reviews-list-title {
   font-size: 20px;
   font-weight: 700;
 }
+
 .write-review-btn-alt {
   padding: 8px 16px;
   background: #fff;
@@ -792,6 +805,7 @@
   padding: 25px 0;
   border-bottom: 1px solid #f3f4f6;
 }
+
 .review-user-avatar {
   width: 44px;
   height: 44px;
@@ -804,47 +818,57 @@
   font-weight: 700;
   margin-right: 12px;
 }
+
 .review-user-header {
   display: flex;
   align-items: center;
   margin-bottom: 10px;
 }
+
 .review-top-line {
   display: flex;
   justify-content: space-between;
   width: 100%;
   align-items: center;
 }
+
 .review-user-name {
   font-weight: 700;
   font-size: 16px;
 }
+
 .review-timestamp {
   font-size: 14px;
   color: #9ca3af;
 }
+
 .review-order-route {
   font-size: 13px;
   color: #6b7280;
   margin: 2px 0 0 0;
 }
+
 .review-stars-small-row .star {
   color: #e5e7eb;
   font-size: 16px;
 }
+
 .review-stars-small-row .star.filled {
   color: #fbbf24;
 }
+
 .review-comment-body {
   margin: 12px 0;
   font-size: 15px;
   color: #4b5563;
   line-height: 1.5;
 }
+
 .review-footer-actions {
   display: flex;
   gap: 20px;
 }
+
 .review-foot-btn {
   background: none;
   border: none;
@@ -854,4 +878,88 @@
   color: #6b7280;
   font-size: 14px;
   cursor: pointer;
+}
+
+/* ─── Driver Documents Tab ─── */
+.docs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.doc-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.doc-card.doc-approved {
+  border-color: #a7f3d0;
+  background: #f0fdf4;
+}
+
+.doc-card.doc-rejected {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.doc-card.doc-pending {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.doc-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.doc-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #1f2937;
+}
+
+.doc-status-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.doc-preview-link {
+  color: #4f46e5;
+  font-size: 0.85rem;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.doc-preview-link:hover {
+  text-decoration: underline;
+}
+
+.doc-upload-date {
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+
+.doc-admin-note {
+  font-size: 0.8rem;
+  color: #991b1b;
+  background: #fee2e2;
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin-top: 4px;
+}
+
+.doc-upload-form {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1rem;
+  margin-top: 1rem;
 }

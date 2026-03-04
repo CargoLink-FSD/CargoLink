@@ -126,29 +126,65 @@ const removeDriverFromTransporter = async (driverId) => {
   ).select('-password');
 };
 
+// ─── Document Verification Methods ─────────────────────────────────────────────
+
+const saveDocuments = async (driverId, docData) => {
+  return await Driver.findByIdAndUpdate(
+    driverId,
+    { $set: docData },
+    { new: true }
+  );
+};
+
+const getDriversForVerification = async () => {
+  return await Driver.find({
+    verificationStatus: { $in: ['under_review', 'rejected'] }
+  }).select('firstName lastName email phone licenseNumber documents verificationStatus city state createdAt');
+};
+
+const updateDocumentStatus = async (driverId, docPath, status, note) => {
+  const updateObj = { [`${docPath}.adminStatus`]: status };
+  if (note) updateObj[`${docPath}.adminNote`] = note;
+  return await Driver.findByIdAndUpdate(driverId, { $set: updateObj }, { new: true });
+};
+
+const updateVerificationStatus = async (driverId, verificationStatus, isVerified) => {
+  return await Driver.findByIdAndUpdate(
+    driverId,
+    { $set: { verificationStatus, isVerified } },
+    { new: true }
+  );
+};
+
 export default {
-    checkEmailExists,
-    createDriver,
-    findDriverById,
-    findByEmail,
-    updateDriver,
+  checkEmailExists,
+  createDriver,
+  findDriverById,
+  findByEmail,
+  updateDriver,
 
-    // Schedule
-    getScheduleBlocks,
-    addScheduleBlock,
-    removeScheduleBlock,
+  // Schedule
+  getScheduleBlocks,
+  addScheduleBlock,
+  removeScheduleBlock,
 
-    // Applications
-    createApplication,
-    findApplicationById,
-    findPendingApplication,
-    getDriverApplications,
-    updateApplicationStatus,
-    deleteApplication,
+  // Applications
+  createApplication,
+  findApplicationById,
+  findPendingApplication,
+  getDriverApplications,
+  updateApplicationStatus,
+  deleteApplication,
 
-    // Transporter-side
-    findDriversByTransporter,
-    getPendingApplicationsForTransporter,
-    setDriverTransporter,
-    removeDriverFromTransporter,
+  // Transporter-side
+  findDriversByTransporter,
+  getPendingApplicationsForTransporter,
+  setDriverTransporter,
+  removeDriverFromTransporter,
+
+  // Document verification
+  saveDocuments,
+  getDriversForVerification,
+  updateDocumentStatus,
+  updateVerificationStatus,
 }

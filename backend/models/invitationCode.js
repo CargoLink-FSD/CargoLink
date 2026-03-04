@@ -23,6 +23,16 @@ const InvitationCodeSchema = new mongoose.Schema(
                 ],
             },
         ],
+        verificationCategories: [
+            {
+                type: String,
+                enum: [
+                    'transporter_verification',
+                    'driver_verification',
+                    'vehicle_verification',
+                ],
+            },
+        ],
         createdBy: { type: String, default: 'admin' }, // admin id
         expiresAt: { type: Date, required: true },
         used: { type: Boolean, default: false },

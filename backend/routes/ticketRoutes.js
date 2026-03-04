@@ -5,12 +5,12 @@ import ticketUpload from '../config/ticketMulter.js';
 
 const ticketRouter = Router();
 
-// ─── User routes (customer + transporter) ────────────────
-ticketRouter.post('/', authMiddleware(['customer', 'transporter']), ticketUpload.single('photo'), ticketController.createTicket);
-ticketRouter.get('/my', authMiddleware(['customer', 'transporter']), ticketController.getMyTickets);
-ticketRouter.get('/:id', authMiddleware(['customer', 'transporter', 'manager']), ticketController.getTicketDetail);
-ticketRouter.post('/:id/reply', authMiddleware(['customer', 'transporter']), ticketController.addReply);
-ticketRouter.post('/:id/reopen', authMiddleware(['customer', 'transporter']), ticketController.reopenTicket);
+// ─── User routes (customer + transporter + driver) ────────────────
+ticketRouter.post('/', authMiddleware(['customer', 'transporter', 'driver']), ticketUpload.single('photo'), ticketController.createTicket);
+ticketRouter.get('/my', authMiddleware(['customer', 'transporter', 'driver']), ticketController.getMyTickets);
+ticketRouter.get('/:id', authMiddleware(['customer', 'transporter', 'driver', 'manager']), ticketController.getTicketDetail);
+ticketRouter.post('/:id/reply', authMiddleware(['customer', 'transporter', 'driver']), ticketController.addReply);
+ticketRouter.post('/:id/reopen', authMiddleware(['customer', 'transporter', 'driver']), ticketController.reopenTicket);
 
 // ─── Manager routes ──────────────────────────────────────
 ticketRouter.get('/manager/all', authMiddleware(['manager']), ticketController.getAllTickets);

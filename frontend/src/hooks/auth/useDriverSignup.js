@@ -9,12 +9,14 @@ import { useNotification } from '../../context/NotificationContext';
 import { redirectAfterSignup } from '../../utils/redirectUser';
 import { useStepForm } from './useStepForm';
 import { driverStep1Schema, driverStep2Schema, driverStep3Schema, driverSignupSchema } from '../../utils/schemas';
+import { uploadDriverDocuments } from '../../api/driver';
 import * as authApi from '../../api/auth';
 
 // Define validation schema for each step
 const steps = [
   { fields: ['firstName', 'lastName', 'gender', 'email'], schema: driverStep1Schema },
   { fields: ['phone', 'licenseNumber', 'address', 'city', 'state', 'pin'], schema: driverStep2Schema },
+  { fields: [], schema: null }, // Step 3: Document upload (validated separately)
   { fields: ['password', 'confirmPassword', 'terms'], schema: driverStep3Schema },
 ];
 
@@ -26,7 +28,11 @@ export const useDriverSignup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const { currentStep, totalSteps, nextStep: goNext, prevStep } = useStepForm(3);
+  const { currentStep, totalSteps, nextStep: goNext, prevStep } = useStepForm(4);
+
+  // Document upload state
+  const [documentFiles, setDocumentFiles] = useState({});
+  const [documentErrors, setDocumentErrors] = useState({});
 
   // Initialize form with react-hook-form and Zod validation
   const { register, handleSubmit, watch, formState: { errors }, trigger, setError, clearErrors, getValues, setValue } = useForm({
@@ -36,13 +42,29 @@ export const useDriverSignup = () => {
     reValidateMode: 'onChange',
   });
 
+  // Validate document files for step 3
+  const validateDocuments = () => {
+    const errs = {};
+    if (!documentFiles.pan_card) errs.pan_card = 'PAN Card is required';
+    if (!documentFiles.driving_license) errs.driving_license = 'Driving License is required';
+    setDocumentErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
   // Handle form submission
   const onSubmit = async (data) => {
+    // Validate documents
+    if (!validateDocuments()) {
+      showError('Please upload all required documents.');
+      return;
+    }
+
     setLoading(true);
     try {
-      // Dispatch signup action with formatted data
-      await dispatch(signupUser({ 
-        signupData: { 
+      // Step 1: Register the driver account
+      // Backend validator expects flat street/city/state/pin (driver model stores them flat)
+      await dispatch(signupUser({
+        signupData: {
           firstName: data.firstName,
           lastName: data.lastName,
           gender: data.gender,
@@ -55,9 +77,20 @@ export const useDriverSignup = () => {
           pin: data.pin,
           password: data.password
         },
-        userType: 'driver' 
+        userType: 'driver'
       })).unwrap();
-      showSuccess('Registration successful!');
+
+      // Step 2: Upload documents using the newly obtained auth token
+      try {
+        const formData = new FormData();
+        if (documentFiles.pan_card) formData.append('pan_card', documentFiles.pan_card);
+        if (documentFiles.driving_license) formData.append('driving_license', documentFiles.driving_license);
+        await uploadDriverDocuments(formData);
+        showSuccess('Registration successful! Documents uploaded for verification.');
+      } catch (docError) {
+        showSuccess('Registration successful! You can upload documents later from your profile.');
+      }
+
       redirectAfterSignup('driver', navigate);
     } catch (error) {
       // Handle validation errors from server
@@ -82,7 +115,22 @@ export const useDriverSignup = () => {
   // Validate current step before proceeding to next
   const nextStep = async () => {
     const step = steps[currentStep - 1];
+
+    // Step 3 is document upload — validate files before advancing
+    if (currentStep === 3) {
+      if (!validateDocuments()) {
+        showError('Please upload all required documents.');
+        return;
+      }
+      goNext();
+      return;
+    }
+
     const fields = step.fields;
+    if (!fields || fields.length === 0) {
+      goNext();
+      return;
+    }
 
     // First try built-in RHF validation for current fields
     const rhfValid = await trigger(fields);
@@ -117,7 +165,7 @@ export const useDriverSignup = () => {
       const response = await authApi.googleVerify({
         credential: credentialResponse.credential,
       });
-      
+
       // Populate only the email field
       setValue('email', response.email, { shouldValidate: true });
       showSuccess('Email fetched from Google. Please complete the rest of the form.');
@@ -152,5 +200,9 @@ export const useDriverSignup = () => {
     setError,
     handleGoogleSignup,
     handleGoogleError,
+    documentFiles,
+    setDocumentFiles,
+    documentErrors,
+    setDocumentErrors,
   };
 };

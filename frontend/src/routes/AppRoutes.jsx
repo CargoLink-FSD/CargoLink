@@ -151,13 +151,6 @@ export default function AppRoutes() {
      
       {/* Manager Routes */}
 
-     <Route element={<ProtectedRoute allowedRoles={['manager']} />}>
-        <Route path="/manager" element={<Home />} />
-        <Route path="/manager/dashboard" element={placeholder('Manager Dashboard')} />
-        <Route path="/manager/documents" element={placeholder('Manager Documents')} />
-        <Route path="/manager/tickets" element={placeholder('Manager Tickets')} />
-      </Route>
-
 
       {/* Admin Routes */}
       
@@ -190,7 +183,7 @@ export default function AppRoutes() {
       {/* Shared Routes */}
 
 
-      <Route element={<ProtectedRoute allowedRoles={['customer', 'transporter']} />}>
+      <Route element={<ProtectedRoute allowedRoles={['customer', 'transporter', 'driver']} />}>
         <Route path="/chat/orders/:orderId" element={placeholder('Chat: Order Conversation')} />
         <Route path="/support/tickets" element={<SupportTickets />} />
         <Route path="/support/tickets/:id" element={<TicketDetail />} />

@@ -71,6 +71,11 @@
     white-space: nowrap;
 }
 
+.cat-chip.verif-chip {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
 /* Invitation code styling */
 .invite-code {
     font-family: 'Courier New', monospace;

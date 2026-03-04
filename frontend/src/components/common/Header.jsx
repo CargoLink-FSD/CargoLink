@@ -98,6 +98,7 @@ export default function Header() {
                 <div className="profile-dropdown">
                   <span className="profile-name">Driver</span>
                   <div className="dropdown-content">
+                    <Link to="/support/tickets" className="dropdown-link" onClick={handleLinkClick}>Need Help?</Link>
                     <button onClick={handleLogout} className="logout-link">Logout</button>
                   </div>
                 </div>

@@ -1,10 +1,11 @@
 // Modern Driver Profile Page
 // Redesigned with modern UI components
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { driverProfileFieldSchemas } from '../../utils/schemas';
 import { useDriverProfile } from '../../hooks/useDriverProfile';
 import { fetchDriverProfile } from '../../store/slices/driverSlice';
+import { uploadDriverDocuments, getDriverVerificationStatus } from '../../api/driver';
 import Header from '../../components/common/Header';
 import ProfileField from '../../components/profile/ProfileField';
 import SecurityTab from '../../components/profile/SecurityTab';
@@ -76,9 +77,9 @@ const DriverProfile = () => {
               <div className="profile-header-left">
                 <div className="profile-avatar-wrapper">
                   {profile.profileImage ? (
-                    <img 
-                      src={`http://localhost:3000${profile.profileImage}`} 
-                      alt="Profile" 
+                    <img
+                      src={`http://localhost:3000${profile.profileImage}`}
+                      alt="Profile"
                       className="profile-avatar-large"
                       onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
                     />
@@ -92,9 +93,9 @@ const DriverProfile = () => {
                       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
                       <circle cx="12" cy="13" r="4"></circle>
                     </svg>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
+                    <input
+                      type="file"
+                      accept="image/*"
                       onChange={handleProfilePictureChange}
                       style={{ display: 'none' }}
                     />
@@ -144,6 +145,12 @@ const DriverProfile = () => {
               Personal Info
             </button>
             <button
+              className={`profile-tab ${activeTab === 'documents' ? 'active' : ''}`}
+              onClick={() => setActiveTab('documents')}
+            >
+              Documents
+            </button>
+            <button
               className={`profile-tab ${activeTab === 'security' ? 'active' : ''}`}
               onClick={() => setActiveTab('security')}
             >
@@ -159,6 +166,10 @@ const DriverProfile = () => {
                 dispatch={dispatch}
                 updateDriverField={updateDriverField}
               />
+            )}
+
+            {activeTab === 'documents' && (
+              <DocumentsTab profile={profile} dispatch={dispatch} fetchDriverProfile={fetchDriverProfile} />
             )}
 
             {activeTab === 'security' && (
@@ -296,4 +307,170 @@ const ProfileInfo = ({ profile, dispatch, updateDriverField }) => {
 
 
 // Security Tab Component
+
+// Documents Tab Component — shows verification status and allows document upload/re-upload
+const DocumentsTab = ({ profile, dispatch, fetchDriverProfile }) => {
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [uploadSuccess, setUploadSuccess] = useState('');
+
+  const docs = profile?.documents || {};
+  const verificationStatus = profile?.verificationStatus || 'unsubmitted';
+  const isVerified = profile?.isVerified || false;
+
+  const statusConfig = {
+    unsubmitted: { label: 'Not Submitted', color: '#6b7280', bg: '#f3f4f6' },
+    under_review: { label: 'Under Review', color: '#92400e', bg: '#fef3c7' },
+    approved: { label: 'Approved', color: '#065f46', bg: '#d1fae5' },
+    rejected: { label: 'Rejected', color: '#991b1b', bg: '#fee2e2' },
+  };
+
+  const status = statusConfig[verificationStatus] || statusConfig.unsubmitted;
+
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    setUploadError('');
+    setUploadSuccess('');
+
+    const formData = new FormData();
+    const panInput = e.target.elements.pan_card;
+    const dlInput = e.target.elements.driving_license;
+
+    if (panInput?.files?.[0]) formData.append('pan_card', panInput.files[0]);
+    if (dlInput?.files?.[0]) formData.append('driving_license', dlInput.files[0]);
+
+    if (!panInput?.files?.[0] && !dlInput?.files?.[0]) {
+      setUploadError('Please select at least one document to upload.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      await uploadDriverDocuments(formData);
+      setUploadSuccess('Documents uploaded successfully! They will be reviewed by a manager.');
+      // Refresh profile to show updated docs
+      dispatch(fetchDriverProfile());
+    } catch (err) {
+      setUploadError(err?.message || 'Failed to upload documents.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const renderDocStatus = (doc, label) => {
+    if (!doc || !doc.url) {
+      return (
+        <div className="doc-card doc-not-uploaded">
+          <div className="doc-card-header">
+            <span className="doc-label">{label}</span>
+            <span className="doc-status-chip" style={{ background: '#f3f4f6', color: '#6b7280' }}>
+              Not Uploaded
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    const docStatus = doc.adminStatus || 'pending';
+    const chipStyles = {
+      pending: { bg: '#fef3c7', color: '#92400e' },
+      approved: { bg: '#d1fae5', color: '#065f46' },
+      rejected: { bg: '#fee2e2', color: '#991b1b' },
+    };
+    const chip = chipStyles[docStatus] || chipStyles.pending;
+
+    return (
+      <div className={`doc-card doc-${docStatus}`}>
+        <div className="doc-card-header">
+          <span className="doc-label">{label}</span>
+          <span className="doc-status-chip" style={{ background: chip.bg, color: chip.color }}>
+            {docStatus.charAt(0).toUpperCase() + docStatus.slice(1)}
+          </span>
+        </div>
+        <a
+          href={`http://localhost:3000${doc.url}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="doc-preview-link"
+        >
+          View Document
+        </a>
+        {doc.uploadedAt && (
+          <span className="doc-upload-date">
+            Uploaded: {new Date(doc.uploadedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+          </span>
+        )}
+        {doc.adminNote && (
+          <div className="doc-admin-note">
+            <strong>Note:</strong> {doc.adminNote}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="profile-info-card">
+      <div className="card-header-row">
+        <h2 className="card-title">Verification Documents</h2>
+        <span
+          className="verification-status-badge"
+          style={{ background: status.bg, color: status.color, padding: '4px 14px', borderRadius: '12px', fontWeight: 600, fontSize: '0.85rem' }}
+        >
+          {isVerified ? 'Verified ✓' : status.label}
+        </span>
+      </div>
+
+      <div className="docs-grid">
+        {renderDocStatus(docs.pan_card, 'PAN Card')}
+        {renderDocStatus(docs.driving_license, 'Driving License')}
+      </div>
+
+      {/* Upload / Re-upload form */}
+      {!isVerified && (
+        <form onSubmit={handleUpload} className="doc-upload-form">
+          <h3 className="form-section-title" style={{ marginTop: '1.5rem' }}>
+            {verificationStatus === 'unsubmitted' ? 'Upload Documents' : 'Re-upload Documents'}
+          </h3>
+          <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '1rem' }}>
+            Upload your PAN Card and Driving License for verification. Accepted: JPEG, PNG, PDF (max 5MB).
+          </p>
+
+          <div className="profile-fields-grid">
+            <div className="form-group">
+              <label className="input-label" htmlFor="pan_card_upload">PAN Card</label>
+              <input className="input-field" type="file" id="pan_card_upload" name="pan_card" accept=".jpg,.jpeg,.png,.pdf" />
+            </div>
+            <div className="form-group">
+              <label className="input-label" htmlFor="dl_upload">Driving License</label>
+              <input className="input-field" type="file" id="dl_upload" name="driving_license" accept=".jpg,.jpeg,.png,.pdf" />
+            </div>
+          </div>
+
+          {uploadError && <p style={{ color: '#991b1b', fontSize: '0.85rem', marginTop: '0.5rem' }}>{uploadError}</p>}
+          {uploadSuccess && <p style={{ color: '#065f46', fontSize: '0.85rem', marginTop: '0.5rem' }}>{uploadSuccess}</p>}
+
+          <button
+            type="submit"
+            disabled={uploading}
+            style={{
+              marginTop: '1rem',
+              padding: '10px 24px',
+              background: uploading ? '#9ca3af' : '#4f46e5',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              cursor: uploading ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {uploading ? 'Uploading...' : 'Upload Documents'}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+};
+
 export default DriverProfile;
