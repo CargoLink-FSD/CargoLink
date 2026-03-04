@@ -14,6 +14,51 @@ const formatHour = (decimal) => {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 };
 
+// Backend stores coords as GeoJSON [lng, lat]; Leaflet needs [lat, lng]
+const normalizeCoords = (coords) => {
+  if (!coords || !Array.isArray(coords) || coords.length < 2) return null;
+  const a = Number(coords[0]);
+  const b = Number(coords[1]);
+  if (isNaN(a) || isNaN(b)) return null;
+  // GeoJSON is [lng, lat]. For India lng~68-97, lat~8-37.
+  if (Math.abs(a) > 90 && Math.abs(b) <= 90) return [b, a];
+  // If a > 50 and b < 40, likely [lng, lat] for Indian coords
+  if (a > 50 && b < 40) return [b, a];
+  return [a, b];
+};
+
+// Check if entity (driver/vehicle) has a scheduleBlock overlapping a time window
+const hasScheduleConflict = (entity, dateStr, timeStr, durationHrs = 12) => {
+  const blocks = entity?.scheduleBlocks;
+  if (!blocks || !blocks.length) return false;
+  const tripStart = new Date(`${dateStr}T${timeStr || '00:00'}:00`);
+  if (isNaN(tripStart.getTime())) return false;
+  const tripEnd = new Date(tripStart.getTime() + durationHrs * 3600000);
+  return blocks.some(block => {
+    const bs = new Date(block.startTime);
+    const be = new Date(block.endTime);
+    return bs < tripEnd && be > tripStart;
+  });
+};
+
+// Extract the scheduled date from an order
+const getOrderDate = (order) => {
+  const d = order?.scheduled_at || order?.order_date;
+  if (!d) return null;
+  const date = new Date(d);
+  return isNaN(date.getTime()) ? null : date;
+};
+
+// Validate stop ordering: every Dropoff must come after its Pickup
+const isValidStopOrder = (stopsList) => {
+  const pickedUp = new Set();
+  for (const stop of stopsList) {
+    if (stop.type === 'Pickup') pickedUp.add(stop.orderId);
+    else if (stop.type === 'Dropoff' && !pickedUp.has(stop.orderId)) return false;
+  }
+  return true;
+};
+
 const TripPlanner = () => {
   const navigate = useNavigate();
 
@@ -47,6 +92,9 @@ const TripPlanner = () => {
   const [routeDuration, setRouteDuration] = useState(0);
   const [routeLoading, setRouteLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [osrmRaw, setOsrmRaw] = useState(null);
+  const [osrmRequestCoords, setOsrmRequestCoords] = useState('');
+  const [normalizedStopsDbg, setNormalizedStopsDbg] = useState([]);
 
   const mapRef = useRef(null);
   const leafletMap = useRef(null);
@@ -69,9 +117,37 @@ const TripPlanner = () => {
           getAvailableVehicles(),
           getAvailableDrivers(),
         ]);
-        setOrders(ordersData || []);
+        // Debug: log available resources and their schedules
+        console.group('TripPlanner: Loaded Resources');
+        console.log('Orders:', ordersData);
+        console.log('Vehicles:', vehiclesData);
+        console.log('Drivers:', driversData);
+        console.log('Vehicle schedules:', (vehiclesData || []).map(v => ({
+          id: v._id, reg: v.registration, status: v.status,
+          scheduleBlocks: v.scheduleBlocks || [],
+        })));
+        console.log('Driver schedules:', (driversData || []).map(d => ({
+          id: d._id, name: `${d.firstName} ${d.lastName || ''}`, status: d.status,
+          scheduleBlocks: d.scheduleBlocks || [],
+        })));
+        console.groupEnd();
+
+        const allOrders = ordersData || [];
+        setOrders(allOrders);
         setVehicles(vehiclesData || []);
         setDrivers(driversData || []);
+
+        // Auto-set planned date & time to the earliest order's scheduled_at
+        if (allOrders.length > 0) {
+          const dates = allOrders.map(o => getOrderDate(o)).filter(Boolean);
+          if (dates.length > 0) {
+            const earliest = new Date(Math.min(...dates.map(d => d.getTime())));
+            setPlannedDate(earliest.toISOString().split('T')[0]);
+            const hh = String(earliest.getHours()).padStart(2, '0');
+            const mm = String(earliest.getMinutes()).padStart(2, '0');
+            if (hh !== '00' || mm !== '00') setStartTime(`${hh}:${mm}`);
+          }
+        }
       } catch (err) {
         showToast('Failed to load data: ' + err.message);
       } finally {
@@ -80,6 +156,7 @@ const TripPlanner = () => {
     };
     loadData();
   }, []);
+
 
   // ─── Build stops from selected orders ───
   useEffect(() => {
@@ -93,14 +170,14 @@ const TripPlanner = () => {
             location: `${o.pickup.city}, ${o.pickup.state}`,
             address: o.pickup,
             weight: o.weight,
-            coords: o.pickup.coordinates || null,
+            coords: normalizeCoords(o.pickup.coordinates),
           },
           {
             id: `${o._id}-d`, orderId: o._id, type: 'Dropoff',
             location: `${o.delivery.city}, ${o.delivery.state}`,
             address: o.delivery,
             weight: o.weight,
-            coords: o.delivery.coordinates || null,
+            coords: normalizeCoords(o.delivery.coordinates),
           },
         ];
       });
@@ -132,30 +209,41 @@ const TripPlanner = () => {
   useEffect(() => {
     if (!mapReady || !mapRef.current || leafletMap.current) return;
     const L = window.L;
+    if (!L) return;
     const map = L.map(mapRef.current, { zoomControl: true });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18, attribution: '© OpenStreetMap',
     }).addTo(map);
     map.setView([20.5, 78.9], 5);
     leafletMap.current = map;
+    // Leaflet needs a kick after the container is in the DOM
+    setTimeout(() => { map.invalidateSize(); setStops(s => [...s]); }, 200);
+    setTimeout(() => map.invalidateSize(), 600);
+    return () => { map.remove(); leafletMap.current = null; };
   }, [mapReady]);
 
   // ─── OSRM Route ───
   const fetchRoute = async (coordinates) => {
-    if (coordinates.length < 2) return null;
+    if (!coordinates || coordinates.length < 2) return null;
     setRouteLoading(true);
     try {
+      // coordinates are [lat, lng] -> OSRM expects lon,lat
       const coords = coordinates.map(c => `${c[1]},${c[0]}`).join(';');
+      setOsrmRequestCoords(coords);
+      console.debug('TripPlanner: OSRM request coords=', coords);
       const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=true`);
       const data = await res.json();
+      setOsrmRaw(data);
       if (data.code !== 'Ok' || !data.routes?.length) throw new Error('No route');
       const route = data.routes[0];
+      console.debug('TripPlanner: OSRM response distance=', route.distance, 'duration=', route.duration);
       setRouteDistance(Number((route.distance / 1000).toFixed(1)));
       setRouteDuration(Number((route.duration / 3600).toFixed(2)));
       routeLegsRef.current = (route.legs || []).map(l => ({ distance: l.distance, duration: l.duration }));
       return route.geometry.coordinates.map(c => [c[1], c[0]]);
-    } catch {
+    } catch (err) {
       routeLegsRef.current = [];
+      console.warn('TripPlanner: fetchRoute error', err);
       return null;
     } finally {
       setRouteLoading(false);
@@ -166,7 +254,10 @@ const TripPlanner = () => {
   useEffect(() => {
     const L = window.L;
     const map = leafletMap.current;
-    if (!L || !map) return;
+    if (!L || !map) {
+      console.log('TripPlanner: Skipping markers - map not ready');
+      return;
+    }
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
 
@@ -184,9 +275,13 @@ const TripPlanner = () => {
       markersRef.current.push(marker);
     });
 
-    if (!polylineRef.current && markersRef.current.length > 0) {
+    // Ensure map container is properly sized after DOM updates
+    map.invalidateSize();
+
+    if (markersRef.current.length > 0) {
       const bounds = L.latLngBounds(markersRef.current.map(m => m.getLatLng()));
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
+      console.log(`TripPlanner: Added ${markersRef.current.length} markers to map`);
     }
   }, [stops, hoveredStop]);
 
@@ -194,16 +289,21 @@ const TripPlanner = () => {
   useEffect(() => {
     const L = window.L;
     const map = leafletMap.current;
-    if (!L || !map) return;
+    // Always compute route coords (fetchRoute) even if map isn't initialized yet.
+    // But only draw polyline when map is available.
     let cancelled = false;
     if (polylineRef.current) { polylineRef.current.remove(); polylineRef.current = null; }
     setRouteDistance(0); setRouteDuration(0);
 
-    const validStops = stops.filter(s => s.coords);
+    const validStops = stops.filter(s => Array.isArray(s.coords) && s.coords.length === 2);
+    console.log(`TripPlanner: Route effect - ${validStops.length} valid stops`, validStops.map(s => s.coords));
+    setNormalizedStopsDbg(validStops.map(s => ({ id: s.id, coords: s.coords })));
+
     if (validStops.length < 2) {
-      if (markersRef.current.length > 0) {
+      console.log('TripPlanner: < 2 stops, skipping route fetch');
+      if (L && map && markersRef.current.length > 0) {
         map.fitBounds(L.latLngBounds(markersRef.current.map(m => m.getLatLng())), { padding: [40, 40], maxZoom: 10 });
-      } else {
+      } else if (L && map) {
         map.setView([20.5, 78.9], 5);
       }
       return;
@@ -211,11 +311,24 @@ const TripPlanner = () => {
 
     (async () => {
       const coords = validStops.map(s => s.coords);
+      console.log('TripPlanner: Fetching OSRM route for coords:', coords);
       const routeCoords = await fetchRoute(coords);
       if (cancelled) return;
+
       if (routeCoords?.length) {
-        polylineRef.current = L.polyline(routeCoords, { color: '#6366f1', weight: 4, opacity: 0.9 }).addTo(map);
-        map.fitBounds(L.latLngBounds(routeCoords), { padding: [40, 40], maxZoom: 10 });
+        console.log(`TripPlanner: OSRM returned ${routeCoords.length} route points`);
+        if (L && map) {
+          polylineRef.current = L.polyline(routeCoords, { color: '#6366f1', weight: 4, opacity: 0.9 }).addTo(map);
+          console.log('TripPlanner: Polyline added to map');
+          // ensure map renders correctly
+          map.invalidateSize();
+          if (polylineRef.current.bringToFront) polylineRef.current.bringToFront();
+          map.fitBounds(L.latLngBounds(routeCoords), { padding: [40, 40], maxZoom: 10 });
+        } else {
+          console.warn('TripPlanner: Map not ready when trying to add polyline');
+        }
+      } else {
+        console.warn('TripPlanner: No route coords returned from fetchRoute');
       }
     })();
     return () => { cancelled = true; };
@@ -224,7 +337,7 @@ const TripPlanner = () => {
   // ─── Derived ───
   const vehicle = vehicles.find(v => v._id === selectedVehicle);
   const driver = drivers.find(d => d._id === selectedDriver);
-  
+
   //changed
   const vehicleCapacityTons = vehicle?.capacity != null ? Number(vehicle.capacity) : null;
   const vehicleCapacityKg = vehicleCapacityTons != null && !Number.isNaN(vehicleCapacityTons)
@@ -234,8 +347,8 @@ const TripPlanner = () => {
   const totalWeight = orders
     .filter(o => selectedOrders.includes(o._id))
     .reduce((s, o) => s + (o.weight || 0), 0);
-  
-   //changed
+
+  //changed
   const capacityUsed = vehicleCapacityKg ? (totalWeight / vehicleCapacityKg) * 100 : 0;
   const overCapacity = capacityUsed > 100;
 
@@ -264,8 +377,28 @@ const TripPlanner = () => {
   const isValid = selectedOrders.length > 0 && selectedVehicle && selectedDriver && !overCapacity && stops.length >= 2;
 
   // ─── Handlers ───
-  const toggleOrder = (id) =>
-    setSelectedOrders(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const toggleOrder = (id) => {
+    const order = orders.find(o => o._id === id);
+    const orderDate = getOrderDate(order);
+    const orderDateStr = orderDate ? orderDate.toISOString().split('T')[0] : null;
+    const isDateMismatch = orderDateStr && plannedDate && orderDateStr !== plannedDate;
+
+    setSelectedOrders(prev => {
+      // Deselecting is always allowed
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      // Block selecting orders whose date doesn't match planned date
+      if (isDateMismatch) return prev;
+      const next = [...prev, id];
+      // If this is the first order, set planned date from order's scheduled_at
+      if (prev.length === 0 && orderDate) {
+        setPlannedDate(orderDateStr);
+        const h = String(orderDate.getHours()).padStart(2, '0');
+        const m = String(orderDate.getMinutes()).padStart(2, '0');
+        if (h !== '00' || m !== '00') setStartTime(`${h}:${m}`);
+      }
+      return next;
+    });
+  };
 
   const handleDragStart = (e, idx) => { setDraggedIdx(idx); e.dataTransfer.effectAllowed = 'move'; };
   const handleDragOver = (e, idx) => { e.preventDefault(); setDragOverIdx(idx); };
@@ -275,6 +408,12 @@ const TripPlanner = () => {
     const next = [...stops];
     const [removed] = next.splice(draggedIdx, 1);
     next.splice(idx, 0, removed);
+    // Validate: every Dropoff must come after its Pickup
+    if (!isValidStopOrder(next)) {
+      showToast('Cannot place a dropoff before its pickup', 'error');
+      setDraggedIdx(null); setDragOverIdx(null);
+      return;
+    }
     setStops(next);
     setDraggedIdx(null); setDragOverIdx(null);
   };
@@ -400,11 +539,22 @@ const TripPlanner = () => {
               )}
               {filteredOrders.map(o => {
                 const sel = selectedOrders.includes(o._id);
+                const orderDate = getOrderDate(o);
+                const orderDateStr = orderDate ? orderDate.toISOString().split('T')[0] : null;
+                const isDateMismatch = orderDateStr && plannedDate && orderDateStr !== plannedDate;
+                const isDisabled = isDateMismatch && !sel;
                 return (
-                  <div key={o._id} className={`tp-order-card ${sel ? 'selected' : ''}`} onClick={() => toggleOrder(o._id)}>
+                  <div key={o._id}
+                    className={`tp-order-card ${sel ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`}
+                    onClick={() => !isDisabled && toggleOrder(o._id)}
+                    title={isDisabled ? `Scheduled for ${orderDateStr} — change planned date to match` : ''}
+                  >
                     <div className={`tp-order-check ${sel ? 'checked' : ''}`}>{sel ? '✓' : ''}</div>
                     <div className="tp-order-body">
-                      <div className="tp-order-id">#{o._id?.slice(-6)}</div>
+                      <div className="tp-order-id">
+                        #{o._id?.slice(-6)}
+                        {orderDateStr && <span className="tp-order-date"> · {orderDateStr}</span>}
+                      </div>
                       <div className="tp-order-route">
                         <span className="tp-dot tp-dot--pickup" />
                         {o.pickup?.city || 'N/A'}
@@ -489,16 +639,25 @@ const TripPlanner = () => {
                   </button>
                   {showVehicleMenu && (
                     <div className="tp-dropdown">
-                      {vehicles.map(v => (
-                        <div key={v._id} className={`tp-dd-item ${selectedVehicle === v._id ? 'active' : ''}`}
-                          onClick={() => { setSelectedVehicle(v._id); setShowVehicleMenu(false); }}>
-                          <div>
-                            <div className="tp-dd-main">{v.registration}</div>
-                            <div className="tp-dd-sub">{v.truck_type} · {v.capacity} tons · {v.name}</div>
+                      {vehicles.map(v => {
+                        const conflict = hasScheduleConflict(v, plannedDate, startTime, totalDurationHrs || 12);
+                        const unavail = conflict || v.status === 'In Maintenance' || v.status === 'Unavailable';
+                        return (
+                          <div key={v._id}
+                            className={`tp-dd-item ${selectedVehicle === v._id ? 'active' : ''} ${unavail ? 'disabled' : ''}`}
+                            onClick={() => { if (unavail) return; setSelectedVehicle(v._id); setShowVehicleMenu(false); }}
+                            title={conflict ? 'Has a schedule conflict at this date/time' : ''}
+                          >
+                            <div>
+                              <div className="tp-dd-main">{v.registration}</div>
+                              <div className="tp-dd-sub">{v.truck_type} · {v.capacity} tons · {v.name}</div>
+                            </div>
+                            <span className={`tp-badge ${unavail ? 'tp-badge--warn' : 'tp-badge--ok'}`}>
+                              {conflict ? 'Busy' : (v.status || 'Available')}
+                            </span>
                           </div>
-                          <span className={`tp-badge tp-badge--ok`}>{v.status || 'Available'}</span>
-                        </div>
-                      ))}
+                        );
+                      })}
                       {vehicles.length === 0 && <div className="tp-dd-item disabled"><div className="tp-dd-main">No vehicles available</div></div>}
                     </div>
                   )}
@@ -518,17 +677,26 @@ const TripPlanner = () => {
                   </button>
                   {showDriverMenu && (
                     <div className="tp-dropdown">
-                      {drivers.map(d => (
-                        <div key={d._id} className={`tp-dd-item ${selectedDriver === d._id ? 'active' : ''}`}
-                          onClick={() => { setSelectedDriver(d._id); setShowDriverMenu(false); }}>
-                          <div className="tp-avatar" style={{ flexShrink: 0 }}>{(d.firstName || '?')[0]}</div>
-                          <div>
-                            <div className="tp-dd-main">{d.firstName} {d.lastName || ''}</div>
-                            <div className="tp-dd-sub">{d.licenseNumber || ''}</div>
+                      {drivers.map(d => {
+                        const conflict = hasScheduleConflict(d, plannedDate, startTime, totalDurationHrs || 12);
+                        const unavail = conflict || d.status === 'Unavailable';
+                        return (
+                          <div key={d._id}
+                            className={`tp-dd-item ${selectedDriver === d._id ? 'active' : ''} ${unavail ? 'disabled' : ''}`}
+                            onClick={() => { if (unavail) return; setSelectedDriver(d._id); setShowDriverMenu(false); }}
+                            title={conflict ? 'Has a schedule conflict at this date/time' : ''}
+                          >
+                            <div className="tp-avatar" style={{ flexShrink: 0 }}>{(d.firstName || '?')[0]}</div>
+                            <div>
+                              <div className="tp-dd-main">{d.firstName} {d.lastName || ''}</div>
+                              <div className="tp-dd-sub">{d.licenseNumber || ''}</div>
+                            </div>
+                            <span className={`tp-badge ${unavail ? 'tp-badge--warn' : 'tp-badge--ok'}`}>
+                              {conflict ? 'Busy' : (d.status || 'Active')}
+                            </span>
                           </div>
-                          <span className={`tp-badge tp-badge--ok`}>{d.status || 'Active'}</span>
-                        </div>
-                      ))}
+                        );
+                      })}
                       {drivers.length === 0 && <div className="tp-dd-item disabled"><div className="tp-dd-main">No drivers available</div></div>}
                     </div>
                   )}
