@@ -76,7 +76,7 @@ export default function BidPage() {
               borderRadius: '8px', padding: '14px 24px', marginBottom: '16px',
               fontWeight: 500, fontSize: '0.95rem'
             }}>
-              ⚠️ Your account is not yet verified. You can browse orders but cannot submit bids until a manager approves your documents.
+              Your account is not yet verified. You can browse orders but cannot submit bids until a manager approves your documents.
             </div>
           )}
           <div className="page-header">

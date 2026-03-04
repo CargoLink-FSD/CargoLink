@@ -1,8 +1,6 @@
 // src/components/trackOrder/CustomerActions.jsx
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { confirmOrderPickup } from '../../store/slices/ordersSlice';
 import { useNotification } from '../../context/NotificationContext';
 
 
@@ -94,7 +92,6 @@ const CustomerActions = ({ order }) => {
 
 
 const TransporterActions = ({ order }) => {
-  const dispatch = useDispatch();
   const { orderId } = useParams();
   const [otp, setOtp] = useState('');
   const { showNotification } = useNotification();
@@ -102,16 +99,17 @@ const TransporterActions = ({ order }) => {
 
   const handleConfirmPickup = async () => {
     if (!otp) {
-      alert('Please enter the OTP');  // change to notification
+      alert('Please enter the OTP');
       return;
     }
 
     try {
-      await dispatch(confirmOrderPickup({ orderId, otp })).unwrap();
-      showNotification({ message: 'Pickup Confirmed', type: 'success' });  
+      // OTP confirmation is now handled at the trip level via ActiveTrip page
+      showNotification({ message: 'Please use the Active Trip page to confirm pickup with OTP', type: 'info' });
       setOtp('');
     } catch (err) {
-      showNotification({ message: 'Incorrect OTP', type: 'error' });    }
+      showNotification({ message: 'Incorrect OTP', type: 'error' });
+    }
   };
 
   const handleCall = (phone) => {

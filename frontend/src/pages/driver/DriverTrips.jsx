@@ -8,8 +8,7 @@ import '../../styles/DriverTrips.css';
 
 const STATUS_CONFIG = {
   Scheduled:   { label: 'Scheduled',  color: '#1976d2' },
-  'In Transit':{ label: 'In Transit', color: '#388e3c' },
-  Delayed:     { label: 'Delayed',    color: '#c62828' },
+  Active:      { label: 'Active',     color: '#388e3c' },
   Completed:   { label: 'Completed',  color: '#00796b' },
   Cancelled:   { label: 'Cancelled',  color: '#757575' },
 };
@@ -54,7 +53,7 @@ const DriverTrips = () => {
     }
   }, [loadTrips]);
 
-  const activeTrips = trips.filter(t => ['Scheduled', 'In Transit', 'Delayed'].includes(t.status));
+  const activeTrips = trips.filter(t => ['Scheduled', 'Active'].includes(t.status));
   const filteredTrips = filter === 'active' ? activeTrips
     : filter === 'all' ? trips
     : trips.filter(t => t.status === filter);
@@ -62,8 +61,7 @@ const DriverTrips = () => {
   return (
     <>
       <Header />
-      <br /><br />
-      <div className="orders-container">
+      <div className="driverTrips-container">
         <div className="orders-header">
           <h1>My Trips</h1>
           <div className="stats-bar">
@@ -86,7 +84,6 @@ const DriverTrips = () => {
 
         {!loading && !error && filteredTrips.length === 0 && (
           <div className="empty-state">
-            <div className="empty-icon">🚛</div>
             <h3>No trips found</h3>
             <p>{trips.length === 0 ? 'You haven\'t been assigned any trips yet.' : 'No trips match this filter.'}</p>
           </div>
@@ -98,7 +95,7 @@ const DriverTrips = () => {
               const s = STATUS_CONFIG[trip.status] || { label: trip.status, color: '#6366f1' };
               const firstStop = trip.stops?.[0];
               const lastStop = trip.stops?.[trip.stops.length - 1];
-              const isActive = ['In Transit', 'Delayed'].includes(trip.status);
+              const isActive = trip.status === 'Active';
 
               return (
                 <div key={trip._id} className="dt-trip-card" onClick={() => navigate(`/driver/trips/${trip._id}`)}>
@@ -114,9 +111,9 @@ const DriverTrips = () => {
                     <div className="tm-route-point"><span className="tm-dot tm-dot--to" /><span>{lastStop?.address?.city || 'End'}</span></div>
                   </div>
                   <div className="dt-card-meta">
-                    <span>🚛 {trip.assigned_vehicle_id?.registration || '—'}</span>
-                    <span>📦 {trip.order_ids?.length || 0} orders</span>
-                    <span>🕐 {formatDate(trip.planned_start_at)}</span>
+                    <span>{trip.assigned_vehicle_id?.registration || '—'}</span>
+                    <span>{trip.order_ids?.length || 0} orders</span>
+                    <span>{formatDate(trip.planned_start_at)}</span>
                   </div>
                   {isActive && (
                     <div className="dt-card-progress">
@@ -133,7 +130,7 @@ const DriverTrips = () => {
                         onClick={(e) => handleStartTrip(e, trip._id)}
                         disabled={startingTripId === trip._id}
                       >
-                        {startingTripId === trip._id ? '⏳ Starting...' : '▶ Start Trip'}
+                        {startingTripId === trip._id ? 'Starting...' : 'Start Trip'}
                       </button>
                     )}
                     {isActive && (
@@ -141,7 +138,7 @@ const DriverTrips = () => {
                         className="dt-action-btn dt-action-btn--open"
                         onClick={(e) => { e.stopPropagation(); navigate(`/driver/trips/${trip._id}`); }}
                       >
-                        🗺 Open Active Trip
+                        Open Active Trip
                       </button>
                     )}
                   </div>

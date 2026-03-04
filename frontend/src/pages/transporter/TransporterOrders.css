@@ -1,7 +1,7 @@
 .orders-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 80px 2rem 2rem;
   min-height: calc(100vh - 200px);
 }
 
@@ -89,7 +89,7 @@
 }
 
 /* Empty State */
-.empty-state {
+.to-empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -109,6 +109,8 @@
   font-size: 1.5rem;
   color: #333;
 }
+
+
 
 .empty-state p {
   color: #666;

@@ -58,7 +58,7 @@ const OrderSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["Placed", "Assigned", "In Transit", "Completed", "Cancelled"],
+      enum: ["Placed", "Assigned", "Scheduled", "Started", "In Transit", "Completed", "Cancelled"],
       default: "Placed",
     },
     assigned_transporter_id: {

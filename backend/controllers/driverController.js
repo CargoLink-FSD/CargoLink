@@ -37,10 +37,12 @@ const getDriverProfile = async (req, res, next) => {
       memberSince: driver.createdAt,
       gender: driver.gender,
       licenseNumber: driver.licenseNumber,
-      streetAddress: driver.address?.street || '',
+      address: driver.address?.street || '',
       city: driver.address?.city || '',
       state: driver.address?.state || '',
       pin: driver.address?.pin || '',
+      transporter_id: driver.transporter_id || null,
+      status: driver.status,
       profileImage,
       orderCount,
     }

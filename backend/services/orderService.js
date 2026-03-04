@@ -284,10 +284,7 @@ export default {
     getOrderDetails,
     placeOrder,
     cancelOrder,
-    startTransit,
     getActiveOrders,
-    assignVehicleToOrder,
-    getTransporterVehicles,
 
     getCurrentBids,
     acceptBid,
@@ -295,7 +292,5 @@ export default {
     getTransporterBids,
     submitBid,
     withdrawBid,
-    confirmPickup,
-    confirmDelivery,
 
 }

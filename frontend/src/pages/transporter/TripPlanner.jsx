@@ -355,7 +355,7 @@ const TripPlanner = () => {
             </div>
           </div>
           <div className="tp-topbar-right">
-            {overCapacity && <span className="tp-chip tp-chip--warning">⚠ Overloaded</span>}
+            {overCapacity && <span className="tp-chip tp-chip--warning">Overloaded</span>}
             {vehicle && !overCapacity && selectedOrders.length > 0 && <span className="tp-chip tp-chip--ok">✓ Load OK</span>}
             {driver && <span className="tp-chip tp-chip--ok">✓ {driver.firstName || driver.name}</span>}
             <div className="tp-date-field">
@@ -451,7 +451,6 @@ const TripPlanner = () => {
             <div className="tp-map-body">
               {stops.filter(s => s.coords).length === 0 && (
                 <div className="tp-map-empty">
-                  <span className="tp-map-empty-icon">🗺️</span>
                   <p>Select orders to plot route</p>
                 </div>
               )}
@@ -477,7 +476,7 @@ const TripPlanner = () => {
                   <button className={`tp-select-btn ${selectedVehicle ? 'has-value' : ''}`}
                     onClick={() => { setShowVehicleMenu(v => !v); setShowDriverMenu(false); }}>
                     {vehicle
-                      ? <><span className="tp-sel-icon">🚛</span><span className="tp-sel-main">{vehicle.registration}</span><span className="tp-sel-sub">{vehicle.truck_type} · {vehicle.capacity} kg</span></>
+                      ? <><span className="tp-sel-main">{vehicle.registration}</span><span className="tp-sel-sub">{vehicle.truck_type} · {vehicle.capacity} kg</span></>
                       : <span className="tp-sel-placeholder">Select vehicle…</span>}
                     <span className="tp-chevron">▾</span>
                   </button>

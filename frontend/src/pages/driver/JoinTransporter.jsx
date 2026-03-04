@@ -179,16 +179,16 @@ export default function JoinTransporter() {
 
                         <div className="transporter-card-details">
                           <span className="detail-chip">
-                            📧 {t.email}
+                            {t.email}
                           </span>
                           {t.fleetCount !== undefined && (
                             <span className="detail-chip">
-                              🚛 {t.fleetCount} vehicles
+                              {t.fleetCount} vehicles
                             </span>
                           )}
                           {t.primary_contact && (
                             <span className="detail-chip">
-                              📞 {t.primary_contact}
+                              {t.primary_contact}
                             </span>
                           )}
                         </div>
@@ -196,7 +196,7 @@ export default function JoinTransporter() {
                         <div className="transporter-card-actions">
                           {existingApp ? (
                             <button className="btn-apply btn-applied" disabled>
-                              ✓ Applied
+                              Applied
                             </button>
                           ) : (
                             <button className="btn-apply" onClick={() => handleOpenApply(t)}>

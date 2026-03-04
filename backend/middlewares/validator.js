@@ -405,7 +405,7 @@ const driver = [
     .trim()
     .notEmpty().withMessage('License number is required'),
 
-  ...addressSchema(''),
+  ...addressSchema('address.'),
 ];
 
 
@@ -435,19 +435,19 @@ const updateDriver = [
     .optional({ checkFalsy: true })
     .trim()
     .notEmpty().withMessage('License number cannot be empty'),
-  body('address')
+  body('address.street')
     .optional({ checkFalsy: true })
     .trim()
     .notEmpty().withMessage('Address cannot be empty'),
-  body('city')
+  body('address.city')
     .optional({ checkFalsy: true })
     .trim()
     .notEmpty().withMessage('City cannot be empty'),
-  body('state')
+  body('address.state')
     .optional({ checkFalsy: true })
     .trim()
     .notEmpty().withMessage('State cannot be empty'),
-  body('pin')
+  body('address.pin')
     .optional({ checkFalsy: true })
     .trim()
     .notEmpty().withMessage('PIN code cannot be empty')

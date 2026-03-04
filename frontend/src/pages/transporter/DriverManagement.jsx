@@ -261,7 +261,7 @@ export default function DriverManagement() {
                       <div className="driver-card-details">
                         {driver.phone && <span className="driver-detail-chip">📞 {driver.phone}</span>}
                         {driver.licenseNumber && <span className="driver-detail-chip">🪪 {driver.licenseNumber}</span>}
-                        {driver.city && <span className="driver-detail-chip">📍 {driver.city}</span>}
+                        {driver.city && <span className="driver-detail-chip">{driver.city}</span>}
                       </div>
 
                       <div className="driver-card-actions">
@@ -320,18 +320,18 @@ export default function DriverManagement() {
                         )}
 
                         <div className="request-details">
-                          {driver.email && <span className="driver-detail-chip">📧 {driver.email}</span>}
-                          {driver.phone && <span className="driver-detail-chip">📞 {driver.phone}</span>}
+                          {driver.email && <span className="driver-detail-chip">{driver.email}</span>}
+                          {driver.phone && <span className="driver-detail-chip">{driver.phone}</span>}
                           {driver.licenseNumber && <span className="driver-detail-chip">🪪 {driver.licenseNumber}</span>}
-                          {driver.city && <span className="driver-detail-chip">📍 {[driver.city, driver.state].filter(Boolean).join(', ')}</span>}
+                          {driver.city && <span className="driver-detail-chip">{[driver.city, driver.state].filter(Boolean).join(', ')}</span>}
                         </div>
 
                         <div className="request-actions">
                           <button className="btn-accept" onClick={() => handleAccept(req._id)}>
-                            ✓ Accept Driver
+                            Accept Driver
                           </button>
                           <button className="btn-reject" onClick={() => handleReject(req._id)}>
-                            ✗ Reject
+                            Reject
                           </button>
                         </div>
                       </div>
@@ -350,7 +350,7 @@ export default function DriverManagement() {
           <div className="schedule-viewer" onClick={(e) => e.stopPropagation()}>
             <div className="schedule-viewer-header">
               <h2>{scheduleModal.driverName}'s Schedule</h2>
-              <button className="close-btn" onClick={() => setScheduleModal(null)}>✕</button>
+              <button className="close-btn" onClick={() => setScheduleModal(null)}>×</button>
             </div>
             <div className="schedule-viewer-body">
               <div className="schedule-legend" style={{ marginBottom: '1rem' }}>

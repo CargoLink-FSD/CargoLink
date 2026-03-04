@@ -20,17 +20,8 @@ tripRouter.put('/:tripId', authMiddleware(["transporter"]), tripController.updat
 tripRouter.delete('/:tripId', authMiddleware(["transporter"]), tripController.deleteTrip);
 
 // Trip lifecycle
-tripRouter.post('/:tripId/schedule', authMiddleware(["transporter"]), tripController.scheduleTrip);
 tripRouter.post('/:tripId/cancel', authMiddleware(["transporter"]), tripController.cancelTrip);
 tripRouter.post('/:tripId/complete', authMiddleware(["transporter"]), tripController.completeTrip);
-
-// Trip assignments (granular)
-tripRouter.post('/:tripId/orders', authMiddleware(["transporter"]), tripController.assignOrder);
-tripRouter.delete('/:tripId/orders/:orderId', authMiddleware(["transporter"]), tripController.removeOrderFromTrip);
-tripRouter.post('/:tripId/vehicle', authMiddleware(["transporter"]), tripController.assignVehicle);
-tripRouter.delete('/:tripId/vehicle', authMiddleware(["transporter"]), tripController.unassignVehicle);
-tripRouter.post('/:tripId/driver', authMiddleware(["transporter"]), tripController.assignDriver);
-tripRouter.delete('/:tripId/driver', authMiddleware(["transporter"]), tripController.unassignDriver);
 
 
 // ── Driver Routes ───────────────────────────────────────────────────────────

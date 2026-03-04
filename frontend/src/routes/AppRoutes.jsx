@@ -146,17 +146,6 @@ export default function AppRoutes() {
         <Route path="/driver/schedule" element={<DriverSchedule />} />
       </Route>
 
-     
-      {/* Manager Routes */}
-
-     <Route element={<ProtectedRoute allowedRoles={['manager']} />}>
-        <Route path="/manager" element={<Home />} />
-        <Route path="/manager/dashboard" element={placeholder('Manager Dashboard')} />
-        <Route path="/manager/documents" element={placeholder('Manager Documents')} />
-        <Route path="/manager/tickets" element={placeholder('Manager Tickets')} />
-      </Route>
-
-
       {/* Admin Routes */}
       
       <Route path="/admin/login" element={placeholder('Admin Login')} />

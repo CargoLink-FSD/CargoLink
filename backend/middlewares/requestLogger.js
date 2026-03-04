@@ -5,5 +5,8 @@ export const requestLogger = (req, res, next) => {
     return next();
   }
   logger.info(`Request: ${req.method} ${req.url} { ip: ${req.ip} }`);
+  if (req.method == 'POST' || req.method == 'PUT' || req.method == 'PATCH') {
+    logger.debug('Request Body', { body: req.body });
+  }
   next();
 };

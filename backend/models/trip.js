@@ -54,8 +54,8 @@ const TripSchema = new mongoose.Schema(
     ],
     status: {
       type: String,
-      enum: ["Planned", "Scheduled", "In Transit", "Delayed", "Completed", "Cancelled"],
-      default: "Planned",
+      enum: ["Scheduled", "Active", "Completed", "Cancelled"],
+      default: "Scheduled",
     },
     stops: { type: [TripStopSchema], default: [] },
     current_stop_index: { type: Number, default: 0 },

@@ -7,15 +7,13 @@ import { getTripDetails } from '../../api/trips';
 import '../../styles/TripInfo.css';
 
 const STATUS_COLORS = {
-  Planned:      { bg: '#fef3c7', color: '#92400e', border: '#f59e0b' },
   Scheduled:    { bg: '#dbeafe', color: '#1e40af', border: '#3b82f6' },
-  'In Transit': { bg: '#d1fae5', color: '#065f46', border: '#10b981' },
-  Delayed:      { bg: '#fee2e2', color: '#991b1b', border: '#ef4444' },
+  Active:       { bg: '#d1fae5', color: '#065f46', border: '#10b981' },
   Completed:    { bg: '#e0e7ff', color: '#3730a3', border: '#6366f1' },
   Cancelled:    { bg: '#f1f5f9', color: '#475569', border: '#94a3b8' },
 };
 
-const STOP_ICONS = { Pickup: '📦', Dropoff: '📍', Waypoint: '⬤', Delay: '⏳' };
+const STOP_ICONS = { Pickup: 'P', Dropoff: 'D', Waypoint: 'W', Delay: 'DL' };
 
 const formatDateTime = (iso) => {
   if (!iso) return '—';
@@ -138,7 +136,7 @@ const TripInfo = () => {
       const [cLng, cLat] = trip.current_location.coordinates;
       const currentIcon = L.divIcon({
         className: '',
-        html: '<div class="ti-current-loc">🚛</div>',
+        html: '<div class="ti-current-loc">T</div>',
         iconSize: [36, 36], iconAnchor: [18, 18],
       });
       L.marker([cLat, cLng], { icon: currentIcon }).addTo(map)
@@ -180,7 +178,7 @@ const TripInfo = () => {
     );
   }
 
-  const sc = STATUS_COLORS[trip.status] || STATUS_COLORS.Planned;
+  const sc = STATUS_COLORS[trip.status] || STATUS_COLORS.Scheduled;
   const vehicle = trip.assigned_vehicle_id;
   const driver = trip.assigned_driver_id;
 
@@ -222,7 +220,7 @@ const TripInfo = () => {
             {/* Summary Stats */}
             <div className="ti-stats-grid">
               <div className="ti-stat-card">
-                <span className="ti-stat-icon">📏</span>
+                <span className="ti-stat-icon">Dist</span>
                 <div>
                   <div className="ti-stat-val">{trip.total_distance_km || '—'} km</div>
                   <div className="ti-stat-lbl">Distance</div>
@@ -236,14 +234,14 @@ const TripInfo = () => {
                 </div>
               </div>
               <div className="ti-stat-card">
-                <span className="ti-stat-icon">📦</span>
+                <span className="ti-stat-icon">Ord</span>
                 <div>
                   <div className="ti-stat-val">{trip.order_ids?.length || 0}</div>
                   <div className="ti-stat-lbl">Orders</div>
                 </div>
               </div>
               <div className="ti-stat-card">
-                <span className="ti-stat-icon">🕐</span>
+                <span className="ti-stat-icon">Dep</span>
                 <div>
                   <div className="ti-stat-val">{formatDateTime(trip.planned_start_at)}</div>
                   <div className="ti-stat-lbl">Departure</div>
@@ -259,7 +257,7 @@ const TripInfo = () => {
               <div className="ti-card-header"><h2>Assignment</h2></div>
               <div className="ti-assignment-grid">
                 <div className="ti-assign-item">
-                  <span className="ti-assign-icon">🚛</span>
+                  <span className="ti-assign-icon">V</span>
                   <div>
                     <div className="ti-assign-main">
                       {vehicle?.registration || 'No vehicle assigned'}
@@ -272,7 +270,7 @@ const TripInfo = () => {
                   </div>
                 </div>
                 <div className="ti-assign-item">
-                  <span className="ti-assign-icon">👤</span>
+                  <span className="ti-assign-icon">D</span>
                   <div>
                     <div className="ti-assign-main">
                       {driver ? `${driver.firstName || ''} ${driver.lastName || ''}`.trim() : 'No driver assigned'}

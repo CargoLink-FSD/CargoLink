@@ -8,10 +8,7 @@ export default function OrderCard({
   variant = 'customer', // 'customer' or 'transporter'
   onDelete,
   onCancelOrder,
-  onAssign,
-  onUnassign,
-  onStartTransit,
-  onTrackOrder
+  onViewDetails,
 }) {
   const navigate = useNavigate();
 
@@ -42,11 +39,7 @@ export default function OrderCard({
 
   const handleTrackOrderClick = (e) => {
     e.stopPropagation();
-    if (variant === 'customer') {
-      navigate(`/customer/orders/${order._id}/track`);
-    } else if (onTrackOrder) {
-      onTrackOrder(order._id);
-    }
+    navigate(`/customer/orders/${order._id}/track`);
   };
 
   const handleCancelOrder = (e) => {
@@ -58,40 +51,6 @@ export default function OrderCard({
     e.stopPropagation();
     navigate(`/customer/order/${order._id}/bids`);
   };
-
-  // Transporter actions
-  const handleAssign = (e) => {
-    e?.stopPropagation();
-    if (onAssign) onAssign(order);
-  };
-
-  const handleUnassign = (e) => {
-    e?.stopPropagation();
-    if (onUnassign) onUnassign(order);
-  };
-
-  const handleStartTransit = (e) => {
-    e?.stopPropagation();
-    if (onStartTransit) onStartTransit(order);
-  };
-
-  // Transporter checks
-  const canUnassign = order.status?.toLowerCase() === 'assigned' && order.assignment;
-  const canStartTransit = order.status?.toLowerCase() === 'assigned' && order.assignment;
-  const isInTransit = order.status?.toLowerCase() === 'started' || order.status?.toLowerCase() === 'in transit';
-
-  if (variant === 'transporter') {
-    console.log('OrderCard Debug:', order._id?.slice(-6), {
-      status: order.status,
-      assignment: order.assignment,
-      assignmentType: typeof order.assignment,
-      vehicleId: order.assignment?.vehicle_id,
-      hasVehicleId: !!order.assignment?.vehicle_id,
-      notHasVehicleId: !order.assignment?.vehicle_id,
-      showAssignBtn: variant === 'transporter' && order.status?.toLowerCase() === 'assigned' && !order.assignment?.vehicle_id,
-      showStartBtn: variant === 'transporter' && order.status?.toLowerCase() === 'assigned' && !!order.assignment?.vehicle_id
-    });
-  }
   return (
     <div
       className={`order-card ${variant}`}
@@ -202,37 +161,9 @@ export default function OrderCard({
           </>
         )}
 
-        {variant === 'customer' && (order.status?.toLowerCase() === 'started' || order.status?.toLowerCase() === 'in transit') && (
+        {variant === 'customer' && ['started', 'in transit', 'scheduled'].includes(order.status?.toLowerCase()) && (
           <button
             className="btn btn-outline"
-            onClick={handleTrackOrderClick}
-          >
-            Track Order
-          </button>
-        )}
-
-        {/* Transporter-specific actions */}
-        {variant === 'transporter' && order.status?.toLowerCase() === 'assigned' && !order.assignment?.vehicle_id && (
-          <button
-            className="btn btn-primary"
-            onClick={handleAssign}
-          >
-            Assign Vehicle
-          </button>
-        )}
-
-        {variant === 'transporter' && order.status?.toLowerCase() === 'assigned' && order.assignment?.vehicle_id && (
-          <button
-            className="btn btn-outline"
-            onClick={handleStartTransit}
-          >
-            Start Transit
-          </button>
-        )}
-
-        {variant === 'transporter' && (order.status?.toLowerCase() === 'started' || order.status?.toLowerCase() === 'in transit') && (
-          <button
-            className="btn btn-info"
             onClick={handleTrackOrderClick}
           >
             Track Order
@@ -277,8 +208,5 @@ OrderCard.propTypes = {
   variant: PropTypes.oneOf(['customer', 'transporter']),
   onDelete: PropTypes.func,
   onCancelOrder: PropTypes.func,
-  onAssign: PropTypes.func,
-  onUnassign: PropTypes.func,
-  onStartTransit: PropTypes.func,
-  onTrackOrder: PropTypes.func,
+  onViewDetails: PropTypes.func,
 };

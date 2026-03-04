@@ -1,4 +1,10 @@
 /* ─── Active Trip (Driver) ─────────────────────────────────────────────────── */
+.active-trip-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  min-height: calc(100vh - 200px);
+}
 
 .at-shell {
   min-height: 100vh;
@@ -35,7 +41,7 @@
   padding: 1rem 1.5rem;
   background: white;
   border-bottom: 1px solid var(--gray-200, #e5e7eb);
-  margin-top: 64px;
+  margin-top: 80px;
   flex-wrap: wrap;
   gap: 0.75rem;
 }

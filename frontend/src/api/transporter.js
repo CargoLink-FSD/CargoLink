@@ -77,6 +77,9 @@ export const getDriverSchedule = async (driverId, startDate, endDate) => {
   if (endDate) params.append('endDate', endDate);
   const query = params.toString() ? `?${params.toString()}` : '';
   const response = await http.get(`/api/transporters/drivers/${driverId}/schedule${query}`);
+  return response.data;
+};
+
 // Upload verification documents (FormData with files)
 export const uploadDocuments = async (formData) => {
   const response = await http.post('/api/transporters/documents', formData);

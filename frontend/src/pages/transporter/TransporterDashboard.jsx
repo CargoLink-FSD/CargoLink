@@ -306,18 +306,18 @@ export default function TransporterDashboard() {
         {/* Verification Status Banner */}
         {verificationInfo && verificationInfo.verificationStatus === 'unsubmitted' && (
           <div className="verification-banner verification-unsubmitted">
-            <span>📋 Complete document upload to start bidding on orders.</span>
+            <span>Complete document upload to start bidding on orders.</span>
             <Link to="/transporter/profile" className="banner-action">Upload Documents</Link>
           </div>
         )}
         {verificationInfo && verificationInfo.verificationStatus === 'under_review' && (
           <div className="verification-banner verification-under-review">
-            <span>⏳ Your documents are under manager review. You will be notified once verified.</span>
+            <span>Your documents are under manager review. You will be notified once verified.</span>
           </div>
         )}
         {verificationInfo && verificationInfo.verificationStatus === 'rejected' && (
           <div className="verification-banner verification-rejected">
-            <span>❌ One or more of your documents were rejected. Please re-upload to continue.</span>
+            <span>One or more of your documents were rejected. Please re-upload to continue.</span>
             <Link to="/transporter/profile" className="banner-action">Re-upload</Link>
           </div>
         )}
