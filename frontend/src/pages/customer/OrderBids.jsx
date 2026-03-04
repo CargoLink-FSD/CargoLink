@@ -234,8 +234,9 @@ export default function OrderBids() {
     return (
       <>
         <Header />
-        <br /><br />
         <div className="orders-container">
+          <br />
+          <br />
           <div className="error-state">
             <div className="error-icon" aria-hidden="true">
               <TriangleAlert size={44} />

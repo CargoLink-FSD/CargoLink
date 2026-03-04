@@ -122,7 +122,7 @@ const LocationPicker = ({ label, address, coordinates, onLocationSet }) => {
     } else {
       const icon = L.divIcon({
         className: '',
-        html: `<div class="lp-marker"><span>📍</span></div>`,
+        html: `<div class="lp-marker"><span></span></div>`,
         iconSize: [32, 32],
         iconAnchor: [16, 32],
       });
@@ -245,7 +245,7 @@ const LocationPicker = ({ label, address, coordinates, onLocationSet }) => {
   return (
     <div className="lp-container">
       <div className="lp-header">
-        <span className="lp-label">📍 {label} Location on Map</span>
+        <span className="lp-label">{label} Location on Map</span>
         {coordinates && (
           <span className="lp-coords">
             {coordinates[1].toFixed(4)}, {coordinates[0].toFixed(4)}
@@ -280,7 +280,7 @@ const LocationPicker = ({ label, address, coordinates, onLocationSet }) => {
           onClick={handleFindOnMap}
           disabled={searching}
         >
-          {searching ? '...' : '📍 Find on Map'}
+          {searching ? '...' : 'Find on Map'}
         </button>
       </div>
 

@@ -106,6 +106,9 @@ export default function JoinTransporter() {
   return (
     <div className="join-transporter-page">
       <Header />
+      <br />
+      <br />
+      <br />
 
       <main className="container main-content">
         <div className="join-container">

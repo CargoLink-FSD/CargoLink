@@ -185,6 +185,9 @@ export default function DriverSchedule() {
   return (
     <div className="schedule-page">
       <Header />
+      <br />
+      <br />
+      <br />
 
       <main className="container main-content">
         <div className="schedule-container">
