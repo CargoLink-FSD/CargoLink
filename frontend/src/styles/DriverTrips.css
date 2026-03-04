@@ -1,5 +1,12 @@
 /* ─── Driver Trips List ────────────────────────────────────────────────────── */
 
+.driverTrips-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 80px 2rem 2rem;
+  min-height: calc(100vh - 200px);
+}
+
 .dt-trip-card {
   background: white;
   border-radius: 12px;

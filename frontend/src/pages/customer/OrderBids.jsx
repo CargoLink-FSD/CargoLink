@@ -219,7 +219,6 @@ export default function OrderBids() {
     return (
       <>
         <Header />
-        <br /><br />
         <div className="orders-container">
           <div className="loading-state">
             <div className="spinner"></div>
@@ -234,7 +233,6 @@ export default function OrderBids() {
     return (
       <>
         <Header />
-        <br /><br />
         <div className="orders-container">
           <div className="error-state">
             <div className="error-icon" aria-hidden="true">
@@ -253,7 +251,6 @@ export default function OrderBids() {
   return (
     <>
       <Header />
-      <br /><br />
       <div className="orders-container">
         <div className="orders-header">
           <div className="header-with-back">

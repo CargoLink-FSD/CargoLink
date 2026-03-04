@@ -57,11 +57,11 @@ transporterRouter.put("/fleet/:truckId", validate(validationSchema.updateTruck),
 transporterRouter.delete("/fleet/:truckId", transporterController.removeTruck); // Delete truck
 transporterRouter.post("/fleet/:vehicleId/upload-rc", documentUpload.single('rc_file'), transporterController.uploadVehicleRc); // Upload vehicle RC
 
-// Truck Status Management
-transporterRouter.post("/fleet/:truckId/set-maintenance", transporterController.setTruckMaintenance); // Set truck to maintenance
-transporterRouter.post("/fleet/:truckId/set-available", transporterController.setTruckAvailable); // Set truck to available
-transporterRouter.post("/fleet/:truckId/set-unavailable", transporterController.setTruckUnavailable); // Set truck to unavailable
-transporterRouter.post("/fleet/:truckId/schedule-maintenance", transporterController.scheduleMaintenance); // Schedule maintenance
+// // Truck Status Management
+// transporterRouter.post("/fleet/:truckId/set-maintenance", transporterController.setTruckMaintenance); // Set truck to maintenance
+// transporterRouter.post("/fleet/:truckId/set-available", transporterController.setTruckAvailable); // Set truck to available
+// transporterRouter.post("/fleet/:truckId/set-unavailable", transporterController.setTruckUnavailable); // Set truck to unavailable
+// transporterRouter.post("/fleet/:truckId/schedule-maintenance", transporterController.scheduleMaintenance); // Schedule maintenance
 
 // Fleet Schedule Management
 transporterRouter.get("/fleet/:truckId/schedule", transporterController.getFleetSchedule); // Get truck schedule

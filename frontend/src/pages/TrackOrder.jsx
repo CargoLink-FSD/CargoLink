@@ -22,7 +22,7 @@ const OtpBlock = ({ label, otp, hint, color }) => {
       <div className="to-otp-label">{label}</div>
       <div className="to-otp-value" onClick={handleCopy} title="Click to copy">
         {otp}
-        <span className="to-otp-copy">{copied ? '✓' : '📋'}</span>
+        <span className="to-otp-copy">{copied ? 'Copied' : 'Copy'}</span>
       </div>
       <div className="to-otp-sub">{hint}</div>
     </div>
@@ -335,20 +335,20 @@ const TrackOrderPage = () => {
             <div className="right-column">
 
               {/* ─── OTP Confirmation Codes ─── */}
-              {userType === 'customer' && ['Assigned', 'In Transit'].includes(currentOrder.status) &&
+              {userType === 'customer' && ['Assigned', 'Scheduled', 'Started', 'In Transit'].includes(currentOrder.status) &&
                 (currentOrder.pickup_otp || currentOrder.delivery_otp) && (
                 <div className="card to-otp-card">
                   <div className="card-header">
-                    <h2 className="card-title">🔐 Confirmation Codes</h2>
+                    <h2 className="card-title">Confirmation Codes</h2>
                   </div>
                   <p className="to-otp-hint">Show these codes to the driver when they arrive. Keep them safe.</p>
                   <div className="to-otp-grid">
                     {currentOrder.pickup_otp && (
-                      <OtpBlock label="📦 Pickup OTP" otp={currentOrder.pickup_otp}
+                      <OtpBlock label="Pickup OTP" otp={currentOrder.pickup_otp}
                         hint="Give to driver at pickup location" color="#22c55e" />
                     )}
                     {currentOrder.delivery_otp && (
-                      <OtpBlock label="🏠 Delivery OTP" otp={currentOrder.delivery_otp}
+                      <OtpBlock label="Delivery OTP" otp={currentOrder.delivery_otp}
                         hint="Receiver gives to driver at delivery" color="#6366f1" />
                     )}
                   </div>
@@ -359,7 +359,7 @@ const TrackOrderPage = () => {
               {tracking?.stops?.length > 0 && (
                 <div className="card to-stops-card">
                   <div className="card-header">
-                    <h2 className="card-title">📍 Trip Progress</h2>
+                    <h2 className="card-title">Trip Progress</h2>
                   </div>
                   <div className="to-stops-list">
                     {tracking.stops.map((stop, idx) => {

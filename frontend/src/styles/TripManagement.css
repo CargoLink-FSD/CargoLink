@@ -1,5 +1,13 @@
 /* ─── Trip Management Page ─────────────────────────────────────────────────── */
 
+.tripManagement-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 80px 2rem 3rem;
+  min-height: calc(100vh - 200px);
+}
+
+
 .btn-create-trip {
   padding: 0.65rem 1.25rem;
   background: var(--primary, #6366f1);
@@ -13,7 +21,7 @@
 }
 .btn-create-trip:hover { background: #4f46e5; }
 
-.orders-header-row {
+.trips-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -50,6 +58,24 @@
   font-weight: 600;
 }
 .stat-chip-num { font-weight: 700; }
+
+
+.trips-header {
+  margin-bottom: 1.75rem;
+}
+
+.trips-header h1 {
+  margin: 0 0 0.75rem 0;
+  font-size: 2.2rem;
+  color: #111;
+}
+
+.trips-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
 
 /* ─── Trip Card ────────────────────────────────────────────────────────────── */
 .tm-trip-card {
@@ -287,13 +313,13 @@
   to { transform: rotate(360deg); }
 }
 
-.empty-state {
+.tm-empty-state {
   text-align: center;
   padding: 4rem 2rem;
 }
 .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
-.empty-state h3 { color: var(--gray-800, #1f2937); margin-bottom: 0.5rem; }
-.empty-state p { color: var(--gray-500, #6b7280); margin-bottom: 1.5rem; }
+.tm-empty-state h3 { color: var(--gray-800, #1f2937); margin-bottom: 0.5rem; }
+.tm-empty-state p { color: var(--gray-500, #6b7280); margin-bottom: 1.5rem; }
 
 @keyframes fadeIn {
   from { opacity: 0; }

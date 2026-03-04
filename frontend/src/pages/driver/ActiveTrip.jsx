@@ -10,7 +10,7 @@ import {
 import '../../styles/ActiveTrip.css';
 
 const STATUS_COLORS = {
-  Scheduled: '#1976d2', 'In Transit': '#388e3c', Delayed: '#c62828',
+  Scheduled: '#1976d2', Active: '#388e3c',
   Completed: '#00796b', Cancelled: '#757575',
 };
 
@@ -123,14 +123,14 @@ const ActiveTrip = () => {
     const [lat, lng] = driverLocationRef.current;
     const icon = L.divIcon({
       className: '',
-      html: '<div class="at-driver-marker"><span class="at-driver-icon">🚛</span><div class="at-driver-pulse"></div></div>',
+      html: '<div class="at-driver-marker"><span class="at-driver-icon">T</span><div class="at-driver-pulse"></div></div>',
       iconSize: [40, 40], iconAnchor: [20, 20],
     });
     if (driverMarkerRef.current) {
       driverMarkerRef.current.setLatLng([lat, lng]);
     } else {
       driverMarkerRef.current = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).addTo(map);
-      driverMarkerRef.current.bindPopup('📍 Your location');
+      driverMarkerRef.current.bindPopup('Your location');
     }
     return () => {
       if (driverMarkerRef.current) { driverMarkerRef.current.remove(); driverMarkerRef.current = null; }
@@ -204,7 +204,7 @@ const ActiveTrip = () => {
 
   // ─── Live Location ───
   useEffect(() => {
-    if (!trip || !['In Transit', 'Delayed'].includes(trip.status)) return;
+    if (!trip || trip.status !== 'Active') return;
     const tripId = trip._id;
 
     const sendLocation = (pos) => {
@@ -338,7 +338,7 @@ const ActiveTrip = () => {
     );
   }
 
-  const isActive = ['In Transit', 'Delayed'].includes(trip.status);
+  const isActive = trip.status === 'Active';
   const isScheduled = trip.status === 'Scheduled';
   const isDone = ['Completed', 'Cancelled'].includes(trip.status);
   const statusColor = STATUS_COLORS[trip.status] || '#6366f1';
@@ -363,19 +363,18 @@ const ActiveTrip = () => {
           <div className="at-header-right">
             {isScheduled && (
               <button className="btn btn-primary" onClick={handleStartTrip} disabled={actionLoading}>
-                {actionLoading ? 'Starting...' : '▶ Start Trip'}
+                {actionLoading ? 'Starting...' : 'Start Trip'}
               </button>
             )}
-            {trip.status === 'Delayed' && (
+            {trip.is_delayed && isActive && (
               <button className="btn btn-outline btn-sm" onClick={handleClearDelay} disabled={actionLoading}>Clear Delay</button>
             )}
             {isActive && (
-              // FIX: removed e.stopPropagation() and setTimeout — they were preventing the modal from staying open
               <button
                 className="btn btn-outline btn-sm btn-danger-outline"
                 onClick={openDelayModal}
               >
-                ⚠ Delay
+                Report Delay
               </button>
             )}
           </div>
@@ -436,12 +435,12 @@ const ActiveTrip = () => {
                           onClick={() => openOtpModal(stop.type, stop._id)}
                           disabled={actionLoading}
                         >
-                          🔑 Verify OTP ({stop.type})
+                          Verify OTP ({stop.type})
                         </button>
                       )}
                       {isCurrent && isArrived && stop.type === 'Waypoint' && (
                         <button className="btn btn-primary btn-sm at-stop-action" onClick={() => handleDepart(stop._id)} disabled={actionLoading}>
-                          ➡ Depart
+                          Depart
                         </button>
                       )}
                       {stop.status === 'Arrived' && !isCurrent && (
@@ -458,7 +457,7 @@ const ActiveTrip = () => {
 
             {isDone && (
               <div className="at-trip-done-banner">
-                <span>{trip.status === 'Completed' ? '✅ Trip Completed' : '❌ Trip Cancelled'}</span>
+                <span>{trip.status === 'Completed' ? 'Trip Completed' : 'Trip Cancelled'}</span>
                 {trip.actual_end_at && <span className="at-done-time">{formatDate(trip.actual_end_at)}</span>}
               </div>
             )}

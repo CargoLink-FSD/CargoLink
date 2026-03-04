@@ -3,7 +3,7 @@
 .dashboard-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 80px 24px 24px;
   background: #f8f9fa;
   min-height: 100vh;
 }
