@@ -1,28 +1,28 @@
-.orders-container {
+.transporter-orders-page .orders-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
   min-height: calc(100vh - 200px);
 }
 
-.orders-header {
+.transporter-orders-page .orders-header {
   margin-bottom: 1.75rem;
 }
 
-.orders-header h1 {
+.transporter-orders-page .orders-header h1 {
   margin: 0 0 0.75rem 0;
   font-size: 2.2rem;
   color: #111;
 }
 
-.orders-filters {
+.transporter-orders-page .orders-filters {
   display: flex;
   gap: 1rem;
   align-items: center;
 }
 
-.search-input,
-.status-filter {
+.transporter-orders-page .search-input,
+.transporter-orders-page .status-filter {
   padding: 0.75rem 1rem;
   border: 1px solid #eee;
   border-radius: 8px;
@@ -30,29 +30,29 @@
   transition: border-color 0.2s ease, box-shadow 0.15s ease;
 }
 
-.search-input:focus,
-.status-filter:focus {
+.transporter-orders-page .search-input:focus,
+.transporter-orders-page .status-filter:focus {
   outline: none;
   border-color: #1976d2;
 }
 
-.search-input {
+.transporter-orders-page .search-input {
   flex: 1;
   min-width: 250px;
   box-shadow: none;
 }
 
-.status-filter {
+.transporter-orders-page .status-filter {
   min-width: 160px;
 }
 
-.orders-header-row{display:flex;align-items:center;gap:16px}
+.transporter-orders-page .orders-header-row{display:flex;align-items:center;gap:16px}
 
-.search-bar-wrap{flex:1;display:flex;align-items:center}
+.transporter-orders-page .search-bar-wrap{flex:1;display:flex;align-items:center}
 
-.search-input{height:48px;border-radius:8px;padding-left:18px}
+.transporter-orders-page .search-input{height:48px;border-radius:8px;padding-left:18px}
 
-.orders-grid {
+.transporter-orders-page .orders-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 1.5rem;
@@ -60,7 +60,7 @@
 }
 
 /* Loading State */
-.loading-state {
+.transporter-orders-page .loading-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -69,7 +69,7 @@
   text-align: center;
 }
 
-.spinner {
+.transporter-orders-page .spinner {
   width: 50px;
   height: 50px;
   border: 4px solid #f0f0f0;
@@ -83,13 +83,13 @@
   to { transform: rotate(360deg); }
 }
 
-.loading-state p {
+.transporter-orders-page .loading-state p {
   color: #666;
   font-size: 1.1rem;
 }
 
 /* Empty State */
-.empty-state {
+.transporter-orders-page .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -98,25 +98,27 @@
   text-align: center;
 }
 
-.empty-icon {
-  font-size: 4rem;
+.transporter-orders-page .empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 1rem;
   opacity: 0.5;
 }
 
-.empty-state h3 {
+.transporter-orders-page .empty-state h3 {
   margin: 0 0 0.5rem 0;
   font-size: 1.5rem;
   color: #333;
 }
 
-.empty-state p {
+.transporter-orders-page .empty-state p {
   color: #666;
   font-size: 1rem;
 }
 
 /* Error State */
-.error-state {
+.transporter-orders-page .error-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -125,18 +127,13 @@
   text-align: center;
 }
 
-.error-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-}
-
-.error-state p {
+.transporter-orders-page .error-state p {
   color: #d32f2f;
   font-size: 1.1rem;
 }
 
 /* Modal Styles */
-.modal-overlay {
+.transporter-orders-page .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -150,7 +147,7 @@
   padding: 1rem;
 }
 
-.modal-content {
+.transporter-orders-page .modal-content {
   background: white;
   border-radius: 12px;
   width: 100%;
@@ -160,7 +157,7 @@
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-.modal-header {
+.transporter-orders-page .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -168,14 +165,14 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
-.modal-header h2 {
+.transporter-orders-page .modal-header h2 {
   font-size: 1.5rem;
   font-weight: 600;
   color: #1f2937;
   margin: 0;
 }
 
-.close-btn {
+.transporter-orders-page .close-btn {
   background: none;
   border: none;
   font-size: 2rem;
@@ -191,37 +188,37 @@
   transition: all 0.2s;
 }
 
-.close-btn:hover {
+.transporter-orders-page .close-btn:hover {
   background: #f3f4f6;
   color: #1f2937;
 }
 
-.modal-body {
+.transporter-orders-page .modal-body {
   padding: 1.5rem;
 }
 
-.order-info {
+.transporter-orders-page .order-info {
   background: #f9fafb;
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
 }
 
-.order-info p {
+.transporter-orders-page .order-info p {
   margin: 0.5rem 0;
   color: #1f2937;
   font-size: 0.875rem;
 }
 
-.order-info strong {
+.transporter-orders-page .order-info strong {
   font-weight: 600;
 }
 
-.form-group {
+.transporter-orders-page .form-group {
   margin-bottom: 1rem;
 }
 
-.form-group label {
+.transporter-orders-page .form-group label {
   display: block;
   font-weight: 500;
   color: #1f2937;
@@ -229,7 +226,7 @@
   font-size: 0.875rem;
 }
 
-.vehicle-select {
+.transporter-orders-page .vehicle-select {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #d1d5db;
@@ -240,20 +237,20 @@
   transition: all 0.2s;
 }
 
-.vehicle-select:focus {
+.transporter-orders-page .vehicle-select:focus {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.modal-footer {
+.transporter-orders-page .modal-footer {
   display: flex;
   gap: 0.75rem;
   padding: 1.5rem;
   border-top: 1px solid #e5e7eb;
 }
 
-.modal-footer button {
+.transporter-orders-page .modal-footer button {
   flex: 1;
   padding: 0.75rem;
   border: none;
@@ -264,48 +261,48 @@
   transition: all 0.2s;
 }
 
-.btn-cancel {
+.transporter-orders-page .btn-cancel {
   background: #f3f4f6;
   color: #1f2937;
 }
 
-.btn-cancel:hover {
+.transporter-orders-page .btn-cancel:hover {
   background: #e5e7eb;
 }
 
-.btn-confirm {
+.transporter-orders-page .btn-confirm {
   background: #3b82f6;
   color: white;
 }
 
-.btn-confirm:hover {
+.transporter-orders-page .btn-confirm:hover {
   background: #2563eb;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .orders-container {
+  .transporter-orders-page .orders-container {
     padding: 1rem;
   }
 
-  .orders-header h1 {
+  .transporter-orders-page .orders-header h1 {
     font-size: 1.5rem;
   }
 
-  .orders-filters {
+  .transporter-orders-page .orders-filters {
     flex-direction: column;
   }
 
-  .search-input,
-  .status-filter {
+  .transporter-orders-page .search-input,
+  .transporter-orders-page .status-filter {
     width: 100%;
   }
 
-  .orders-grid {
+  .transporter-orders-page .orders-grid {
     grid-template-columns: 1fr;
   }
 
-  .modal-content {
+  .transporter-orders-page .modal-content {
     margin: 1rem;
   }
 }

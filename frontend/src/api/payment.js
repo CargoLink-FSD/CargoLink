@@ -22,6 +22,12 @@ export const paymentAPI = {
   },
 
   /**
+   * Get submitted review for an order
+   */
+  getOrderReview: (orderId) =>
+    http.get(`/api/payments/orders/${orderId}/review`),
+
+  /**
    * Get payment history
    */
   getHistory: () => 

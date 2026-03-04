@@ -1,5 +1,5 @@
 import React from 'react';
-import { ThumbsUp, MessageSquare } from 'lucide-react';
+import { MessageSquare, Star, ThumbsUp } from 'lucide-react';
 import '../../styles/profile.css';
 
 const RatingsTab = ({ ratings }) => {
@@ -28,7 +28,9 @@ const RatingsTab = ({ ratings }) => {
           </div>
           <div className="rating-stars-large">
             {[1, 2, 3, 4, 5].map((s) => (
-              <span key={s} className={`star ${s <= averageRating ? 'filled' : ''}`}>★</span>
+              <span key={s} className={`star ${s <= averageRating ? 'filled' : ''}`} aria-hidden="true">
+                <Star size={18} className="star-icon" fill={s <= averageRating ? 'currentColor' : 'none'} />
+              </span>
             ))}
           </div>
           <p className="rating-count-footer">Based on {totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}</p>
@@ -88,7 +90,9 @@ const RatingsTab = ({ ratings }) => {
 
                 <div className="review-stars-small-row">
                   {[1, 2, 3, 4, 5].map((s) => (
-                    <span key={s} className={`star ${s <= review.rating ? 'filled' : ''}`}>★</span>
+                    <span key={s} className={`star ${s <= review.rating ? 'filled' : ''}`} aria-hidden="true">
+                      <Star size={16} className="star-icon" fill={s <= review.rating ? 'currentColor' : 'none'} />
+                    </span>
                   ))}
                 </div>
 

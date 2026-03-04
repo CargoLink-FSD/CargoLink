@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useTransporterOrders } from '../../hooks/useTransporterOrders';
 import OrderCard from '../../components/common/OrderCard';
 import AssignVehicleModal from '../../components/common/AssignVehicleModal';
+import { PackageOpen } from 'lucide-react';
 import './TransporterOrders.css';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
@@ -123,66 +124,69 @@ const TransporterOrders = () => {
     <>
     <Header />
     <br></br><br></br>
-    <div className="orders-container">
-      <div className="orders-header">
-        <h1>My Orders</h1>
+    <div className="transporter-orders-page">
+      <div className="orders-container">
+        <div className="orders-header">
+          <h1>My Orders</h1>
+        </div>
+
+        <div className="orders-filters">
+          <input
+            type="text"
+            placeholder="Search by order ID or location..."
+            value={searchTerm}
+            onChange={handleSearch}
+            className="search-input"
+          />
+
+          <select value={statusFilter} onChange={handleStatusFilter} className="status-filter">
+            <option value="all">All Status</option>
+            <option value="assigned">Assigned</option>
+            <option value="started">Started</option>
+            <option value="in transit">In Transit</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+
+        {loading && (
+          <div className="loading-state">
+            <div className="spinner"></div>
+            <p>Loading orders...</p>
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className="error-state" role="alert">
+            <p>{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && orders.length === 0 && (
+          <div className="empty-state">
+            <div className="empty-icon" aria-hidden="true">
+              <PackageOpen size={44} />
+            </div>
+            <h3>No orders found</h3>
+            <p>You don't have any orders assigned yet.</p>
+          </div>
+        )}
+
+        {!loading && !error && orders.length > 0 && (
+          <div className="orders-grid">
+            {orders.map((order) => (
+              <OrderCard
+                key={order._id}
+                order={order}
+                variant="transporter"
+                onAssign={handleAssign}
+                onUnassign={handleUnassign}
+                onStartTransit={handleStartTransit}
+                onTrackOrder={handleTrackOrder}
+              />
+            ))}
+          </div>
+        )}
       </div>
-
-      <div className="orders-filters">
-        <input
-          type="text"
-          placeholder="Search by order ID or location..."
-          value={searchTerm}
-          onChange={handleSearch}
-          className="search-input"
-        />
-
-        <select value={statusFilter} onChange={handleStatusFilter} className="status-filter">
-          <option value="all">All Status</option>
-          <option value="assigned">Assigned</option>
-          <option value="started">Started</option>
-          <option value="in transit">In Transit</option>
-          <option value="completed">Completed</option>
-        </select>
-      </div>
-
-      {loading && (
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Loading orders...</p>
-        </div>
-      )}
-
-      {/* {error && (
-        <div className="error-state">
-          <div className="error-icon">⚠️</div>
-          <p>{error}</p>
-        </div>
-      )} */}
-
-      {!loading && !error && orders.length === 0 && (
-        <div className="empty-state">
-          <div className="empty-icon"></div>
-          <h3>No orders found</h3>
-          <p>You don't have any orders assigned yet.</p>
-        </div>
-      )}
-
-      {!loading && !error && orders.length > 0 && (
-        <div className="orders-grid">
-          {orders.map((order) => (
-            <OrderCard
-              key={order._id}
-              order={order}
-              variant="transporter"
-              onAssign={handleAssign}
-              onUnassign={handleUnassign}
-              onStartTransit={handleStartTransit}
-              onTrackOrder={handleTrackOrder}
-            />
-          ))}
-        </div>
-      )}
 
       <AssignVehicleModal
         isOpen={showAssignModal}

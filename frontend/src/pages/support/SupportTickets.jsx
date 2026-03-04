@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { Camera, ClipboardList, X } from 'lucide-react';
 import { getMyTickets, createTicket } from '../../api/tickets';
 import { getCustomerOrders } from '../../api/orders';
 import http from '../../api/http';
@@ -222,13 +223,19 @@ export default function SupportTickets() {
                                 {!photo ? (
                                     <div className="photo-upload-area">
                                         <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoChange} id="ticket-photo" hidden />
-                                        <label htmlFor="ticket-photo" className="photo-upload-btn">📷 Choose Photo</label>
+                                        <label htmlFor="ticket-photo" className="photo-upload-btn">
+                                            <Camera size={16} aria-hidden="true" />
+                                            <span>Choose Photo</span>
+                                        </label>
                                         <span className="field-hint">JPEG, PNG, or WEBP — max 5MB</span>
                                     </div>
                                 ) : (
                                     <div className="photo-preview">
                                         <img src={photoPreview} alt="Preview" />
-                                        <button type="button" className="remove-photo-btn" onClick={removePhoto}>✕ Remove</button>
+                                        <button type="button" className="remove-photo-btn" onClick={removePhoto}>
+                                            <X size={16} aria-hidden="true" />
+                                            <span>Remove</span>
+                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -245,7 +252,9 @@ export default function SupportTickets() {
 
                 {!loading && tickets.length === 0 && !showForm && (
                     <div className="support-empty">
-                        <div className="empty-icon">📋</div>
+                        <div className="empty-icon" aria-hidden="true">
+                            <ClipboardList size={44} />
+                        </div>
                         <h3>No tickets yet</h3>
                         <p>You haven't raised any support tickets. Click "Raise a Ticket" if you need help.</p>
                     </div>

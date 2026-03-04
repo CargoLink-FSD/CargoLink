@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
+import { CircleCheck } from 'lucide-react';
 import { confirmOrderPickup } from '../../store/slices/ordersSlice';
 import { useNotification } from '../../context/NotificationContext';
 
@@ -41,7 +42,10 @@ const CustomerActions = ({ order }) => {
             <h2 className="card-title">Delivery Complete</h2>
           </div>
           <div className="action-buttons" style={{ justifyContent: 'center', padding: '12px 0' }}>
-            <span style={{ color: '#2e7d32', fontWeight: 600, fontSize: '1rem' }}>✓ Payment Completed</span>
+            <span style={{ color: '#2e7d32', fontWeight: 600, fontSize: '1rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+              <CircleCheck size={18} aria-hidden="true" />
+              <span>Payment Completed</span>
+            </span>
           </div>
         </div>
       ) : (

@@ -1,4 +1,5 @@
 import React from 'react';
+import { X } from 'lucide-react';
 import { usePlaceOrder } from '../../hooks/usePlaceOrder';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
@@ -60,7 +61,7 @@ export default function PlaceOrder() {
   return (
     <>
       <Header />
-      <main className="main-content container">
+      <main className="main-content place-order-page">
         <div className="page-header">
           <h1 className="page-title">Place Order</h1>
         </div>
@@ -498,7 +499,7 @@ export default function PlaceOrder() {
                       onClick={removeCargoPhoto}
                       aria-label="Remove photo"
                     >
-                      ✕
+                      <X size={18} aria-hidden="true" />
                     </button>
                   </div>
                 )}

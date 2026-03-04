@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { CreditCard } from 'lucide-react';
 import '../../styles/PayNow.css';
 import { useNotification } from '../../context/NotificationContext';
 import { paymentAPI } from '../../api/payment';
@@ -108,7 +109,9 @@ export default function PayNow({ orderId: propOrderId, amount: propAmount }) {
   return (
     <main className="paynow-container">
       <div className="payment-card">
-        <div className="icon">💳</div>
+        <div className="icon" aria-hidden="true">
+          <CreditCard size={40} />
+        </div>
         <h1>Payment</h1>
         <div className="details">
           <p>Amount: <span className="amount">₹ {Number(amount || 0).toLocaleString('en-IN')}</span></p>

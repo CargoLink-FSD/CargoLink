@@ -71,6 +71,10 @@ const OrderSchema = new mongoose.Schema(
       default: false
     },
     final_price: Number,
+    accepted_quote_breakdown: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
     payment_status: {
       type: String,
       enum: ["Unpaid", "Paid"],
