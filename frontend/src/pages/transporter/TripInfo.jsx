@@ -7,10 +7,10 @@ import { getTripDetails } from '../../api/trips';
 import '../../styles/TripInfo.css';
 
 const STATUS_COLORS = {
-  Scheduled:    { bg: '#dbeafe', color: '#1e40af', border: '#3b82f6' },
-  Active:       { bg: '#d1fae5', color: '#065f46', border: '#10b981' },
-  Completed:    { bg: '#e0e7ff', color: '#3730a3', border: '#6366f1' },
-  Cancelled:    { bg: '#f1f5f9', color: '#475569', border: '#94a3b8' },
+  Scheduled: { bg: '#dbeafe', color: '#1e40af', border: '#3b82f6' },
+  Active: { bg: '#d1fae5', color: '#065f46', border: '#10b981' },
+  Completed: { bg: '#e0e7ff', color: '#3730a3', border: '#6366f1' },
+  Cancelled: { bg: '#f1f5f9', color: '#475569', border: '#94a3b8' },
 };
 
 const STOP_ICONS = { Pickup: 'P', Dropoff: 'D', Waypoint: 'W', Delay: 'DL' };
@@ -28,6 +28,24 @@ const formatDuration = (minutes) => {
   const h = Math.floor(minutes / 60);
   const m = Math.round(minutes % 60);
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
+};
+
+// Normalize coords to Leaflet [lat, lng]
+// Backend stores GeoJSON [lng, lat]; some records may have [lat, lng]
+const toLatLng = (coords) => {
+  if (!coords || coords.length < 2) return null;
+  const a = Number(coords[0]), b = Number(coords[1]);
+  if (isNaN(a) || isNaN(b)) return null;
+  if (Math.abs(a) > 90 && Math.abs(b) <= 90) return [b, a];
+  if (a > 50 && b < 40) return [b, a];
+  return [a, b];
+};
+
+// Convert coords to OSRM "lng,lat" string
+const toOsrmCoord = (coords) => {
+  const ll = toLatLng(coords);
+  if (!ll) return null;
+  return `${ll[1]},${ll[0]}`;
 };
 
 const TripInfo = () => {
@@ -99,7 +117,8 @@ const TripInfo = () => {
     // Add markers
     const markers = [];
     validStops.forEach((stop, idx) => {
-      const [lng, lat] = stop.address.coordinates;
+      const ll = toLatLng(stop.address.coordinates);
+      if (!ll) return;
       const isPickup = stop.type === 'Pickup';
       const isCompleted = stop.status === 'Completed';
       const isCurrent = idx === trip.current_stop_index;
@@ -110,7 +129,7 @@ const TripInfo = () => {
         iconSize: [32, 32], iconAnchor: [16, 16],
       });
 
-      const marker = L.marker([lat, lng], { icon }).addTo(map);
+      const marker = L.marker(ll, { icon }).addTo(map);
       marker.bindPopup(
         `<b>${stop.sequence || idx + 1}. ${stop.address?.city || ''}</b><br/>` +
         `${stop.type} · ${stop.status}<br/>` +
@@ -120,7 +139,7 @@ const TripInfo = () => {
     });
 
     // Draw OSRM route
-    const coords = validStops.map(s => `${s.address.coordinates[0]},${s.address.coordinates[1]}`).join(';');
+    const coords = validStops.map(s => toOsrmCoord(s.address.coordinates)).filter(Boolean).join(';');
     fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`)
       .then(res => res.json())
       .then(data => {
@@ -129,18 +148,20 @@ const TripInfo = () => {
           L.polyline(routeCoords, { color: '#6366f1', weight: 4, opacity: 0.85 }).addTo(map);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
 
     // Current location marker
     if (trip.current_location?.coordinates?.length === 2) {
-      const [cLng, cLat] = trip.current_location.coordinates;
-      const currentIcon = L.divIcon({
-        className: '',
-        html: '<div class="ti-current-loc">T</div>',
-        iconSize: [36, 36], iconAnchor: [18, 18],
-      });
-      L.marker([cLat, cLng], { icon: currentIcon }).addTo(map)
-        .bindPopup('Current Location');
+      const cll = toLatLng(trip.current_location.coordinates);
+      if (cll) {
+        const currentIcon = L.divIcon({
+          className: '',
+          html: '<div class="ti-current-loc">T</div>',
+          iconSize: [36, 36], iconAnchor: [18, 18],
+        });
+        L.marker(cll, { icon: currentIcon }).addTo(map)
+          .bindPopup('Current Location');
+      }
     }
 
     // Fit bounds
