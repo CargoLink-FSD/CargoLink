@@ -20,6 +20,16 @@ const ManagerSchema = new mongoose.Schema(
                 ],
             },
         ],
+        verificationCategories: [
+            {
+                type: String,
+                enum: [
+                    'transporter_verification',
+                    'driver_verification',
+                    'vehicle_verification',
+                ],
+            },
+        ],
         status: {
             type: String,
             enum: ['active', 'inactive'],
@@ -27,6 +37,8 @@ const ManagerSchema = new mongoose.Schema(
         },
         openTicketCount: { type: Number, default: 0 },
         totalResolved: { type: Number, default: 0 },
+        openVerificationCount: { type: Number, default: 0 },
+        totalVerified: { type: Number, default: 0 },
         invitationCode: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'InvitationCode',

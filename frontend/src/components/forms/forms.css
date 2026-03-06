@@ -362,6 +362,7 @@ select.input-field {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -372,6 +373,7 @@ select.input-field {
     transform: translateY(20px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -417,13 +419,13 @@ select.input-field {
   .modal-content {
     max-height: 95vh;
   }
-  
+
   .modal-header,
   .modal-body,
   .modal-footer {
     padding: 1rem;
   }
-  
+
   .btn {
     padding: 0.625rem 1.25rem;
   }

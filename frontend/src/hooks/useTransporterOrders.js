@@ -9,11 +9,6 @@ import {
   submitOrderBid,
   withdrawOrderBid,
   fetchTransporterBids,
-  fetchTransporterVehicles,
-  assignVehicle,
-  unassignVehicle,
-  startOrderTransit,
-  completeOrderTrip,
   setSearchTerm,
   setStatusFilter,
   clearCurrentOrder,
@@ -22,7 +17,6 @@ import {
   selectAvailableOrders,
   selectCurrentTransporterOrder,
   selectTransporterBids,
-  selectTransporterVehicles,
   selectTransporterOrdersLoading,
   selectTransporterOrdersError,
 } from '../store/slices/transporterOrdersSlice';
@@ -34,7 +28,6 @@ export const useTransporterOrders = () => {
   const availableOrders = useSelector(selectAvailableOrders);
   const currentOrder = useSelector(selectCurrentTransporterOrder);
   const bids = useSelector(selectTransporterBids);
-  const vehicles = useSelector(selectTransporterVehicles);
   const loading = useSelector(selectTransporterOrdersLoading);
   const error = useSelector(selectTransporterOrdersError);
 
@@ -68,31 +61,6 @@ export const useTransporterOrders = () => {
     return dispatch(fetchTransporterBids());
   }, [dispatch]);
 
-  // Fetch transporter's vehicles
-  const loadVehicles = useCallback(() => {
-    return dispatch(fetchTransporterVehicles());
-  }, [dispatch]);
-
-  // Assign vehicle to order
-  const assignVehicleToOrder = useCallback((orderId, vehicleId) => {
-    return dispatch(assignVehicle({ orderId, vehicleId }));
-  }, [dispatch]);
-
-  // Unassign vehicle from order
-  const unassignVehicleFromOrder = useCallback((tripId, orderId) => {
-    return dispatch(unassignVehicle({ tripId, orderId }));
-  }, [dispatch]);
-
-  // Start transit for an order
-  const startTransit = useCallback((orderId) => {
-    return dispatch(startOrderTransit(orderId));
-  }, [dispatch]);
-
-  // Complete trip
-  const completeTrip = useCallback((tripId) => {
-    return dispatch(completeOrderTrip(tripId));
-  }, [dispatch]);
-
   // Filter orders
   const filterOrders = useCallback((searchTerm, statusFilter) => {
     if (searchTerm !== undefined) {
@@ -124,7 +92,6 @@ export const useTransporterOrders = () => {
     availableOrders,
     currentOrder,
     bids,
-    vehicles,
     loading,
     error,
 
@@ -135,11 +102,6 @@ export const useTransporterOrders = () => {
     placeBid,
     removeBid,
     loadBids,
-    loadVehicles,
-    assignVehicleToOrder,
-    unassignVehicleFromOrder,
-    startTransit,
-    completeTrip,
     filterOrders,
     clearOrder,
     clearErrorState,

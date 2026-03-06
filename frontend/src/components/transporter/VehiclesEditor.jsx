@@ -1,4 +1,5 @@
 import React from 'react';
+import { FileText } from 'lucide-react';
 import { Button } from '../forms';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
@@ -36,7 +37,12 @@ const VehiclesEditor = ({ vehicles = [], errors = {}, onRemove, onAdd, register,
     const file = rcFiles[`vehicle_rc_${index}`];
     if (!file) return null;
     if (file.type === 'application/pdf') {
-      return <span className="rc-file-name">📄 {file.name} (PDF)</span>;
+      return (
+        <span className="rc-file-name" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <FileText size={16} aria-hidden="true" />
+          <span>{file.name} (PDF)</span>
+        </span>
+      );
     }
     return <img src={URL.createObjectURL(file)} alt="RC Preview" className="rc-preview-img" style={{ maxWidth: '100%', maxHeight: '120px', marginTop: '6px', borderRadius: '4px' }} />;
   };

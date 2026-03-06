@@ -37,6 +37,9 @@ function Home() {
                     <Link to="/customer/signup" className="btn btn-gradient">
                     Sign up Now
                   </Link>
+                    <Link to="/driver/signup" className="btn btn-gradient-outline">
+                    Join as Driver
+                  </Link>
                     <Link to="/transporter/signup" className="btn btn-gradient-outline">
                     Join as Transporter
                   </Link>

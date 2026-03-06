@@ -1,0 +1,413 @@
+/* ─── Driver Management Page (Transporter) ────────────────────────────────── */
+
+.driver-mgmt-page {
+  min-height: 100vh;
+  background: var(--gray-50, #f8f9fa);
+}
+
+.driver-mgmt-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  min-height: calc(100vh - 200px);
+}
+
+.driver-mgmt-header {
+  margin-bottom: 2rem;
+}
+
+.driver-mgmt-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--gray-800, #1f2937);
+  margin: 0 0 0.5rem;
+}
+
+.driver-mgmt-header p {
+  color: var(--gray-500, #6b7280);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+
+
+
+/* ─── Tabs ──────────────────────────────────────────────────────────────────── */
+
+.mgmt-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid var(--gray-200, #e5e7eb);
+}
+
+.mgmt-tab {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  background: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--gray-500, #6b7280);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+}
+
+.mgmt-tab:hover {
+  color: var(--gray-700, #374151);
+}
+
+.mgmt-tab.active {
+  color: var(--primary, #3b82f6);
+  border-bottom-color: var(--primary, #3b82f6);
+}
+
+.mgmt-tab .request-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-left: 0.5rem;
+}
+
+/* ─── Driver Cards ──────────────────────────────────────────────────────── */
+
+.drivers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.25rem;
+}
+
+.driver-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--gray-200, #e5e7eb);
+  padding: 1.5rem;
+  transition: box-shadow 0.2s;
+}
+
+.driver-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.driver-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.driver-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #dbeafe, #c7d2fe);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #3b82f6;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.driver-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.driver-card-header .driver-info h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gray-800, #1f2937);
+}
+
+.driver-card-header .driver-info p {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  color: var(--gray-500, #6b7280);
+}
+
+.driver-card-header .driver-status {
+  margin-left: auto;
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.driver-status.available {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.driver-status.assigned {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.driver-status.unavailable {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.driver-card-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.driver-detail-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  background: var(--gray-50, #f8f9fa);
+  border-radius: 20px;
+  font-size: 0.78rem;
+  color: var(--gray-600, #4b5563);
+}
+
+.driver-card-actions {
+  display: flex;
+  gap: 0.75rem;
+  border-top: 1px solid var(--gray-100, #f3f4f6);
+  padding-top: 1rem;
+}
+
+.driver-card-actions button {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-view-schedule {
+  flex: 1;
+  background: var(--primary, #3b82f6);
+  color: white;
+  border: none;
+}
+
+.btn-view-schedule:hover {
+  background: #2563eb;
+}
+
+.btn-remove-driver {
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+}
+
+.btn-remove-driver:hover {
+  background: #fef2f2;
+}
+
+/* ─── Request Cards ──────────────────────────────────────────────────────── */
+
+.requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.request-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--gray-200, #e5e7eb);
+  padding: 1.5rem;
+}
+
+.request-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.request-card-header .req-info h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.request-card-header .req-info p {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  color: var(--gray-500, #6b7280);
+}
+
+.request-message {
+  background: var(--gray-50, #f8f9fa);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  color: var(--gray-600, #4b5563);
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+.request-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.request-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.request-actions button {
+  padding: 0.625rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-accept {
+  background: #22c55e;
+  color: white;
+  border: none;
+}
+
+.btn-accept:hover {
+  background: #16a34a;
+}
+
+.btn-reject {
+  background: white;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+}
+
+.btn-reject:hover {
+  background: #fef2f2;
+}
+
+/* ─── Schedule Modal ───────────────────────────────────────────────────────── */
+
+.schedule-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.schedule-viewer {
+  background: white;
+  border-radius: 16px;
+  width: 95%;
+  max-width: 1000px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease;
+}
+
+.schedule-viewer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--gray-200, #e5e7eb);
+}
+
+.schedule-viewer-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.schedule-viewer-header .close-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--gray-300, #d1d5db);
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: background 0.2s;
+}
+
+.schedule-viewer-header .close-btn:hover {
+  background: var(--gray-100, #f3f4f6);
+}
+
+.schedule-viewer-body {
+  padding: 1.5rem;
+}
+
+/* ─── Empty & Error States ──────────────────────────────────────────────── */
+
+.mgmt-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--gray-500, #6b7280);
+}
+
+.mgmt-empty svg {
+  margin-bottom: 1rem;
+}
+
+.mgmt-empty h3 {
+  margin: 0 0 0.5rem;
+  color: var(--gray-700, #374151);
+}
+
+.mgmt-empty p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.mgmt-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .drivers-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .driver-card-actions {
+    flex-direction: column;
+  }
+
+  .request-actions {
+    flex-direction: column;
+  }
+}

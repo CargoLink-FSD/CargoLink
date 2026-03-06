@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from 'react-dom';
+import { Star } from 'lucide-react';
 import { paymentAPI } from "../../api/payment";
 import { useNotification } from "../../context/NotificationContext";
 import "../../styles/ReviewModal.css";
@@ -42,17 +43,23 @@ export default function ReviewModal({ orderId, onClose, onSuccess, isOpen }) {
   };
 
   const modalContent = (
-    <div className="modal-overlay" onClick={handleOverlayClick}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+    <div className="review-modal-overlay" onClick={handleOverlayClick}>
+      <div className="review-modal-content" onClick={(e) => e.stopPropagation()}>
         <h2>Rate Delivery</h2>
-        <div className="star-selection">
+        <div className="review-modal-star-selection">
           {[1, 2, 3, 4, 5].map((s) => (
             <span
               key={s}
               onClick={() => setRating(s)}
-              className={`star ${s <= rating ? "active" : ""}`}
+              className={`review-modal-star ${s <= rating ? "active" : ""}`}
+              role="button"
+              tabIndex={0}
+              aria-label={`Rate ${s} star${s === 1 ? '' : 's'}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') setRating(s);
+              }}
             >
-              ★
+              <Star size={22} aria-hidden="true" fill={s <= rating ? 'currentColor' : 'none'} />
             </span>
           ))}
         </div>
@@ -61,7 +68,7 @@ export default function ReviewModal({ orderId, onClose, onSuccess, isOpen }) {
           onChange={(e) => setComment(e.target.value)}
           placeholder="Write your review..."
         />
-        <div className="modal-actions">
+        <div className="review-modal-actions">
           <button type="button" onClick={onClose} className="btn-cancel">Cancel</button>
           <button 
             type="button" 

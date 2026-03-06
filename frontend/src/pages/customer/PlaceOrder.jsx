@@ -1,7 +1,9 @@
 import React from 'react';
+import { X } from 'lucide-react';
 import { usePlaceOrder } from '../../hooks/usePlaceOrder';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
+import LocationPicker from '../../components/common/LocationPicker';
 import { Button } from '../../components/forms';
 import '../../styles/PlaceOrder.css';
 
@@ -52,13 +54,14 @@ export default function PlaceOrder() {
     setFieldTouched,
     getBiddingEndTime,
     handleCargoPhotoChange,
-    removeCargoPhoto
+    removeCargoPhoto,
+    handleLocationSet
   } = usePlaceOrder();
 
   return (
     <>
       <Header />
-      <main className="main-content container">
+      <main className="main-content place-order-page">
         <div className="page-header">
           <h1 className="page-title">Place Order</h1>
         </div>
@@ -139,6 +142,13 @@ export default function PlaceOrder() {
                 {errors['pickup.pin'] && touched['pickup.pin'] && (
                   <span className="error-message">{errors['pickup.pin']}</span>
                 )}
+
+                <LocationPicker
+                  label="Pickup"
+                  address={formData.pickup}
+                  coordinates={formData.pickup.coordinates}
+                  onLocationSet={(data) => handleLocationSet('pickup', data)}
+                />
               </div>
 
               {/* Drop-off Location */}
@@ -211,6 +221,13 @@ export default function PlaceOrder() {
                 {errors['delivery.pin'] && touched['delivery.pin'] && (
                   <span className="error-message">{errors['delivery.pin']}</span>
                 )}
+
+                <LocationPicker
+                  label="Delivery"
+                  address={formData.delivery}
+                  coordinates={formData.delivery.coordinates}
+                  onLocationSet={(data) => handleLocationSet('delivery', data)}
+                />
               </div>
             </div>
 
@@ -255,12 +272,12 @@ export default function PlaceOrder() {
                   className={`input-field ${errors['transit.distance'] && touched['transit.distance'] ? 'error' : ''}`}
                   value={formData.transit.distance}
                   readOnly
-                  placeholder={distanceLoading ? 'Calculating...' : 'Auto-calculated from addresses'}
+                  placeholder={distanceLoading ? 'Calculating...' : 'Auto-calculated from map coordinates'}
                   min="0"
                   step="0.1"
                 />
                 {distanceLoading && (
-                  <span className="form-info">Calculating distance from addresses...</span>
+                  <span className="form-info">Calculating distance from coordinates...</span>
                 )}
                 {!distanceLoading && formData.transit.distance && durationMin && (
                   <span className="form-info">
@@ -268,7 +285,7 @@ export default function PlaceOrder() {
                   </span>
                 )}
                 {!distanceLoading && !formData.transit.distance && (
-                  <span className="form-info">Fill in both pickup and drop-off addresses to auto-calculate distance</span>
+                  <span className="form-info">Pick both locations on the map to auto-calculate distance</span>
                 )}
                 {errors['transit.distance'] && touched['transit.distance'] && (
                   <span className="error-message">{errors['transit.distance']}</span>
@@ -482,7 +499,7 @@ export default function PlaceOrder() {
                       onClick={removeCargoPhoto}
                       aria-label="Remove photo"
                     >
-                      ✕
+                      <X size={18} aria-hidden="true" />
                     </button>
                   </div>
                 )}

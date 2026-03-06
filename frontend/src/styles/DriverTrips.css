@@ -1,0 +1,104 @@
+/* ─── Driver Trips List ────────────────────────────────────────────────────── */
+
+.driverTrips-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 80px 2rem 2rem;
+  min-height: calc(100vh - 200px);
+}
+
+.dt-trip-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--gray-200, #e5e7eb);
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+.dt-trip-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.dt-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.65rem;
+}
+
+.dt-trip-id {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--gray-500, #6b7280);
+}
+
+.dt-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+  color: var(--gray-600, #4b5563);
+  margin-top: 0.5rem;
+}
+
+.dt-card-progress {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--gray-100, #f3f4f6);
+}
+
+.dt-progress-bar {
+  height: 6px;
+  background: var(--gray-200, #e5e7eb);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.3rem;
+}
+
+.dt-progress-fill {
+  height: 100%;
+  background: #6366f1;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.dt-progress-text {
+  font-size: 0.75rem;
+  color: var(--gray-500, #6b7280);
+}
+
+.dt-card-actions {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--gray-100, #f3f4f6);
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dt-action-btn {
+  flex: 1;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  white-space: nowrap;
+}
+.dt-action-btn:active { transform: scale(0.97); }
+.dt-action-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.dt-action-btn--start {
+  background: #6366f1;
+  color: white;
+}
+.dt-action-btn--start:hover:not(:disabled) { background: #4f46e5; }
+
+.dt-action-btn--open {
+  background: #059669;
+  color: white;
+}
+.dt-action-btn--open:hover { background: #047857; }

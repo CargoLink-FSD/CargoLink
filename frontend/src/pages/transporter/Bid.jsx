@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useBids } from '../../hooks/useBids';
+import { useNavigate } from 'react-router-dom';
+import { TriangleAlert } from 'lucide-react';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
 import { getVerificationStatus } from '../../api/transporter';
@@ -16,6 +18,7 @@ export default function BidPage() {
     loadOrders,
   } = useBids();
 
+  const navigate = useNavigate();
   const [verified, setVerified] = useState(null); // null = loading, true/false
 
   useEffect(() => {
@@ -76,7 +79,10 @@ export default function BidPage() {
               borderRadius: '8px', padding: '14px 24px', marginBottom: '16px',
               fontWeight: 500, fontSize: '0.95rem'
             }}>
-              ⚠️ Your account is not yet verified. You can browse orders but cannot submit bids until a manager approves your documents.
+              <span style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <TriangleAlert size={18} aria-hidden="true" style={{ marginTop: 2 }} />
+                <span>Your account is not yet verified. You can browse orders but cannot submit bids until a manager approves your documents.</span>
+              </span>
             </div>
           )}
           <div className="page-header">
@@ -148,10 +154,6 @@ export default function BidPage() {
                     <div className="bid-detail"><span className="detail-label">Goods Type:</span><span>{bid.goods_type}</span></div>
                   </div>
                   <div className="bid-form">
-                    <label htmlFor={`bid-amount-${index}`}>Your Bid Amount ($)</label>
-                    <input type="number" id={`bid-amount-${index}`} placeholder="Enter your bid" />
-                    <label htmlFor={`notes-${index}`}>Notes (Optional)</label>
-                    <textarea id={`notes-${index}`} rows={2} placeholder="Add any notes about your bid" />
                     <div className="bid-actions">
                       <a href={`/transporter/orders/${bid._id}`} className="btn btn-secondary">More Info</a>
                       {bid.already_bid ? (
@@ -159,11 +161,11 @@ export default function BidPage() {
                       ) : (
                         <button
                           className="btn btn-primary"
-                          onClick={() => placeBid(index, bid._id)}
-                          disabled={submitting || verified === false}
-                          title={verified === false ? 'Account not verified' : ''}
+                          onClick={() => navigate(`/transporter/orders/${bid._id}/quote`, { state: { order: bid } })}
+                          disabled={verified === false}
+                          title={verified === false ? 'Account not verified' : 'Create a detailed quotation for this order'}
                         >
-                          {submitting ? 'Submitting...' : verified === false ? 'Not Verified' : 'Submit Bid'}
+                          {verified === false ? 'Not Verified' : 'Create Quote'}
                         </button>
                       )}
                     </div>

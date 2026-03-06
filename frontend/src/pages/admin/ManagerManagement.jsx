@@ -27,6 +27,14 @@ const ALL_CATEGORIES = [
     'Other',
 ];
 
+const ALL_VERIFICATION_CATEGORIES = [
+    'transporter_verification',
+    'driver_verification',
+    'vehicle_verification',
+];
+
+const verifCatLabel = (cat) => cat.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
 export default function ManagerManagement() {
     const { showNotification } = useNotification();
     const [activeTab, setActiveTab] = useState('managers');
@@ -40,6 +48,7 @@ export default function ManagerManagement() {
     // Invite modal state
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [inviteCategories, setInviteCategories] = useState([]);
+    const [inviteVerifCategories, setInviteVerifCategories] = useState([]);
     const [inviteExpiry, setInviteExpiry] = useState(24);
     const [inviteLoading, setInviteLoading] = useState(false);
     const [generatedCode, setGeneratedCode] = useState('');
@@ -51,6 +60,7 @@ export default function ManagerManagement() {
     // Category edit modal
     const [editCatManager, setEditCatManager] = useState(null);
     const [editCats, setEditCats] = useState([]);
+    const [editVerifCats, setEditVerifCats] = useState([]);
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -84,6 +94,7 @@ export default function ManagerManagement() {
         try {
             const data = await generateInvitationCode({
                 categories: inviteCategories,
+                verificationCategories: inviteVerifCategories,
                 expiresInHours: inviteExpiry,
             });
             setGeneratedCode(data.code);
@@ -121,7 +132,7 @@ export default function ManagerManagement() {
     const handleUpdateCategories = async () => {
         if (!editCatManager) return;
         try {
-            await updateManagerCategories(editCatManager._id, editCats);
+            await updateManagerCategories(editCatManager._id, editCats, editVerifCats);
             showNotification({ message: 'Categories updated', type: 'success' });
             setEditCatManager(null);
             loadData();
@@ -212,7 +223,7 @@ export default function ManagerManagement() {
                     <div className="adm-card">
                         <div className="mgmt-card-header">
                             <h3>All Managers</h3>
-                            <button className="adm-btn adm-btn-primary" onClick={() => { setShowInviteModal(true); setGeneratedCode(''); setInviteCategories([]); }}>
+                            <button className="adm-btn adm-btn-primary" onClick={() => { setShowInviteModal(true); setGeneratedCode(''); setInviteCategories([]); setInviteVerifCategories([]); }}>
                                 + Generate Invitation Code
                             </button>
                         </div>
@@ -222,7 +233,8 @@ export default function ManagerManagement() {
                                     <tr>
                                         <th>Name</th>
                                         <th>Email</th>
-                                        <th>Categories</th>
+                                        <th>Ticket Categories</th>
+                                        <th>Verification</th>
                                         <th>Status</th>
                                         <th>Open Tickets</th>
                                         <th>Resolved</th>
@@ -233,7 +245,7 @@ export default function ManagerManagement() {
                                 </thead>
                                 <tbody>
                                     {managers.length === 0 ? (
-                                        <tr><td colSpan={9} className="adm-empty">No managers</td></tr>
+                                        <tr><td colSpan={10} className="adm-empty">No managers</td></tr>
                                     ) : managers.map(mgr => (
                                         <tr key={mgr._id}>
                                             <td style={{ fontWeight: 600 }}>{mgr.name}</td>
@@ -243,6 +255,16 @@ export default function ManagerManagement() {
                                                     {mgr.categories?.map(c => (
                                                         <span key={c} className="cat-chip">{c}</span>
                                                     ))}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="cat-chips">
+                                                    {mgr.verificationCategories?.map(c => (
+                                                        <span key={c} className="cat-chip verif-chip">{verifCatLabel(c)}</span>
+                                                    ))}
+                                                    {(!mgr.verificationCategories || mgr.verificationCategories.length === 0) && (
+                                                        <span style={{ color: '#9ca3af', fontSize: '0.8rem' }}>—</span>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td>
@@ -264,7 +286,7 @@ export default function ManagerManagement() {
                                                     </button>
                                                     <button
                                                         className="adm-btn adm-btn-sm adm-btn-outline"
-                                                        onClick={() => { setEditCatManager(mgr); setEditCats([...mgr.categories]); }}
+                                                        onClick={() => { setEditCatManager(mgr); setEditCats([...mgr.categories]); setEditVerifCats([...(mgr.verificationCategories || [])]); }}
                                                     >
                                                         Edit Categories
                                                     </button>
@@ -419,7 +441,7 @@ export default function ManagerManagement() {
                                 ) : (
                                     <>
                                         <div className="form-field">
-                                            <label>Categories for this manager *</label>
+                                            <label>Ticket Categories for this manager *</label>
                                             <div className="cat-checkbox-grid">
                                                 {ALL_CATEGORIES.map(cat => (
                                                     <label key={cat} className="cat-checkbox">
@@ -435,6 +457,27 @@ export default function ManagerManagement() {
                                                             }}
                                                         />
                                                         <span>{cat}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="form-field">
+                                            <label>Verification Categories (optional)</label>
+                                            <div className="cat-checkbox-grid">
+                                                {ALL_VERIFICATION_CATEGORIES.map(cat => (
+                                                    <label key={cat} className="cat-checkbox">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={inviteVerifCategories.includes(cat)}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setInviteVerifCategories(prev => [...prev, cat]);
+                                                                } else {
+                                                                    setInviteVerifCategories(prev => prev.filter(c => c !== cat));
+                                                                }
+                                                            }}
+                                                        />
+                                                        <span>{verifCatLabel(cat)}</span>
                                                     </label>
                                                 ))}
                                             </div>
@@ -472,6 +515,7 @@ export default function ManagerManagement() {
                                 <button className="adm-modal-close" onClick={() => setEditCatManager(null)}>&times;</button>
                             </div>
                             <div className="adm-modal-body">
+                                <label style={{ fontWeight: 600, marginBottom: 8, display: 'block' }}>Ticket Categories</label>
                                 <div className="cat-checkbox-grid">
                                     {ALL_CATEGORIES.map(cat => (
                                         <label key={cat} className="cat-checkbox">
@@ -487,6 +531,25 @@ export default function ManagerManagement() {
                                                 }}
                                             />
                                             <span>{cat}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                                <label style={{ fontWeight: 600, marginBottom: 8, marginTop: 16, display: 'block' }}>Verification Categories</label>
+                                <div className="cat-checkbox-grid">
+                                    {ALL_VERIFICATION_CATEGORIES.map(cat => (
+                                        <label key={cat} className="cat-checkbox">
+                                            <input
+                                                type="checkbox"
+                                                checked={editVerifCats.includes(cat)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setEditVerifCats(prev => [...prev, cat]);
+                                                    } else {
+                                                        setEditVerifCats(prev => prev.filter(c => c !== cat));
+                                                    }
+                                                }}
+                                            />
+                                            <span>{verifCatLabel(cat)}</span>
                                         </label>
                                     ))}
                                 </div>

@@ -2,6 +2,10 @@ import orderService from "../services/orderService.js";
 import pricingService from "../services/pricingService.js";
 import mongoose from "mongoose";
 import { logger, AppError } from "../utils/misc.js";
+import { geocodeAddress } from "../utils/osrm.js";
+import orderRepo from "../repositories/orderRepo.js";
+import bidRepo from "../repositories/bidRepo.js";
+import generateQuotePdf from "../utils/generateQuotePdf.js";
 
 
 const getUserOrders = async (req, res, next) => {
@@ -50,6 +54,37 @@ const placeOrder = async (req, res, next) => {
   try {
     const orderData = req.body;
     orderData.customer_id = req.user.id;
+
+    // Parse JSON strings from FormData (multer sends text fields as strings)
+    if (typeof orderData.pickup === 'string') {
+      try { orderData.pickup = JSON.parse(orderData.pickup); } catch (_) {}
+    }
+    if (typeof orderData.delivery === 'string') {
+      try { orderData.delivery = JSON.parse(orderData.delivery); } catch (_) {}
+    }
+    if (typeof orderData.shipments === 'string') {
+      try { orderData.shipments = JSON.parse(orderData.shipments); } catch (_) {}
+    }
+
+    // Geocode pickup if coordinates not provided
+    if (orderData.pickup && !orderData.pickup.coordinates?.length) {
+      const addr = [orderData.pickup.street, orderData.pickup.city, orderData.pickup.state, orderData.pickup.pin]
+        .filter(Boolean).join(', ');
+      const result = await geocodeAddress(addr);
+      if (result) {
+        orderData.pickup.coordinates = [result.lng, result.lat];
+      }
+    }
+
+    // Geocode delivery if coordinates not provided
+    if (orderData.delivery && !orderData.delivery.coordinates?.length) {
+      const addr = [orderData.delivery.street, orderData.delivery.city, orderData.delivery.state, orderData.delivery.pin]
+        .filter(Boolean).join(', ');
+      const result = await geocodeAddress(addr);
+      if (result) {
+        orderData.delivery.coordinates = [result.lng, result.lat];
+      }
+    }
 
     // If a cargo photo was uploaded, add the path to orderData
     if (req.file) {
@@ -124,6 +159,50 @@ const getCurrentBids = async (req, res, next) => {
       message: "Current bids for the order fetched successfully",
     });
 
+  } catch (err) {
+    next(err);
+  }
+};
+const downloadBidQuotePdf = async (req, res, next) => {
+  try {
+    const customerId = req.user.id;
+    const { orderId, bidId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      throw new AppError(
+        400,
+        "ValidationError",
+        "Invalid orderId",
+        "ERR_VALIDATION"
+      );
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(bidId)) {
+      throw new AppError(
+        400,
+        "ValidationError",
+        "Invalid bidId",
+        "ERR_VALIDATION"
+      );
+    }
+
+    const order = await orderRepo.getOrderDetailsForCustomer(orderId, customerId);
+    if (!order) {
+      throw new AppError(404, "NotFound", "Order not found", "ERR_NOT_FOUND");
+    }
+
+    const bid = await bidRepo.getBidById(bidId);
+    if (!bid || bid.order_id?.toString() !== orderId) {
+      throw new AppError(404, "NotFound", "Bid not found", "ERR_NOT_FOUND");
+    }
+
+    const filename = `quote_${orderId.slice(-8)}_${bidId.slice(-6)}.pdf`;
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+
+    // PDF generation moved to utils
+    generateQuotePdf(res, order, bid);
   } catch (err) {
     next(err);
   }
@@ -208,7 +287,7 @@ const submitBid = async (req, res, next) => {
   try {
     const transporterId = req.user.id;
     const orderId = req.params.orderId; //reads orderid from url params
-    const { bidAmount, notes } = req.body;
+    const { bidAmount, notes, quoteBreakdown } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(orderId)) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
@@ -216,7 +295,7 @@ const submitBid = async (req, res, next) => {
       );
     }
 
-    const bid = await orderService.submitBid(transporterId, orderId, bidAmount, notes);
+    const bid = await orderService.submitBid(transporterId, orderId, bidAmount, notes, quoteBreakdown);
 
     res.status(201).json({
       success: true,
@@ -441,12 +520,8 @@ export default {
   getUserOrders,
   placeOrder,
   cancelOrder,
-  startTransit,
-  assignVehicle,
-  getTransporterVehicles,
-  confirmPickup,
-  confirmDelivery,
   getCurrentBids,
+  downloadBidQuotePdf,
   acceptBid,
   rejectBid,
   getActiveOrders,

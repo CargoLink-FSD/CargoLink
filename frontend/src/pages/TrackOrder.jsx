@@ -1,5 +1,5 @@
 // src/pages/TrackOrderPage.jsx
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchOrderDetails, clearCurrentOrder } from '../store/slices/ordersSlice';
@@ -7,40 +7,203 @@ import UserActions from '../components/trackOrders/UserActions';
 import ChatWindow from '../components/trackOrders/ChatWindow';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
-// import LiveTracking from '../components/trackOrders/LiveTracking';
-// import { fetchTrackingData, clearTracking } from '../store/slices/trackingSlice';
+import { getOrderTracking } from '../api/trips';
 
 import '../styles/TrackOrder.css';
+
+// ─── OTP display block (copy on click) ─────────────────────────────────────────
+const OtpBlock = ({ label, otp, hint, color }) => {
+  const [copied, setCopied] = React.useState(false);
+  const handleCopy = () => {
+    navigator.clipboard?.writeText(otp).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); });
+  };
+  return (
+    <div className="to-otp-block" style={{ '--otp-color': color }}>
+      <div className="to-otp-label">{label}</div>
+      <div className="to-otp-value" onClick={handleCopy} title="Click to copy">
+        {otp}
+        <span className="to-otp-copy">{copied ? 'Copied' : 'Copy'}</span>
+      </div>
+      <div className="to-otp-sub">{hint}</div>
+    </div>
+  );
+};
 
 const TrackOrderPage = () => {
   const { orderId } = useParams();
   const dispatch = useDispatch();
 
-
-
-
   const { currentOrder, loading, error } = useSelector((state) => state.orders);
   const { user } = useSelector((state) => state.auth);
   const userType = user?.role; // 'Customer' or 'Transporter'
+
+  // ─── Tracking state ───
+  const [tracking, setTracking] = useState(null);
+  const [mapReady, setMapReady] = useState(false);
+  const mapContainerRef = useRef(null);
+  const leafletMap = useRef(null);
+  const markersRef = useRef([]);
+  const polylineRef = useRef(null);
+  const driverMarkerRef = useRef(null);
 
 
   console.log({ currentOrder, orderId })
 
   useEffect(() => {
     if (orderId && userType) {
-      // Fetch all data
       dispatch(fetchOrderDetails(orderId));
-      // dispatch(fetchChatMessages(orderId));
-      // dispatch(fetchTrackingData({ orderId, userType }));
     }
     return () => {
       dispatch(clearCurrentOrder());
-      // dispatch(clearChat());
-      // dispatch(clearTracking());
     };
   }, [orderId, userType, dispatch]);
 
-  // console.log(currentOrder);
+  // ─── Load Leaflet CDN ───
+  useEffect(() => {
+    if (!document.getElementById('leaflet-css')) {
+      const link = document.createElement('link');
+      link.id = 'leaflet-css'; link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+    }
+    if (window.L) { setMapReady(true); return; }
+    if (!document.getElementById('leaflet-js')) {
+      const script = document.createElement('script');
+      script.id = 'leaflet-js';
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.onload = () => setMapReady(true);
+      document.head.appendChild(script);
+    } else {
+      const check = setInterval(() => { if (window.L) { setMapReady(true); clearInterval(check); } }, 100);
+      return () => clearInterval(check);
+    }
+  }, []);
+
+  // ─── Init map ───
+  useEffect(() => {
+    if (!mapReady || !mapContainerRef.current || leafletMap.current) return;
+    const L = window.L;
+    const map = L.map(mapContainerRef.current, { zoomControl: true });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18, attribution: '© OpenStreetMap',
+    }).addTo(map);
+    map.setView([20.5, 78.9], 5);
+    leafletMap.current = map;
+  }, [mapReady]);
+
+  // ─── Fetch tracking data ───
+  const fetchTracking = useCallback(async () => {
+    if (!orderId || userType !== 'customer') return;
+    try {
+      const data = await getOrderTracking(orderId);
+      setTracking(data);
+    } catch (err) {
+      console.log('Tracking not available:', err.message);
+    }
+  }, [orderId, userType]);
+
+  useEffect(() => { fetchTracking(); }, [fetchTracking]);
+
+  // Poll tracking every 15 seconds
+  useEffect(() => {
+    if (!orderId || userType !== 'customer') return;
+    const interval = setInterval(fetchTracking, 15000);
+    return () => clearInterval(interval);
+  }, [orderId, userType, fetchTracking]);
+
+  // ─── Update map from tracking data ───
+  useEffect(() => {
+    const L = window.L;
+    const map = leafletMap.current;
+    if (!L || !map || !currentOrder) return;
+
+    markersRef.current.forEach(m => m.remove());
+    markersRef.current = [];
+    if (polylineRef.current) { polylineRef.current.remove(); polylineRef.current = null; }
+
+    const pickup = currentOrder.pickup;
+    const delivery = currentOrder.delivery;
+    const points = [];
+
+    // Helper: GeoJSON [lng,lat] -> Leaflet [lat,lng]
+    const toLatLng = (c) => {
+      const a = Number(c[0]), b = Number(c[1]);
+      // If first value > 90, it's longitude (GeoJSON order) — swap
+      if (Math.abs(a) > 90 && Math.abs(b) <= 90) return [b, a];
+      if (a > 50 && b < 40) return [b, a];
+      return [a, b];
+    };
+
+    // Pickup marker
+    if (pickup?.coordinates?.length === 2) {
+      const ll = toLatLng(pickup.coordinates);
+      const pickupIcon = L.divIcon({
+        className: '',
+        html: '<div style="width:14px;height:14px;background:#22c55e;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
+        iconSize: [14, 14], iconAnchor: [7, 7],
+      });
+      const m = L.marker(ll, { icon: pickupIcon }).addTo(map);
+      m.bindPopup(`<b>Pickup</b><br/>${pickup.city || ''}, ${pickup.state || ''}`);
+      markersRef.current.push(m);
+      points.push(pickup.coordinates); // keep original for OSRM
+    }
+
+    // Delivery marker
+    if (delivery?.coordinates?.length === 2) {
+      const ll = toLatLng(delivery.coordinates);
+      const deliveryIcon = L.divIcon({
+        className: '',
+        html: '<div style="width:14px;height:14px;background:#ef4444;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
+        iconSize: [14, 14], iconAnchor: [7, 7],
+      });
+      const m = L.marker(ll, { icon: deliveryIcon }).addTo(map);
+      m.bindPopup(`<b>Delivery</b><br/>${delivery.city || ''}, ${delivery.state || ''}`);
+      markersRef.current.push(m);
+      points.push(delivery.coordinates); // keep original for OSRM
+    }
+
+    // OSRM route (needs lng,lat which is already how GeoJSON stores them)
+    if (points.length === 2) {
+      const coords = points.map(p => `${p[0]},${p[1]}`).join(';');
+      fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.code === 'Ok' && data.routes?.[0]) {
+            const routeCoords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+            polylineRef.current = L.polyline(routeCoords, { color: '#6366f1', weight: 4, opacity: 0.8 }).addTo(map);
+            map.fitBounds(L.latLngBounds(routeCoords), { padding: [40, 40], maxZoom: 13 });
+          }
+        })
+        .catch(() => { });
+    } else if (points.length > 0) {
+      map.setView(points[0], 12);
+    }
+  }, [currentOrder, mapReady]);
+
+  // ─── Live driver location marker ───
+  useEffect(() => {
+    const L = window.L;
+    const map = leafletMap.current;
+    if (!L || !map) return;
+
+    const driverCoords = tracking?.trip?.current_location?.coordinates;
+    if (driverCoords?.length === 2) {
+      // GeoJSON [lng,lat] -> Leaflet [lat,lng]
+      const a = Number(driverCoords[0]), b = Number(driverCoords[1]);
+      const ll = (Math.abs(a) > 90 && Math.abs(b) <= 90) ? [b, a] : (a > 50 && b < 40) ? [b, a] : [a, b];
+      if (driverMarkerRef.current) {
+        driverMarkerRef.current.setLatLng(ll);
+      } else {
+        const icon = L.divIcon({
+          className: '',
+          html: '<div style="width:16px;height:16px;background:#3b82f6;border-radius:50%;border:3px solid white;box-shadow:0 0 0 3px rgba(59,130,246,0.3), 0 2px 8px rgba(59,130,246,0.4);position:relative"><div style="position:absolute;inset:-8px;border-radius:50%;background:rgba(59,130,246,0.15);animation:livePulse 2s ease-in-out infinite"></div></div>',
+          iconSize: [16, 16], iconAnchor: [8, 8],
+        });
+        driverMarkerRef.current = L.marker(ll, { icon, zIndexOffset: 1000 }).addTo(map);
+        driverMarkerRef.current.bindPopup('<b>Driver Location</b>');
+      }
+    }
+  }, [tracking?.trip?.current_location, mapReady]);
 
   const [expandedSection, setExpandedSection] = useState(null);
 
@@ -89,7 +252,7 @@ const TrackOrderPage = () => {
 
   if (loading) {
     return (
-      <div className="container">
+      <div className="track-order-page">
         <div id="tracking-loading" className="loading-container">
           <div className="loader"></div>
           <p>Loading tracking information...</p>
@@ -105,7 +268,7 @@ const TrackOrderPage = () => {
   return (
     <>
       <Header />
-      <div className="container">
+      <div className="track-order-page">
         <div id="main-content">
 
           <div id="page-header" className="page-header">
@@ -114,7 +277,12 @@ const TrackOrderPage = () => {
             </h1>
             <div className="status-update">
               <span className="status-label">Status:</span>
-              <span className={`status-badge-${currentOrder.status.toLowerCase().replace(' ', '-')}`}>
+              <span
+                className={`status-badge ${String(currentOrder.status || '')
+                  .toLowerCase()
+                  .replace(/\s+/g, '-')
+                  .replace('in-transit', 'active')}`}
+              >
                 {currentOrder.status}
               </span>
             </div>
@@ -179,6 +347,72 @@ const TrackOrderPage = () => {
             </div>
 
             <div className="right-column">
+
+              {/* ─── OTP Confirmation Codes ─── */}
+              {userType === 'customer' && ['Assigned', 'Scheduled', 'Started', 'In Transit'].includes(currentOrder.status) &&
+                (currentOrder.pickup_otp || currentOrder.delivery_otp) && (
+                  <div className="card to-otp-card">
+                    <div className="card-header">
+                      <h2 className="card-title">Confirmation Codes</h2>
+                    </div>
+                    <p className="to-otp-hint">Show these codes to the driver when they arrive. Keep them safe.</p>
+                    <div className="to-otp-grid">
+                      {currentOrder.pickup_otp && (
+                        <OtpBlock label="Pickup OTP" otp={currentOrder.pickup_otp}
+                          hint="Give to driver at pickup location" color="#22c55e" />
+                      )}
+                      {currentOrder.delivery_otp && (
+                        <OtpBlock label="Delivery OTP" otp={currentOrder.delivery_otp}
+                          hint="Receiver gives to driver at delivery" color="#6366f1" />
+                      )}
+                    </div>
+                  </div>
+                )}
+
+              {/* ─── Stop Progress (from tracking) ─── */}
+              {tracking?.stops?.length > 0 && (
+                <div className="card to-stops-card">
+                  <div className="card-header">
+                    <h2 className="card-title">Trip Progress</h2>
+                  </div>
+                  <div className="to-stops-list">
+                    {tracking.stops.map((stop, idx) => {
+                      const isDone = stop.status === 'Completed';
+                      const isActive = stop.status === 'En Route' || stop.status === 'Arrived';
+                      const isDelay = stop.type === 'Delay';
+                      return (
+                        <div key={stop._id || idx} className={`to-stop-row ${isDone ? 'done' : isActive ? 'active' : ''}`}>
+                          <div className="to-stop-dot-wrap">
+                            <div className={`to-stop-dot ${isDone ? 'done' : isActive ? 'active' : ''} ${isDelay ? 'delay' : ''}`}>
+                              {isDone ? '✓' : isDelay ? '⚠' : idx + 1}
+                            </div>
+                            {idx < tracking.stops.length - 1 && <div className="to-stop-line" />}
+                          </div>
+                          <div className="to-stop-body">
+                            <div className="to-stop-meta">
+                              <span className={`to-stop-type ${stop.type?.toLowerCase()}`}>
+                                {stop.type === 'Pickup' ? '↑ Pickup' : stop.type === 'Dropoff' ? '↓ Dropoff' : stop.type === 'Delay' ? '⚠ Delay' : '● Waypoint'}
+                              </span>
+                              {stop.eta_at && <span className="to-stop-eta">{new Date(stop.eta_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>}
+                            </div>
+                            <div className="to-stop-addr">
+                              {stop.address?.city && <strong>{stop.address.city}</strong>}
+                              {stop.address?.state && <span>, {stop.address.state}</span>}
+                            </div>
+                            {isDone && stop.actual_arrival_at && (
+                              <div className="to-stop-done-time">Arrived {new Date(stop.actual_arrival_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</div>
+                            )}
+                            {isDelay && stop.delay_reason && (
+                              <div className="to-stop-delay-reason">⚠ {stop.delay_reason}</div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <UserActions order={currentOrder} userRole={userType} />
             </div>
           </div>
@@ -233,6 +467,29 @@ const TrackOrderPage = () => {
 
           <div id="tracking-container" className="tracking-section">
             <div className={`combined-section ${expandedSection ? 'expanded' : ''}`}>
+              <div className={`tracking-card ${expandedSection === 'tracking' ? 'expanded-card' : ''} ${expandedSection && expandedSection !== 'tracking' ? 'hidden-card' : ''}`}>
+                <div className="card">
+                  <div className="card-header">
+                    <h2 className="card-title">Live Tracking</h2>
+                  </div>
+                  <div className="map-container" style={{ height: '350px' }}>
+                    <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
+                  </div>
+                  {tracking?.trip && (
+                    <div style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', color: '#4b5563', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                      <span><strong>Status:</strong> {tracking.trip.status || '—'}</span>
+                      {tracking.trip.assigned_vehicle?.registration && <span><strong>Vehicle:</strong> {tracking.trip.assigned_vehicle.registration}</span>}
+                      {tracking.trip.assigned_driver && <span><strong>Driver:</strong> {tracking.trip.assigned_driver.firstName} {tracking.trip.assigned_driver.lastName}</span>}
+                      {tracking.stops?.length > 0 && <span><strong>Progress:</strong> {tracking.stops.filter(s => s.status === 'Completed').length} / {tracking.stops.length} stops</span>}
+                      {tracking.trip.current_location?.updated_at && <span><strong>Updated:</strong> {new Date(tracking.trip.current_location.updated_at).toLocaleTimeString('en-IN')}</span>}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* <LiveTracking isExpanded={expandedSection === 'tracking'} onToggleExpand={() => toggleExpand('tracking')}/> */}
+
+
+
               <div className={`chat-card ${expandedSection === 'chat' ? 'expanded-card' : ''} ${expandedSection && expandedSection !== 'chat' ? 'hidden-card' : ''}`}>
                 <ChatWindow orderId={orderId} userType={userType} />
               </div>

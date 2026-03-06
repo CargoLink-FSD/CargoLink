@@ -18,6 +18,7 @@ export default function TicketsOverview() {
     const [statusFilter, setStatusFilter] = useState('');
     const [priorityFilter, setPriorityFilter] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
+    const [roleFilter, setRoleFilter] = useState('');
     const [selected, setSelected] = useState(null);
 
     useEffect(() => { fetchTickets(); }, []);
@@ -41,6 +42,7 @@ export default function TicketsOverview() {
         if (statusFilter && t.status !== statusFilter) return false;
         if (priorityFilter && t.priority !== priorityFilter) return false;
         if (categoryFilter && t.category !== categoryFilter) return false;
+        if (roleFilter && t.userRole !== roleFilter) return false;
         if (search) {
             const s = search.toLowerCase();
             return (
@@ -113,6 +115,12 @@ export default function TicketsOverview() {
                         <option value="">All Categories</option>
                         {categories.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
+                    <select className="adm-select" value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
+                        <option value="">All Roles</option>
+                        <option value="customer">Customer</option>
+                        <option value="transporter">Transporter</option>
+                        <option value="driver">Driver</option>
+                    </select>
                     <button className="adm-btn adm-btn-outline" onClick={fetchTickets}>Refresh</button>
                 </div>
 
@@ -143,7 +151,7 @@ export default function TicketsOverview() {
                                             <td style={{ fontWeight: 700, color: '#6366f1' }}>{t.ticketId}</td>
                                             <td>{t.userName}</td>
                                             <td>
-                                                <span className={`adm-badge ${t.userRole === 'customer' ? 'blue' : 'purple'}`}>
+                                                <span className={`adm-badge ${t.userRole === 'customer' ? 'blue' : t.userRole === 'driver' ? 'green' : 'purple'}`}>
                                                     {t.userRole}
                                                 </span>
                                             </td>
@@ -201,7 +209,7 @@ export default function TicketsOverview() {
                                     <div className="adm-detail-field">
                                         <span className="adm-detail-label">Role</span>
                                         <span className="adm-detail-value">
-                                            <span className={`adm-badge ${selected.userRole === 'customer' ? 'blue' : 'purple'}`}>
+                                            <span className={`adm-badge ${selected.userRole === 'customer' ? 'blue' : selected.userRole === 'driver' ? 'green' : 'purple'}`}>
                                                 {selected.userRole}
                                             </span>
                                         </span>

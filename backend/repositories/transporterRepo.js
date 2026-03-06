@@ -1,5 +1,5 @@
 import Transporter from '../models/transporter.js';
-import { logger } from '../utils/misc.js'
+import Fleet from '../models/fleet.js';
 
 const checkEmailExists = async (email) => {
   return await Transporter.exists({ email });
@@ -18,9 +18,32 @@ const findTransporterById = async (id) => {
   return await Transporter.findById(id);
 };
 
+const findAllTransporters = async () => {
+  const transporters = await Transporter.find({})
+    .select('name email city state primary_contact profilePicture')
+    .lean();
+
+  // Attach fleet counts from the separate Fleet collection
+  const transporterIds = transporters.map((t) => t._id);
+  const fleetCounts = await Fleet.aggregate([
+    { $match: { transporter_id: { $in: transporterIds } } },
+    { $group: { _id: '$transporter_id', count: { $sum: 1 } } },
+  ]);
+  const countMap = Object.fromEntries(fleetCounts.map((fc) => [fc._id.toString(), fc.count]));
+
+  return transporters.map((t) => ({
+    ...t,
+    fleetCount: countMap[t._id.toString()] || 0,
+  }));
+};
+
 const updateTransporter = async (transporterId, updates) => {
-  const transporter = await Transporter.findByIdAndUpdate(transporterId, updates, { new: true }).select('-password -fleet');
+  const transporter = await Transporter.findByIdAndUpdate(transporterId, updates, { new: true }).select('-password');
   return transporter
+};
+
+const getTransporterById = async (id) => {
+  return await Transporter.findById(id);
 };
 
 
@@ -133,21 +156,25 @@ const updateVerificationStatus = async (transporterId, verificationStatus, isVer
 };
 
 const uploadVehicleRc = async (transporterId, vehicleId, rcUrl) => {
-  // Update rc_url in the fleet item and push to documents.vehicle_rcs for manager review
-  const transporter = await Transporter.findOneAndUpdate(
-    { _id: transporterId, 'fleet._id': vehicleId },
+  // Update rc_url in the Fleet collection document
+  const Fleet = (await import('../models/fleet.js')).default;
+  const vehicle = await Fleet.findOneAndUpdate(
+    { _id: vehicleId, transporter_id: transporterId },
     {
       $set: {
-        'fleet.$.rc_url': rcUrl,
-        'fleet.$.rc_status': 'pending',
-        'fleet.$.rc_note': null,
+        rc_url: rcUrl,
+        rc_status: 'pending',
+        rc_note: null,
       },
     },
     { new: true }
   );
+  if (!vehicle) return null;
+
+  // Also push / replace in transporter documents.vehicle_rcs (for manager dashboard)
+  const transporter = await Transporter.findById(transporterId);
   if (!transporter) return null;
 
-  // Also push / replace in documents.vehicle_rcs (for manager dashboard)
   const existing = transporter.documents?.vehicle_rcs?.find(
     (rc) => rc.vehicleId?.toString() === vehicleId.toString()
   );
@@ -167,10 +194,11 @@ const uploadVehicleRc = async (transporterId, vehicleId, rcUrl) => {
 };
 
 const updateFleetRcStatus = async (transporterId, vehicleId, status, note = null) => {
-  const update = { 'fleet.$.rc_status': status };
-  if (note) update['fleet.$.rc_note'] = note;
-  return await Transporter.findOneAndUpdate(
-    { _id: transporterId, 'fleet._id': vehicleId },
+  const Fleet = (await import('../models/fleet.js')).default;
+  const update = { rc_status: status };
+  if (note) update.rc_note = note;
+  return await Fleet.findOneAndUpdate(
+    { _id: vehicleId, transporter_id: transporterId },
     { $set: update },
     { new: true }
   );
@@ -181,7 +209,9 @@ export default {
   createTransporter,
   findByEmail,
   findTransporterById,
+  findAllTransporters,
   updateTransporter,
+  getTransporterById,
   getFleet,
   getTruck,
   addTruck,

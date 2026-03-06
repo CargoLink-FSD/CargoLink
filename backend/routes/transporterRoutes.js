@@ -13,7 +13,10 @@ const transporterRouter = Router();
 transporterRouter.post("/register", validate(validationSchema.transporter), transporterController.createTransporter);
 
 
-// All routes require authentication as transporter
+// Public profile — accessible by any authenticated user (customer or transporter)
+transporterRouter.get('/:transporterId/public-profile', authMiddleware(['customer', 'transporter']), transporterController.getPublicProfile);
+
+// All routes below require authentication as transporter
 transporterRouter.use(authMiddleware(['transporter']));
 
 // Document upload for verification (up to 10 files: pan_card, driving_license, vehicle_rc_0..N)
@@ -46,15 +49,6 @@ transporterRouter.put("/profile", profileUpload.single('profilePicture'), valida
 transporterRouter.delete("/profile", transporterController.deleteTransporter); // Soft delete
 transporterRouter.patch("/password", validate(validationSchema.password), transporterController.updatePassword); // Change password
 
-// // Service Locations
-// transporterRouter.get('/service-locations', transporterController.getServiceLocations);
-// transporterRouter.post(  '/service-locations',  transporterController.addServiceLocation);
-// transporterRouter.delete('/service-locations/:locationId', transporterController.removeServiceLocation);
-
-// // Payment Info
-// transporterRouter.get('payment-info', transporterController.getPaymentInfo);
-// transporterRouter.put('/payment-info',  transporterController.updatePaymentInfo);
-
 // Trucks
 transporterRouter.get("/fleet", transporterController.getTrucks); // List trucks
 transporterRouter.post("/fleet", validate(validationSchema.truck), transporterController.addTruck); // Add truck
@@ -63,20 +57,26 @@ transporterRouter.put("/fleet/:truckId", validate(validationSchema.updateTruck),
 transporterRouter.delete("/fleet/:truckId", transporterController.removeTruck); // Delete truck
 transporterRouter.post("/fleet/:vehicleId/upload-rc", documentUpload.single('rc_file'), transporterController.uploadVehicleRc); // Upload vehicle RC
 
-// Truck Status Management
-transporterRouter.post("/fleet/:truckId/set-maintenance", transporterController.setTruckMaintenance); // Set truck to maintenance
-transporterRouter.post("/fleet/:truckId/set-available", transporterController.setTruckAvailable); // Set truck to available
-transporterRouter.post("/fleet/:truckId/set-unavailable", transporterController.setTruckUnavailable); // Set truck to unavailable
-transporterRouter.post("/fleet/:truckId/schedule-maintenance", transporterController.scheduleMaintenance); // Schedule maintenance
+// // Truck Status Management
+// transporterRouter.post("/fleet/:truckId/set-maintenance", transporterController.setTruckMaintenance); // Set truck to maintenance
+// transporterRouter.post("/fleet/:truckId/set-available", transporterController.setTruckAvailable); // Set truck to available
+// transporterRouter.post("/fleet/:truckId/set-unavailable", transporterController.setTruckUnavailable); // Set truck to unavailable
+// transporterRouter.post("/fleet/:truckId/schedule-maintenance", transporterController.scheduleMaintenance); // Schedule maintenance
+
+// Fleet Schedule Management
+transporterRouter.get("/fleet/:truckId/schedule", transporterController.getFleetSchedule); // Get truck schedule
+transporterRouter.post("/fleet/:truckId/schedule/block", validate(validationSchema.fleetScheduleBlock), transporterController.addFleetScheduleBlock); // Add schedule block
+transporterRouter.delete("/fleet/:truckId/schedule/block/:blockId", transporterController.removeFleetScheduleBlock); // Remove schedule block
+
 //rating
 transporterRouter.get('/ratings', transporterController.getTransporterRatings);
 
-// transporterRouter.get("/drivers", transporterController.getDrivers); // List drivers
-// transporterRouter.post("/drivers", validate(validationSchema.driver), transporterController.addDriver); // Add driver
-// transporterRouter.get("/drivers/:driverId", transporterController.getDriverDetails); // Get driver details
-// transporterRouter.put("/drivers/:driverId", validate(validationSchema.driver), transporterController.updateDriver); // Update driver
-// transporterRouter.delete("/drivers/:driverId", transporterController.removeDriver); // Delete driver
-// transporterRouter.get('/drivers/:driverId/availability', driverController.getDriverAvailability);
-// transporterRouter.put('/drivers/:driverId/availability', driverController.updateDriverAvailability);
+// Driver Management
+transporterRouter.get("/drivers", transporterController.getDrivers); // List associated drivers
+transporterRouter.get("/driver-requests", transporterController.getDriverRequests); // List pending applications
+transporterRouter.post("/driver-requests/:applicationId/accept", transporterController.acceptDriverRequest); // Accept driver application
+transporterRouter.post("/driver-requests/:applicationId/reject", transporterController.rejectDriverRequest); // Reject driver application
+transporterRouter.delete("/drivers/:driverId", transporterController.removeDriverFromCompany); // Remove driver
+transporterRouter.get("/drivers/:driverId/schedule", transporterController.getDriverSchedule); // View driver schedule
 
 export default transporterRouter;

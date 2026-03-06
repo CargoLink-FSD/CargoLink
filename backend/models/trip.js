@@ -5,18 +5,18 @@ const TripStopSchema = new mongoose.Schema(
     sequence: { type: Number, required: true },
     type: {
       type: String,
-      enum: ["Pickup", "Dropoff", "Waypoint"],
+      enum: ["Pickup", "Dropoff", "Waypoint", "Delay"],
       required: true,
       default: "Waypoint",
     },
     order_id: { type: mongoose.Schema.Types.ObjectId, ref: "Order" },
     address: {
-      street: { type: String, required: true },
-      city: { type: String, required: true },
-      state: { type: String, required: true },
-      pin: { type: String, required: true },
+      street: String,
+      city: String,
+      state: String,
+      pin: String,
       coordinates: {
-        type: [Number],
+        type: [Number], // [lng, lat]
         default: undefined,
       },
     },
@@ -27,11 +27,14 @@ const TripStopSchema = new mongoose.Schema(
     actual_departure_at: Date,
     status: {
       type: String,
-      enum: ["Pending", "En Route", "Arrived", "Departed", "Skipped"],
+      enum: ["Pending", "En Route", "Arrived", "Completed", "Skipped"],
       default: "Pending",
     },
+    otp: String,
+    delay_minutes: Number,
+    delay_reason: String,
   },
-  { _id: false },
+  { _id: true, timestamps: true },
 );
 
 const TripSchema = new mongoose.Schema(
@@ -41,24 +44,24 @@ const TripSchema = new mongoose.Schema(
       ref: "Transporter",
       required: true,
     },
-    assigned_vehicle_id: { type: mongoose.Schema.Types.ObjectId, required: true },
+    assigned_vehicle_id: { type: mongoose.Schema.Types.ObjectId, ref: "Fleet" },
+    assigned_driver_id: { type: mongoose.Schema.Types.ObjectId, ref: "Driver" },
     order_ids: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Order",
-        required: true,
       },
     ],
     status: {
       type: String,
-      enum: ["Planned", "Scheduled", "In Transit", "Delayed", "Completed", "Cancelled"],
-      default: "Planned",
+      enum: ["Scheduled", "Active", "Completed", "Cancelled"],
+      default: "Scheduled",
     },
     stops: { type: [TripStopSchema], default: [] },
-    current_stop_sequence: { type: Number, default: 0 },
-    current_location_coordinates: {
-      type: [Number],
-      default: undefined,
+    current_stop_index: { type: Number, default: 0 },
+    current_location: {
+      coordinates: { type: [Number], default: undefined },
+      updated_at: Date,
     },
     planned_start_at: Date,
     actual_start_at: Date,

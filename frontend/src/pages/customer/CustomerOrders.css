@@ -7,7 +7,7 @@
 .co-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem 2rem 3rem;
+  padding: 80px 2rem 3rem;
   min-height: calc(100vh - 200px);
 }
 
@@ -79,41 +79,6 @@
 /* ── Card wrapper (anchor for absolute children) ── */
 .co-card-wrap {
   position: relative;
-}
-
-/* ── Rate transporter button ── */
-.co-review-btn {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 10;
-  background: #f59e0b;
-  color: #1a1a1a;
-  border: none;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
-  transition: background 0.2s, transform 0.15s;
-}
-
-.co-review-btn:hover {
-  background: #d97706;
-  transform: scale(1.04);
-}
-
-/* ── Reviewed badge ── */
-.co-reviewed-badge {
-  display: inline-block;
-  margin-top: 0.6rem;
-  padding: 4px 12px;
-  background: #d1fae5;
-  color: #065f46;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
 }
 
 /* ── Loading state ── */

@@ -8,8 +8,8 @@ export const getAllManagers = async () => {
 };
 
 // Generate invitation code
-export const generateInvitationCode = async ({ categories, expiresInHours }) => {
-    const res = await http.post('/api/admin/managers/invite', { categories, expiresInHours });
+export const generateInvitationCode = async ({ categories, verificationCategories = [], expiresInHours }) => {
+    const res = await http.post('/api/admin/managers/invite', { categories, verificationCategories, expiresInHours });
     return res.data;
 };
 
@@ -25,9 +25,9 @@ export const updateManagerStatus = async (id, status) => {
     return res.data;
 };
 
-// Update manager categories
-export const updateManagerCategories = async (id, categories) => {
-    const res = await http.patch(`/api/admin/managers/${id}/categories`, { categories });
+// Update manager categories (ticket + verification)
+export const updateManagerCategories = async (id, categories, verificationCategories) => {
+    const res = await http.patch(`/api/admin/managers/${id}/categories`, { categories, verificationCategories });
     return res.data;
 };
 

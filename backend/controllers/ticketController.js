@@ -1,6 +1,7 @@
 import ticketService from '../services/ticketService.js';
 import Customer from '../models/customer.js';
 import Transporter from '../models/transporter.js';
+import Driver from '../models/driver.js';
 import Order from '../models/order.js';
 import Manager from '../models/manager.js';
 
@@ -15,6 +16,10 @@ const createTicket = async (req, res, next) => {
             const c = await Customer.findById(userId).select('name email');
             userName = c?.name || 'Customer';
             userEmail = c?.email || '';
+        } else if (role === 'driver') {
+            const d = await Driver.findById(userId).select('firstName lastName email');
+            userName = d ? `${d.firstName} ${d.lastName}`.trim() : 'Driver';
+            userEmail = d?.email || '';
         } else {
             const t = await Transporter.findById(userId).select('name email');
             userName = t?.name || 'Transporter';
@@ -61,6 +66,9 @@ const addReply = async (req, res, next) => {
         if (role === 'customer') {
             const c = await Customer.findById(userId).select('name');
             userName = c?.name || 'Customer';
+        } else if (role === 'driver') {
+            const d = await Driver.findById(userId).select('firstName lastName');
+            userName = d ? `${d.firstName} ${d.lastName}`.trim() : 'Driver';
         } else {
             const t = await Transporter.findById(userId).select('name');
             userName = t?.name || 'Transporter';

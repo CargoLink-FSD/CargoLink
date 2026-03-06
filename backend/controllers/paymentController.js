@@ -47,6 +47,16 @@ const submitReview = async (req, res, next) => {
   }
 };
 
+  const getOrderReview = async (req, res, next) => {
+    try {
+      const { orderId } = req.params;
+      const review = await paymentService.getOrderReview(orderId, req.user.id, req.user.role);
+      res.status(200).json({ success: true, data: review });
+    } catch (error) {
+      next(error);
+    }
+  };
+
 
 const getPaymentHistory = async (req, res, next) => {
   try {
@@ -71,6 +81,7 @@ export default {
   initiatePayment,
   verifyPayment,
   submitReview,
+  getOrderReview,
   requestPayout,
   getPaymentHistory,
   downloadInvoice

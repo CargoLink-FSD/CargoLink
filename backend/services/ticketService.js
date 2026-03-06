@@ -3,7 +3,8 @@ import managerService from './managerService.js';
 import { AppError } from '../utils/misc.js';
 
 const createTicket = async (userId, userRole, userName, userEmail, ticketData) => {
-    const userModel = userRole === 'customer' ? 'Customer' : 'Transporter';
+    const modelMap = { customer: 'Customer', transporter: 'Transporter', driver: 'Driver' };
+    const userModel = modelMap[userRole] || 'Customer';
 
     const ticketPayload = {
         userId,

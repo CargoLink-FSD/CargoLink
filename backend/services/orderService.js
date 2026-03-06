@@ -1,7 +1,9 @@
 import orderRepo from "../repositories/orderRepo.js"
 import bidRepo from "../repositories/bidRepo.js"
+import Fleet from "../models/fleet.js"
 import { AppError, logger } from "../utils/misc.js"
 
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 const getOrdersByUser = async (userId, role, filters = {}) => {
     let orders;
@@ -88,10 +90,16 @@ const acceptBid = async (customerId, orderId, bidId) => {
             "ERR_BIDDING_CLOSED");
     }
 
-    const order = await orderRepo.assignOrder(orderId, bid.transporter_id, bid.bid_amount);
+    const order = await orderRepo.assignOrder(orderId, bid.transporter_id, bid.bid_amount, bid.quote_breakdown || null);
     if (!order) {
         throw new AppError(403, "Forbidden", "Order already assigned or cannot be updated", "ERR_FORBIDDEN");
     }
+
+    // Generate OTPs for pickup and delivery confirmation
+    await orderRepo.updateOrderStatus(order._id, 'Assigned', {
+        pickup_otp: generateOTP(),
+        delivery_otp: generateOTP(),
+    });
 
     await bidRepo.deleteBidsForOrder(orderId);
 
@@ -119,7 +127,7 @@ const getTransporterBids = async (transporterId) => {
     return bids;
 };
 
-const submitBid = async (transporterId, orderId, bidAmount, notes) => {
+const submitBid = async (transporterId, orderId, bidAmount, notes, quoteBreakdown) => {
     // Check if order exists and is open for bidding (must be at least 2 days before pickup)
     const active = await orderRepo.checkActiveOrder(orderId, transporterId);
     if (!active) {
@@ -128,12 +136,37 @@ const submitBid = async (transporterId, orderId, bidAmount, notes) => {
             "ERR_BIDDING_CLOSED");
     }
 
-    const bid = await bidRepo.createBid({
+    // Validate quote breakdown if provided
+    if (quoteBreakdown) {
+        if (!quoteBreakdown.transportation_charges || quoteBreakdown.transportation_charges <= 0) {
+            throw new AppError(400, "ValidationError",
+                "Transportation charges are required and must be greater than 0",
+                "ERR_VALIDATION");
+        }
+        if (quoteBreakdown.custom_items && quoteBreakdown.custom_items.length > 5) {
+            throw new AppError(400, "ValidationError",
+                "Maximum 5 custom charge items allowed",
+                "ERR_VALIDATION");
+        }
+        if (quoteBreakdown.gst && ![0, 5, 12, 18, 28].includes(quoteBreakdown.gst.rate_percent)) {
+            throw new AppError(400, "ValidationError",
+                "GST rate must be one of: 0%, 5%, 12%, 18%, 28%",
+                "ERR_VALIDATION");
+        }
+    }
+
+    const bidData = {
         order_id: orderId,
         transporter_id: transporterId,
         bid_amount: bidAmount,
         notes: notes
-    });
+    };
+
+    if (quoteBreakdown) {
+        bidData.quote_breakdown = quoteBreakdown;
+    }
+
+    const bid = await bidRepo.createBid(bidData);
 
     return bid;
 };
@@ -198,9 +231,6 @@ const startTransit = async (orderId, transporterId) => {
 };
 
 const assignVehicleToOrder = async (orderId, vehicleId, transporterId) => {
-    // Import transporter model
-    const Transporter = (await import('../models/transporter.js')).default;
-
     // Check if order exists and is assigned to this transporter
     const order = await orderRepo.getOrderById(orderId);
 
@@ -216,13 +246,8 @@ const assignVehicleToOrder = async (orderId, vehicleId, transporterId) => {
         throw new AppError(400, "InvalidOperation", "Only assigned orders can have vehicles assigned", "ERR_INVALID_OPERATION");
     }
 
-    // Find transporter and vehicle
-    const transporter = await Transporter.findById(transporterId);
-    if (!transporter) {
-        throw new AppError(404, "NotFound", "Transporter not found", "ERR_NOT_FOUND");
-    }
-
-    const vehicle = transporter.fleet.id(vehicleId);
+    // Find vehicle from separate Fleet collection
+    const vehicle = await Fleet.findOne({ _id: vehicleId, transporter_id: transporterId });
     if (!vehicle) {
         throw new AppError(404, "NotFound", "Vehicle not found in your fleet", "ERR_NOT_FOUND");
     }
@@ -240,7 +265,7 @@ const assignVehicleToOrder = async (orderId, vehicleId, transporterId) => {
     // Update vehicle status
     vehicle.status = 'Assigned';
     vehicle.current_trip_id = orderId;
-    await transporter.save();
+    await vehicle.save();
 
     // Assign vehicle to order
     const assignmentData = {
@@ -255,6 +280,15 @@ const assignVehicleToOrder = async (orderId, vehicleId, transporterId) => {
 };
 
 const getTransporterVehicles = async (transporterId) => {
+    // Query available vehicles from separate Fleet collection
+    const availableVehicles = await Fleet.find({
+        transporter_id: transporterId,
+        status: 'Available'
+    });
+        return availableVehicles;
+};
+
+const getAvailableVehicles = async (transporterId) => {
     const Transporter = (await import('../models/transporter.js')).default;
 
     const transporter = await Transporter.findById(transporterId).select('fleet');
@@ -275,10 +309,7 @@ export default {
     getOrderDetails,
     placeOrder,
     cancelOrder,
-    startTransit,
     getActiveOrders,
-    assignVehicleToOrder,
-    getTransporterVehicles,
 
     getCurrentBids,
     acceptBid,
@@ -286,7 +317,5 @@ export default {
     getTransporterBids,
     submitBid,
     withdrawBid,
-    confirmPickup,
-    confirmDelivery,
 
 }
