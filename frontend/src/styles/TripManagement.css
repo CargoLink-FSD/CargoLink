@@ -76,6 +76,47 @@
   align-items: center;
 }
 
+/* ─── Filters (Search + Status) ───────────────────────────────────────────── */
+.tripManagement-container .search-input,
+.tripManagement-container .status-filter {
+  height: 48px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-200, #e5e7eb);
+  background: white;
+  padding: 0 0.95rem;
+  font-size: 0.92rem;
+  color: var(--gray-800, #1f2937);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.tripManagement-container .search-input {
+  flex: 1;
+  min-width: 240px;
+}
+
+.tripManagement-container .status-filter {
+  min-width: 180px;
+}
+
+.tripManagement-container .search-input:focus,
+.tripManagement-container .status-filter:focus {
+  border-color: var(--primary, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+@media (max-width: 768px) {
+  .trips-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .tripManagement-container .search-input,
+  .tripManagement-container .status-filter {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
 
 /* ─── Trip Card ────────────────────────────────────────────────────────────── */
 .tm-trip-card {

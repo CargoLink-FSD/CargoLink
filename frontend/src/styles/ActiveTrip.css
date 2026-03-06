@@ -7,9 +7,15 @@
 }
 
 .at-shell {
-  min-height: 100vh;
+  /* Account for fixed global header (.header is position: fixed) */
+  height: 100vh;
   background: var(--gray-50, #f8f9fa);
+  padding-top: 80px;
   padding-bottom: 2rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .at-toast {
@@ -41,7 +47,6 @@
   padding: 1rem 1.5rem;
   background: white;
   border-bottom: 1px solid var(--gray-200, #e5e7eb);
-  margin-top: 80px;
   flex-wrap: wrap;
   gap: 0.75rem;
 }
@@ -78,7 +83,9 @@
 .at-layout {
   display: grid;
   grid-template-columns: 1fr 380px;
-  height: calc(100vh - 140px);
+  /* Fill remaining space in the viewport under the page header bar */
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -107,6 +114,8 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   z-index: 400;
   flex-wrap: wrap;
+  max-width: calc(100% - 2rem);
+  overflow: hidden;
 }
 
 .at-info-item {
@@ -115,6 +124,14 @@
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--gray-800, #1f2937);
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.at-info-item > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .at-info-label {
@@ -393,12 +410,13 @@
   .at-layout {
     grid-template-columns: 1fr;
     grid-template-rows: 350px 1fr;
-    height: auto;
+    flex: 1;
+    min-height: 0;
   }
   .at-stops-panel {
     border-left: none;
     border-top: 1px solid var(--gray-200, #e5e7eb);
-    max-height: calc(100vh - 350px - 140px);
+    min-height: 0;
   }
   .at-map-info {
     flex-direction: column;
