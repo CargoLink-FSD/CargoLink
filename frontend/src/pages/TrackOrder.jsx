@@ -11,6 +11,23 @@ import { getOrderTracking } from '../api/trips';
 
 import '../styles/TrackOrder.css';
 
+// Normalize coords to Leaflet [lat, lng]
+const toLatLng = (c) => {
+  if (!c || c.length < 2) return null;
+  const a = Number(c[0]), b = Number(c[1]);
+  if (isNaN(a) || isNaN(b)) return null;
+  if (Math.abs(a) > 90 && Math.abs(b) <= 90) return [b, a];
+  if (a > 50 && b < 40) return [b, a];
+  return [a, b];
+};
+
+// Convert coords to OSRM "lng,lat" string
+const toOsrmCoord = (coords) => {
+  const ll = toLatLng(coords);
+  if (!ll) return null;
+  return `${ll[1]},${ll[0]}`;
+};
+
 // ─── OTP display block (copy on click) ─────────────────────────────────────────
 const OtpBlock = ({ label, otp, hint, color }) => {
   const [copied, setCopied] = React.useState(false);
@@ -40,6 +57,7 @@ const TrackOrderPage = () => {
   // ─── Tracking state ───
   const [tracking, setTracking] = useState(null);
   const [mapReady, setMapReady] = useState(false);
+  const [mapInitialized, setMapInitialized] = useState(false);
   const mapContainerRef = useRef(null);
   const leafletMap = useRef(null);
   const markersRef = useRef([]);
@@ -79,16 +97,33 @@ const TrackOrderPage = () => {
     }
   }, []);
 
-  // ─── Init map ───
+  // ─── Init map (retry until container is available) ───
   useEffect(() => {
-    if (!mapReady || !mapContainerRef.current || leafletMap.current) return;
-    const L = window.L;
-    const map = L.map(mapContainerRef.current, { zoomControl: true });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18, attribution: '© OpenStreetMap',
-    }).addTo(map);
-    map.setView([20.5, 78.9], 5);
-    leafletMap.current = map;
+    if (!mapReady) return;
+    let intervalId = null;
+
+    const tryInit = () => {
+      if (leafletMap.current || !mapContainerRef.current) return !!leafletMap.current;
+      const L = window.L;
+      if (!L) return false;
+      const map = L.map(mapContainerRef.current, { zoomControl: true });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18, attribution: '© OpenStreetMap',
+      }).addTo(map);
+      map.setView([20.5, 78.9], 5);
+      leafletMap.current = map;
+      setTimeout(() => map.invalidateSize(), 300);
+      setMapInitialized(true);
+      return true;
+    };
+
+    if (!tryInit()) {
+      intervalId = setInterval(() => {
+        if (tryInit() && intervalId) { clearInterval(intervalId); intervalId = null; }
+      }, 200);
+    }
+
+    return () => { if (intervalId) clearInterval(intervalId); };
   }, [mapReady]);
 
   // ─── Fetch tracking data ───
@@ -123,48 +158,44 @@ const TrackOrderPage = () => {
 
     const pickup = currentOrder.pickup;
     const delivery = currentOrder.delivery;
-    const points = [];
-
-    // Helper: GeoJSON [lng,lat] -> Leaflet [lat,lng]
-    const toLatLng = (c) => {
-      const a = Number(c[0]), b = Number(c[1]);
-      // If first value > 90, it's longitude (GeoJSON order) — swap
-      if (Math.abs(a) > 90 && Math.abs(b) <= 90) return [b, a];
-      if (a > 50 && b < 40) return [b, a];
-      return [a, b];
-    };
+    const osrmParts = [];
 
     // Pickup marker
     if (pickup?.coordinates?.length === 2) {
       const ll = toLatLng(pickup.coordinates);
-      const pickupIcon = L.divIcon({
-        className: '',
-        html: '<div style="width:14px;height:14px;background:#22c55e;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
-        iconSize: [14, 14], iconAnchor: [7, 7],
-      });
-      const m = L.marker(ll, { icon: pickupIcon }).addTo(map);
-      m.bindPopup(`<b>Pickup</b><br/>${pickup.city || ''}, ${pickup.state || ''}`);
-      markersRef.current.push(m);
-      points.push(pickup.coordinates); // keep original for OSRM
+      if (ll) {
+        const pickupIcon = L.divIcon({
+          className: '',
+          html: '<div style="width:14px;height:14px;background:#22c55e;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
+          iconSize: [14, 14], iconAnchor: [7, 7],
+        });
+        const m = L.marker(ll, { icon: pickupIcon }).addTo(map);
+        m.bindPopup(`<b>Pickup</b><br/>${pickup.city || ''}, ${pickup.state || ''}`);
+        markersRef.current.push(m);
+        osrmParts.push(toOsrmCoord(pickup.coordinates));
+      }
     }
 
     // Delivery marker
     if (delivery?.coordinates?.length === 2) {
       const ll = toLatLng(delivery.coordinates);
-      const deliveryIcon = L.divIcon({
-        className: '',
-        html: '<div style="width:14px;height:14px;background:#ef4444;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
-        iconSize: [14, 14], iconAnchor: [7, 7],
-      });
-      const m = L.marker(ll, { icon: deliveryIcon }).addTo(map);
-      m.bindPopup(`<b>Delivery</b><br/>${delivery.city || ''}, ${delivery.state || ''}`);
-      markersRef.current.push(m);
-      points.push(delivery.coordinates); // keep original for OSRM
+      if (ll) {
+        const deliveryIcon = L.divIcon({
+          className: '',
+          html: '<div style="width:14px;height:14px;background:#ef4444;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
+          iconSize: [14, 14], iconAnchor: [7, 7],
+        });
+        const m = L.marker(ll, { icon: deliveryIcon }).addTo(map);
+        m.bindPopup(`<b>Delivery</b><br/>${delivery.city || ''}, ${delivery.state || ''}`);
+        markersRef.current.push(m);
+        osrmParts.push(toOsrmCoord(delivery.coordinates));
+      }
     }
 
-    // OSRM route (needs lng,lat which is already how GeoJSON stores them)
-    if (points.length === 2) {
-      const coords = points.map(p => `${p[0]},${p[1]}`).join(';');
+    // OSRM route
+    const validOsrm = osrmParts.filter(Boolean);
+    if (validOsrm.length === 2) {
+      const coords = validOsrm.join(';');
       fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`)
         .then(r => r.json())
         .then(data => {
@@ -175,10 +206,11 @@ const TrackOrderPage = () => {
           }
         })
         .catch(() => { });
-    } else if (points.length > 0) {
-      map.setView(points[0], 12);
+    } else if (markersRef.current.length > 0) {
+      const bounds = L.latLngBounds(markersRef.current.map(m => m.getLatLng()));
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
     }
-  }, [currentOrder, mapReady]);
+  }, [currentOrder, mapInitialized]);
 
   // ─── Live driver location marker ───
   useEffect(() => {
@@ -188,9 +220,8 @@ const TrackOrderPage = () => {
 
     const driverCoords = tracking?.trip?.current_location?.coordinates;
     if (driverCoords?.length === 2) {
-      // GeoJSON [lng,lat] -> Leaflet [lat,lng]
-      const a = Number(driverCoords[0]), b = Number(driverCoords[1]);
-      const ll = (Math.abs(a) > 90 && Math.abs(b) <= 90) ? [b, a] : (a > 50 && b < 40) ? [b, a] : [a, b];
+      const ll = toLatLng(driverCoords);
+      if (!ll) return;
       if (driverMarkerRef.current) {
         driverMarkerRef.current.setLatLng(ll);
       } else {
@@ -203,7 +234,7 @@ const TrackOrderPage = () => {
         driverMarkerRef.current.bindPopup('<b>Driver Location</b>');
       }
     }
-  }, [tracking?.trip?.current_location, mapReady]);
+  }, [tracking?.trip?.current_location, mapInitialized]);
 
   const [expandedSection, setExpandedSection] = useState(null);
 

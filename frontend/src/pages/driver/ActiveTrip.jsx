@@ -9,6 +9,24 @@ import {
 } from '../../api/trips';
 import '../../styles/ActiveTrip.css';
 
+// Normalize coords to Leaflet [lat, lng]
+// Backend stores GeoJSON [lng, lat]; some records may have [lat, lng]
+const toLatLng = (coords) => {
+  if (!coords || coords.length < 2) return null;
+  const a = Number(coords[0]), b = Number(coords[1]);
+  if (isNaN(a) || isNaN(b)) return null;
+  if (Math.abs(a) > 90 && Math.abs(b) <= 90) return [b, a];
+  if (a > 50 && b < 40) return [b, a];
+  return [a, b];
+};
+
+// Convert coords to OSRM "lng,lat" string
+const toOsrmCoord = (coords) => {
+  const ll = toLatLng(coords);
+  if (!ll) return null;
+  return `${ll[1]},${ll[0]}`;
+};
+
 const STATUS_COLORS = {
   Scheduled: '#1976d2', Active: '#388e3c',
   Completed: '#00796b', Cancelled: '#757575',
@@ -39,6 +57,7 @@ const ActiveTrip = () => {
 
   // Map
   const [mapReady, setMapReady] = useState(false);
+  const [mapInitialized, setMapInitialized] = useState(false);
   const [driverLocationReady, setDriverLocationReady] = useState(false);
   const mapRef = useRef(null);
   const leafletMap = useRef(null);
@@ -102,21 +121,38 @@ const ActiveTrip = () => {
     }
   }, []);
 
-  // ─── Init Map ───
+  // ─── Init Map (retry until container is available) ───
   useEffect(() => {
-    if (!mapReady || !mapRef.current || leafletMap.current) return;
-    const L = window.L;
-    const map = L.map(mapRef.current, { zoomControl: true });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18, attribution: '© OpenStreetMap',
-    }).addTo(map);
-    map.setView([20.5, 78.9], 5);
-    leafletMap.current = map;
+    if (!mapReady) return;
+    let intervalId = null;
+
+    const tryInit = () => {
+      if (leafletMap.current || !mapRef.current) return !!leafletMap.current;
+      const L = window.L;
+      if (!L) return false;
+      const map = L.map(mapRef.current, { zoomControl: true });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18, attribution: '© OpenStreetMap',
+      }).addTo(map);
+      map.setView([20.5, 78.9], 5);
+      leafletMap.current = map;
+      setTimeout(() => map.invalidateSize(), 300);
+      setMapInitialized(true);
+      return true;
+    };
+
+    if (!tryInit()) {
+      intervalId = setInterval(() => {
+        if (tryInit() && intervalId) { clearInterval(intervalId); intervalId = null; }
+      }, 200);
+    }
+
+    return () => { if (intervalId) clearInterval(intervalId); };
   }, [mapReady]);
 
   // ─── Driver Location Marker ───
   useEffect(() => {
-    if (!driverLocationReady || !mapReady) return;
+    if (!driverLocationReady || !mapInitialized) return;
     const L = window.L;
     const map = leafletMap.current;
     if (!L || !map || !driverLocationRef.current) return;
@@ -135,7 +171,7 @@ const ActiveTrip = () => {
     return () => {
       if (driverMarkerRef.current) { driverMarkerRef.current.remove(); driverMarkerRef.current = null; }
     };
-  }, [driverLocationReady, mapReady]);
+  }, [driverLocationReady, mapInitialized]);
 
   // ─── Update Map Markers ───
   useEffect(() => {
@@ -151,6 +187,8 @@ const ActiveTrip = () => {
     const validStops = trip.stops.filter(s => s.address?.coordinates?.length === 2);
 
     validStops.forEach((stop, idx) => {
+      const ll = toLatLng(stop.address.coordinates);
+      if (!ll) return;
       const isPickup = stop.type === 'Pickup';
       const isDone = stop.status === 'Completed';
       const isCurrent = idx === currentIdx;
@@ -159,7 +197,7 @@ const ActiveTrip = () => {
         html: `<div class="at-map-marker ${isPickup ? 'pickup' : 'drop'} ${isDone ? 'done' : ''} ${isCurrent ? 'current' : ''}"><span>${idx + 1}</span></div>`,
         iconSize: [32, 32], iconAnchor: [16, 16],
       });
-      const marker = L.marker(stop.address.coordinates, { icon }).addTo(map);
+      const marker = L.marker(ll, { icon }).addTo(map);
       marker.bindPopup(`<b>${idx + 1}. ${stop.address.city || 'Stop'}</b><br/>${stop.type}`);
       markersRef.current.push(marker);
     });
@@ -169,16 +207,15 @@ const ActiveTrip = () => {
     );
     const stopsForRoute = remainingStops.length >= 1 ? remainingStops : validStops;
 
-    // FIX: OSRM expects lng,lat (longitude first), not lat,lng
+    // Build OSRM coordinate string (lng,lat format)
     const osrmParts = [];
     if (driverLocationRef.current) {
       const [dLat, dLng] = driverLocationRef.current;
-      osrmParts.push(`${dLng},${dLat}`); // ✅ lng,lat
+      osrmParts.push(`${dLng},${dLat}`);
     }
     stopsForRoute.forEach(s => {
-      // coordinates stored as [lat, lng] — swap to lng,lat for OSRM
-      const [lat, lng] = s.address.coordinates;
-      osrmParts.push(`${lng},${lat}`); // ✅ lng,lat
+      const coord = toOsrmCoord(s.address.coordinates);
+      if (coord) osrmParts.push(coord);
     });
 
     if (osrmParts.length >= 2) {
@@ -195,12 +232,12 @@ const ActiveTrip = () => {
             map.fitBounds(L.latLngBounds(allPoints), { padding: [50, 50], maxZoom: 13 });
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     } else if (markersRef.current.length > 0) {
       const bounds = L.latLngBounds(markersRef.current.map(m => m.getLatLng()));
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
     }
-  }, [trip, mapReady, driverLocationReady]);
+  }, [trip, mapInitialized, driverLocationReady]);
 
   // ─── Live Location ───
   useEffect(() => {
@@ -210,20 +247,21 @@ const ActiveTrip = () => {
     const sendLocation = (pos) => {
       const { latitude, longitude } = pos.coords;
       driverLocationRef.current = [latitude, longitude];
-      updateTripLocation(tripId, { lat: latitude, lng: longitude }).catch(() => {});
+      // Send as [lng, lat] array for GeoJSON storage
+      updateTripLocation(tripId, [longitude, latitude]).catch(() => { });
       if (driverMarkerRef.current) {
         driverMarkerRef.current.setLatLng([latitude, longitude]);
       }
     };
 
     if (navigator.geolocation) {
-      locationWatchRef.current = navigator.geolocation.watchPosition(sendLocation, () => {}, {
+      locationWatchRef.current = navigator.geolocation.watchPosition(sendLocation, () => { }, {
         enableHighAccuracy: true, maximumAge: 10000, timeout: 15000,
       });
     }
 
     const interval = setInterval(() => {
-      navigator.geolocation?.getCurrentPosition(sendLocation, () => {});
+      navigator.geolocation?.getCurrentPosition(sendLocation, () => { });
     }, 30000);
 
     return () => {
@@ -316,7 +354,7 @@ const ActiveTrip = () => {
   const currentStopIndex = trip?.current_stop_index ?? 0;
 
   console.log("rendering");
-  
+
   // ─── Render ───
   if (loading) {
     return (

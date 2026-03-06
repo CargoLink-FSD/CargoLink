@@ -202,24 +202,45 @@ const TripPlanner = () => {
       script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
       script.onload = () => setMapReady(true);
       document.head.appendChild(script);
+    } else {
+      const check = setInterval(() => {
+        if (window.L) { setMapReady(true); clearInterval(check); }
+      }, 100);
+      return () => clearInterval(check);
     }
   }, []);
 
-  // ─── Init map ───
+  // ─── Init map (retry until container is available) ───
   useEffect(() => {
-    if (!mapReady || !mapRef.current || leafletMap.current) return;
-    const L = window.L;
-    if (!L) return;
-    const map = L.map(mapRef.current, { zoomControl: true });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18, attribution: '© OpenStreetMap',
-    }).addTo(map);
-    map.setView([20.5, 78.9], 5);
-    leafletMap.current = map;
-    // Leaflet needs a kick after the container is in the DOM
-    setTimeout(() => { map.invalidateSize(); setStops(s => [...s]); }, 200);
-    setTimeout(() => map.invalidateSize(), 600);
-    return () => { map.remove(); leafletMap.current = null; };
+    if (!mapReady) return;
+    let intervalId = null;
+
+    const tryInit = () => {
+      if (leafletMap.current || !mapRef.current) return !!leafletMap.current;
+      const L = window.L;
+      if (!L) return false;
+      const map = L.map(mapRef.current, { zoomControl: true });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18, attribution: '© OpenStreetMap',
+      }).addTo(map);
+      map.setView([20.5, 78.9], 5);
+      leafletMap.current = map;
+      // Leaflet needs a kick after the container is in the DOM
+      setTimeout(() => { map.invalidateSize(); setStops(s => [...s]); }, 200);
+      setTimeout(() => map.invalidateSize(), 600);
+      return true;
+    };
+
+    if (!tryInit()) {
+      intervalId = setInterval(() => {
+        if (tryInit() && intervalId) { clearInterval(intervalId); intervalId = null; }
+      }, 200);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      if (leafletMap.current) { leafletMap.current.remove(); leafletMap.current = null; }
+    };
   }, [mapReady]);
 
   // ─── OSRM Route ───
@@ -436,7 +457,8 @@ const TripPlanner = () => {
           city: s.address?.city || '',
           state: s.address?.state || '',
           pin: s.address?.pin || '',
-          coordinates: s.coords || undefined,
+          // s.coords is [lat, lng] (Leaflet order); backend expects [lng, lat] (GeoJSON)
+          coordinates: s.coords ? [s.coords[1], s.coords[0]] : undefined,
         },
         eta_at: new Date(planned_start.getTime() + (s.etaDecimal - (sh + sm / 60)) * 3600 * 1000).toISOString(),
         status: 'Pending',
