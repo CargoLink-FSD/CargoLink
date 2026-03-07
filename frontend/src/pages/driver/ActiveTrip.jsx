@@ -1,6 +1,9 @@
 // src/pages/driver/ActiveTrip.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { GoogleMap, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
+import { useGoogleMaps } from '../../hooks/useGoogleMaps';
+import { normalizeCoordinates, getDirections, INDIA_CENTER, DEFAULT_MAP_OPTIONS } from '../../utils/googleMapsConfig';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
 import {
@@ -9,23 +12,9 @@ import {
 } from '../../api/trips';
 import '../../styles/ActiveTrip.css';
 
-// Normalize coords to Leaflet [lat, lng]
-// Backend stores GeoJSON [lng, lat]; some records may have [lat, lng]
-const toLatLng = (coords) => {
-  if (!coords || coords.length < 2) return null;
-  const a = Number(coords[0]), b = Number(coords[1]);
-  if (isNaN(a) || isNaN(b)) return null;
-  if (Math.abs(a) > 90 && Math.abs(b) <= 90) return [b, a];
-  if (a > 50 && b < 40) return [b, a];
-  return [a, b];
-};
-
-// Convert coords to OSRM "lng,lat" string
-const toOsrmCoord = (coords) => {
-  const ll = toLatLng(coords);
-  if (!ll) return null;
-  return `${ll[1]},${ll[0]}`;
-};
+// Normalize coords to {lat, lng}
+// Normalize coords using utility function
+const toLatLng = normalizeCoordinates;
 
 const STATUS_COLORS = {
   Scheduled: '#1976d2', Active: '#388e3c',
@@ -38,6 +27,7 @@ const formatDate = (iso) => iso ? new Date(iso).toLocaleString('en-IN', { day: '
 const ActiveTrip = () => {
   const { tripId } = useParams();
   const navigate = useNavigate();
+  const { isLoaded, loadError } = useGoogleMaps();
 
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -56,14 +46,10 @@ const ActiveTrip = () => {
   const [delayReason, setDelayReason] = useState('');
 
   // Map
-  const [mapReady, setMapReady] = useState(false);
-  const [mapInitialized, setMapInitialized] = useState(false);
   const [driverLocationReady, setDriverLocationReady] = useState(false);
-  const mapRef = useRef(null);
-  const leafletMap = useRef(null);
-  const markersRef = useRef([]);
-  const polylineRef = useRef(null);
-  const driverMarkerRef = useRef(null);
+  const [map, setMap] = useState(null);
+  const [routePath, setRoutePath] = useState([]);
+  const [selectedMarker, setSelectedMarker] = useState(null);
   const driverLocationRef = useRef(null);
   const locationWatchRef = useRef(null);
 
@@ -100,144 +86,48 @@ const ActiveTrip = () => {
     );
   }, []);
 
-  // ─── Load Leaflet ───
+
+  // ─── Update Map Route and Markers ───
   useEffect(() => {
-    if (!document.getElementById('leaflet-css')) {
-      const link = document.createElement('link');
-      link.id = 'leaflet-css'; link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-    }
-    if (window.L) { setMapReady(true); return; }
-    if (!document.getElementById('leaflet-js')) {
-      const script = document.createElement('script');
-      script.id = 'leaflet-js';
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = () => setMapReady(true);
-      document.head.appendChild(script);
-    } else {
-      const check = setInterval(() => { if (window.L) { setMapReady(true); clearInterval(check); } }, 100);
-      return () => clearInterval(check);
-    }
-  }, []);
-
-  // ─── Init Map (retry until container is available) ───
-  useEffect(() => {
-    if (!mapReady) return;
-    let intervalId = null;
-
-    const tryInit = () => {
-      if (leafletMap.current || !mapRef.current) return !!leafletMap.current;
-      const L = window.L;
-      if (!L) return false;
-      const map = L.map(mapRef.current, { zoomControl: true });
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18, attribution: '© OpenStreetMap',
-      }).addTo(map);
-      map.setView([20.5, 78.9], 5);
-      leafletMap.current = map;
-      setTimeout(() => map.invalidateSize(), 300);
-      setMapInitialized(true);
-      return true;
-    };
-
-    if (!tryInit()) {
-      intervalId = setInterval(() => {
-        if (tryInit() && intervalId) { clearInterval(intervalId); intervalId = null; }
-      }, 200);
-    }
-
-    return () => { if (intervalId) clearInterval(intervalId); };
-  }, [mapReady]);
-
-  // ─── Driver Location Marker ───
-  useEffect(() => {
-    if (!driverLocationReady || !mapInitialized) return;
-    const L = window.L;
-    const map = leafletMap.current;
-    if (!L || !map || !driverLocationRef.current) return;
-    const [lat, lng] = driverLocationRef.current;
-    const icon = L.divIcon({
-      className: '',
-      html: '<div class="at-driver-marker"><span class="at-driver-icon">T</span><div class="at-driver-pulse"></div></div>',
-      iconSize: [40, 40], iconAnchor: [20, 20],
-    });
-    if (driverMarkerRef.current) {
-      driverMarkerRef.current.setLatLng([lat, lng]);
-    } else {
-      driverMarkerRef.current = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).addTo(map);
-      driverMarkerRef.current.bindPopup('Your location');
-    }
-    return () => {
-      if (driverMarkerRef.current) { driverMarkerRef.current.remove(); driverMarkerRef.current = null; }
-    };
-  }, [driverLocationReady, mapInitialized]);
-
-  // ─── Update Map Markers ───
-  useEffect(() => {
-    const L = window.L;
-    const map = leafletMap.current;
-    if (!L || !map || !trip?.stops) return;
-
-    markersRef.current.forEach(m => m.remove());
-    markersRef.current = [];
-    if (polylineRef.current) { polylineRef.current.remove(); polylineRef.current = null; }
+    if (!isLoaded || !trip?.stops) return;
 
     const currentIdx = trip.current_stop_index || 0;
-    const validStops = trip.stops.filter(s => s.address?.coordinates?.length === 2);
-
-    validStops.forEach((stop, idx) => {
-      const ll = toLatLng(stop.address.coordinates);
-      if (!ll) return;
-      const isPickup = stop.type === 'Pickup';
-      const isDone = stop.status === 'Completed';
-      const isCurrent = idx === currentIdx;
-      const icon = L.divIcon({
-        className: '',
-        html: `<div class="at-map-marker ${isPickup ? 'pickup' : 'drop'} ${isDone ? 'done' : ''} ${isCurrent ? 'current' : ''}"><span>${idx + 1}</span></div>`,
-        iconSize: [32, 32], iconAnchor: [16, 16],
-      });
-      const marker = L.marker(ll, { icon }).addTo(map);
-      marker.bindPopup(`<b>${idx + 1}. ${stop.address.city || 'Stop'}</b><br/>${stop.type}`);
-      markersRef.current.push(marker);
-    });
 
     const remainingStops = trip.stops.filter(
       (s, i) => i >= currentIdx && s.address?.coordinates?.length === 2 && s.status !== 'Completed',
     );
+    const validStops = trip.stops.filter(s => s.address?.coordinates?.length === 2);
     const stopsForRoute = remainingStops.length >= 1 ? remainingStops : validStops;
 
-    // Build OSRM coordinate string (lng,lat format)
-    const osrmParts = [];
+    // Build waypoints for Google Directions
+    const waypoints = [];
     if (driverLocationRef.current) {
       const [dLat, dLng] = driverLocationRef.current;
-      osrmParts.push(`${dLng},${dLat}`);
+      waypoints.push({ lat: dLat, lng: dLng });
     }
     stopsForRoute.forEach(s => {
-      const coord = toOsrmCoord(s.address.coordinates);
-      if (coord) osrmParts.push(coord);
+      const coord = toLatLng(s.address.coordinates);
+      if (coord) waypoints.push(coord);
     });
 
-    if (osrmParts.length >= 2) {
-      fetch(`https://router.project-osrm.org/route/v1/driving/${osrmParts.join(';')}?overview=full&geometries=geojson`)
-        .then(r => r.json())
-        .then(data => {
-          if (data.code === 'Ok' && data.routes?.[0]) {
-            const routeCoords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-            polylineRef.current = L.polyline(routeCoords, { color: '#6366f1', weight: 4, opacity: 0.8 }).addTo(map);
-            const allPoints = [
-              ...(driverLocationRef.current ? [driverLocationRef.current] : []),
-              ...routeCoords,
-            ];
-            map.fitBounds(L.latLngBounds(allPoints), { padding: [50, 50], maxZoom: 13 });
+    if (waypoints.length >= 2) {
+      getDirections(waypoints)
+        .then(result => {
+          const path = result.routes[0].overview_path;
+          setRoutePath(path);
+          
+          // Fit bounds to route
+          if (map && path.length > 0) {
+            const bounds = new google.maps.LatLngBounds();
+            path.forEach(point => bounds.extend(point));
+            map.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
           }
         })
-        .catch(() => { });
-    } else if (markersRef.current.length > 0) {
-      const bounds = L.latLngBounds(markersRef.current.map(m => m.getLatLng()));
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+        .catch(() => setRoutePath([]));
+    } else {
+      setRoutePath([]);
     }
-  }, [trip, mapInitialized, driverLocationReady]);
+  }, [trip, isLoaded, map, driverLocationReady]);
 
   // ─── Live Location ───
   useEffect(() => {
@@ -247,11 +137,8 @@ const ActiveTrip = () => {
     const sendLocation = (pos) => {
       const { latitude, longitude } = pos.coords;
       driverLocationRef.current = [latitude, longitude];
-      // Send as [lng, lat] array for GeoJSON storage
-      updateTripLocation(tripId, [longitude, latitude]).catch(() => { });
-      if (driverMarkerRef.current) {
-        driverMarkerRef.current.setLatLng([latitude, longitude]);
-      }
+      // Send as Google-style coordinate object
+      updateTripLocation(tripId, { lat: latitude, lng: longitude }).catch(() => { });
     };
 
     if (navigator.geolocation) {
@@ -422,7 +309,108 @@ const ActiveTrip = () => {
         <div className="at-layout">
           {/* Map */}
           <div className="at-map-section">
-            <div ref={mapRef} className="at-leaflet-map" />
+            {loadError ? (
+              <div className="at-map-error" style={{ padding: '20px', color: '#ef4444', textAlign: 'center' }}>
+                Error loading Google Maps: {loadError.message}
+              </div>
+            ) : !isLoaded ? (
+              <div className="at-map-loading" style={{ padding: '20px', textAlign: 'center' }}>
+                Loading Google Maps...
+              </div>
+            ) : (
+              <GoogleMap
+                mapContainerClassName="at-google-map"
+                center={INDIA_CENTER}
+                zoom={5}
+                onLoad={setMap}
+                onUnmount={() => setMap(null)}
+                options={{
+                  ...DEFAULT_MAP_OPTIONS,
+                  mapTypeControl: true,
+                }}
+              >
+                {/* Stop markers */}
+                {trip.stops?.filter(s => s.address?.coordinates?.length === 2).map((stop, idx) => {
+                  const coords = toLatLng(stop.address.coordinates);
+                  if (!coords || !coords.lat || !coords.lng) return null;
+                  
+                  const isPickup = stop.type === 'Pickup';
+                  const isDone = stop.status === 'Completed';
+                  const isCurrent = idx === currentStopIndex;
+                  
+                  let fillColor = '#6366f1';
+                  if (isDone) fillColor = '#94a3b8';
+                  else if (isPickup) fillColor = '#10b981';
+                  else fillColor = '#f97316';
+                  
+                  return (
+                    <Marker
+                      key={`stop-${stop._id}`}
+                      position={coords}
+                      label={{
+                        text: String(idx + 1),
+                        color: 'white',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                      }}
+                      icon={{
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: isCurrent ? 20 : 16,
+                        fillColor,
+                        fillOpacity: 1,
+                        strokeColor: isCurrent ? '#fbbf24' : 'white',
+                        strokeWeight: isCurrent ? 3 : 2,
+                      }}
+                      onClick={() => setSelectedMarker(stop)}
+                    />
+                  );
+                })}
+                
+                {/* Driver location marker */}
+                {driverLocationReady && driverLocationRef.current && (
+                  <Marker
+                    position={{
+                      lat: driverLocationRef.current[0],
+                      lng: driverLocationRef.current[1],
+                    }}
+                    icon={{
+                      url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='%236366f1' stroke='white' stroke-width='3'/%3E%3Ctext x='20' y='28' font-size='20' font-weight='bold' text-anchor='middle' fill='white'%3ET%3C/text%3E%3C/svg%3E",
+                      scaledSize: new google.maps.Size(40, 40),
+                      anchor: new google.maps.Point(20, 20),
+                    }}
+                    animation={google.maps.Animation.BOUNCE}
+                    title="Your location"
+                    zIndex={1000}
+                  />
+                )}
+                
+                {/* Route polyline */}
+                {routePath.length > 0 && (
+                  <Polyline
+                    path={routePath}
+                    options={{
+                      strokeColor: '#6366f1',
+                      strokeOpacity: 0.8,
+                      strokeWeight: 4,
+                    }}
+                  />
+                )}
+                
+                {/* Info window for selected marker */}
+                {selectedMarker && (
+                  <InfoWindow
+                    position={toLatLng(selectedMarker.address.coordinates)}
+                    onCloseClick={() => setSelectedMarker(null)}
+                  >
+                    <div style={{ padding: '5px' }}>
+                      <strong>{selectedMarker.address.city || 'Stop'}</strong>
+                      <br />
+                      {selectedMarker.type}
+                    </div>
+                  </InfoWindow>
+                )}
+              </GoogleMap>
+            )}
             <div className="at-map-info">
               <div className="at-info-item"><span className="at-info-label">Vehicle</span><span>{trip.assigned_vehicle_id?.registration || '—'}</span></div>
               <div className="at-info-item"><span className="at-info-label">Distance</span><span>{trip.total_distance_km || 0} km</span></div>

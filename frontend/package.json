@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@react-google-maps/api": "^2.20.8",
     "@react-oauth/google": "^0.13.4",
     "@reduxjs/toolkit": "^2.11.0",
     "chart.js": "^4.5.1",

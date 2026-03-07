@@ -325,12 +325,23 @@
   min-height: 0;
 }
 
-.tp-leaflet-map {
+.tp-google-map {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   z-index: 1;
+}
+
+.tp-map-loading,
+.tp-map-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gray-50, #f8f9fa);
+  z-index: 2;
 }
 
 .tp-map-pane {

@@ -1,6 +1,9 @@
 // src/pages/transporter/TripPlanner.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { GoogleMap, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
+import { useGoogleMaps } from '../../hooks/useGoogleMaps';
+import { normalizeCoordinates, getDirections, INDIA_CENTER, DEFAULT_MAP_OPTIONS } from '../../utils/googleMapsConfig';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
 import {
@@ -14,18 +17,8 @@ const formatHour = (decimal) => {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 };
 
-// Backend stores coords as GeoJSON [lng, lat]; Leaflet needs [lat, lng]
-const normalizeCoords = (coords) => {
-  if (!coords || !Array.isArray(coords) || coords.length < 2) return null;
-  const a = Number(coords[0]);
-  const b = Number(coords[1]);
-  if (isNaN(a) || isNaN(b)) return null;
-  // GeoJSON is [lng, lat]. For India lng~68-97, lat~8-37.
-  if (Math.abs(a) > 90 && Math.abs(b) <= 90) return [b, a];
-  // If a > 50 and b < 40, likely [lng, lat] for Indian coords
-  if (a > 50 && b < 40) return [b, a];
-  return [a, b];
-};
+// Backend stores coords as GeoJSON [lng, lat]; normalize to { lat, lng }
+const normalizeCoords = normalizeCoordinates;
 
 // Check if entity (driver/vehicle) has a scheduleBlock overlapping a time window
 const hasScheduleConflict = (entity, dateStr, timeStr, durationHrs = 12) => {
@@ -61,6 +54,7 @@ const isValidStopOrder = (stopsList) => {
 
 const TripPlanner = () => {
   const navigate = useNavigate();
+  const { isLoaded, loadError } = useGoogleMaps();
 
   // Data from API
   const [orders, setOrders] = useState([]);
@@ -87,19 +81,14 @@ const TripPlanner = () => {
   const [dragOverIdx, setDragOverIdx] = useState(null);
   const [showVehicleMenu, setShowVehicleMenu] = useState(false);
   const [showDriverMenu, setShowDriverMenu] = useState(false);
-  const [mapReady, setMapReady] = useState(false);
   const [routeDistance, setRouteDistance] = useState(0);
   const [routeDuration, setRouteDuration] = useState(0);
   const [routeLoading, setRouteLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [osrmRaw, setOsrmRaw] = useState(null);
-  const [osrmRequestCoords, setOsrmRequestCoords] = useState('');
-  const [normalizedStopsDbg, setNormalizedStopsDbg] = useState([]);
+  const [routePath, setRoutePath] = useState([]);
+  const [selectedMarker, setSelectedMarker] = useState(null);
 
-  const mapRef = useRef(null);
-  const leafletMap = useRef(null);
-  const markersRef = useRef([]);
-  const polylineRef = useRef(null);
+  const [map, setMap] = useState(null);
   const routeLegsRef = useRef([]);
 
   const showToast = (msg, type = 'error') => {
@@ -187,84 +176,38 @@ const TripPlanner = () => {
     });
   }, [selectedOrders, orders]);
 
-  // ─── Load Leaflet CDN ───
-  useEffect(() => {
-    if (!document.getElementById('leaflet-css')) {
-      const link = document.createElement('link');
-      link.id = 'leaflet-css'; link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-    }
-    if (window.L) { setMapReady(true); return; }
-    if (!document.getElementById('leaflet-js')) {
-      const script = document.createElement('script');
-      script.id = 'leaflet-js';
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = () => setMapReady(true);
-      document.head.appendChild(script);
-    } else {
-      const check = setInterval(() => {
-        if (window.L) { setMapReady(true); clearInterval(check); }
-      }, 100);
-      return () => clearInterval(check);
-    }
-  }, []);
-
-  // ─── Init map (retry until container is available) ───
-  useEffect(() => {
-    if (!mapReady) return;
-    let intervalId = null;
-
-    const tryInit = () => {
-      if (leafletMap.current || !mapRef.current) return !!leafletMap.current;
-      const L = window.L;
-      if (!L) return false;
-      const map = L.map(mapRef.current, { zoomControl: true });
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18, attribution: '© OpenStreetMap',
-      }).addTo(map);
-      map.setView([20.5, 78.9], 5);
-      leafletMap.current = map;
-      // Leaflet needs a kick after the container is in the DOM
-      setTimeout(() => { map.invalidateSize(); setStops(s => [...s]); }, 200);
-      setTimeout(() => map.invalidateSize(), 600);
-      return true;
-    };
-
-    if (!tryInit()) {
-      intervalId = setInterval(() => {
-        if (tryInit() && intervalId) { clearInterval(intervalId); intervalId = null; }
-      }, 200);
-    }
-
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-      if (leafletMap.current) { leafletMap.current.remove(); leafletMap.current = null; }
-    };
-  }, [mapReady]);
-
-  // ─── OSRM Route ───
-  const fetchRoute = async (coordinates) => {
-    if (!coordinates || coordinates.length < 2) return null;
+  // ─── Directions Route ───
+  const fetchRoute = async (waypoints) => {
+    if (!waypoints || waypoints.length < 2) return null;
     setRouteLoading(true);
     try {
-      // coordinates are [lat, lng] -> OSRM expects lon,lat
-      const coords = coordinates.map(c => `${c[1]},${c[0]}`).join(';');
-      setOsrmRequestCoords(coords);
-      console.debug('TripPlanner: OSRM request coords=', coords);
-      const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=true`);
-      const data = await res.json();
-      setOsrmRaw(data);
-      if (data.code !== 'Ok' || !data.routes?.length) throw new Error('No route');
-      const route = data.routes[0];
-      console.debug('TripPlanner: OSRM response distance=', route.distance, 'duration=', route.duration);
-      setRouteDistance(Number((route.distance / 1000).toFixed(1)));
-      setRouteDuration(Number((route.duration / 3600).toFixed(2)));
-      routeLegsRef.current = (route.legs || []).map(l => ({ distance: l.distance, duration: l.duration }));
-      return route.geometry.coordinates.map(c => [c[1], c[0]]);
+      console.debug('TripPlanner: Google Maps Directions request for', waypoints.length, 'waypoints');
+      const result = await getDirections(waypoints);
+      const route = result.routes[0];
+      
+      // Calculate total distance and duration
+      let totalDist = 0;
+      let totalDur = 0;
+      const legs = [];
+      
+      route.legs.forEach(leg => {
+        totalDist += leg.distance.value;
+        totalDur += leg.duration.value;
+        legs.push({
+          distance: leg.distance.value,
+          duration: leg.duration.value,
+        });
+      });
+      
+      setRouteDistance(Number((totalDist / 1000).toFixed(1)));
+      setRouteDuration(Number((totalDur / 3600).toFixed(2)));
+      routeLegsRef.current = legs;
+      
+      // Return the path for polyline
+      return route.overview_path;
     } catch (err) {
       routeLegsRef.current = [];
-      console.warn('TripPlanner: fetchRoute error', err);
+      console.warn('TripPlanner: Google Maps Directions error', err);
       return null;
     } finally {
       setRouteLoading(false);
@@ -272,88 +215,45 @@ const TripPlanner = () => {
   };
 
   // ─── Markers ───
-  useEffect(() => {
-    const L = window.L;
-    const map = leafletMap.current;
-    if (!L || !map) {
-      console.log('TripPlanner: Skipping markers - map not ready');
-      return;
-    }
-    markersRef.current.forEach(m => m.remove());
-    markersRef.current = [];
-
-    const validStops = stops.filter(s => s.coords);
-    validStops.forEach((stop, idx) => {
-      const isPickup = stop.type === 'Pickup';
-      const isHover = hoveredStop === stop.id;
-      const icon = L.divIcon({
-        className: '',
-        html: `<div class="tp-map-marker ${isPickup ? 'pickup' : 'drop'} ${isHover ? 'hovered' : ''}"><span>${idx + 1}</span></div>`,
-        iconSize: [32, 32], iconAnchor: [16, 16],
-      });
-      const marker = L.marker(stop.coords, { icon }).addTo(map);
-      marker.bindPopup(`<b>${idx + 1}. ${stop.location}</b><br/>${isPickup ? '↑ Pickup' : '↓ Drop'} · ${stop.weight} kg`);
-      markersRef.current.push(marker);
-    });
-
-    // Ensure map container is properly sized after DOM updates
-    map.invalidateSize();
-
-    if (markersRef.current.length > 0) {
-      const bounds = L.latLngBounds(markersRef.current.map(m => m.getLatLng()));
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
-      console.log(`TripPlanner: Added ${markersRef.current.length} markers to map`);
-    }
-  }, [stops, hoveredStop]);
 
   // ─── Route polyline ───
   useEffect(() => {
-    const L = window.L;
-    const map = leafletMap.current;
-    // Always compute route coords (fetchRoute) even if map isn't initialized yet.
-    // But only draw polyline when map is available.
+    if (!isLoaded) return;
+    
     let cancelled = false;
-    if (polylineRef.current) { polylineRef.current.remove(); polylineRef.current = null; }
+    setRoutePath([]);
     setRouteDistance(0); setRouteDuration(0);
 
-    const validStops = stops.filter(s => Array.isArray(s.coords) && s.coords.length === 2);
-    console.log(`TripPlanner: Route effect - ${validStops.length} valid stops`, validStops.map(s => s.coords));
-    setNormalizedStopsDbg(validStops.map(s => ({ id: s.id, coords: s.coords })));
+    const validStops = stops.filter(s => s.coords && s.coords.lat !== undefined && s.coords.lng !== undefined);
+    console.log(`TripPlanner: Route effect - ${validStops.length} valid stops`);
 
     if (validStops.length < 2) {
-      console.log('TripPlanner: < 2 stops, skipping route fetch');
-      if (L && map && markersRef.current.length > 0) {
-        map.fitBounds(L.latLngBounds(markersRef.current.map(m => m.getLatLng())), { padding: [40, 40], maxZoom: 10 });
-      } else if (L && map) {
-        map.setView([20.5, 78.9], 5);
-      }
+      console.log('TripPlanner: < 2 stops, skipping route');
       return;
     }
 
     (async () => {
-      const coords = validStops.map(s => s.coords);
-      console.log('TripPlanner: Fetching OSRM route for coords:', coords);
-      const routeCoords = await fetchRoute(coords);
+      const waypoints = validStops.map(s => s.coords);
+      console.log('TripPlanner: Fetching Google Maps route for waypoints:', waypoints);
+      const path = await fetchRoute(waypoints);
       if (cancelled) return;
 
-      if (routeCoords?.length) {
-        console.log(`TripPlanner: OSRM returned ${routeCoords.length} route points`);
-        if (L && map) {
-          polylineRef.current = L.polyline(routeCoords, { color: '#6366f1', weight: 4, opacity: 0.9 }).addTo(map);
-          console.log('TripPlanner: Polyline added to map');
-          // ensure map renders correctly
-          map.invalidateSize();
-          if (polylineRef.current.bringToFront) polylineRef.current.bringToFront();
-          map.fitBounds(L.latLngBounds(routeCoords), { padding: [40, 40], maxZoom: 10 });
-        } else {
-          console.warn('TripPlanner: Map not ready when trying to add polyline');
+      if (path?.length) {
+        console.log(`TripPlanner: Google Maps returned ${path.length} route points`);
+        setRoutePath(path);
+        
+        // Fit bounds to route
+        if (map && path.length > 0) {
+          const bounds = new google.maps.LatLngBounds();
+          path.forEach(point => bounds.extend(point));
+          map.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
         }
       } else {
-        console.warn('TripPlanner: No route coords returned from fetchRoute');
+        console.warn('TripPlanner: No route path returned');
       }
     })();
     return () => { cancelled = true; };
-  }, [stops]);
+  }, [stops, isLoaded, map]);
 
   // ─── Derived ───
   const vehicle = vehicles.find(v => v._id === selectedVehicle);
@@ -457,8 +357,8 @@ const TripPlanner = () => {
           city: s.address?.city || '',
           state: s.address?.state || '',
           pin: s.address?.pin || '',
-          // s.coords is [lat, lng] (Leaflet order); backend expects [lng, lat] (GeoJSON)
-          coordinates: s.coords ? [s.coords[1], s.coords[0]] : undefined,
+          // Store map coordinates in backend format {lat,lng}
+          coordinates: s.coords ? { lat: s.coords.lat, lng: s.coords.lng } : undefined,
         },
         eta_at: new Date(planned_start.getTime() + (s.etaDecimal - (sh + sm / 60)) * 3600 * 1000).toISOString(),
         status: 'Pending',
@@ -633,7 +533,81 @@ const TripPlanner = () => {
                   <p>Select orders to plot route</p>
                 </div>
               )}
-              <div ref={mapRef} className="tp-leaflet-map" />
+              {loadError ? (
+                <div className="tp-map-error" style={{ padding: '20px', color: '#ef4444' }}>
+                  Error loading Google Maps: {loadError.message}
+                </div>
+              ) : !isLoaded ? (
+                <div className="tp-map-loading" style={{ padding: '20px', textAlign: 'center' }}>
+                  Loading Google Maps...
+                </div>
+              ) : (
+                <GoogleMap
+                  mapContainerClassName="tp-google-map"
+                  center={INDIA_CENTER}
+                  zoom={5}
+                  onLoad={setMap}
+                  onUnmount={() => setMap(null)}
+                  options={{
+                    ...DEFAULT_MAP_OPTIONS,
+                    mapTypeControl: true,
+                  }}
+                >
+                  {/* Markers for stops */}
+                  {stops.filter(s => s.coords && s.coords.lat !== undefined).map((stop, idx) => {
+                    const isPickup = stop.type === 'Pickup';
+                    const isHover = hoveredStop === stop.id;
+                    
+                    return (
+                      <Marker
+                        key={stop.id}
+                        position={stop.coords}
+                        label={{
+                          text: String(idx + 1),
+                          color: 'white',
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                        }}
+                        icon={{
+                          path: google.maps.SymbolPath.CIRCLE,
+                          scale: isHover ? 18 : 16,
+                          fillColor: isPickup ? '#10b981' : '#f97316',
+                          fillOpacity: 1,
+                          strokeColor: 'white',
+                          strokeWeight: 2,
+                        }}
+                        onClick={() => setSelectedMarker(stop)}
+                      />
+                    );
+                  })}
+                  
+                  {/* Route polyline */}
+                  {routePath.length > 0 && (
+                    <Polyline
+                      path={routePath}
+                      options={{
+                        strokeColor: '#6366f1',
+                        strokeOpacity: 0.9,
+                        strokeWeight: 4,
+                      }}
+                    />
+                  )}
+                  
+                  {/* Info window for selected marker */}
+                  {selectedMarker && (
+                    <InfoWindow
+                      position={selectedMarker.coords}
+                      onCloseClick={() => setSelectedMarker(null)}
+                    >
+                      <div style={{ padding: '5px' }}>
+                        <strong>{selectedMarker.location}</strong>
+                        <br />
+                        {selectedMarker.type === 'Pickup' ? '↑ Pickup' : '↓ Drop'} · {selectedMarker.weight} kg
+                      </div>
+                    </InfoWindow>
+                  )}
+                </GoogleMap>
+              )}
             </div>
           </main>
 

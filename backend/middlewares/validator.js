@@ -338,6 +338,12 @@ const order = [
   body('pickup_coordinates')
     .optional()
     .isObject().withMessage('pickup_coordinates must be an object'),
+  body('pickup.coordinates')
+    .optional()
+    .custom((value) => {
+      if (value && typeof value === 'object' && value.lat !== undefined && value.lng !== undefined) return true;
+      throw new Error('pickup.coordinates must be {lat,lng}');
+    }),
   body('pickup_coordinates.lat')
     .optional()
     .isFloat().withMessage('Invalid latitude'),
@@ -347,6 +353,12 @@ const order = [
   body('delivery_coordinates')
     .optional()
     .isObject().withMessage('delivery_coordinates must be an object'),
+  body('delivery.coordinates')
+    .optional()
+    .custom((value) => {
+      if (value && typeof value === 'object' && value.lat !== undefined && value.lng !== undefined) return true;
+      throw new Error('delivery.coordinates must be {lat,lng}');
+    }),
   body('delivery_coordinates.lat')
     .optional()
     .isFloat().withMessage('Invalid latitude'),

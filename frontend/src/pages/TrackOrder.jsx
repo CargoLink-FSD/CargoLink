@@ -2,31 +2,17 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { GoogleMap, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
 import { fetchOrderDetails, clearCurrentOrder } from '../store/slices/ordersSlice';
 import UserActions from '../components/trackOrders/UserActions';
 import ChatWindow from '../components/trackOrders/ChatWindow';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import { getOrderTracking } from '../api/trips';
+import { useGoogleMaps } from '../hooks/useGoogleMaps';
+import { normalizeCoordinates, getDirections, INDIA_CENTER, DEFAULT_MAP_OPTIONS } from '../utils/googleMapsConfig';
 
 import '../styles/TrackOrder.css';
-
-// Normalize coords to Leaflet [lat, lng]
-const toLatLng = (c) => {
-  if (!c || c.length < 2) return null;
-  const a = Number(c[0]), b = Number(c[1]);
-  if (isNaN(a) || isNaN(b)) return null;
-  if (Math.abs(a) > 90 && Math.abs(b) <= 90) return [b, a];
-  if (a > 50 && b < 40) return [b, a];
-  return [a, b];
-};
-
-// Convert coords to OSRM "lng,lat" string
-const toOsrmCoord = (coords) => {
-  const ll = toLatLng(coords);
-  if (!ll) return null;
-  return `${ll[1]},${ll[0]}`;
-};
 
 // ─── OTP display block (copy on click) ─────────────────────────────────────────
 const OtpBlock = ({ label, otp, hint, color }) => {
@@ -49,6 +35,7 @@ const OtpBlock = ({ label, otp, hint, color }) => {
 const TrackOrderPage = () => {
   const { orderId } = useParams();
   const dispatch = useDispatch();
+  const { isLoaded, loadError } = useGoogleMaps();
 
   const { currentOrder, loading, error } = useSelector((state) => state.orders);
   const { user } = useSelector((state) => state.auth);
@@ -56,16 +43,14 @@ const TrackOrderPage = () => {
 
   // ─── Tracking state ───
   const [tracking, setTracking] = useState(null);
-  const [mapReady, setMapReady] = useState(false);
-  const [mapInitialized, setMapInitialized] = useState(false);
-  const mapContainerRef = useRef(null);
-  const leafletMap = useRef(null);
-  const markersRef = useRef([]);
-  const polylineRef = useRef(null);
-  const driverMarkerRef = useRef(null);
+  const [map, setMap] = useState(null);
+  const [routePath, setRoutePath] = useState([]);
+  const [pickupMarker, setPickupMarker] = useState(null);
+  const [deliveryMarker, setDeliveryMarker] = useState(null);
+  const [driverMarker, setDriverMarker] = useState(null);
+  const [selectedMarker, setSelectedMarker] = useState(null);
 
-
-  console.log({ currentOrder, orderId })
+  console.log({ currentOrder, orderId });
 
   useEffect(() => {
     if (orderId && userType) {
@@ -75,56 +60,6 @@ const TrackOrderPage = () => {
       dispatch(clearCurrentOrder());
     };
   }, [orderId, userType, dispatch]);
-
-  // ─── Load Leaflet CDN ───
-  useEffect(() => {
-    if (!document.getElementById('leaflet-css')) {
-      const link = document.createElement('link');
-      link.id = 'leaflet-css'; link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-    }
-    if (window.L) { setMapReady(true); return; }
-    if (!document.getElementById('leaflet-js')) {
-      const script = document.createElement('script');
-      script.id = 'leaflet-js';
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = () => setMapReady(true);
-      document.head.appendChild(script);
-    } else {
-      const check = setInterval(() => { if (window.L) { setMapReady(true); clearInterval(check); } }, 100);
-      return () => clearInterval(check);
-    }
-  }, []);
-
-  // ─── Init map (retry until container is available) ───
-  useEffect(() => {
-    if (!mapReady) return;
-    let intervalId = null;
-
-    const tryInit = () => {
-      if (leafletMap.current || !mapContainerRef.current) return !!leafletMap.current;
-      const L = window.L;
-      if (!L) return false;
-      const map = L.map(mapContainerRef.current, { zoomControl: true });
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18, attribution: '© OpenStreetMap',
-      }).addTo(map);
-      map.setView([20.5, 78.9], 5);
-      leafletMap.current = map;
-      setTimeout(() => map.invalidateSize(), 300);
-      setMapInitialized(true);
-      return true;
-    };
-
-    if (!tryInit()) {
-      intervalId = setInterval(() => {
-        if (tryInit() && intervalId) { clearInterval(intervalId); intervalId = null; }
-      }, 200);
-    }
-
-    return () => { if (intervalId) clearInterval(intervalId); };
-  }, [mapReady]);
 
   // ─── Fetch tracking data ───
   const fetchTracking = useCallback(async () => {
@@ -146,95 +81,88 @@ const TrackOrderPage = () => {
     return () => clearInterval(interval);
   }, [orderId, userType, fetchTracking]);
 
-  // ─── Update map from tracking data ───
+  // ─── Update map markers and route from order data ───
   useEffect(() => {
-    const L = window.L;
-    const map = leafletMap.current;
-    if (!L || !map || !currentOrder) return;
-
-    markersRef.current.forEach(m => m.remove());
-    markersRef.current = [];
-    if (polylineRef.current) { polylineRef.current.remove(); polylineRef.current = null; }
+    if (!isLoaded || !currentOrder) return;
 
     const pickup = currentOrder.pickup;
     const delivery = currentOrder.delivery;
-    const osrmParts = [];
 
-    // Pickup marker
+    // Set pickup marker
     if (pickup?.coordinates?.length === 2) {
-      const ll = toLatLng(pickup.coordinates);
-      if (ll) {
-        const pickupIcon = L.divIcon({
-          className: '',
-          html: '<div style="width:14px;height:14px;background:#22c55e;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
-          iconSize: [14, 14], iconAnchor: [7, 7],
+      const pickupLatLng = normalizeCoordinates(pickup.coordinates);
+      if (pickupLatLng) {
+        setPickupMarker({
+          position: pickupLatLng,
+          label: 'Pickup',
+          city: pickup.city,
+          state: pickup.state,
         });
-        const m = L.marker(ll, { icon: pickupIcon }).addTo(map);
-        m.bindPopup(`<b>Pickup</b><br/>${pickup.city || ''}, ${pickup.state || ''}`);
-        markersRef.current.push(m);
-        osrmParts.push(toOsrmCoord(pickup.coordinates));
       }
     }
 
-    // Delivery marker
+    // Set delivery marker
     if (delivery?.coordinates?.length === 2) {
-      const ll = toLatLng(delivery.coordinates);
-      if (ll) {
-        const deliveryIcon = L.divIcon({
-          className: '',
-          html: '<div style="width:14px;height:14px;background:#ef4444;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
-          iconSize: [14, 14], iconAnchor: [7, 7],
+      const deliveryLatLng = normalizeCoordinates(delivery.coordinates);
+      if (deliveryLatLng) {
+        setDeliveryMarker({
+          position: deliveryLatLng,
+          label: 'Delivery',
+          city: delivery.city,
+          state: delivery.state,
         });
-        const m = L.marker(ll, { icon: deliveryIcon }).addTo(map);
-        m.bindPopup(`<b>Delivery</b><br/>${delivery.city || ''}, ${delivery.state || ''}`);
-        markersRef.current.push(m);
-        osrmParts.push(toOsrmCoord(delivery.coordinates));
       }
     }
 
-    // OSRM route
-    const validOsrm = osrmParts.filter(Boolean);
-    if (validOsrm.length === 2) {
-      const coords = validOsrm.join(';');
-      fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`)
-        .then(r => r.json())
-        .then(data => {
-          if (data.code === 'Ok' && data.routes?.[0]) {
-            const routeCoords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-            polylineRef.current = L.polyline(routeCoords, { color: '#6366f1', weight: 4, opacity: 0.8 }).addTo(map);
-            map.fitBounds(L.latLngBounds(routeCoords), { padding: [40, 40], maxZoom: 13 });
-          }
-        })
-        .catch(() => { });
-    } else if (markersRef.current.length > 0) {
-      const bounds = L.latLngBounds(markersRef.current.map(m => m.getLatLng()));
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+    // Get directions for route
+    if (pickup?.coordinates?.length === 2 && delivery?.coordinates?.length === 2) {
+      const pickupLatLng = normalizeCoordinates(pickup.coordinates);
+      const deliveryLatLng = normalizeCoordinates(delivery.coordinates);
+      
+      if (pickupLatLng && deliveryLatLng) {
+        getDirections([pickupLatLng, deliveryLatLng])
+          .then((result) => {
+            const path = result.routes[0].overview_path;
+            setRoutePath(path);
+            
+            // Fit bounds to show entire route
+            if (map && path.length > 0) {
+              const bounds = new google.maps.LatLngBounds();
+              path.forEach(point => bounds.extend(point));
+              map.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
+            }
+          })
+          .catch((err) => {
+            console.error('Failed to get directions:', err);
+            // Fallback: just fit to markers
+            if (map) {
+              const bounds = new google.maps.LatLngBounds();
+              bounds.extend(pickupLatLng);
+              bounds.extend(deliveryLatLng);
+              map.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
+            }
+          });
+      }
     }
-  }, [currentOrder, mapInitialized]);
+  }, [currentOrder, isLoaded, map]);
 
   // ─── Live driver location marker ───
   useEffect(() => {
-    const L = window.L;
-    const map = leafletMap.current;
-    if (!L || !map) return;
+    if (!isLoaded) return;
 
     const driverCoords = tracking?.trip?.current_location?.coordinates;
     if (driverCoords?.length === 2) {
-      const ll = toLatLng(driverCoords);
-      if (!ll) return;
-      if (driverMarkerRef.current) {
-        driverMarkerRef.current.setLatLng(ll);
-      } else {
-        const icon = L.divIcon({
-          className: '',
-          html: '<div style="width:16px;height:16px;background:#3b82f6;border-radius:50%;border:3px solid white;box-shadow:0 0 0 3px rgba(59,130,246,0.3), 0 2px 8px rgba(59,130,246,0.4);position:relative"><div style="position:absolute;inset:-8px;border-radius:50%;background:rgba(59,130,246,0.15);animation:livePulse 2s ease-in-out infinite"></div></div>',
-          iconSize: [16, 16], iconAnchor: [8, 8],
+      const driverLatLng = normalizeCoordinates(driverCoords);
+      if (driverLatLng) {
+        setDriverMarker({
+          position: driverLatLng,
+          label: 'Driver',
         });
-        driverMarkerRef.current = L.marker(ll, { icon, zIndexOffset: 1000 }).addTo(map);
-        driverMarkerRef.current.bindPopup('<b>Driver Location</b>');
       }
+    } else {
+      setDriverMarker(null);
     }
-  }, [tracking?.trip?.current_location, mapInitialized]);
+  }, [tracking?.trip?.current_location, isLoaded]);
 
   const [expandedSection, setExpandedSection] = useState(null);
 
@@ -261,25 +189,13 @@ const TrackOrderPage = () => {
     }
   }, [currentOrder?.shipments, userType, calculateTotal]);
 
+  const onMapLoad = useCallback((mapInstance) => {
+    setMap(mapInstance);
+  }, []);
 
-  //   // Poll for chat updates every 10 seconds
-  //   useEffect(() => {
-  //     if (!orderId) return;
-  //     const chatInterval = setInterval(() => {
-  //       dispatch(fetchChatMessages(orderId));
-  //     }, 10000);
-  //     return () => clearInterval(chatInterval);
-  //   }, [orderId, dispatch]);
-
-  //   // Poll for tracking updates every 15 seconds
-  //   useEffect(() => {
-  //     if (!orderId || !userType) return;
-  //     const trackingInterval = setInterval(() => {
-  //       dispatch(fetchTrackingData({ orderId, userType }));
-  //     }, 15000);
-  //     return () => clearInterval(trackingInterval);
-  //   }, [orderId, userType, dispatch]);
-
+  const onMapUnmount = useCallback(() => {
+    setMap(null);
+  }, []);
 
   if (loading) {
     return (
@@ -293,7 +209,11 @@ const TrackOrderPage = () => {
   }
 
   if (!currentOrder) {
-    return <p>No Current Order</p>
+    return <p>No Current Order</p>;
+  }
+
+  if (loadError) {
+    return <div>Error loading maps</div>;
   }
 
   return (
@@ -459,7 +379,6 @@ const TrackOrderPage = () => {
                         <th>Item Name</th>
                         <th>Quantity</th>
                         <th>Price</th>
-                        {/* {userType === 'customer' && <th>Delivery Status</th>} */}
                       </tr>
                     </thead>
                     <tbody>
@@ -468,18 +387,6 @@ const TrackOrderPage = () => {
                           <td>{item.item_name}</td>
                           <td>{item.quantity}</td>
                           <td>${item.price}</td>
-                          {/* {userType === 'customer' && (
-                          <td>
-                            <select
-                              className="delivery-status"
-                              value={item.delivery_status || 'Delivered'}
-                              onChange={() => calculateTotal()}
-                            >
-                              <option value="Delivered">Delivered</option>
-                              <option value="Damaged">Damaged</option>
-                            </select>
-                          </td>
-                        )} */}
                         </tr>
                       ))}
                     </tbody>
@@ -504,7 +411,118 @@ const TrackOrderPage = () => {
                     <h2 className="card-title">Live Tracking</h2>
                   </div>
                   <div className="map-container" style={{ height: '350px' }}>
-                    <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
+                    {isLoaded ? (
+                      <GoogleMap
+                        mapContainerStyle={{ width: '100%', height: '100%' }}
+                        center={(pickupMarker && deliveryMarker) ? undefined : INDIA_CENTER}
+                        zoom={5}
+                        onLoad={onMapLoad}
+                        onUnmount={onMapUnmount}
+                        options={DEFAULT_MAP_OPTIONS}
+                      >
+                        {/* Pickup Marker */}
+                        {pickupMarker && (
+                          <Marker
+                            position={pickupMarker.position}
+                            icon={{
+                              path: google.maps.SymbolPath.CIRCLE,
+                              fillColor: '#22c55e',
+                              fillOpacity: 1,
+                              strokeColor: '#ffffff',
+                              strokeWeight: 3,
+                              scale: 7,
+                            }}
+                            onClick={() => setSelectedMarker('pickup')}
+                          />
+                        )}
+
+                        {/* Delivery Marker */}
+                        {deliveryMarker && (
+                          <Marker
+                            position={deliveryMarker.position}
+                            icon={{
+                              path: google.maps.SymbolPath.CIRCLE,
+                              fillColor: '#ef4444',
+                              fillOpacity: 1,
+                              strokeColor: '#ffffff',
+                              strokeWeight: 3,
+                              scale: 7,
+                            }}
+                            onClick={() => setSelectedMarker('delivery')}
+                          />
+                        )}
+
+                        {/* Driver Live Location Marker */}
+                        {driverMarker && (
+                          <Marker
+                            position={driverMarker.position}
+                            icon={{
+                              path: google.maps.SymbolPath.CIRCLE,
+                              fillColor: '#3b82f6',
+                              fillOpacity: 1,
+                              strokeColor: '#ffffff',
+                              strokeWeight: 3,
+                              scale: 8,
+                            }}
+                            animation={google.maps.Animation.BOUNCE}
+                            onClick={() => setSelectedMarker('driver')}
+                          />
+                        )}
+
+                        {/* Route Polyline */}
+                        {routePath.length > 0 && (
+                          <Polyline
+                            path={routePath}
+                            options={{
+                              strokeColor: '#6366f1',
+                              strokeOpacity: 0.8,
+                              strokeWeight: 4,
+                            }}
+                          />
+                        )}
+
+                        {/* Info Windows */}
+                        {selectedMarker === 'pickup' && pickupMarker && (
+                          <InfoWindow
+                            position={pickupMarker.position}
+                            onCloseClick={() => setSelectedMarker(null)}
+                          >
+                            <div>
+                              <strong>Pickup</strong><br />
+                              {pickupMarker.city}, {pickupMarker.state}
+                            </div>
+                          </InfoWindow>
+                        )}
+
+                        {selectedMarker === 'delivery' && deliveryMarker && (
+                          <InfoWindow
+                            position={deliveryMarker.position}
+                            onCloseClick={() => setSelectedMarker(null)}
+                          >
+                            <div>
+                              <strong>Delivery</strong><br />
+                              {deliveryMarker.city}, {deliveryMarker.state}
+                            </div>
+                          </InfoWindow>
+                        )}
+
+                        {selectedMarker === 'driver' && driverMarker && (
+                          <InfoWindow
+                            position={driverMarker.position}
+                            onCloseClick={() => setSelectedMarker(null)}
+                          >
+                            <div>
+                              <strong>Driver Location</strong><br />
+                              Live tracking
+                            </div>
+                          </InfoWindow>
+                        )}
+                      </GoogleMap>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                        <p>Loading map...</p>
+                      </div>
+                    )}
                   </div>
                   {tracking?.trip && (
                     <div style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', color: '#4b5563', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
@@ -517,9 +535,6 @@ const TrackOrderPage = () => {
                   )}
                 </div>
               </div>
-              {/* <LiveTracking isExpanded={expandedSection === 'tracking'} onToggleExpand={() => toggleExpand('tracking')}/> */}
-
-
 
               <div className={`chat-card ${expandedSection === 'chat' ? 'expanded-card' : ''} ${expandedSection && expandedSection !== 'chat' ? 'hidden-card' : ''}`}>
                 <ChatWindow orderId={orderId} userType={userType} />

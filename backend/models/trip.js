@@ -16,8 +16,8 @@ const TripStopSchema = new mongoose.Schema(
       state: String,
       pin: String,
       coordinates: {
-        type: [Number], // [lng, lat]
-        default: undefined,
+        lat: { type: Number },
+        lng: { type: Number },
       },
     },
     scheduled_arrival_at: Date,
@@ -60,7 +60,10 @@ const TripSchema = new mongoose.Schema(
     stops: { type: [TripStopSchema], default: [] },
     current_stop_index: { type: Number, default: 0 },
     current_location: {
-      coordinates: { type: [Number], default: undefined },
+      coordinates: {
+        lat: { type: Number },
+        lng: { type: Number },
+      },
       updated_at: Date,
     },
     planned_start_at: Date,

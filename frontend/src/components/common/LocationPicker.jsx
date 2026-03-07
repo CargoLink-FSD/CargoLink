@@ -1,278 +1,229 @@
 // src/components/common/LocationPicker.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { GoogleMap, Marker, Autocomplete } from '@react-google-maps/api';
+import { useGoogleMaps } from '../../hooks/useGoogleMaps';
+import { 
+  INDIA_CENTER, 
+  DEFAULT_MAP_OPTIONS,
+  reverseGeocode,
+  geocodeAddress,
+  normalizeCoordinates 
+} from '../../utils/googleMapsConfig';
 import '../../styles/LocationPicker.css';
 
-const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org';
-
 /**
- * LocationPicker – inline Leaflet map for picking/confirming a geocoded location.
+ * LocationPicker – inline Google Map for picking/confirming a geocoded location.
  *
  * Props:
  *  - label          (string)        "Pickup" | "Delivery"
  *  - address        (object)        { street, city, state, pin }
- *  - coordinates    ([lng,lat]|null)
- *  - onLocationSet  (fn)            ({ coordinates: [lng,lat], address })
+ *  - coordinates    ({lat,lng}|null)
+ *  - onLocationSet  (fn)            ({ coordinates: {lat,lng}, address })
  */
 const LocationPicker = ({ label, address, coordinates, onLocationSet }) => {
-  const mapRef = useRef(null);
-  const leafletMap = useRef(null);
-  const markerRef = useRef(null);
-  const [mapReady, setMapReady] = useState(false);
+  const { isLoaded, loadError } = useGoogleMaps();
+  const [map, setMap] = useState(null);
+  const [markerPosition, setMarkerPosition] = useState(null);
   const [searching, setSearching] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const debounceRef = useRef(null);
+  const autocompleteRef = useRef(null);
 
-  // ─── Load Leaflet CDN ───
-  useEffect(() => {
-    if (!document.getElementById('leaflet-css')) {
-      const link = document.createElement('link');
-      link.id = 'leaflet-css';
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-    }
-    if (window.L) {
-      setMapReady(true);
-      return;
-    }
-    if (!document.getElementById('leaflet-js')) {
-      const script = document.createElement('script');
-      script.id = 'leaflet-js';
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = () => setMapReady(true);
-      document.head.appendChild(script);
-    } else {
-      const check = setInterval(() => {
-        if (window.L) { setMapReady(true); clearInterval(check); }
-      }, 100);
-      return () => clearInterval(check);
-    }
+  // Convert GeoJSON [lng, lat] to Google Maps { lat, lng }
+  const coordsToLatLng = useCallback((coords) => {
+    if (!coords || coords.length < 2) return null;
+    const normalized = normalizeCoordinates(coords);
+    return normalized;
   }, []);
 
-  // ─── Init map ───
+  // Initialize marker position from coordinates prop
   useEffect(() => {
-    if (!mapReady || !mapRef.current || leafletMap.current) return;
-    const L = window.L;
-    const map = L.map(mapRef.current, { zoomControl: true, scrollWheelZoom: true });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-      attribution: '© OpenStreetMap',
-    }).addTo(map);
-
     if (coordinates?.length === 2) {
-      map.setView([coordinates[1], coordinates[0]], 14);
-    } else {
-      map.setView([20.5, 78.9], 5);
-    }
-
-    // Click to set location
-    map.on('click', async (e) => {
-      const { lat, lng } = e.latlng;
-      placeMarker(lat, lng);
-      // Reverse geocode
-      try {
-        const res = await fetch(
-          `${NOMINATIM_BASE}/reverse?lat=${lat}&lon=${lng}&format=json`,
-          { headers: { 'User-Agent': 'CargoLink/1.0' } }
-        );
-        const data = await res.json();
-        if (data && !data.error) {
-          onLocationSet({
-            coordinates: [lng, lat],
-            address: {
-              street: data.address?.road || data.address?.suburb || '',
-              city: data.address?.city || data.address?.town || data.address?.village || '',
-              state: data.address?.state || '',
-              pin: data.address?.postcode || '',
-            },
-          });
-        } else {
-          onLocationSet({ coordinates: [lng, lat], address: null });
-        }
-      } catch {
-        onLocationSet({ coordinates: [lng, lat], address: null });
+      const latLng = coordsToLatLng(coordinates);
+      if (latLng) {
+        setMarkerPosition(latLng);
       }
-    });
+    }
+  }, [coordinates, coordsToLatLng]);
 
-    leafletMap.current = map;
-
-    return () => {
-      map.remove();
-      leafletMap.current = null;
-      markerRef.current = null;
-    };
-  }, [mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ─── Update marker when coordinates change from outside ───
-  useEffect(() => {
-    if (!leafletMap.current || !coordinates?.length) return;
-    placeMarker(coordinates[1], coordinates[0]);
-    leafletMap.current.setView([coordinates[1], coordinates[0]], 14);
-  }, [coordinates]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const placeMarker = (lat, lng) => {
-    const L = window.L;
-    const map = leafletMap.current;
-    if (!L || !map) return;
-
-    if (markerRef.current) {
-      markerRef.current.setLatLng([lat, lng]);
-    } else {
-      const icon = L.divIcon({
-        className: '',
-        html: `<div class="lp-marker"><span></span></div>`,
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
+  // Handle map click - place marker and reverse geocode
+  const handleMapClick = useCallback(async (e) => {
+    const lat = e.latLng.lat();
+    const lng = e.latLng.lng();
+    
+    setMarkerPosition({ lat, lng });
+    
+    try {
+      const addressData = await reverseGeocode(lat, lng);
+      onLocationSet({
+        coordinates: { lat, lng },
+        address: {
+          street: addressData.street,
+          city: addressData.city,
+          state: addressData.state,
+          pin: addressData.pin,
+        },
       });
-      markerRef.current = L.marker([lat, lng], { icon, draggable: true }).addTo(map);
-
-      // Drag end → reverse geocode
-      markerRef.current.on('dragend', async () => {
-        const pos = markerRef.current.getLatLng();
-        try {
-          const res = await fetch(
-            `${NOMINATIM_BASE}/reverse?lat=${pos.lat}&lon=${pos.lng}&format=json`,
-            { headers: { 'User-Agent': 'CargoLink/1.0' } }
-          );
-          const data = await res.json();
-          if (data && !data.error) {
-            onLocationSet({
-              coordinates: [pos.lng, pos.lat],
-              address: {
-                street: data.address?.road || data.address?.suburb || '',
-                city: data.address?.city || data.address?.town || data.address?.village || '',
-                state: data.address?.state || '',
-                pin: data.address?.postcode || '',
-              },
-            });
-          } else {
-            onLocationSet({ coordinates: [pos.lng, pos.lat], address: null });
-          }
-        } catch {
-          onLocationSet({ coordinates: [pos.lng, pos.lat], address: null });
-        }
+    } catch (error) {
+      console.error('Reverse geocoding failed:', error);
+      onLocationSet({ 
+        coordinates: { lat, lng }, 
+        address: null 
       });
     }
-  };
+  }, [onLocationSet]);
 
-  // ─── Geocode the current address text ───
+  // Handle marker drag end
+  const handleMarkerDragEnd = useCallback(async (e) => {
+    const lat = e.latLng.lat();
+    const lng = e.latLng.lng();
+    
+    setMarkerPosition({ lat, lng });
+    
+    try {
+      const addressData = await reverseGeocode(lat, lng);
+      onLocationSet({
+        coordinates: { lat, lng },
+        address: {
+          street: addressData.street,
+          city: addressData.city,
+          state: addressData.state,
+          pin: addressData.pin,
+        },
+      });
+    } catch (error) {
+      console.error('Reverse geocoding failed:', error);
+      onLocationSet({ 
+        coordinates: { lat, lng }, 
+        address: null 
+      });
+    }
+  }, [onLocationSet]);
+
+  // Handle "Find on Map" button - geocode current address
   const handleFindOnMap = async () => {
     if (!address) return;
-    const query = [address.street, address.city, address.state, address.pin].filter(Boolean).join(', ');
+    const query = [address.street, address.city, address.state, address.pin]
+      .filter(Boolean)
+      .join(', ');
+    
     if (!query.trim()) return;
 
     setSearching(true);
     try {
-      const res = await fetch(
-        `${NOMINATIM_BASE}/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=in`,
-        { headers: { 'User-Agent': 'CargoLink/1.0' } }
-      );
-      const data = await res.json();
-      if (data.length > 0) {
-        const lat = parseFloat(data[0].lat);
-        const lng = parseFloat(data[0].lon);
-        placeMarker(lat, lng);
-        leafletMap.current?.setView([lat, lng], 14);
-        onLocationSet({ coordinates: [lng, lat], address: null }); // keep existing address text
+      const result = await geocodeAddress(query);
+      const latLng = { lat: result.lat, lng: result.lng };
+      setMarkerPosition(latLng);
+      
+      if (map) {
+        map.panTo(latLng);
+        map.setZoom(14);
       }
-    } catch {
-      // silently ignore
+      
+      onLocationSet({ 
+        coordinates: { lat: result.lat, lng: result.lng },
+        address: null // Keep existing address text
+      });
+    } catch (error) {
+      console.error('Geocoding failed:', error);
     } finally {
       setSearching(false);
     }
   };
 
-  // ─── Search with autocomplete ───
-  const handleSearchChange = (value) => {
-    setSearchQuery(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (value.length < 3) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
+  // Handle autocomplete place selection
+  const handlePlaceSelect = useCallback(async () => {
+    const autocomplete = autocompleteRef.current;
+    if (!autocomplete) return;
+
+    const place = autocomplete.getPlace();
+    if (!place.geometry || !place.geometry.location) return;
+
+    const lat = place.geometry.location.lat();
+    const lng = place.geometry.location.lng();
+    const latLng = { lat, lng };
+    
+    setMarkerPosition(latLng);
+    
+    if (map) {
+      map.panTo(latLng);
+      map.setZoom(14);
     }
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `${NOMINATIM_BASE}/search?q=${encodeURIComponent(value)}&format=json&limit=5&countrycodes=in`,
-          { headers: { 'User-Agent': 'CargoLink/1.0' } }
-        );
-        const data = await res.json();
-        setSuggestions(data || []);
-        setShowSuggestions(true);
-      } catch {
-        setSuggestions([]);
+
+    // Parse address components
+    const addressComponents = place.address_components || [];
+    const parsedAddress = {
+      street: '',
+      city: '',
+      state: '',
+      pin: '',
+    };
+
+    addressComponents.forEach(component => {
+      if (component.types.includes('route') || component.types.includes('street_address')) {
+        parsedAddress.street = component.long_name;
+      } else if (component.types.includes('sublocality') && !parsedAddress.street) {
+        parsedAddress.street = component.long_name;
+      } else if (component.types.includes('locality')) {
+        parsedAddress.city = component.long_name;
+      } else if (component.types.includes('administrative_area_level_1')) {
+        parsedAddress.state = component.long_name;
+      } else if (component.types.includes('postal_code')) {
+        parsedAddress.pin = component.long_name;
       }
-    }, 400);
-  };
+    });
 
-  const handleSelectSuggestion = async (item) => {
-    const lat = parseFloat(item.lat);
-    const lng = parseFloat(item.lon);
-    setSearchQuery(item.display_name);
-    setShowSuggestions(false);
+    onLocationSet({
+      coordinates: { lat, lng },
+      address: parsedAddress,
+    });
+  }, [map, onLocationSet]);
 
-    placeMarker(lat, lng);
-    leafletMap.current?.setView([lat, lng], 14);
+  const onLoad = useCallback((mapInstance) => {
+    setMap(mapInstance);
+  }, []);
 
-    // Reverse geocode for structured address
-    try {
-      const res = await fetch(
-        `${NOMINATIM_BASE}/reverse?lat=${lat}&lon=${lng}&format=json`,
-        { headers: { 'User-Agent': 'CargoLink/1.0' } }
-      );
-      const data = await res.json();
-      if (data && !data.error) {
-        onLocationSet({
-          coordinates: [lng, lat],
-          address: {
-            street: data.address?.road || data.address?.suburb || '',
-            city: data.address?.city || data.address?.town || data.address?.village || '',
-            state: data.address?.state || '',
-            pin: data.address?.postcode || '',
-          },
-        });
-      } else {
-        onLocationSet({ coordinates: [lng, lat], address: null });
-      }
-    } catch {
-      onLocationSet({ coordinates: [lng, lat], address: null });
-    }
-  };
+  const onUnmount = useCallback(() => {
+    setMap(null);
+  }, []);
+
+  const onAutocompleteLoad = useCallback((autocomplete) => {
+    autocompleteRef.current = autocomplete;
+  }, []);
+
+  if (loadError) {
+    return <div className="lp-error">Error loading Google Maps</div>;
+  }
+
+  if (!isLoaded) {
+    return <div className="lp-loading">Loading map...</div>;
+  }
 
   return (
     <div className="lp-container">
       <div className="lp-header">
         <span className="lp-label">{label} Location on Map</span>
-        {coordinates && (
+        {markerPosition && (
           <span className="lp-coords">
-            {coordinates[1].toFixed(4)}, {coordinates[0].toFixed(4)}
+            {markerPosition.lat.toFixed(4)}, {markerPosition.lng.toFixed(4)}
           </span>
         )}
       </div>
 
       <div className="lp-controls">
         <div className="lp-search-wrap">
-          <input
-            type="text"
-            className="lp-search-input"
-            placeholder="Search location…"
-            value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            onFocus={() => suggestions.length && setShowSuggestions(true)}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-          />
-          {showSuggestions && suggestions.length > 0 && (
-            <ul className="lp-suggestions">
-              {suggestions.map((s, i) => (
-                <li key={i} onMouseDown={() => handleSelectSuggestion(s)}>
-                  {s.display_name}
-                </li>
-              ))}
-            </ul>
-          )}
+          <Autocomplete
+            onLoad={onAutocompleteLoad}
+            onPlaceChanged={handlePlaceSelect}
+            options={{
+              componentRestrictions: { country: 'in' },
+              fields: ['address_components', 'geometry', 'formatted_address'],
+            }}
+          >
+            <input
+              type="text"
+              className="lp-search-input"
+              placeholder="Search location…"
+            />
+          </Autocomplete>
         </div>
         <button
           type="button"
@@ -284,7 +235,24 @@ const LocationPicker = ({ label, address, coordinates, onLocationSet }) => {
         </button>
       </div>
 
-      <div ref={mapRef} className="lp-map" />
+      <GoogleMap
+        mapContainerClassName="lp-map"
+        center={markerPosition || INDIA_CENTER}
+        zoom={markerPosition ? 14 : 5}
+        onClick={handleMapClick}
+        onLoad={onLoad}
+        onUnmount={onUnmount}
+        options={DEFAULT_MAP_OPTIONS}
+      >
+        {markerPosition && (
+          <Marker
+            position={markerPosition}
+            draggable={true}
+            onDragEnd={handleMarkerDragEnd}
+          />
+        )}
+      </GoogleMap>
+      
       <p className="lp-hint">Click on the map or drag the marker to adjust the exact location</p>
     </div>
   );

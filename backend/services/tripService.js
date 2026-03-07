@@ -48,20 +48,24 @@ const createTrip = async (transporterId, tripData) => {
   }
 
   // ── Calculate route from OSRM using stop coordinates ──
-  let processedStops = (stops || []).map((s, i) => ({ ...s, sequence: s.sequence || i + 1 }));
+  let processedStops = (stops || []).map((s, i) => ({
+    ...s,
+    sequence: s.sequence || i + 1,
+    address: { ...(s.address || {}) },
+  }));
   let totalDistanceKm = tripData.total_distance_km || 0;
   let totalDurationMinutes = tripData.total_duration_minutes || 0;
   let plannedEndAt = tripData.planned_end_at;
 
   const stopsWithCoords = processedStops.filter(
-    s => s.address?.coordinates?.length === 2
+    s => s.address?.coordinates?.lat !== undefined && s.address?.coordinates?.lng !== undefined
   );
 
   if (stopsWithCoords.length >= 2) {
     try {
       const coords = processedStops
-        .filter(s => s.address?.coordinates?.length === 2)
-        .map(s => s.address.coordinates); // [lng, lat]
+        .filter(s => s.address?.coordinates?.lat !== undefined && s.address?.coordinates?.lng !== undefined)
+        .map(s => [s.address.coordinates.lng, s.address.coordinates.lat]);
 
       const routeData = await calculateRoute(coords);
       totalDistanceKm = routeData.distance_km;
@@ -80,7 +84,7 @@ const createTrip = async (transporterId, tripData) => {
 
         processedStops = processedStops.map((stop, idx) => {
           // Driving time from the previous stop
-          if (idx > 0 && stop.address?.coordinates?.length === 2) {
+          if (idx > 0 && stop.address?.coordinates?.lat !== undefined && stop.address?.coordinates?.lng !== undefined) {
             if (routeData.legs[legIdx]) {
               cumulativeMinutes += routeData.legs[legIdx].duration_minutes;
               legIdx++;
@@ -399,7 +403,10 @@ const declareDelay = async (driverId, tripId, delayData) => {
   const now = new Date();
   const delayStop = {
     sequence: 0, type: 'Delay',
-    address: { street: 'Delay Stop', city: '', state: '', pin: '', coordinates: coordinates || trip.current_location?.coordinates },
+    address: {
+      street: 'Delay Stop', city: '', state: '', pin: '',
+      coordinates: coordinates || trip.current_location?.coordinates,
+    },
     eta_at: now, actual_arrival_at: now, status: 'Arrived',
     delay_minutes, delay_reason: reason || 'Delay reported by driver',
   };
@@ -447,6 +454,9 @@ const updateTripLocation = async (driverId, tripId, coordinates) => {
   }
   if (trip.status !== 'Active') {
     throw new AppError(400, "InvalidOperation", "Trip must be active", "ERR_INVALID_OPERATION");
+  }
+  if (!coordinates || typeof coordinates !== 'object' || coordinates.lat === undefined || coordinates.lng === undefined) {
+    throw new AppError(400, "ValidationError", "Invalid coordinates payload", "ERR_VALIDATION");
   }
   return await tripRepo.updateTripLocation(tripId, coordinates);
 };

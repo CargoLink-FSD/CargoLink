@@ -67,23 +67,37 @@ const placeOrder = async (req, res, next) => {
     }
 
     // Geocode pickup if coordinates not provided
-    if (orderData.pickup && !orderData.pickup.coordinates?.length) {
+    if (orderData.pickup && (orderData.pickup.coordinates?.lat === undefined || orderData.pickup.coordinates?.lng === undefined)) {
       const addr = [orderData.pickup.street, orderData.pickup.city, orderData.pickup.state, orderData.pickup.pin]
         .filter(Boolean).join(', ');
       const result = await geocodeAddress(addr);
       if (result) {
-        orderData.pickup.coordinates = [result.lng, result.lat];
+        orderData.pickup.coordinates = { lat: result.lat, lng: result.lng };
       }
     }
 
     // Geocode delivery if coordinates not provided
-    if (orderData.delivery && !orderData.delivery.coordinates?.length) {
+    if (orderData.delivery && (orderData.delivery.coordinates?.lat === undefined || orderData.delivery.coordinates?.lng === undefined)) {
       const addr = [orderData.delivery.street, orderData.delivery.city, orderData.delivery.state, orderData.delivery.pin]
         .filter(Boolean).join(', ');
       const result = await geocodeAddress(addr);
       if (result) {
-        orderData.delivery.coordinates = [result.lng, result.lat];
+        orderData.delivery.coordinates = { lat: result.lat, lng: result.lng };
       }
+    }
+
+    // Keep mirrored lat/lng object fields populated.
+    if (orderData.pickup?.coordinates?.lat !== undefined && orderData.pickup?.coordinates?.lng !== undefined) {
+      orderData.pickup_coordinates = {
+        lat: orderData.pickup.coordinates.lat,
+        lng: orderData.pickup.coordinates.lng,
+      };
+    }
+    if (orderData.delivery?.coordinates?.lat !== undefined && orderData.delivery?.coordinates?.lng !== undefined) {
+      orderData.delivery_coordinates = {
+        lat: orderData.delivery.coordinates.lat,
+        lng: orderData.delivery.coordinates.lng,
+      };
     }
 
     // If a cargo photo was uploaded, add the path to orderData

@@ -52,29 +52,31 @@ export function usePlaceOrder() {
     loadAddresses();
   }, []);
 
-  // Auto-calculate distance using Leaflet when both locations have coordinates.
-  // This avoids OSRM/Maps distance APIs and keeps the main flow Leaflet-driven.
+  // Auto-calculate distance using Google Maps Geometry when both locations have coordinates.
   useEffect(() => {
     const pickup = formData.pickup.coordinates;
     const delivery = formData.delivery.coordinates;
 
     if (!pickup || !delivery) return;
-    if (pickup.length !== 2 || delivery.length !== 2) return;
+    if (pickup.lat === undefined || pickup.lng === undefined) return;
+    if (delivery.lat === undefined || delivery.lng === undefined) return;
 
-    const L = window.L;
-    if (!L?.latLng) return;
+    // Wait for Google Maps to load
+    if (!window.google?.maps?.geometry) {
+      console.log('Google Maps Geometry library not loaded yet');
+      return;
+    }
 
     setDistanceLoading(true);
     try {
-      // Coordinates are stored as [lng, lat]
-      const pickupLatLng = L.latLng(pickup[1], pickup[0]);
-      const deliveryLatLng = L.latLng(delivery[1], delivery[0]);
+      const pickupLatLng = new google.maps.LatLng(pickup.lat, pickup.lng);
+      const deliveryLatLng = new google.maps.LatLng(delivery.lat, delivery.lng);
 
-      const meters = pickupLatLng.distanceTo(deliveryLatLng);
+      const meters = google.maps.geometry.spherical.computeDistanceBetween(pickupLatLng, deliveryLatLng);
       const distanceKm = Number((meters / 1000).toFixed(1));
 
-      setPickupCoords({ lat: pickup[1], lng: pickup[0] });
-      setDeliveryCoords({ lat: delivery[1], lng: delivery[0] });
+      setPickupCoords({ lat: pickup.lat, lng: pickup.lng });
+      setDeliveryCoords({ lat: delivery.lat, lng: delivery.lng });
       setDurationMin(null);
 
       setFormData(prev => ({
@@ -83,7 +85,7 @@ export function usePlaceOrder() {
       }));
       setErrors(prev => ({ ...prev, 'transit.distance': '' }));
     } catch (error) {
-      console.error('Leaflet distance calculation failed:', error);
+      console.error('Google Maps distance calculation failed:', error);
       setPickupCoords(null);
       setDeliveryCoords(null);
       setDurationMin(null);
@@ -179,7 +181,7 @@ export function usePlaceOrder() {
     }));
   }, [formData.cargo.type, formData.cargo.weight]);
 
-  // (Distance is handled by Leaflet coords effect above)
+  // Distance is recalculated from selected coordinates
 
   // Handle location set from map picker
   const handleLocationSet = (type, { coordinates, address }) => {

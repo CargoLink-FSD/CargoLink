@@ -22,14 +22,20 @@ const OrderSchema = new mongoose.Schema(
       city: { type: String, required: true },
       state: { type: String, required: true },
       pin: { type: String, required: true },
-      coordinates: { type: [Number], default: undefined },
+      coordinates: {
+        lat: { type: Number },
+        lng: { type: Number },
+      },
     },
     delivery: {
       street: { type: String, required: true },
       city: { type: String, required: true },
       state: { type: String, required: true },
       pin: { type: String, required: true },
-      coordinates: { type: [Number], default: undefined },
+      coordinates: {
+        lat: { type: Number },
+        lng: { type: Number },
+      },
     },
     pickup_coordinates: {
       lat: { type: Number },

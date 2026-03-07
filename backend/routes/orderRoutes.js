@@ -23,6 +23,20 @@ const parseFormDataJSON = (req, res, next) => {
             // Already an object, skip
         }
     }
+    if (req.body.pickup?.coordinates && typeof req.body.pickup.coordinates === 'string') {
+        try {
+            req.body.pickup.coordinates = JSON.parse(req.body.pickup.coordinates);
+        } catch (e) {
+            // Keep original value; validator/controller will handle invalid shape
+        }
+    }
+    if (req.body.delivery?.coordinates && typeof req.body.delivery.coordinates === 'string') {
+        try {
+            req.body.delivery.coordinates = JSON.parse(req.body.delivery.coordinates);
+        } catch (e) {
+            // Keep original value; validator/controller will handle invalid shape
+        }
+    }
     if (req.body.pickup_coordinates) {
         try {
             req.body.pickup_coordinates = JSON.parse(req.body.pickup_coordinates);
