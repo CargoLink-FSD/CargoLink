@@ -1,0 +1,2353 @@
+openapi: 3.0.3
+info:
+  title: CargoLink API
+  version: 1.0.0
+  description: |
+    OpenAPI specification for CargoLink backend.
+
+    Scope included:
+    - Auth
+    - Customer
+    - Transporter
+    - Orders/Bids
+    - Payments
+    - Admin
+    - Manager
+    - Chat
+    - Tickets
+    - Location
+
+    Scope intentionally excluded per request:
+    - Driver routes (/api/drivers/*)
+    - Trip routes (/api/trips/*)
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+tags:
+  - name: Auth
+  - name: Customer
+  - name: Transporter
+  - name: Orders
+  - name: Payments
+  - name: Admin
+  - name: Manager
+  - name: Chat
+  - name: Tickets
+  - name: Location
+paths:
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login user
+      description: Login for customer/transporter/driver/manager/admin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/refresh-token:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicSuccess'
+
+  /api/auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Forgot password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, userType]
+              properties:
+                email:
+                  type: string
+                  format: email
+                userType:
+                  type: string
+                  enum: [customer, transporter]
+      responses:
+        '200':
+          description: Temporary password sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicSuccess'
+
+  /api/auth/reset-password/{token}:
+    post:
+      tags: [Auth]
+      summary: Reset password (placeholder)
+      parameters:
+        - $ref: '#/components/parameters/TokenParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+      responses:
+        '501':
+          description: Not implemented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/verify-email/{token}:
+    get:
+      tags: [Auth]
+      summary: Verify email (placeholder)
+      parameters:
+        - $ref: '#/components/parameters/TokenParam'
+      responses:
+        '501':
+          description: Not implemented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/resend-verification:
+    post:
+      tags: [Auth]
+      summary: Resend verification email (placeholder)
+      responses:
+        '501':
+          description: Not implemented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/google-login:
+    post:
+      tags: [Auth]
+      summary: Login with Google credential
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credential, role]
+              properties:
+                credential:
+                  type: string
+                role:
+                  type: string
+                  enum: [customer, transporter, driver]
+      responses:
+        '200':
+          description: Login success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/auth/google-verify:
+    post:
+      tags: [Auth]
+      summary: Verify Google credential and return email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credential]
+              properties:
+                credential:
+                  type: string
+      responses:
+        '200':
+          description: Email extracted
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BasicSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          email:
+                            type: string
+                            format: email
+
+  /api/customers/register:
+    post:
+      tags: [Customer]
+      summary: Register customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Customer registration payload validated by backend validator.
+              additionalProperties: true
+      responses:
+        '201':
+          description: Customer registered and tokens returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/customers/dashboard-stats:
+    get:
+      tags: [Customer]
+      security:
+        - bearerAuth: []
+      summary: Get customer dashboard stats
+      responses:
+        '200':
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/customers/profile:
+    get:
+      tags: [Customer]
+      security:
+        - bearerAuth: []
+      summary: Get customer profile
+      responses:
+        '200':
+          description: Profile fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+    put:
+      tags: [Customer]
+      security:
+        - bearerAuth: []
+      summary: Update customer profile
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                profilePicture:
+                  type: string
+                  format: binary
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                phone:
+                  type: string
+                dob:
+                  type: string
+                  format: date
+                gender:
+                  type: string
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+    delete:
+      tags: [Customer]
+      security:
+        - bearerAuth: []
+      summary: Delete customer profile (placeholder)
+      responses:
+        '501':
+          description: Not implemented
+
+  /api/customers/password:
+    patch:
+      tags: [Customer]
+      security:
+        - bearerAuth: []
+      summary: Change customer password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [oldPassword, newPassword]
+              properties:
+                oldPassword:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        '200':
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicSuccess'
+
+  /api/customers/addresses:
+    get:
+      tags: [Customer]
+      security:
+        - bearerAuth: []
+      summary: List customer addresses
+      responses:
+        '200':
+          description: Address list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+    post:
+      tags: [Customer]
+      security:
+        - bearerAuth: []
+      summary: Add customer address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Address'
+      responses:
+        '201':
+          description: Address added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/customers/addresses/{addressId}:
+    delete:
+      tags: [Customer]
+      security:
+        - bearerAuth: []
+      summary: Remove customer address by index
+      parameters:
+        - $ref: '#/components/parameters/AddressIndexParam'
+      responses:
+        '200':
+          description: Address removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/transporters/register:
+    post:
+      tags: [Transporter]
+      summary: Register transporter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '201':
+          description: Transporter registered and tokens returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+
+  /api/transporters/{transporterId}/public-profile:
+    get:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Get transporter public profile
+      parameters:
+        - $ref: '#/components/parameters/TransporterIdParam'
+      responses:
+        '200':
+          description: Public profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/transporters/documents:
+    post:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Upload transporter verification documents
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                pan_card:
+                  type: string
+                  format: binary
+                driving_license:
+                  type: string
+                  format: binary
+                vehicle_rc_0:
+                  type: string
+                  format: binary
+                vehicle_rc_1:
+                  type: string
+                  format: binary
+                vehicle_rc_2:
+                  type: string
+                  format: binary
+                vehicle_rc_3:
+                  type: string
+                  format: binary
+                vehicle_rc_4:
+                  type: string
+                  format: binary
+                vehicle_rc_5:
+                  type: string
+                  format: binary
+                vehicle_rc_6:
+                  type: string
+                  format: binary
+                vehicle_rc_7:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Documents uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/transporters/verification-status:
+    get:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Get transporter verification status
+      responses:
+        '200':
+          description: Verification status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/transporters/dashboard-stats:
+    get:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Get transporter dashboard stats
+      responses:
+        '200':
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/transporters/profile:
+    get:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Get transporter profile
+      responses:
+        '200':
+          description: Profile fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+    put:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Update transporter profile
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                profilePicture:
+                  type: string
+                  format: binary
+                name:
+                  type: string
+                email:
+                  type: string
+                primary_contact:
+                  type: string
+                secondary_contact:
+                  type: string
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+    delete:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Delete transporter profile (placeholder)
+      responses:
+        '501':
+          description: Not implemented
+
+  /api/transporters/password:
+    patch:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Change transporter password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [oldPassword, newPassword]
+              properties:
+                oldPassword:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        '200':
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicSuccess'
+
+  /api/transporters/fleet:
+    get:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: List fleet vehicles
+      responses:
+        '200':
+          description: Fleet list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+    post:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Add fleet vehicle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FleetVehicleInput'
+      responses:
+        '201':
+          description: Vehicle added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/transporters/fleet/{truckId}:
+    get:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Get vehicle details
+      parameters:
+        - $ref: '#/components/parameters/TruckIdParam'
+      responses:
+        '200':
+          description: Vehicle details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+    put:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Update vehicle
+      parameters:
+        - $ref: '#/components/parameters/TruckIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Vehicle updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+    delete:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Remove vehicle
+      parameters:
+        - $ref: '#/components/parameters/TruckIdParam'
+      responses:
+        '200':
+          description: Vehicle removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/transporters/fleet/{vehicleId}/upload-rc:
+    post:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Upload RC for specific vehicle
+      parameters:
+        - $ref: '#/components/parameters/VehicleIdParam'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [rc_file]
+              properties:
+                rc_file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: RC uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/transporters/fleet/{truckId}/schedule:
+    get:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Get truck schedule blocks
+      parameters:
+        - $ref: '#/components/parameters/TruckIdParam'
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Schedule blocks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/transporters/fleet/{truckId}/schedule/block:
+    post:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Add schedule block
+      parameters:
+        - $ref: '#/components/parameters/TruckIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleBlockInput'
+      responses:
+        '201':
+          description: Block added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/transporters/fleet/{truckId}/schedule/block/{blockId}:
+    delete:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Remove schedule block
+      parameters:
+        - $ref: '#/components/parameters/TruckIdParam'
+        - $ref: '#/components/parameters/BlockIdParam'
+      responses:
+        '200':
+          description: Block removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicSuccess'
+
+  /api/transporters/ratings:
+    get:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Get transporter ratings and reviews
+      responses:
+        '200':
+          description: Ratings fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/transporters/drivers:
+    get:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: List associated drivers
+      responses:
+        '200':
+          description: Drivers fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/transporters/driver-requests:
+    get:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: List pending driver applications
+      responses:
+        '200':
+          description: Requests fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/transporters/driver-requests/{applicationId}/accept:
+    post:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Accept driver request
+      parameters:
+        - $ref: '#/components/parameters/ApplicationIdParam'
+      responses:
+        '200':
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/transporters/driver-requests/{applicationId}/reject:
+    post:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Reject driver request
+      parameters:
+        - $ref: '#/components/parameters/ApplicationIdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rejectionReason:
+                  type: string
+      responses:
+        '200':
+          description: Request rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/transporters/drivers/{driverId}:
+    delete:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Remove driver from transporter company
+      parameters:
+        - $ref: '#/components/parameters/DriverIdParam'
+      responses:
+        '200':
+          description: Driver removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicSuccess'
+
+  /api/transporters/drivers/{driverId}/schedule:
+    get:
+      tags: [Transporter]
+      security:
+        - bearerAuth: []
+      summary: Get a driver schedule
+      parameters:
+        - $ref: '#/components/parameters/DriverIdParam'
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Driver schedule
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/orders/estimate-price:
+    post:
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      summary: Estimate order pricing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [distance, vehicle_type, weight]
+              properties:
+                distance:
+                  type: number
+                vehicle_type:
+                  type: string
+                weight:
+                  type: number
+                volume:
+                  type: number
+                goods_type:
+                  type: string
+                cargo_value:
+                  type: number
+                insurance_tier:
+                  type: string
+                originCoords:
+                  type: object
+                  properties:
+                    lat:
+                      type: number
+                    lng:
+                      type: number
+                destCoords:
+                  type: object
+                  properties:
+                    lat:
+                      type: number
+                    lng:
+                      type: number
+      responses:
+        '200':
+          description: Price estimate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/orders/my-orders:
+    get:
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      summary: Get authenticated user orders (customer/transporter)
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Orders fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/orders/available:
+    get:
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      summary: List available orders for transporter bidding
+      responses:
+        '200':
+          description: Available orders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/orders/my-bids:
+    get:
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      summary: List transporter bids
+      responses:
+        '200':
+          description: Bids fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/orders:
+    post:
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      summary: Place new order
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - pickup
+                - delivery
+                - scheduled_at
+                - distance
+                - max_price
+                - goods_type
+                - weight
+                - truck_type
+                - description
+              properties:
+                pickup:
+                  type: string
+                  description: JSON stringified pickup object
+                delivery:
+                  type: string
+                  description: JSON stringified delivery object
+                pickup_coordinates:
+                  type: string
+                  description: JSON stringified coordinates object
+                delivery_coordinates:
+                  type: string
+                  description: JSON stringified coordinates object
+                scheduled_at:
+                  type: string
+                  format: date-time
+                distance:
+                  type: number
+                max_price:
+                  type: number
+                goods_type:
+                  type: string
+                weight:
+                  type: number
+                volume:
+                  type: number
+                cargo_value:
+                  type: number
+                truck_type:
+                  type: string
+                description:
+                  type: string
+                special_instructions:
+                  type: string
+                shipments:
+                  type: string
+                  description: JSON stringified shipment array
+                cargo_photo:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Order placed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BasicSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          orderId:
+                            type: string
+
+  /api/orders/{orderId}:
+    get:
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      summary: Get order details (customer/transporter role-filtered)
+      parameters:
+        - $ref: '#/components/parameters/OrderIdParam'
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+    delete:
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      summary: Cancel order (customer)
+      parameters:
+        - $ref: '#/components/parameters/OrderIdParam'
+      responses:
+        '200':
+          description: Order cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicSuccess'
+
+  /api/orders/{orderId}/bids:
+    get:
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      summary: Get bids for an order (customer)
+      parameters:
+        - $ref: '#/components/parameters/OrderIdParam'
+      responses:
+        '200':
+          description: Bids list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+    post:
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      summary: Submit bid for an order (transporter)
+      parameters:
+        - $ref: '#/components/parameters/OrderIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bidAmount]
+              properties:
+                bidAmount:
+                  type: number
+                notes:
+                  type: string
+                quoteBreakdown:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: Bid submitted
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BasicSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          bidId:
+                            type: string
+
+  /api/orders/{orderId}/bids/{bidId}/quote-pdf:
+    get:
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      summary: Download bid quote PDF
+      parameters:
+        - $ref: '#/components/parameters/OrderIdParam'
+        - $ref: '#/components/parameters/BidIdParam'
+      responses:
+        '200':
+          description: PDF stream
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /api/orders/{orderId}/bids/{bidId}/accept:
+    post:
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      summary: Accept bid and assign transporter (customer)
+      parameters:
+        - $ref: '#/components/parameters/OrderIdParam'
+        - $ref: '#/components/parameters/BidIdParam'
+      responses:
+        '200':
+          description: Bid accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicSuccess'
+
+  /api/orders/{orderId}/bids/{bidId}:
+    delete:
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      summary: Reject bid (customer) or withdraw bid (transporter)
+      parameters:
+        - $ref: '#/components/parameters/OrderIdParam'
+        - $ref: '#/components/parameters/BidIdParam'
+      responses:
+        '200':
+          description: Bid removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicSuccess'
+
+  /api/payments/orders/{orderId}/initiate:
+    post:
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      summary: Initiate Razorpay payment for order
+      parameters:
+        - $ref: '#/components/parameters/OrderIdParam'
+      responses:
+        '200':
+          description: Razorpay order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/payments/orders/{orderId}/verify:
+    post:
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      summary: Verify Razorpay payment
+      parameters:
+        - $ref: '#/components/parameters/OrderIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [razorpay_order_id, razorpay_payment_id, razorpay_signature]
+              properties:
+                razorpay_order_id:
+                  type: string
+                razorpay_payment_id:
+                  type: string
+                razorpay_signature:
+                  type: string
+      responses:
+        '200':
+          description: Payment verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/payments/orders/{orderId}/review:
+    post:
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      summary: Submit order review
+      parameters:
+        - $ref: '#/components/parameters/OrderIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rating, comment]
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+      responses:
+        '201':
+          description: Review submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+    get:
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      summary: Get order review
+      parameters:
+        - $ref: '#/components/parameters/OrderIdParam'
+      responses:
+        '200':
+          description: Review fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/payments/payout:
+    post:
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      summary: Request transporter payout (placeholder)
+      responses:
+        '501':
+          description: Not implemented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/payments/history:
+    get:
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      summary: Get payment history
+      responses:
+        '200':
+          description: Payment history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+  /api/payments/{paymentId}/invoice:
+    get:
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      summary: Download invoice (placeholder)
+      parameters:
+        - $ref: '#/components/parameters/PaymentIdParam'
+      responses:
+        '501':
+          description: Not implemented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/dashboard/stats:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get admin dashboard aggregate stats
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/dashboard/orders-per-day:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get orders per day
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/dashboard/revenue-per-day:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get revenue per day
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/dashboard/top-transporters:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get top transporters
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/dashboard/order-status:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get order status distribution
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/dashboard/fleet-utilization:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get fleet utilization
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/dashboard/new-customers:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get new customers per month
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/dashboard/truck-types:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get most requested truck types
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/dashboard/order-ratio:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get pending vs completed order ratio
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/dashboard/avg-bid:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get average bid amount
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/orders:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: List all orders with filters
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: fromDate
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: toDate
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: sort
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/orders/{orderId}:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get admin order details
+      parameters:
+        - $ref: '#/components/parameters/OrderIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/orders/{orderId}/bids:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get bids for order
+      parameters:
+        - $ref: '#/components/parameters/OrderIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/orders/{orderId}/bid-count:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get bid count for order
+      parameters:
+        - $ref: '#/components/parameters/OrderIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/users:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: List users by role
+      parameters:
+        - in: query
+          name: role
+          schema:
+            type: string
+            enum: [customer, transporter]
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: sort
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/users/{role}/{id}:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get user detail by role/id
+      parameters:
+        - $ref: '#/components/parameters/RoleParam'
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+    delete:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Delete user by role/id
+      parameters:
+        - $ref: '#/components/parameters/RoleParam'
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/fleet:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Fleet overview
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/tickets:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Tickets overview
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/managers:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get all managers
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/managers/invite:
+    post:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Generate manager invitation code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [categories]
+              properties:
+                categories:
+                  type: array
+                  items:
+                    type: string
+                verificationCategories:
+                  type: array
+                  items:
+                    type: string
+                expiresInHours:
+                  type: integer
+      responses:
+        '201':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/managers/invitations:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get all invitation codes
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/managers/{id}/status:
+    patch:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Update manager active/inactive status
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [active, inactive]
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/managers/{id}/categories:
+    patch:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Update manager categories
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                categories:
+                  type: array
+                  items:
+                    type: string
+                verificationCategories:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/managers/{id}:
+    delete:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Delete manager
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/thresholds:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get threshold configs
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+    put:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Update threshold config
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/thresholds/reset-alert:
+    post:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Reset threshold alert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [category]
+              properties:
+                category:
+                  type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/admin/ticket-volume:
+    get:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Get ticket volume by category
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/manager/register:
+    post:
+      tags: [Manager]
+      summary: Register manager using invitation code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, invitationCode]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                invitationCode:
+                  type: string
+      responses:
+        '201':
+          description: Manager registered and tokens returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+
+  /api/manager/profile:
+    get:
+      tags: [Manager]
+      security:
+        - bearerAuth: []
+      summary: Get manager profile
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/manager/verification-queue:
+    get:
+      tags: [Manager]
+      security:
+        - bearerAuth: []
+      summary: Get verification queue
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/manager/verify/{id}/documents/{docType}/approve:
+    patch:
+      tags: [Manager]
+      security:
+        - bearerAuth: []
+      summary: Approve document
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+        - $ref: '#/components/parameters/DocTypeParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entityType:
+                  type: string
+                  enum: [transporter, driver]
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/manager/verify/{id}/documents/{docType}/reject:
+    patch:
+      tags: [Manager]
+      security:
+        - bearerAuth: []
+      summary: Reject document
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+        - $ref: '#/components/parameters/DocTypeParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [note]
+              properties:
+                note:
+                  type: string
+                entityType:
+                  type: string
+                  enum: [transporter, driver]
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/manager/transporters/{id}/documents/{docType}/approve:
+    patch:
+      tags: [Manager]
+      security:
+        - bearerAuth: []
+      summary: Legacy approve document route
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+        - $ref: '#/components/parameters/DocTypeParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/manager/transporters/{id}/documents/{docType}/reject:
+    patch:
+      tags: [Manager]
+      security:
+        - bearerAuth: []
+      summary: Legacy reject document route
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+        - $ref: '#/components/parameters/DocTypeParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [note]
+              properties:
+                note:
+                  type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/chat/orders/{orderId}:
+    get:
+      tags: [Chat]
+      security:
+        - bearerAuth: []
+      summary: Get chat history for order
+      parameters:
+        - $ref: '#/components/parameters/OrderIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+    post:
+      tags: [Chat]
+      security:
+        - bearerAuth: []
+      summary: Send chat message for order
+      parameters:
+        - $ref: '#/components/parameters/OrderIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/tickets:
+    post:
+      tags: [Tickets]
+      security:
+        - bearerAuth: []
+      summary: Create support ticket (customer/transporter/driver)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [category, subject, message]
+              properties:
+                category:
+                  type: string
+                subject:
+                  type: string
+                message:
+                  type: string
+                priority:
+                  type: string
+                  enum: [low, medium, high]
+                orderId:
+                  type: string
+                photo:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/tickets/my:
+    get:
+      tags: [Tickets]
+      security:
+        - bearerAuth: []
+      summary: Get logged-in user tickets
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/tickets/{id}:
+    get:
+      tags: [Tickets]
+      security:
+        - bearerAuth: []
+      summary: Get ticket detail
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/tickets/{id}/reply:
+    post:
+      tags: [Tickets]
+      security:
+        - bearerAuth: []
+      summary: Add user reply to ticket
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/tickets/{id}/reopen:
+    post:
+      tags: [Tickets]
+      security:
+        - bearerAuth: []
+      summary: Reopen closed ticket
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/tickets/manager/all:
+    get:
+      tags: [Tickets]
+      security:
+        - bearerAuth: []
+      summary: Manager - get assigned tickets
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: userRole
+          schema:
+            type: string
+        - in: query
+          name: priority
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/tickets/manager/stats:
+    get:
+      tags: [Tickets]
+      security:
+        - bearerAuth: []
+      summary: Manager - ticket stats
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/tickets/manager/{id}:
+    get:
+      tags: [Tickets]
+      security:
+        - bearerAuth: []
+      summary: Manager - ticket detail
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/tickets/manager/{id}/reply:
+    post:
+      tags: [Tickets]
+      security:
+        - bearerAuth: []
+      summary: Manager - add reply
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/tickets/manager/{id}/status:
+    patch:
+      tags: [Tickets]
+      security:
+        - bearerAuth: []
+      summary: Manager - update ticket status
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [open, in_progress, closed]
+      responses:
+        '200':
+          $ref: '#/components/responses/GenericOk'
+
+  /api/location/calculate-distance:
+    post:
+      tags: [Location]
+      security:
+        - bearerAuth: []
+      summary: Calculate distance from pickup and delivery addresses
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pickup, delivery]
+              properties:
+                pickup:
+                  $ref: '#/components/schemas/Address'
+                delivery:
+                  $ref: '#/components/schemas/Address'
+      responses:
+        '200':
+          description: Distance and duration calculated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    TokenParam:
+      in: path
+      name: token
+      required: true
+      schema:
+        type: string
+    OrderIdParam:
+      in: path
+      name: orderId
+      required: true
+      schema:
+        type: string
+    BidIdParam:
+      in: path
+      name: bidId
+      required: true
+      schema:
+        type: string
+    TruckIdParam:
+      in: path
+      name: truckId
+      required: true
+      schema:
+        type: string
+    VehicleIdParam:
+      in: path
+      name: vehicleId
+      required: true
+      schema:
+        type: string
+    DriverIdParam:
+      in: path
+      name: driverId
+      required: true
+      schema:
+        type: string
+    ApplicationIdParam:
+      in: path
+      name: applicationId
+      required: true
+      schema:
+        type: string
+    AddressIndexParam:
+      in: path
+      name: addressId
+      required: true
+      schema:
+        type: integer
+    PaymentIdParam:
+      in: path
+      name: paymentId
+      required: true
+      schema:
+        type: string
+    TransporterIdParam:
+      in: path
+      name: transporterId
+      required: true
+      schema:
+        type: string
+    IdParam:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    RoleParam:
+      in: path
+      name: role
+      required: true
+      schema:
+        type: string
+        enum: [customer, transporter]
+    BlockIdParam:
+      in: path
+      name: blockId
+      required: true
+      schema:
+        type: string
+    DocTypeParam:
+      in: path
+      name: docType
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password, role]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        role:
+          type: string
+          enum: [customer, transporter, driver, manager, admin]
+
+    AuthTokens:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+
+    BasicSuccess:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+
+    AuthSuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/BasicSuccess'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/AuthTokens'
+
+    GenericDataResponse:
+      allOf:
+        - $ref: '#/components/schemas/BasicSuccess'
+        - type: object
+          properties:
+            data:
+              type: object
+              additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        errorCode:
+          type: string
+        statusCode:
+          type: integer
+        data:
+          type: object
+          additionalProperties: true
+
+    Address:
+      type: object
+      properties:
+        street:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        pin:
+          type: string
+
+    FleetVehicleInput:
+      type: object
+      required: [name, registration, capacity, manufacture_year, truck_type]
+      properties:
+        name:
+          type: string
+        registration:
+          type: string
+        capacity:
+          type: number
+        manufacture_year:
+          type: integer
+        truck_type:
+          type: string
+        last_service_date:
+          type: string
+          format: date
+
+    ScheduleBlockInput:
+      type: object
+      required: [startTime, endTime]
+      properties:
+        title:
+          type: string
+        type:
+          type: string
+          enum: [maintenance, unavailable, trip]
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        notes:
+          type: string
+
+  responses:
+    GenericOk:
+      description: Success response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GenericDataResponse'
+    BadRequest:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
