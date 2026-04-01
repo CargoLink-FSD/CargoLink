@@ -129,56 +129,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/BasicSuccess'
 
-  /api/auth/reset-password/{token}:
-    post:
-      tags: [Auth]
-      summary: Reset password (placeholder)
-      parameters:
-        - $ref: '#/components/parameters/TokenParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [password]
-              properties:
-                password:
-                  type: string
-      responses:
-        '501':
-          description: Not implemented
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/auth/verify-email/{token}:
-    get:
-      tags: [Auth]
-      summary: Verify email (placeholder)
-      parameters:
-        - $ref: '#/components/parameters/TokenParam'
-      responses:
-        '501':
-          description: Not implemented
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/auth/resend-verification:
-    post:
-      tags: [Auth]
-      summary: Resend verification email (placeholder)
-      responses:
-        '501':
-          description: Not implemented
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
   /api/auth/google-login:
     post:
       tags: [Auth]
@@ -249,6 +199,9 @@ paths:
               type: object
               description: Customer registration payload validated by backend validator.
               additionalProperties: true
+            examples:
+              valid:
+                $ref: '#/components/examples/CustomerSignupRequest'
       responses:
         '201':
           description: Customer registered and tokens returned
@@ -312,6 +265,9 @@ paths:
                   format: date
                 gender:
                   type: string
+            examples:
+              basic:
+                $ref: '#/components/examples/CustomerProfileUpdateRequest'
       responses:
         '200':
           description: Profile updated
@@ -319,14 +275,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GenericDataResponse'
-    delete:
-      tags: [Customer]
-      security:
-        - bearerAuth: []
-      summary: Delete customer profile (placeholder)
-      responses:
-        '501':
-          description: Not implemented
 
   /api/customers/password:
     patch:
@@ -413,6 +361,9 @@ paths:
             schema:
               type: object
               additionalProperties: true
+            examples:
+              valid:
+                $ref: '#/components/examples/TransporterSignupRequest'
       responses:
         '201':
           description: Transporter registered and tokens returned
@@ -552,6 +503,9 @@ paths:
                   type: string
                 secondary_contact:
                   type: string
+            examples:
+              basic:
+                $ref: '#/components/examples/TransporterProfileUpdateRequest'
       responses:
         '200':
           description: Profile updated
@@ -559,14 +513,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GenericDataResponse'
-    delete:
-      tags: [Transporter]
-      security:
-        - bearerAuth: []
-      summary: Delete transporter profile (placeholder)
-      responses:
-        '501':
-          description: Not implemented
 
   /api/transporters/password:
     patch:
@@ -618,6 +564,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/FleetVehicleInput'
+            examples:
+              valid:
+                $ref: '#/components/examples/AddTruckRequest'
       responses:
         '201':
           description: Vehicle added
@@ -1057,6 +1006,9 @@ paths:
                 cargo_photo:
                   type: string
                   format: binary
+            examples:
+              shipmentOrder:
+                $ref: '#/components/examples/PlaceOrderRequest'
       responses:
         '201':
           description: Order placed
@@ -1140,6 +1092,9 @@ paths:
                 quoteBreakdown:
                   type: object
                   additionalProperties: true
+            examples:
+              valid:
+                $ref: '#/components/examples/PlaceBidRequest'
       responses:
         '201':
           description: Bid submitted
@@ -1298,20 +1253,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/GenericDataResponse'
 
-  /api/payments/payout:
-    post:
-      tags: [Payments]
-      security:
-        - bearerAuth: []
-      summary: Request transporter payout (placeholder)
-      responses:
-        '501':
-          description: Not implemented
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
   /api/payments/history:
     get:
       tags: [Payments]
@@ -1325,22 +1266,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GenericDataResponse'
-
-  /api/payments/{paymentId}/invoice:
-    get:
-      tags: [Payments]
-      security:
-        - bearerAuth: []
-      summary: Download invoice (placeholder)
-      parameters:
-        - $ref: '#/components/parameters/PaymentIdParam'
-      responses:
-        '501':
-          description: Not implemented
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
 
   /api/admin/dashboard/stats:
     get:
@@ -1842,42 +1767,6 @@ paths:
         '200':
           $ref: '#/components/responses/GenericOk'
 
-  /api/manager/transporters/{id}/documents/{docType}/approve:
-    patch:
-      tags: [Manager]
-      security:
-        - bearerAuth: []
-      summary: Legacy approve document route
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
-        - $ref: '#/components/parameters/DocTypeParam'
-      responses:
-        '200':
-          $ref: '#/components/responses/GenericOk'
-
-  /api/manager/transporters/{id}/documents/{docType}/reject:
-    patch:
-      tags: [Manager]
-      security:
-        - bearerAuth: []
-      summary: Legacy reject document route
-      parameters:
-        - $ref: '#/components/parameters/IdParam'
-        - $ref: '#/components/parameters/DocTypeParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [note]
-              properties:
-                note:
-                  type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/GenericOk'
-
   /api/chat/orders/{orderId}:
     get:
       tags: [Chat]
@@ -2124,6 +2013,9 @@ paths:
           application/json:
             schema:
               type: object
+            examples:
+              valid:
+                $ref: '#/components/examples/DriverSignupRequest'
       responses:
         '201':
           description: Driver registered and tokens returned
@@ -2160,17 +2052,36 @@ paths:
           multipart/form-data:
             schema:
               type: object
+              properties:
+                profilePicture:
+                  type: string
+                  format: binary
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                email:
+                  type: string
+                phone:
+                  type: string
+                gender:
+                  type: string
+                licenseNumber:
+                  type: string
+                address.street:
+                  type: string
+                address.city:
+                  type: string
+                address.state:
+                  type: string
+                address.pin:
+                  type: string
+            examples:
+              basic:
+                $ref: '#/components/examples/DriverProfileUpdateRequest'
       responses:
         '200':
           description: Profile updated
-    delete:
-      tags: [Driver]
-      security:
-        - bearerAuth: []
-      summary: Delete driver profile (placeholder)
-      responses:
-        '501':
-          description: Not implemented
 
   /api/drivers/password:
     patch:
@@ -2200,6 +2111,14 @@ paths:
           multipart/form-data:
             schema:
               type: object
+              required: [pan_card, driving_license]
+              properties:
+                pan_card:
+                  type: string
+                  format: binary
+                driving_license:
+                  type: string
+                  format: binary
       responses:
         '200':
           description: Documents uploaded
@@ -2360,6 +2279,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TripCreateInput'
+            examples:
+              valid:
+                $ref: '#/components/examples/CreateTripRequest'
       responses:
         '201':
           description: Trip created
@@ -2498,19 +2420,6 @@ paths:
         '200':
           description: Trip started
 
-  /api/trips/driver/{tripId}/stops/{stopId}/arrive:
-    post:
-      tags: [Trips]
-      security:
-        - bearerAuth: []
-      summary: Mark arrival at stop
-      parameters:
-        - $ref: '#/components/parameters/TripIdParam'
-        - $ref: '#/components/parameters/StopIdParam'
-      responses:
-        '200':
-          description: Stop arrival marked
-
   /api/trips/driver/{tripId}/stops/{stopId}/confirm-pickup:
     post:
       tags: [Trips]
@@ -2548,19 +2457,6 @@ paths:
       responses:
         '200':
           description: Delivery confirmed
-
-  /api/trips/driver/{tripId}/stops/{stopId}/depart:
-    post:
-      tags: [Trips]
-      security:
-        - bearerAuth: []
-      summary: Mark departure from stop
-      parameters:
-        - $ref: '#/components/parameters/TripIdParam'
-        - $ref: '#/components/parameters/StopIdParam'
-      responses:
-        '200':
-          description: Stop departure marked
 
   /api/trips/driver/{tripId}/delay:
     post:
@@ -2933,6 +2829,149 @@ components:
           maxItems: 2
           items:
             type: number
+
+  examples:
+    CustomerSignupRequest:
+      value:
+        firstName: Ravi
+        lastName: Kumar
+        email: ravi.kumar@example.com
+        phone: "9876543210"
+        dob: "1998-06-15"
+        gender: Male
+        password: "Password1"
+        address:
+          street: "12 MG Road"
+          city: "Bengaluru"
+          state: "Karnataka"
+          pin: "560001"
+
+    TransporterSignupRequest:
+      value:
+        name: FastMove Logistics
+        email: ops@fastmove.in
+        primary_contact: "9876500011"
+        secondary_contact: "9876500012"
+        password: "Password1"
+        pan: ABCDE1234F
+        gst_in: 29ABCDE1234F1Z5
+        street: "44 Industrial Area"
+        city: "Pune"
+        state: "Maharashtra"
+        pin: "411001"
+        vehicles:
+          - name: Tata 407
+            registration: KA01AB1234
+            capacity: 3.5
+            manufacture_year: 2022
+            truck_type: open
+
+    DriverSignupRequest:
+      value:
+        firstName: Arjun
+        lastName: Singh
+        email: arjun.driver@example.com
+        phone: "9876500099"
+        gender: Male
+        password: "Password1"
+        licenseNumber: KA1020220001234
+        address:
+          street: "9 Residency Road"
+          city: "Bengaluru"
+          state: "Karnataka"
+          pin: "560025"
+
+    CustomerProfileUpdateRequest:
+      value:
+        firstName: Ravi
+        lastName: Kumar
+        phone: "9876543210"
+        dob: "1998-06-15"
+        gender: Male
+
+    TransporterProfileUpdateRequest:
+      value:
+        name: FastMove Logistics Pvt Ltd
+        email: support@fastmove.in
+        primary_contact: "9876500011"
+        secondary_contact: "9876500012"
+
+    DriverProfileUpdateRequest:
+      value:
+        firstName: Arjun
+        lastName: Singh
+        email: arjun.driver@example.com
+        phone: "9876500099"
+        gender: Male
+        licenseNumber: KA1020220001234
+        address.street: "9 Residency Road"
+        address.city: "Bengaluru"
+        address.state: "Karnataka"
+        address.pin: "560025"
+
+    AddTruckRequest:
+      value:
+        name: Ashok Leyland Dost
+        registration: MH12AB1234
+        capacity: 2.5
+        manufacture_year: 2021
+        truck_type: closed
+        last_service_date: "2026-02-01"
+
+    PlaceOrderRequest:
+      value:
+        pickup: '{"street":"12 MG Road","city":"Bengaluru","state":"Karnataka","pin":"560001"}'
+        delivery: '{"street":"77 IT Park","city":"Hyderabad","state":"Telangana","pin":"500081"}'
+        pickup_coordinates: '{"lat":12.9716,"lng":77.5946}'
+        delivery_coordinates: '{"lat":17.4435,"lng":78.3772}'
+        scheduled_at: "2026-04-10T10:30:00.000Z"
+        distance: 570
+        max_price: 25000
+        goods_type: Electronics
+        weight: 350
+        volume: 5
+        cargo_value: 500000
+        truck_type: closed
+        description: "Office electronics shipment"
+        special_instructions: "Handle with care"
+        shipments: '[{"item_name":"Monitors","quantity":20,"price":120000}]'
+
+    PlaceBidRequest:
+      value:
+        bidAmount: 23000
+        notes: "Includes loading and unloading"
+        quoteBreakdown:
+          transportation_charges: 20000
+          loading_charges: 1000
+          unloading_charges: 1000
+          gst:
+            rate_percent: 5
+
+    CreateTripRequest:
+      value:
+        order_ids: ["67f26ec59a9f3649d102a111"]
+        assigned_vehicle_id: "67f26f529a9f3649d102a2b2"
+        assigned_driver_id: "67f26f729a9f3649d102a3c3"
+        planned_start_at: "2026-04-07T07:30:00.000Z"
+        stops:
+          - sequence: 1
+            type: Pickup
+            order_id: "67f26ec59a9f3649d102a111"
+            address:
+              street: "12 MG Road"
+              city: "Bengaluru"
+              state: "Karnataka"
+              pin: "560001"
+              coordinates: [77.5946, 12.9716]
+          - sequence: 2
+            type: Dropoff
+            order_id: "67f26ec59a9f3649d102a111"
+            address:
+              street: "77 IT Park"
+              city: "Hyderabad"
+              state: "Telangana"
+              pin: "500081"
+              coordinates: [78.3772, 17.4435]
 
   responses:
     GenericOk:
