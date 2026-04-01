@@ -34,7 +34,9 @@
     "razorpay": "^2.9.6",
     "rotating-file-stream": "^3.2.8",
     "svg-to-pdfkit": "^0.1.8",
-    "ws": "^8.13.0"
+    "swagger-ui-express": "^5.0.1",
+    "ws": "^8.13.0",
+    "yamljs": "^0.3.0"
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",

@@ -16,10 +16,8 @@ info:
     - Chat
     - Tickets
     - Location
-
-    Scope intentionally excluded per request:
-    - Driver routes (/api/drivers/*)
-    - Trip routes (/api/trips/*)
+    - Driver
+    - Trips
 servers:
   - url: http://localhost:3000
     description: Local development server
@@ -34,6 +32,8 @@ tags:
   - name: Chat
   - name: Tickets
   - name: Location
+  - name: Driver
+  - name: Trips
 paths:
   /api/auth/login:
     post:
@@ -2114,6 +2114,528 @@ paths:
               schema:
                 $ref: '#/components/schemas/GenericDataResponse'
 
+  /api/drivers/register:
+    post:
+      tags: [Driver]
+      summary: Register driver
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Driver registered and tokens returned
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/drivers/dashboard-stats:
+    get:
+      tags: [Driver]
+      security:
+        - bearerAuth: []
+      summary: Get driver dashboard stats
+      responses:
+        '200':
+          description: Dashboard stats
+
+  /api/drivers/profile:
+    get:
+      tags: [Driver]
+      security:
+        - bearerAuth: []
+      summary: Get driver profile
+      responses:
+        '200':
+          description: Profile fetched
+    put:
+      tags: [Driver]
+      security:
+        - bearerAuth: []
+      summary: Update driver profile
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Profile updated
+    delete:
+      tags: [Driver]
+      security:
+        - bearerAuth: []
+      summary: Delete driver profile (placeholder)
+      responses:
+        '501':
+          description: Not implemented
+
+  /api/drivers/password:
+    patch:
+      tags: [Driver]
+      security:
+        - bearerAuth: []
+      summary: Change driver password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Password changed
+
+  /api/drivers/documents:
+    post:
+      tags: [Driver]
+      security:
+        - bearerAuth: []
+      summary: Upload driver verification documents
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Documents uploaded
+
+  /api/drivers/verification-status:
+    get:
+      tags: [Driver]
+      security:
+        - bearerAuth: []
+      summary: Get driver verification status
+      responses:
+        '200':
+          description: Verification status
+
+  /api/drivers/schedule:
+    get:
+      tags: [Driver]
+      security:
+        - bearerAuth: []
+      summary: Get driver schedule blocks
+      parameters:
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Schedule blocks
+
+  /api/drivers/schedule/block:
+    post:
+      tags: [Driver]
+      security:
+        - bearerAuth: []
+      summary: Add driver schedule block
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleBlockInput'
+      responses:
+        '201':
+          description: Block added
+
+  /api/drivers/schedule/block/{blockId}:
+    delete:
+      tags: [Driver]
+      security:
+        - bearerAuth: []
+      summary: Remove driver schedule block
+      parameters:
+        - $ref: '#/components/parameters/BlockIdParam'
+      responses:
+        '200':
+          description: Block removed
+
+  /api/drivers/transporters:
+    get:
+      tags: [Driver]
+      security:
+        - bearerAuth: []
+      summary: List transporters available for application
+      responses:
+        '200':
+          description: Transporters fetched
+
+  /api/drivers/apply/{transporterId}:
+    post:
+      tags: [Driver]
+      security:
+        - bearerAuth: []
+      summary: Apply to join transporter
+      parameters:
+        - $ref: '#/components/parameters/TransporterIdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+      responses:
+        '201':
+          description: Application submitted
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/drivers/applications:
+    get:
+      tags: [Driver]
+      security:
+        - bearerAuth: []
+      summary: Get driver application status
+      responses:
+        '200':
+          description: Applications fetched
+
+  /api/drivers/application/{applicationId}:
+    delete:
+      tags: [Driver]
+      security:
+        - bearerAuth: []
+      summary: Withdraw application
+      parameters:
+        - $ref: '#/components/parameters/ApplicationIdParam'
+      responses:
+        '200':
+          description: Application withdrawn
+
+  /api/trips/resources/assignable-orders:
+    get:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Get assignable orders for transporter
+      responses:
+        '200':
+          description: Assignable orders fetched
+
+  /api/trips/resources/available-drivers:
+    get:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Get available drivers for transporter
+      responses:
+        '200':
+          description: Available drivers fetched
+
+  /api/trips/resources/available-vehicles:
+    get:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Get available vehicles for transporter
+      responses:
+        '200':
+          description: Available vehicles fetched
+
+  /api/trips:
+    post:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Create trip
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripCreateInput'
+      responses:
+        '201':
+          description: Trip created
+    get:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: List trips (transporter)
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Trips fetched
+
+  /api/trips/{tripId}:
+    get:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Get trip details (transporter or assigned driver)
+      parameters:
+        - $ref: '#/components/parameters/TripIdParam'
+      responses:
+        '200':
+          description: Trip details fetched
+    put:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Update trip (scheduled only)
+      parameters:
+        - $ref: '#/components/parameters/TripIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripUpdateInput'
+      responses:
+        '200':
+          description: Trip updated
+    delete:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Delete trip (scheduled only)
+      parameters:
+        - $ref: '#/components/parameters/TripIdParam'
+      responses:
+        '200':
+          description: Trip deleted
+
+  /api/trips/{tripId}/cancel:
+    post:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Cancel trip
+      parameters:
+        - $ref: '#/components/parameters/TripIdParam'
+      responses:
+        '200':
+          description: Trip cancelled
+
+  /api/trips/{tripId}/complete:
+    post:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Complete trip
+      parameters:
+        - $ref: '#/components/parameters/TripIdParam'
+      responses:
+        '200':
+          description: Trip completed
+
+  /api/trips/driver/my-trips:
+    get:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Get assigned trips for authenticated driver
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Driver trips fetched
+
+  /api/trips/driver/{tripId}:
+    get:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Get assigned trip details for authenticated driver
+      parameters:
+        - $ref: '#/components/parameters/TripIdParam'
+      responses:
+        '200':
+          description: Driver trip details fetched
+
+  /api/trips/driver/{tripId}/start:
+    post:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Start trip as assigned driver
+      parameters:
+        - $ref: '#/components/parameters/TripIdParam'
+      responses:
+        '200':
+          description: Trip started
+
+  /api/trips/driver/{tripId}/stops/{stopId}/arrive:
+    post:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Mark arrival at stop
+      parameters:
+        - $ref: '#/components/parameters/TripIdParam'
+        - $ref: '#/components/parameters/StopIdParam'
+      responses:
+        '200':
+          description: Stop arrival marked
+
+  /api/trips/driver/{tripId}/stops/{stopId}/confirm-pickup:
+    post:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Confirm pickup using OTP
+      parameters:
+        - $ref: '#/components/parameters/TripIdParam'
+        - $ref: '#/components/parameters/StopIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OtpConfirmationInput'
+      responses:
+        '200':
+          description: Pickup confirmed
+
+  /api/trips/driver/{tripId}/stops/{stopId}/confirm-delivery:
+    post:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Confirm delivery using OTP
+      parameters:
+        - $ref: '#/components/parameters/TripIdParam'
+        - $ref: '#/components/parameters/StopIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OtpConfirmationInput'
+      responses:
+        '200':
+          description: Delivery confirmed
+
+  /api/trips/driver/{tripId}/stops/{stopId}/depart:
+    post:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Mark departure from stop
+      parameters:
+        - $ref: '#/components/parameters/TripIdParam'
+        - $ref: '#/components/parameters/StopIdParam'
+      responses:
+        '200':
+          description: Stop departure marked
+
+  /api/trips/driver/{tripId}/delay:
+    post:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Declare delay for active trip
+      parameters:
+        - $ref: '#/components/parameters/TripIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripDelayInput'
+      responses:
+        '200':
+          description: Delay declared
+
+  /api/trips/driver/{tripId}/clear-delay:
+    post:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Clear active delay stop
+      parameters:
+        - $ref: '#/components/parameters/TripIdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                stopId:
+                  type: string
+      responses:
+        '200':
+          description: Delay cleared
+
+  /api/trips/driver/{tripId}/location:
+    post:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Update active trip location
+      parameters:
+        - $ref: '#/components/parameters/TripIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripLocationInput'
+      responses:
+        '200':
+          description: Trip location updated
+
+  /api/trips/track/{orderId}:
+    get:
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      summary: Track trip progress for customer order
+      parameters:
+        - $ref: '#/components/parameters/OrderIdParam'
+      responses:
+        '200':
+          description: Order tracking fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDataResponse'
+
+
 components:
   securitySchemes:
     bearerAuth:
@@ -2204,6 +2726,18 @@ components:
     DocTypeParam:
       in: path
       name: docType
+      required: true
+      schema:
+        type: string
+    TripIdParam:
+      in: path
+      name: tripId
+      required: true
+      schema:
+        type: string
+    StopIdParam:
+      in: path
+      name: stopId
       required: true
       schema:
         type: string
@@ -2319,6 +2853,86 @@ components:
           format: date-time
         notes:
           type: string
+
+    TripCreateInput:
+      type: object
+      required: [stops]
+      properties:
+        order_ids:
+          type: array
+          items:
+            type: string
+        stops:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        planned_start_at:
+          type: string
+          format: date-time
+        planned_end_at:
+          type: string
+          format: date-time
+        assigned_vehicle_id:
+          type: string
+        assigned_driver_id:
+          type: string
+        total_distance_km:
+          type: number
+        total_duration_minutes:
+          type: number
+
+    TripUpdateInput:
+      type: object
+      properties:
+        stops:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        planned_start_at:
+          type: string
+          format: date-time
+        planned_end_at:
+          type: string
+          format: date-time
+        total_distance_km:
+          type: number
+        total_duration_minutes:
+          type: number
+
+    OtpConfirmationInput:
+      type: object
+      required: [otp]
+      properties:
+        otp:
+          type: string
+
+    TripDelayInput:
+      type: object
+      required: [delay_minutes]
+      properties:
+        delay_minutes:
+          type: number
+        reason:
+          type: string
+        coordinates:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: number
+
+    TripLocationInput:
+      type: object
+      required: [coordinates]
+      properties:
+        coordinates:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: number
 
   responses:
     GenericOk:
