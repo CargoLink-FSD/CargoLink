@@ -1,12 +1,34 @@
 import Ticket from '../models/ticket.js';
+import { parsePaginationParams } from '../utils/misc.js';
 
 const createTicket = async (data) => {
     const ticket = new Ticket(data);
     return await ticket.save();
 };
 
-const getTicketsByUser = async (userId) => {
-    return await Ticket.find({ userId }).sort({ createdAt: -1 });
+const getTicketsByUser = async (userId, { page, limit } = {}) => {
+    const query = { userId };
+    const pagination = parsePaginationParams({ page, limit }, { defaultLimit: 10, maxLimit: 100 });
+    const findQuery = Ticket.find(query).sort({ createdAt: -1 });
+
+    if (pagination) {
+        const [items, total] = await Promise.all([
+            findQuery.skip(pagination.skip).limit(pagination.limit).lean(),
+            Ticket.countDocuments(query),
+        ]);
+
+        return {
+            items,
+            pagination: {
+                page: pagination.page,
+                limit: pagination.limit,
+                total,
+                totalPages: Math.ceil(total / pagination.limit) || 1,
+            },
+        };
+    }
+
+    return await findQuery.lean();
 };
 
 const getTicketById = async (ticketId) => {
@@ -17,12 +39,35 @@ const getTicketByTicketId = async (ticketId) => {
     return await Ticket.findOne({ ticketId });
 };
 
-const getAllTickets = async (filters = {}) => {
+const getAllTickets = async (filters = {}, options = {}) => {
     const query = {};
+    const pagination = parsePaginationParams(options, { defaultLimit: 20, maxLimit: 100 });
+
     if (filters.status) query.status = filters.status;
     if (filters.userRole) query.userRole = filters.userRole;
     if (filters.priority) query.priority = filters.priority;
-    return await Ticket.find(query).sort({ createdAt: -1 });
+    if (filters.assignedManager) query.assignedManager = filters.assignedManager;
+
+    const findQuery = Ticket.find(query).sort({ createdAt: -1 });
+
+    if (pagination) {
+        const [items, total] = await Promise.all([
+            findQuery.skip(pagination.skip).limit(pagination.limit).lean(),
+            Ticket.countDocuments(query),
+        ]);
+
+        return {
+            items,
+            pagination: {
+                page: pagination.page,
+                limit: pagination.limit,
+                total,
+                totalPages: Math.ceil(total / pagination.limit) || 1,
+            },
+        };
+    }
+
+    return await findQuery.lean();
 };
 
 const addMessage = async (ticketId, message) => {

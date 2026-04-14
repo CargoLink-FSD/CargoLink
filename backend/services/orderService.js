@@ -17,10 +17,20 @@ const getOrdersByUser = async (userId, role, filters = {}) => {
     if (role === 'customer') {
         orders = await orderRepo.getOrdersByCustomer(userId, filters);
     } else if (role === 'transporter') {
-        orders = await orderRepo.getOrdersByTransporter(userId);
-        orders.forEach(order => {
-            delete order.otp;
+        orders = await orderRepo.getOrdersByTransporter(userId, {
+            status: filters.status,
+            page: filters.page,
+            limit: filters.limit,
         });
+        if (Array.isArray(orders)) {
+            orders.forEach(order => {
+                delete order.otp;
+            });
+        } else if (orders?.items) {
+            orders.items.forEach(order => {
+                delete order.otp;
+            });
+        }
     }
     return orders;
 
@@ -92,23 +102,33 @@ const settleCancellationDuesForCustomer = async (customerId, amount) => {
     return await settleCustomerDues(customerId, amount);
 };
 
-const getActiveOrders = async (transporterId) => {
-    const orders = await orderRepo.getActiveOrders(transporterId);
+const getActiveOrders = async (transporterId, filters = {}) => {
+    const orders = await orderRepo.getActiveOrders(transporterId, filters);
 
-    orders.forEach(order => {
-        order.already_bid = !!order.bid_by_transporter;
-        delete order.bid_by_transporter;
-    });
+    if (Array.isArray(orders)) {
+        orders.forEach(order => {
+            order.already_bid = !!order.bid_by_transporter;
+            delete order.bid_by_transporter;
+        });
+        return orders;
+    }
+
+    if (orders?.items) {
+        orders.items.forEach(order => {
+            order.already_bid = !!order.bid_by_transporter;
+            delete order.bid_by_transporter;
+        });
+    }
 
     return orders;
 };
 
-const getCurrentBids = async (customerId, orderId) => {
+const getCurrentBids = async (customerId, orderId, filters = {}) => {
     const exist = await orderRepo.existsOrderForCustomer(orderId, customerId);
     if (!exist) {
         throw new AppError(404, "NotFound", "Order not found or access denied", "ERR_NOT_FOUND");
     }
-    const bids = await bidRepo.getBidsForOrder(orderId);
+    const bids = await bidRepo.getBidsForOrder(orderId, filters);
     return bids;
 };
 
@@ -165,8 +185,8 @@ const rejectBid = async (customerId, orderId, bidId) => {
     return;
 };
 
-const getTransporterBids = async (transporterId) => {
-    const bids = await bidRepo.getBidsByTransporter(transporterId);
+const getTransporterBids = async (transporterId, filters = {}) => {
+    const bids = await bidRepo.getBidsByTransporter(transporterId, filters);
     return bids;
 };
 

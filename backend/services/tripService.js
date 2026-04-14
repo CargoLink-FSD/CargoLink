@@ -313,15 +313,17 @@ const completeTrip = async (transporterId, tripId) => {
 // ─── Transporter: Resources ────────────────────────────────────────────────────
 
 const getAssignableOrders = async (transporterId) => {
-  const orders = await orderRepo.getOrdersByTransporter(transporterId);
-  const assignable = [];
-  for (const order of orders) {
-    if (order.status === 'Assigned') {
-      const existingTrip = await tripRepo.getTripByOrderId(order._id);
-      if (!existingTrip) assignable.push(order);
-    }
+  const orders = await orderRepo.getOrdersByTransporter(transporterId, { status: 'Assigned' });
+  const assignedOrders = Array.isArray(orders) ? orders : orders?.items || [];
+
+  if (!assignedOrders.length) {
+    return [];
   }
-  return assignable;
+
+  const activeTripOrderIds = await tripRepo.getOrderIdsWithActiveTrips(assignedOrders.map((order) => order._id));
+  const activeOrderIdSet = new Set(activeTripOrderIds.map((id) => id.toString()));
+
+  return assignedOrders.filter((order) => !activeOrderIdSet.has(order._id.toString()));
 };
 
 const getAvailableDrivers = async (transporterId) => {

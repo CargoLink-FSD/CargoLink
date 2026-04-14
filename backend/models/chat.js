@@ -1,4 +1,4 @@
-import mongoose  from 'mongoose'
+import mongoose from 'mongoose'
 
 const messageSchema = new mongoose.Schema({
   senderType: { type: String, enum: ['customer', 'transporter', 'driver'], required: true },
@@ -15,5 +15,8 @@ const chatSchema = new mongoose.Schema({
   messages: [messageSchema],
   createdAt: { type: Date, default: Date.now }
 });
+
+chatSchema.index({ order: 1, createdAt: -1 });
+chatSchema.index({ customer: 1, transporter: 1 });
 
 export default mongoose.model('Chat', chatSchema);

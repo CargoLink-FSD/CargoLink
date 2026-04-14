@@ -71,5 +71,9 @@ TicketSchema.pre('save', async function (next) {
     next();
 });
 
+TicketSchema.index({ userId: 1, createdAt: -1 });
+TicketSchema.index({ assignedManager: 1, status: 1, createdAt: -1 });
+TicketSchema.index({ status: 1, priority: 1, createdAt: -1 });
+
 const Ticket = mongoose.model('Ticket', TicketSchema);
 export default Ticket;

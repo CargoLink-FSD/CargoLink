@@ -10,6 +10,9 @@ const STATUS_COLORS = { Placed: 'blue', Assigned: 'green', 'In Transit': 'cyan',
 export default function OrderManagement() {
   const { showNotification } = useNotification();
   const [orders, setOrders] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
+  const limit = 20;
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -17,13 +20,25 @@ export default function OrderManagement() {
   const [bids, setBids] = useState([]);
   const [bidsLoading, setBidsLoading] = useState(false);
 
-  useEffect(() => { fetchOrders(); }, []);
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      fetchOrders();
+    }, 250);
+    return () => clearTimeout(timeout);
+  }, [page, search, statusFilter]);
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await http.get('/api/admin/orders');
+      const params = new URLSearchParams();
+      params.set('page', String(page));
+      params.set('limit', String(limit));
+      if (search.trim()) params.set('search', search.trim());
+      if (statusFilter) params.set('status', statusFilter);
+
+      const res = await http.get(`/api/admin/orders?${params.toString()}`);
       setOrders(res.data || []);
+      setPagination(res.pagination || null);
     } catch (err) {
       showNotification({ message: 'Failed to load orders', type: 'error' });
     } finally {
@@ -48,21 +63,6 @@ export default function OrderManagement() {
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
-  const filtered = orders.filter((o) => {
-    if (statusFilter && o.status !== statusFilter) return false;
-    if (search) {
-      const s = search.toLowerCase();
-      return (
-        o.customer_name?.toLowerCase().includes(s) ||
-        o.transporter_name?.toLowerCase().includes(s) ||
-        o.pickup_location?.toLowerCase().includes(s) ||
-        o.dropoff_location?.toLowerCase().includes(s) ||
-        o.order_id?.includes(search)
-      );
-    }
-    return true;
-  });
-
   if (loading) {
     return (<><Header /><div className="admin-container"><div className="adm-loading"><div className="adm-spinner" /><p>Loading orders...</p></div></div><Footer /></>);
   }
@@ -73,7 +73,7 @@ export default function OrderManagement() {
       <div className="admin-container">
         <div className="adm-page-header">
           <h1 className="adm-page-title">Order Management</h1>
-          <p className="adm-page-subtitle">{orders.length} total orders</p>
+          <p className="adm-page-subtitle">{pagination?.total ?? orders.length} total orders</p>
         </div>
 
         {/* Quick Stats */}
@@ -88,8 +88,8 @@ export default function OrderManagement() {
 
         {/* Filters */}
         <div className="adm-filter-bar">
-          <input className="adm-search-input" placeholder="Search by customer, transporter, location..." value={search} onChange={(e) => setSearch(e.target.value)} />
-          <select className="adm-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <input className="adm-search-input" placeholder="Search by customer, transporter, location..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+          <select className="adm-select" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
             <option value="">All Status</option>
             <option value="Placed">Placed</option>
             <option value="Assigned">Assigned</option>
@@ -97,7 +97,7 @@ export default function OrderManagement() {
             <option value="Completed">Completed</option>
             <option value="Cancelled">Cancelled</option>
           </select>
-          <button className="adm-btn adm-btn-outline" onClick={fetchOrders}>Refresh</button>
+          <button className="adm-btn adm-btn-outline" onClick={() => fetchOrders()}>Refresh</button>
         </div>
 
         {/* Table */}
@@ -118,10 +118,10 @@ export default function OrderManagement() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 ? (
+                {orders.length === 0 ? (
                   <tr><td colSpan={9} className="adm-empty">No orders found</td></tr>
                 ) : (
-                  filtered.map((o) => (
+                  orders.map((o) => (
                     <tr key={o.order_id}>
                       <td style={{ fontWeight: 600 }}>#{o.order_id.slice(-6).toUpperCase()}</td>
                       <td>{o.customer_name}</td>
@@ -142,7 +142,23 @@ export default function OrderManagement() {
           </div>
         </div>
 
-        <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: 12 }}>Showing {filtered.length} of {orders.length} orders</p>
+        <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: 12 }}>
+          Showing {orders.length} of {pagination?.total ?? orders.length} orders
+        </p>
+
+        {pagination && pagination.totalPages > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+            <button className="adm-btn adm-btn-outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+              Previous
+            </button>
+            <span style={{ color: '#64748b', fontSize: '0.9rem' }}>
+              Page {pagination.page} of {pagination.totalPages}
+            </span>
+            <button className="adm-btn adm-btn-outline" onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))} disabled={page >= pagination.totalPages}>
+              Next
+            </button>
+          </div>
+        )}
 
         {/* Detail Modal */}
         {selected && (

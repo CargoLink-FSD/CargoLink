@@ -1,4 +1,5 @@
 import tripModel from "../models/trip.js";
+import { parsePaginationParams } from "../utils/misc.js";
 
 const populateTrip = (query) => {
   return query
@@ -19,13 +20,53 @@ const createTrip = async (tripData) => {
 const getTripsByTransporter = async (transporterId, queryParams = {}) => {
   const filter = { transporter_id: transporterId };
   if (queryParams.status) filter.status = queryParams.status;
-  return await populateTrip(tripModel.find(filter)).sort({ createdAt: -1 });
+  const pagination = parsePaginationParams(queryParams, { defaultLimit: 10, maxLimit: 100 });
+  const baseQuery = tripModel.find(filter).sort({ createdAt: -1 });
+
+  if (pagination) {
+    const [items, total] = await Promise.all([
+      populateTrip(baseQuery.skip(pagination.skip).limit(pagination.limit)).lean(),
+      tripModel.countDocuments(filter),
+    ]);
+
+    return {
+      items,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit) || 1,
+      },
+    };
+  }
+
+  return await populateTrip(baseQuery).lean();
 };
 
 const getTripsByDriver = async (driverId, queryParams = {}) => {
   const filter = { assigned_driver_id: driverId };
   if (queryParams.status) filter.status = queryParams.status;
-  return await populateTrip(tripModel.find(filter)).sort({ createdAt: -1 });
+  const pagination = parsePaginationParams(queryParams, { defaultLimit: 10, maxLimit: 100 });
+  const baseQuery = tripModel.find(filter).sort({ createdAt: -1 });
+
+  if (pagination) {
+    const [items, total] = await Promise.all([
+      populateTrip(baseQuery.skip(pagination.skip).limit(pagination.limit)).lean(),
+      tripModel.countDocuments(filter),
+    ]);
+
+    return {
+      items,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit) || 1,
+      },
+    };
+  }
+
+  return await populateTrip(baseQuery).lean();
 };
 
 const getTripById = async (tripId) => {
@@ -78,6 +119,17 @@ const unassignDriverFromTrip = async (tripId) => {
 
 const getTripByOrderId = async (orderId) => {
   return await tripModel.findOne({ order_ids: orderId });
+};
+
+const getOrderIdsWithActiveTrips = async (orderIds = []) => {
+  if (!orderIds.length) return [];
+
+  const trips = await tripModel.find({
+    order_ids: { $in: orderIds },
+    status: { $in: ['Scheduled', 'Active'] },
+  }).select('order_ids').lean();
+
+  return trips.flatMap((trip) => trip.order_ids || []);
 };
 
 const getActiveTripByVehicle = async (vehicleId) => {
@@ -155,6 +207,7 @@ export default {
   assignDriverToTrip,
   unassignDriverFromTrip,
   getTripByOrderId,
+  getOrderIdsWithActiveTrips,
   getActiveTripByVehicle,
   getActiveTripByDriver,
   updateTripLocation,

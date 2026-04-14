@@ -42,7 +42,13 @@ const createTicket = async (req, res, next) => {
 
 const getMyTickets = async (req, res, next) => {
     try {
-        const tickets = await ticketService.getMyTickets(req.user.id);
+        const { page, limit } = req.query;
+        const tickets = await ticketService.getMyTickets(req.user.id, { page, limit });
+
+        if (tickets?.items) {
+            return res.status(200).json({ success: true, data: tickets.items, pagination: tickets.pagination });
+        }
+
         res.status(200).json({ success: true, data: tickets });
     } catch (err) {
         next(err);
@@ -86,13 +92,19 @@ const addReply = async (req, res, next) => {
 const getAllTickets = async (req, res, next) => {
     try {
         const filters = {};
+        const { page, limit } = req.query;
         if (req.query.status) filters.status = req.query.status;
         if (req.query.userRole) filters.userRole = req.query.userRole;
         if (req.query.priority) filters.priority = req.query.priority;
 
         // Pass the logged-in manager's ID so they only see their assigned tickets
         const managerId = req.user.id;
-        const tickets = await ticketService.getAllTickets(filters, managerId);
+        const tickets = await ticketService.getAllTickets(filters, managerId, { page, limit });
+
+        if (tickets?.items) {
+            return res.status(200).json({ success: true, data: tickets.items, pagination: tickets.pagination });
+        }
+
         res.status(200).json({ success: true, data: tickets });
     } catch (err) {
         next(err);

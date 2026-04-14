@@ -12,9 +12,18 @@ const getUserOrders = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const role = req.user.role;
-    const { search, status } = req.query;
+    const { search, status, page, limit } = req.query;
 
-    const orders = await orderService.getOrdersByUser(userId, role, { search, status });
+    const orders = await orderService.getOrdersByUser(userId, role, { search, status, page, limit });
+
+    if (orders?.items) {
+      return res.status(200).json({
+        success: true,
+        data: orders.items,
+        pagination: orders.pagination,
+        message: "Orders fetched successfully",
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -162,7 +171,18 @@ const settleCancellationDues = async (req, res, next) => {
 const getActiveOrders = async (req, res, next) => {
   try {
     const transporterId = req.user.id;
-    const orders = await orderService.getActiveOrders(transporterId);
+    const { page, limit } = req.query;
+    const orders = await orderService.getActiveOrders(transporterId, { page, limit });
+
+    if (orders?.items) {
+      return res.status(200).json({
+        success: true,
+        data: orders.items,
+        pagination: orders.pagination,
+        message: "Active orders fetched successfully",
+      });
+    }
+
     res.status(200).json({
       success: true,
       data: orders,
@@ -179,6 +199,7 @@ const getCurrentBids = async (req, res, next) => {
   try {
     const customerId = req.user.id;
     const orderId = req.params.orderId;
+    const { page, limit } = req.query;
 
     if (!mongoose.Types.ObjectId.isValid(orderId)) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
@@ -186,7 +207,16 @@ const getCurrentBids = async (req, res, next) => {
       );
     }
 
-    const bids = await orderService.getCurrentBids(customerId, orderId);
+    const bids = await orderService.getCurrentBids(customerId, orderId, { page, limit });
+
+    if (bids?.items) {
+      return res.status(200).json({
+        success: true,
+        data: bids.items,
+        pagination: bids.pagination,
+        message: "Current bids for the order fetched successfully",
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -304,8 +334,18 @@ const rejectBid = async (req, res, next) => {
 const getTransporterBids = async (req, res, next) => {
   try {
     const transporterId = req.user.id;
+    const { page, limit } = req.query;
 
-    const bids = await orderService.getTransporterBids(transporterId);
+    const bids = await orderService.getTransporterBids(transporterId, { page, limit });
+
+    if (bids?.items) {
+      return res.status(200).json({
+        success: true,
+        data: bids.items,
+        pagination: bids.pagination,
+        message: "Bids by transporter fetched successfully",
+      });
+    }
 
     res.status(200).json({
       success: true,

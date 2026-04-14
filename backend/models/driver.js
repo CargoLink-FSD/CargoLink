@@ -83,7 +83,7 @@ const DriverSchema = new mongoose.Schema({
   state: String,
   pin: String,
 
-  address : {
+  address: {
     street: String,
     city: String,
     state: String,
@@ -106,6 +106,9 @@ DriverSchema.methods.updatePassword = async function (newPassword) {
   this.password = newPassword;
   await this.save({ validateModifiedOnly: true });
 };
+
+DriverSchema.index({ transporter_id: 1, status: 1 });
+DriverSchema.index({ verificationStatus: 1, createdAt: -1 });
 
 const driverModel = mongoose.model("Driver", DriverSchema);
 export default driverModel;

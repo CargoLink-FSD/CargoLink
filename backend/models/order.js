@@ -113,5 +113,14 @@ OrderSchema.virtual("bid_by_transporter", {
   justOne: true,
 });
 
+OrderSchema.index({ customer_id: 1, createdAt: -1 });
+OrderSchema.index({ customer_id: 1, status: 1, createdAt: -1 });
+OrderSchema.index({ assigned_transporter_id: 1, status: 1, scheduled_at: 1 });
+OrderSchema.index({ status: 1, scheduled_at: 1 });
+OrderSchema.index({ payment_status: 1, createdAt: -1 });
+OrderSchema.index({ 'pickup.city': 1 });
+OrderSchema.index({ 'delivery.city': 1 });
+OrderSchema.index({ createdAt: -1 });
+
 const orderModel = mongoose.model("Order", OrderSchema);
 export default orderModel;

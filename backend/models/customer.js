@@ -58,5 +58,7 @@ CustomerSchema.methods.updatePassword = async function (newPassword) {
   await this.save({ validateModifiedOnly: true });
 };
 
+CustomerSchema.index({ createdAt: -1 });
+
 const customerModel = mongoose.model("Customer", CustomerSchema);
 export default customerModel;

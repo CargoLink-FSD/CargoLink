@@ -148,15 +148,19 @@ const getAverageBidAmount = async (req, res, next) => {
 // Order Management
 const getAllOrders = async (req, res, next) => {
   try {
-    const { search, status, fromDate, toDate, sort } = req.query;
+    const { search, status, fromDate, toDate, sort, page, limit } = req.query;
 
-    const orders = await adminService.getAllOrders({
+    const orderResult = await adminService.getAllOrders({
       search,
       status,
       fromDate,
       toDate,
-      sort
+      sort,
+      page,
+      limit,
     });
+
+    const orders = orderResult?.items || orderResult;
 
     const formattedOrders = orders.map(order => ({
       order_id: order._id,
@@ -175,11 +179,17 @@ const getAllOrders = async (req, res, next) => {
       updatedAt: order.updatedAt
     }));
 
-    res.status(200).json({
+    const response = {
       success: true,
       data: formattedOrders,
       message: "Orders fetched successfully"
-    });
+    };
+
+    if (orderResult?.pagination) {
+      response.pagination = orderResult.pagination;
+    }
+
+    res.status(200).json(response);
   } catch (err) {
     next(err);
   }
@@ -325,15 +335,22 @@ const getBidCountForOrder = async (req, res, next) => {
 // User Management
 const getAllUsers = async (req, res, next) => {
   try {
-    const { role = 'customer', search, sort } = req.query;
+    const { role = 'customer', search, sort, page, limit } = req.query;
 
-    const users = await adminService.getAllUsers(role, { search, sort });
+    const userResult = await adminService.getAllUsers(role, { search, sort, page, limit });
+    const users = userResult?.items || userResult;
 
-    res.status(200).json({
+    const response = {
       success: true,
       data: { users },
       message: `${role}s fetched successfully`
-    });
+    };
+
+    if (userResult?.pagination) {
+      response.pagination = userResult.pagination;
+    }
+
+    res.status(200).json(response);
   } catch (err) {
     next(err);
   }

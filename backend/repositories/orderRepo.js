@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Order from '../models/order.js';
+import { escapeRegex, parsePaginationParams } from '../utils/misc.js';
 
 
 const countOrdersByCustomer = async (customerId) => {
@@ -17,8 +18,9 @@ const countOrdersByTransporter = async (transporterId) => {
 //         .group({ _id: "$status", count: { $sum: 1 } })
 // };
 
-const getOrdersByCustomer = async (customerId, { search, status } = {}) => {
+const getOrdersByCustomer = async (customerId, { search, status, page, limit } = {}) => {
     const query = { customer_id: customerId };
+    const pagination = parsePaginationParams({ page, limit }, { defaultLimit: 10, maxLimit: 100 });
 
     if (status && status !== 'all') {
         // Capitalise first letter to match stored values (e.g. "completed" → "Completed")
@@ -27,20 +29,65 @@ const getOrdersByCustomer = async (customerId, { search, status } = {}) => {
     }
 
     if (search) {
-        const re = new RegExp(search, 'i');
+        const re = new RegExp(escapeRegex(search), 'i');
         query.$or = [
             { 'pickup.city': re },
             { 'delivery.city': re },
         ];
     }
 
-    const orders = await Order.find(query).sort({ createdAt: -1 });
-    return orders;
+    const findQuery = Order.find(query).sort({ createdAt: -1 });
+
+    if (pagination) {
+        const [orders, total] = await Promise.all([
+            findQuery.skip(pagination.skip).limit(pagination.limit).lean(),
+            Order.countDocuments(query),
+        ]);
+
+        return {
+            items: orders,
+            pagination: {
+                page: pagination.page,
+                limit: pagination.limit,
+                total,
+                totalPages: Math.ceil(total / pagination.limit) || 1,
+            },
+        };
+    }
+
+    return await findQuery.lean();
 };
 
-const getOrdersByTransporter = async (transporterId) => {
-    const orders = await Order.find({ assigned_transporter_id: transporterId }).select('-bid_by_transporter -otp');
-    return orders;
+const getOrdersByTransporter = async (transporterId, { status, page, limit } = {}) => {
+    const query = { assigned_transporter_id: transporterId };
+    const pagination = parsePaginationParams({ page, limit }, { defaultLimit: 10, maxLimit: 100 });
+
+    if (status && status !== 'all') {
+        query.status = status;
+    }
+
+    const findQuery = Order.find(query)
+        .select('-bid_by_transporter -otp')
+        .sort({ createdAt: -1 });
+
+    if (pagination) {
+        const [orders, total] = await Promise.all([
+            findQuery.skip(pagination.skip).limit(pagination.limit).lean(),
+            Order.countDocuments(query),
+        ]);
+
+        return {
+            items: orders,
+            pagination: {
+                page: pagination.page,
+                limit: pagination.limit,
+                total,
+                totalPages: Math.ceil(total / pagination.limit) || 1,
+            },
+        };
+    }
+
+    return await findQuery.lean();
 };
 
 const getOrderDetailsForCustomer = async (orderId, customerId) => {
@@ -137,21 +184,42 @@ const reopenOrderForReassignment = async (orderId) => {
     );
 };
 
-const getActiveOrders = async (transporterId) => {
+const getActiveOrders = async (transporterId, { page, limit } = {}) => {
     // only shows order before 2days of scheduled pickup
     const twoDaysFromNow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
-
-    const orders = await Order.find({
+    const query = {
         status: 'Placed',
-        scheduled_at: { $gte: twoDaysFromNow } // Filter out orders with closed bidding window
-    })
+        scheduled_at: { $gte: twoDaysFromNow }
+    };
+    const pagination = parsePaginationParams({ page, limit }, { defaultLimit: 10, maxLimit: 100 });
+
+    const findQuery = Order.find(query)
+        .sort({ createdAt: -1 })
         .populate({
             path: 'bid_by_transporter',
             match: { transporter_id: transporterId },
             select: '_id'
         })
         .lean();
-    return orders;
+
+    if (pagination) {
+        const [orders, total] = await Promise.all([
+            findQuery.skip(pagination.skip).limit(pagination.limit),
+            Order.countDocuments(query),
+        ]);
+
+        return {
+            items: orders,
+            pagination: {
+                page: pagination.page,
+                limit: pagination.limit,
+                total,
+                totalPages: Math.ceil(total / pagination.limit) || 1,
+            },
+        };
+    }
+
+    return await findQuery;
 };
 
 const assignOrder = async (orderId, transporterId, finalPrice, quoteBreakdown = null) => {

@@ -25,38 +25,37 @@ afterAll(async () => {
 });
 
 describe('Transporter Routes Tests', () => {
-  
+
   describe('POST /api/transporters/register', () => {
     it('should register a new transporter successfully', async () => {
       const transporterData = createMockTransporterInput();
       transporterData.vehicles = [createMockVehicle()]
-            
+
       const response = await request(app)
         .post('/api/transporters/register')
         .send(transporterData)
-        .expect(201);              
+        .expect(201);
 
       expect(response.body).toHaveProperty('success', true);
       expect(response.body).toHaveProperty('data');
-      expect(response.body.data).toHaveProperty('_id');
-      expect(response.body.data).toHaveProperty('email', transporterData.email);
-      expect(response.body.data).not.toHaveProperty('password');
+      expect(response.body.data).toHaveProperty('accessToken');
+      expect(response.body.data).toHaveProperty('refreshToken');
       expect(response.body.message).toBe('Transporter registered successfully');
 
       // Verify transporter exists in database
-      const transporter = await Transporter.findById(response.body.data._id);
+      const transporter = await Transporter.findOne({ email: transporterData.email });
       expect(transporter).toBeTruthy();
       expect(transporter.email).toBe(transporterData.email);
     });
 
     it('should add transporters vehicle', async () => {
-        const transporterData = createMockTransporterInput();
-        transporterData.vehicles = [createMockVehicle()];
+      const transporterData = createMockTransporterInput();
+      transporterData.vehicles = [createMockVehicle()];
 
-        const response = await request(app)
-          .post('/api/transporters/register')
-          .send(transporterData)
-          .expect(201);
+      const response = await request(app)
+        .post('/api/transporters/register')
+        .send(transporterData)
+        .expect(201);
 
       expect(response.body).toHaveProperty('success', true);
 
@@ -68,13 +67,13 @@ describe('Transporter Routes Tests', () => {
     });
 
     it('should create transporter with multiple vehicles', async () => {
-        const transporterData = createMockTransporterInput();
-        transporterData.vehicles = [createMockVehicle(), createMockVehicle({ name: 'truck 2', registration: 'TN01B2345' })];
+      const transporterData = createMockTransporterInput();
+      transporterData.vehicles = [createMockVehicle(), createMockVehicle({ name: 'truck 2', registration: 'TN01B2345' })];
 
-        const response = await request(app)
-          .post('/api/transporters/register')
-          .send(transporterData)
-          .expect(201);
+      const response = await request(app)
+        .post('/api/transporters/register')
+        .send(transporterData)
+        .expect(201);
 
       expect(response.body).toHaveProperty('success', true);
 
@@ -87,12 +86,12 @@ describe('Transporter Routes Tests', () => {
     });
 
     it('should reject transporters without vehicles', async () => {
-        const transporterData = createMockTransporterInput();
-        
-        const response = await request(app)
-          .post('/api/transporters/register')
-          .send(transporterData)
-          .expect(400);
+      const transporterData = createMockTransporterInput();
+
+      const response = await request(app)
+        .post('/api/transporters/register')
+        .send(transporterData)
+        .expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Input Validation failed');
@@ -105,7 +104,7 @@ describe('Transporter Routes Tests', () => {
     it('should return 409 if email already exists', async () => {
       const transporterData = createMockTransporterInput();
       transporterData.vehicles = [createMockVehicle()];
-      
+
       // Register first transporter
       await request(app)
         .post('/api/transporters/register')
@@ -115,7 +114,7 @@ describe('Transporter Routes Tests', () => {
       const response = await request(app)
         .post('/api/transporters/register')
         .send(transporterData)
-        .expect(409);  
+        .expect(409);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Key already exists');
@@ -150,7 +149,7 @@ describe('Transporter Routes Tests', () => {
         .expect(201);
 
 
-      const transporter = await Transporter.findById(response.body.data._id);
+      const transporter = await Transporter.findOne({ email: transporterData.email });
       expect(transporter.password).not.toBe(transporterData.password);
       expect(transporter.password).toHaveLength(60); // bcrypt hash length
     });
@@ -161,22 +160,23 @@ describe('Transporter Routes Tests', () => {
       // Register and login a transporter for authenticated tests
       const transporterData = createMockTransporterInput();
       transporterData.vehicles = [createMockVehicle()];
-      
-      const registerResponse = await request(app)
+
+      await request(app)
         .post('/api/transporters/register')
         .send(transporterData);
-      
-      transporterId = registerResponse.body.data._id;
+
+      const createdTransporter = await Transporter.findOne({ email: transporterData.email });
+      transporterId = createdTransporter?._id?.toString();
 
       // Mock login to get token (adjust based on your auth implementation)
       const loginResponse = await request(app)
         .post('/api/auth/login')
-        .send({ 
-          email: transporterData.email, 
+        .send({
+          email: transporterData.email,
           password: transporterData.password,
           role: 'transporter'
         });
-      
+
       authToken = loginResponse.body.data.accessToken;
     });
 
@@ -205,7 +205,7 @@ describe('Transporter Routes Tests', () => {
 
     describe('PUT /api/transporters/profile', () => {
       it('should update transporter profile', async () => {
-        const updates = { 
+        const updates = {
           name: 'UpdatedName',
           primary_contact: '9876543210'
         };
@@ -218,7 +218,7 @@ describe('Transporter Routes Tests', () => {
 
         expect(response.body.success).toBe(true);
         expect(response.body.data.name).toBe(updates.name);
-        expect(response.body.data.primart_contact).toBe(updates.primart_contact);
+        expect(response.body.data.primary_contact).toBe(updates.primary_contact);
 
         // Verify update in database
         const transporter = await Transporter.findById(transporterId);
@@ -247,50 +247,50 @@ describe('Transporter Routes Tests', () => {
         // Verify no update in database
         const transporter = await Transporter.findById(transporterId);
         expect(transporter.email).not.toBe(updates.email);
-        });
-    
+      });
+
     });
 
     describe('PATCH /api/transporters/password', () => {
-        it('should update password successfully', async () => {
-            const passwordData = {
-            oldPassword: 'Password1',
-            newPassword: 'newPassword123'
-            };
+      it('should update password successfully', async () => {
+        const passwordData = {
+          oldPassword: 'Password1',
+          newPassword: 'newPassword123'
+        };
 
-            const response = await request(app)
-            .patch('/api/transporters/password')
-            .set('Authorization', `Bearer ${authToken}`)
-            .send(passwordData)
-            .expect(200);
+        const response = await request(app)
+          .patch('/api/transporters/password')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send(passwordData)
+          .expect(200);
 
-            expect(response.body.success).toBe(true);
-            expect(response.body.message).toBe('Password changed successfully');
-        });
+        expect(response.body.success).toBe(true);
+        expect(response.body.message).toBe('Password changed successfully');
+      });
 
-        it('should return 400 for missing old password', async () => {
-            await request(app)
-            .patch('/api/transporters/password')
-            .set('Authorization', `Bearer ${authToken}`)
-            .send({ newPassword: 'newPassword123' })
-            .expect(400);
-        });
+      it('should return 400 for missing old password', async () => {
+        await request(app)
+          .patch('/api/transporters/password')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ newPassword: 'newPassword123' })
+          .expect(400);
+      });
 
-        it('should return 401 for incorrect password', async () => {
-            await request(app)
-            .patch('/api/transporters/password')
-            .set('Authorization', `Bearer ${authToken}`)
-            .send({ oldPassword: 'Password3', newPassword: 'newPassword123' })
-            .expect(401);
-        });
+      it('should return 401 for incorrect password', async () => {
+        await request(app)
+          .patch('/api/transporters/password')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ oldPassword: 'Password3', newPassword: 'newPassword123' })
+          .expect(401);
+      });
 
-        it('should return 400 for weak new password', async () => {
-            await request(app)
-            .patch('/api/transporters/password')
-            .set('Authorization', `Bearer ${authToken}`)
-            .send({ oldPassword: 'Password1', newPassword: '123' })
-            .expect(400);
-        });
+      it('should return 400 for weak new password', async () => {
+        await request(app)
+          .patch('/api/transporters/password')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ oldPassword: 'Password1', newPassword: '123' })
+          .expect(400);
+      });
     });
   });
 });

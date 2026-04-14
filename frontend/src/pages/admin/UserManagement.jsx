@@ -11,6 +11,9 @@ export default function UserManagement() {
   const { showNotification } = useNotification();
   const [tab, setTab] = useState('customer');
   const [users, setUsers] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
+  const limit = 20;
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('date');
@@ -22,16 +25,29 @@ export default function UserManagement() {
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await http.get(`/api/admin/users?role=${tab}&search=${search}&sort=${sortBy}`);
+      const params = new URLSearchParams();
+      params.set('role', tab);
+      params.set('sort', sortBy);
+      params.set('page', String(page));
+      params.set('limit', String(limit));
+      if (search.trim()) params.set('search', search.trim());
+
+      const res = await http.get(`/api/admin/users?${params.toString()}`);
       setUsers(res.data.users || []);
+      setPagination(res.pagination || null);
     } catch (err) {
       showNotification({ message: 'Failed to load users', type: 'error' });
     } finally {
       setLoading(false);
     }
-  }, [tab, search, sortBy]);
+  }, [tab, search, sortBy, page]);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      fetchUsers();
+    }, 250);
+    return () => clearTimeout(timeout);
+  }, [fetchUsers]);
 
   const deleteUser = async (userId) => {
     if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
@@ -73,10 +89,10 @@ export default function UserManagement() {
 
         {/* Tabs */}
         <div className="adm-tabs">
-          <button className={`adm-tab ${tab === 'customer' ? 'active' : ''}`} onClick={() => { setTab('customer'); setSearch(''); }}>
+          <button className={`adm-tab ${tab === 'customer' ? 'active' : ''}`} onClick={() => { setTab('customer'); setSearch(''); setPage(1); }}>
             Customers
           </button>
-          <button className={`adm-tab ${tab === 'transporter' ? 'active' : ''}`} onClick={() => { setTab('transporter'); setSearch(''); }}>
+          <button className={`adm-tab ${tab === 'transporter' ? 'active' : ''}`} onClick={() => { setTab('transporter'); setSearch(''); setPage(1); }}>
             Transporters
           </button>
         </div>
@@ -87,9 +103,9 @@ export default function UserManagement() {
             className="adm-search-input"
             placeholder="Search by name, email..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
-          <select className="adm-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+          <select className="adm-select" value={sortBy} onChange={(e) => { setSortBy(e.target.value); setPage(1); }}>
             <option value="date">Sort by Date</option>
             <option value="name">Sort by Name</option>
             <option value="id">Sort by ID</option>
@@ -139,6 +155,20 @@ export default function UserManagement() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {!loading && pagination && pagination.totalPages > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
+            <button className="adm-btn adm-btn-outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+              Previous
+            </button>
+            <span style={{ color: '#64748b', fontSize: '0.9rem' }}>
+              Page {pagination.page} of {pagination.totalPages}
+            </span>
+            <button className="adm-btn adm-btn-outline" onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))} disabled={page >= pagination.totalPages}>
+              Next
+            </button>
           </div>
         )}
 

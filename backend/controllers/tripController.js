@@ -13,6 +13,11 @@ async function createTrip(req, res, next) {
 async function getTrips(req, res, next) {
   try {
     const trips = await tripServices.getTrips(req.user.id, req.query);
+
+    if (trips?.items) {
+      return res.status(200).json({ success: true, data: trips.items, pagination: trips.pagination });
+    }
+
     res.status(200).json({ success: true, data: trips });
   } catch (err) { next(err); }
 }
@@ -85,6 +90,11 @@ async function getAvailableVehicles(req, res, next) {
 async function getDriverTrips(req, res, next) {
   try {
     const trips = await tripServices.getDriverTrips(req.user.id, req.query);
+
+    if (trips?.items) {
+      return res.status(200).json({ success: true, data: trips.items, pagination: trips.pagination });
+    }
+
     res.status(200).json({ success: true, data: trips });
   } catch (err) { next(err); }
 }

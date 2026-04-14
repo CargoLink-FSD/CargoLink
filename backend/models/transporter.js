@@ -97,5 +97,8 @@ TransporterSchema.methods.updatePassword = async function (newPassword) {
   await this.save({ validateModifiedOnly: true });
 };
 
+TransporterSchema.index({ createdAt: -1 });
+TransporterSchema.index({ verificationStatus: 1, createdAt: -1 });
+
 const transporterModel = mongoose.model("Transporter", TransporterSchema);
 export default transporterModel;
