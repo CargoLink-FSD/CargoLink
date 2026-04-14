@@ -69,6 +69,14 @@ const TripSchema = new mongoose.Schema(
     actual_end_at: Date,
     total_distance_km: Number,
     total_duration_minutes: Number,
+    cancellation: {
+      reason_code: { type: String, default: null },
+      reason_text: { type: String, default: null },
+      cancelled_by: { type: String, enum: ['transporter', 'admin', null], default: null },
+      cancelled_at: { type: Date, default: null },
+      ledger_id: { type: mongoose.Schema.Types.ObjectId, ref: 'CancellationLedger', default: null },
+      penalty_points: { type: Number, default: 0, min: 0 },
+    },
   },
   { timestamps: true },
 );

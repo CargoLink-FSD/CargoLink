@@ -33,12 +33,25 @@ export const fetchOrderDetails = createAsyncThunk(
 // Async thunk for deleting an order
 export const deleteCustomerOrder = createAsyncThunk(
   'orders/deleteOrder',
-  async (orderId, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
-      await ordersApi.deleteOrder(orderId);
-      return orderId;
+      const request = typeof payload === 'string'
+        ? { orderId: payload }
+        : payload;
+      const response = await ordersApi.deleteOrder(request.orderId, {
+        reasonCode: request.reasonCode,
+        reasonText: request.reasonText,
+      });
+      return {
+        orderId: request.orderId,
+        cancellation: response?.data?.cancellation || null,
+      };
     } catch (error) {
-      return rejectWithValue(error.message || 'Failed to delete order');
+      return rejectWithValue({
+        message: error.message || 'Failed to cancel order',
+        errorCode: error.payload?.errorCode,
+        errors: error.payload?.errors || [],
+      });
     }
   }
 );
@@ -169,12 +182,12 @@ const ordersSlice = createSlice({
       })
       .addCase(deleteCustomerOrder.fulfilled, (state, action) => {
         state.loading = false;
-        state.orders = state.orders.filter(order => order._id !== action.payload);
+        state.orders = state.orders.filter(order => order._id !== action.payload.orderId);
         state.error = null;
       })
       .addCase(deleteCustomerOrder.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.message || action.payload || 'Failed to cancel order';
       })
 
       // Fetch order bids

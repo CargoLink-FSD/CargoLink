@@ -40,8 +40,15 @@ async function deleteTrip(req, res, next) {
 
 async function cancelTrip(req, res, next) {
   try {
-    const trip = await tripServices.cancelTrip(req.user.id, req.params.tripId);
-    res.status(200).json({ success: true, data: trip });
+    const { reasonCode, reasonText } = req.body || {};
+    const result = await tripServices.cancelTrip(req.user.id, req.params.tripId, { reasonCode, reasonText });
+    res.status(200).json({
+      success: true,
+      data: result,
+      message: result?.policy?.penaltyPoints
+        ? `Trip cancelled. Reliability penalty applied (${result.policy.penaltyPoints} points).`
+        : 'Trip cancelled successfully',
+    });
   } catch (err) { next(err); }
 }
 

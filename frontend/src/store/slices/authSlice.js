@@ -26,9 +26,9 @@ export const loginUser = createAsyncThunk(
 // Async thunk for user signup
 export const signupUser = createAsyncThunk(
   'auth/signup',
-  async ({ signupData, userType }, { rejectWithValue }) => {
+  async ({ signupData, userType, signupVerificationToken }, { rejectWithValue }) => {
     try {
-      const response = await authApi.signup({ signupData, userType });
+      const response = await authApi.signup({ signupData, userType, signupVerificationToken });
       return response;
     } catch (error) {
       return rejectWithValue(error.payload || error.message || 'Signup failed');

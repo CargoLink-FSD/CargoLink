@@ -4,6 +4,10 @@ import orderRepo from "../repositories/orderRepo.js";
 import truckRepo from "../repositories/truckRepo.js";
 import driverRepo from "../repositories/driverRepo.js";
 import { calculateRoute } from "../utils/osrm.js";
+import {
+  applyTransporterCancellationPolicy,
+  assertTransporterCanOperate,
+} from "./cancellationPolicyService.js";
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 const LOADING_DELAY_MINUTES = 30; // fixed delay per pickup/dropoff for loading/unloading
@@ -12,6 +16,8 @@ const LOADING_DELAY_MINUTES = 30; // fixed delay per pickup/dropoff for loading/
 
 const createTrip = async (transporterId, tripData) => {
   const { order_ids, stops, planned_start_at, assigned_vehicle_id, assigned_driver_id } = tripData;
+
+  await assertTransporterCanOperate(transporterId);
 
   // ── Validate orders ──
   if (order_ids && order_ids.length > 0) {
@@ -233,7 +239,7 @@ const deleteTrip = async (transporterId, tripId) => {
   await tripRepo.deleteTrip(tripId);
 };
 
-const cancelTrip = async (transporterId, tripId) => {
+const cancelTrip = async (transporterId, tripId, { reasonCode, reasonText } = {}) => {
   const trip = await tripRepo.getTripById(tripId);
   if (!trip || trip.transporter_id.toString() !== transporterId) {
     throw new AppError(404, "NotFound", "Trip not found", "ERR_NOT_FOUND");
@@ -241,20 +247,50 @@ const cancelTrip = async (transporterId, tripId) => {
   if (['Completed', 'Cancelled'].includes(trip.status)) {
     throw new AppError(400, "InvalidOperation", "Cannot cancel", "ERR_INVALID_OPERATION");
   }
-  // Revert orders back to Assigned
+
+  const affectedOrderIds = [];
+
+  // Reopen active orders so other transporters can bid/accept.
   for (const orderId of trip.order_ids) {
     const order = await orderRepo.getOrderById(orderId);
     if (order && !['Completed', 'Cancelled'].includes(order.status)) {
-      await orderRepo.updateOrderStatus(orderId, 'Assigned');
+      await orderRepo.reopenOrderForReassignment(orderId);
+      affectedOrderIds.push(orderId.toString());
     }
   }
+
   if (trip.assigned_vehicle_id) {
     await _removeVehicleTripBlock(transporterId, trip.assigned_vehicle_id._id || trip.assigned_vehicle_id, tripId);
   }
   if (trip.assigned_driver_id) {
     await _removeDriverTripBlock(trip.assigned_driver_id._id || trip.assigned_driver_id, tripId);
   }
-  return await tripRepo.updateTrip(tripId, { status: 'Cancelled', actual_end_at: new Date() });
+
+  const policy = await applyTransporterCancellationPolicy({
+    trip,
+    transporterId,
+    reasonCode,
+    reasonText,
+    affectedOrderIds,
+  });
+
+  const updatedTrip = await tripRepo.updateTrip(tripId, {
+    status: 'Cancelled',
+    actual_end_at: new Date(),
+    cancellation: {
+      reason_code: reasonCode || 'transporter_cancelled_trip',
+      reason_text: reasonText || null,
+      cancelled_by: 'transporter',
+      cancelled_at: new Date(),
+      ledger_id: policy.ledgerId,
+      penalty_points: policy.penaltyPoints,
+    },
+  });
+
+  return {
+    trip: updatedTrip,
+    policy,
+  };
 };
 
 const completeTrip = async (transporterId, tripId) => {

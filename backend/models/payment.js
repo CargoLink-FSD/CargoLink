@@ -4,7 +4,7 @@ const PaymentSchema = new mongoose.Schema({
   order_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Order",
-    required: true,
+    default: null,
   },
   customer_id: {
     type: mongoose.Schema.Types.ObjectId,
@@ -14,13 +14,13 @@ const PaymentSchema = new mongoose.Schema({
   amount: { type: Number, required: true },
   payment_type: {
     type: String,
-    enum: ["final"],
+    enum: ["final", "cancellation_due"],
     default: "final",
   },
   razorpay_order_id: { type: String, required: true },
   razorpay_payment_id: { type: String },
   razorpay_signature: { type: String },
-  method: { type: String },                      
+  method: { type: String },
   status: {
     type: String,
     enum: ["Created", "Pending", "Completed", "Failed", "Refunded"],

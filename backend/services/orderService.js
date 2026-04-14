@@ -2,6 +2,13 @@ import orderRepo from "../repositories/orderRepo.js"
 import bidRepo from "../repositories/bidRepo.js"
 import Fleet from "../models/fleet.js"
 import { AppError, logger } from "../utils/misc.js"
+import {
+    evaluateCustomerOrderGate,
+    applyCustomerCancellationPolicy,
+    getCustomerDuesSummary,
+    settleCustomerDues,
+    assertTransporterCanOperate,
+} from "./cancellationPolicyService.js"
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -33,20 +40,56 @@ const getOrderDetails = async (orderId, userId, role) => {
 };
 
 const placeOrder = async (orderData) => {
+    await evaluateCustomerOrderGate(orderData.customer_id);
     const order = await orderRepo.createOrder(orderData);
     return order;
 };
 
-const cancelOrder = async (orderId, customerId) => {
-    const exist = await orderRepo.existsOrderForCustomer(orderId, customerId);
-    if (!exist) {
+const cancelOrder = async (orderId, customerId, { reasonCode, reasonText } = {}) => {
+    const order = await orderRepo.getOrderById(orderId);
+    if (!order || order.customer_id?.toString() !== customerId) {
         throw new AppError(404, "NotFound", "Order not found or access denied", "ERR_NOT_FOUND");
     }
-    const order = await orderRepo.cancelOrder(orderId, customerId);
-    if (!order) {
-        throw new AppError(400, "InvalidOperation", "Only placed orders can be cancelled", "ERR_INVALID_OPERATION");
+
+    if (!["Placed", "Assigned"].includes(order.status)) {
+        throw new AppError(400, "InvalidOperation", "Only placed or assigned orders can be cancelled", "ERR_INVALID_OPERATION");
     }
-    return order;
+
+    const policyDecision = await applyCustomerCancellationPolicy({
+        order,
+        customerId,
+        reasonCode,
+        reasonText,
+    });
+
+    const cancelledOrder = await orderRepo.cancelOrder(orderId, customerId, {
+        reasonCode: reasonCode || 'customer_requested',
+        reasonText,
+        stage: policyDecision.stage,
+        feeAmount: policyDecision.feeAmount,
+        ledgerId: policyDecision.ledgerId,
+    });
+
+    if (!cancelledOrder) {
+        throw new AppError(400, "InvalidOperation", "Order cannot be cancelled in current state", "ERR_INVALID_OPERATION");
+    }
+
+    return {
+        order: cancelledOrder,
+        cancellation: {
+            feeAmount: policyDecision.feeAmount,
+            stage: policyDecision.stage,
+            customerStats: policyDecision.customerStats,
+        },
+    };
+};
+
+const getCancellationDues = async (customerId) => {
+    return await getCustomerDuesSummary(customerId);
+};
+
+const settleCancellationDuesForCustomer = async (customerId, amount) => {
+    return await settleCustomerDues(customerId, amount);
 };
 
 const getActiveOrders = async (transporterId) => {
@@ -128,6 +171,8 @@ const getTransporterBids = async (transporterId) => {
 };
 
 const submitBid = async (transporterId, orderId, bidAmount, notes, quoteBreakdown) => {
+    await assertTransporterCanOperate(transporterId);
+
     // Check if order exists and is open for bidding (must be at least 2 days before pickup)
     const active = await orderRepo.checkActiveOrder(orderId, transporterId);
     if (!active) {
@@ -285,7 +330,7 @@ const getTransporterVehicles = async (transporterId) => {
         transporter_id: transporterId,
         status: 'Available'
     });
-        return availableVehicles;
+    return availableVehicles;
 };
 
 const getAvailableVehicles = async (transporterId) => {
@@ -309,6 +354,8 @@ export default {
     getOrderDetails,
     placeOrder,
     cancelOrder,
+    getCancellationDues,
+    settleCancellationDuesForCustomer,
     getActiveOrders,
 
     getCurrentBids,

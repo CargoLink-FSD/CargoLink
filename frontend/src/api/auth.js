@@ -10,8 +10,21 @@ export const login = async ({ email, password, role }) => {
   return data.data;
 };
 
-export const signup = async ({ signupData, userType }) => {
-  const data = await http.post(`/api/${userType}s/register`, signupData);
+export const requestSignupOtp = async ({ email, role }) => {
+  const data = await http.post('/api/auth/signup/send-otp', { email, role });
+  return data.data;
+};
+
+export const verifySignupOtp = async ({ email, role, otp }) => {
+  const data = await http.post('/api/auth/signup/verify-otp', { email, role, otp });
+  return data.data;
+};
+
+export const signup = async ({ signupData, userType, signupVerificationToken }) => {
+  const options = signupVerificationToken
+    ? { headers: { 'x-signup-verification-token': signupVerificationToken } }
+    : undefined;
+  const data = await http.post(`/api/${userType}s/register`, signupData, options);
   return data.data;
 };
 
@@ -47,5 +60,16 @@ export const googleVerify = async ({ credential }) => {
   return data.data;
 };
 
-export default { login, signup, logout, refreshToken, forgotPassword, resetPassword, googleLogin, googleVerify };
+export default {
+  login,
+  requestSignupOtp,
+  verifySignupOtp,
+  signup,
+  logout,
+  refreshToken,
+  forgotPassword,
+  resetPassword,
+  googleLogin,
+  googleVerify,
+};
 

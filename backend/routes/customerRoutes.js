@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authMiddleware } from "../middlewares/auth.js";
+import { authMiddleware, requireSignupVerification } from "../middlewares/auth.js";
 import { validate, validationSchema } from "../middlewares/validator.js";
 import customerController from "../controllers/customerController.js";
 import profileUpload from "../config/profileMulter.js";
@@ -7,7 +7,7 @@ import profileUpload from "../config/profileMulter.js";
 const customerRouter = Router();
 
 // Registration
-customerRouter.post("/register", validate(validationSchema.customer), customerController.createCustomer);
+customerRouter.post("/register", validate(validationSchema.customer), requireSignupVerification('customer'), customerController.createCustomer);
 
 // All routes require authentication as customer
 customerRouter.use(authMiddleware(['transporter', 'customer'])); // Allow both transporter and customer for now, can be restricted to 'customer' if needed

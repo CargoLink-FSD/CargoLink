@@ -18,6 +18,16 @@ paymentRouter.post(
   paymentController.verifyPayment
 ); // Verify Razorpay payment
 paymentRouter.post(
+  "/cancellation-dues/initiate",
+  authMiddleware(["customer"]),
+  paymentController.initiateCancellationDuesPayment
+); // Initiate Razorpay order for cancellation dues
+paymentRouter.post(
+  "/cancellation-dues/verify",
+  authMiddleware(["customer"]),
+  paymentController.verifyCancellationDuesPayment
+); // Verify dues payment and settle ledger
+paymentRouter.post(
   "/orders/:orderId/review",
   authMiddleware(["customer"]),
   paymentController.submitReview

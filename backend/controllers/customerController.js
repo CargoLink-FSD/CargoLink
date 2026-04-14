@@ -10,6 +10,9 @@ const createCustomer = async (req, res, next) => {
     customer.password = undefined;
     logger.debug("Customer Created", customer);
     const { accessToken, refreshToken } = authService.generateTokens(customer, 'customer'); //tokens for auto login after signup.
+    if (req.signupVerificationToken) {
+      authService.consumeSignupVerificationToken(req.signupVerificationToken);
+    }
 
     res.status(201).json({
       success: true,
@@ -64,7 +67,7 @@ const updateCustomerProfile = async (req, res, next) => {
     }
 
     const updates = req.body;
-    
+
     // If a profile picture was uploaded, add the path to updates
     if (req.file) {
       updates.profilePicture = `/uploads/profile-pictures/${req.file.filename}`;

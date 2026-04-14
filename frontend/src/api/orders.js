@@ -48,8 +48,24 @@ export async function getOrderDetails(orderId) {
 /**
  * Delete/Cancel a specific order by ID
  */
-export async function deleteOrder(orderId) {
-  return await http.del(`/api/orders/${orderId}`);
+export async function deleteOrder(orderId, cancellation = {}) {
+  return await http.del(`/api/orders/${orderId}`, { body: cancellation });
+}
+
+/**
+ * Get customer cancellation dues and gate status
+ */
+export async function getCancellationDues() {
+  const response = await http.get('/api/orders/cancellation-dues');
+  return response.data;
+}
+
+/**
+ * Settle pending cancellation dues for customer
+ */
+export async function settleCancellationDues(amount) {
+  const response = await http.post('/api/orders/cancellation-dues/settle', { amount });
+  return response.data;
 }
 
 /**

@@ -20,7 +20,7 @@ tripRouter.put('/:tripId', authMiddleware(["transporter"]), tripController.updat
 tripRouter.delete('/:tripId', authMiddleware(["transporter"]), tripController.deleteTrip);
 
 // Trip lifecycle
-tripRouter.post('/:tripId/cancel', authMiddleware(["transporter"]), tripController.cancelTrip);
+tripRouter.post('/:tripId/cancel', authMiddleware(["transporter"]), validate(validationSchema.transporterTripCancellation), tripController.cancelTrip);
 tripRouter.post('/:tripId/complete', authMiddleware(["transporter"]), tripController.completeTrip);
 
 

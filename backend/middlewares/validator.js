@@ -277,7 +277,16 @@ const updateTruck = [
 const login = [
   body('email').isEmail().withMessage('Valid email required'),
   body('password').notEmpty().withMessage('Password required'),
-  body('role').isIn(['customer','transporter','driver','admin', 'manager']).withMessage('Role must be customer, transporter, driver, manager or admin'),
+  body('role').isIn(['customer', 'transporter', 'driver', 'admin', 'manager']).withMessage('Role must be customer, transporter, driver, manager or admin'),
+]
+const signupOtpRequest = [
+  body('email').trim().isEmail().normalizeEmail().withMessage('Valid email required'),
+  body('role').trim().isIn(['customer', 'transporter', 'driver']).withMessage('Role must be customer, transporter, or driver'),
+]
+const signupOtpVerify = [
+  body('email').trim().isEmail().normalizeEmail().withMessage('Valid email required'),
+  body('role').trim().isIn(['customer', 'transporter', 'driver']).withMessage('Role must be customer, transporter, or driver'),
+  body('otp').trim().matches(/^\d{6}$/).withMessage('OTP must be a 6-digit code'),
 ]
 const forgotPassword = [
   body('email').trim().isEmail().withMessage('Valid email required'),
@@ -328,6 +337,37 @@ const bid = [
     .optional().isInt({ min: 0 }).withMessage('GST rate must be a non-negative integer'),
   body('quoteBreakdown.custom_items')
     .optional().isArray({ max: 5 }).withMessage('Maximum 5 custom charge items allowed'),
+]
+
+const customerCancelOrder = [
+  body('reasonCode')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 2, max: 50 }).withMessage('Reason code must be 2-50 characters')
+    .matches(/^[a-zA-Z0-9_\-]+$/).withMessage('Reason code can contain only letters, numbers, underscore and hyphen'),
+  body('reasonText')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 500 }).withMessage('Reason text must be at most 500 characters'),
+]
+
+const settleCancellationDues = [
+  body('amount')
+    .notEmpty().withMessage('Amount is required')
+    .toFloat()
+    .isFloat({ gt: 0 }).withMessage('Amount must be greater than 0'),
+]
+
+const transporterTripCancellation = [
+  body('reasonCode')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 2, max: 50 }).withMessage('Reason code must be 2-50 characters')
+    .matches(/^[a-zA-Z0-9_\-]+$/).withMessage('Reason code can contain only letters, numbers, underscore and hyphen'),
+  body('reasonText')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 500 }).withMessage('Reason text must be at most 500 characters'),
 ]
 
 const order = [
@@ -538,13 +578,18 @@ export const validationSchema = {
   truck,
   updateTruck,
   login,
+  signupOtpRequest,
+  signupOtpVerify,
   forgotPassword,
   resetPassword,
   password,
   order,
   bid,
-    driver,
-    updateDriver,
-    scheduleBlock,
-    fleetScheduleBlock,
+  customerCancelOrder,
+  settleCancellationDues,
+  transporterTripCancellation,
+  driver,
+  updateDriver,
+  scheduleBlock,
+  fleetScheduleBlock,
 }

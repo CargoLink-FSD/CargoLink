@@ -57,13 +57,13 @@ const placeOrder = async (req, res, next) => {
 
     // Parse JSON strings from FormData (multer sends text fields as strings)
     if (typeof orderData.pickup === 'string') {
-      try { orderData.pickup = JSON.parse(orderData.pickup); } catch (_) {}
+      try { orderData.pickup = JSON.parse(orderData.pickup); } catch (_) { }
     }
     if (typeof orderData.delivery === 'string') {
-      try { orderData.delivery = JSON.parse(orderData.delivery); } catch (_) {}
+      try { orderData.delivery = JSON.parse(orderData.delivery); } catch (_) { }
     }
     if (typeof orderData.shipments === 'string') {
-      try { orderData.shipments = JSON.parse(orderData.shipments); } catch (_) {}
+      try { orderData.shipments = JSON.parse(orderData.shipments); } catch (_) { }
     }
 
     // Geocode pickup if coordinates not provided
@@ -107,17 +107,52 @@ const cancelOrder = async (req, res, next) => {
   try {
     const orderId = req.params.orderId;
     const customerId = req.user.id;
+    const { reasonCode, reasonText } = req.body || {};
 
     if (!mongoose.Types.ObjectId.isValid(orderId)) {
       throw new AppError(400, "ValidationError", 'Input Validation failed', 'ERR_VALIDATION',
         { type: "field", value: orderId, msg: "Not a valid order ID", path: "orderId", location: "params" }
       );
     }
-    await orderService.cancelOrder(orderId, customerId);
+    const result = await orderService.cancelOrder(orderId, customerId, { reasonCode, reasonText });
 
     res.status(200).json({
       success: true,
-      message: "Order cancelled successfully"
+      data: result,
+      message: result?.cancellation?.feeAmount > 0
+        ? `Order cancelled. INR ${result.cancellation.feeAmount} has been added as cancellation due.`
+        : "Order cancelled successfully"
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getCancellationDues = async (req, res, next) => {
+  try {
+    const customerId = req.user.id;
+    const summary = await orderService.getCancellationDues(customerId);
+
+    res.status(200).json({
+      success: true,
+      data: summary,
+      message: "Cancellation dues fetched successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const settleCancellationDues = async (req, res, next) => {
+  try {
+    const customerId = req.user.id;
+    const { amount } = req.body;
+    const settlement = await orderService.settleCancellationDuesForCustomer(customerId, amount);
+
+    res.status(200).json({
+      success: true,
+      data: settlement,
+      message: "Cancellation dues settled successfully",
     });
   } catch (err) {
     next(err);
@@ -520,6 +555,8 @@ export default {
   getUserOrders,
   placeOrder,
   cancelOrder,
+  getCancellationDues,
+  settleCancellationDues,
   getCurrentBids,
   downloadBidQuotePdf,
   acceptBid,

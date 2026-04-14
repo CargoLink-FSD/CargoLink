@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authMiddleware } from "../middlewares/auth.js";
+import { authMiddleware, requireSignupVerification } from "../middlewares/auth.js";
 import { validate, validationSchema } from "../middlewares/validator.js";
 import driverController from "../controllers/driverController.js";
 import profileUpload from "../config/profileMulter.js";
@@ -8,7 +8,7 @@ import driverDocUpload from "../config/driverDocMulter.js";
 const driverRouter = Router();
 
 // Registration
-driverRouter.post("/register", validate(validationSchema.driver), driverController.createDriver);
+driverRouter.post("/register", validate(validationSchema.driver), requireSignupVerification('driver'), driverController.createDriver);
 
 // All routes require authentication as driver
 driverRouter.use(authMiddleware(['driver']));

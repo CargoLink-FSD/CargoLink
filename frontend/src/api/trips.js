@@ -32,8 +32,8 @@ export const deleteTrip = async (tripId) => {
 
 // ─── Trip Lifecycle ─────────────────────────────────────────────────────────────
 
-export const cancelTrip = async (tripId) => {
-  const response = await http.post(`/api/trips/${tripId}/cancel`);
+export const cancelTrip = async (tripId, cancellation = {}) => {
+  const response = await http.post(`/api/trips/${tripId}/cancel`, cancellation);
   return response.data;
 };
 

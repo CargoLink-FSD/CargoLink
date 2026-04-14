@@ -75,13 +75,66 @@ const createOrder = async (orderData) => {
     return order;
 };
 
-const cancelOrder = async (orderId, customerId) => {
+const cancelOrder = async (orderId, customerId, cancellation = {}) => {
+    const allowedStatuses = cancellation.allowedStatuses || ['Placed', 'Assigned'];
     const updatedOrder = await Order.findOneAndUpdate(
-        { _id: orderId, customer_id: customerId, status: "Placed" },
-        { $set: { status: "Cancelled" } },
+        {
+            _id: orderId,
+            customer_id: customerId,
+            status: { $in: allowedStatuses }
+        },
+        {
+            $set: {
+                status: 'Cancelled',
+                assigned_transporter_id: null,
+                final_price: null,
+                accepted_quote_breakdown: null,
+                assignment: {},
+                cancellation: {
+                    cancelled_by: 'customer',
+                    cancelled_at: new Date(),
+                    reason_code: cancellation.reasonCode || null,
+                    reason_text: cancellation.reasonText || null,
+                    stage: cancellation.stage || null,
+                    fee_amount: Number(cancellation.feeAmount || 0),
+                    ledger_id: cancellation.ledgerId || null,
+                },
+            },
+        },
         { new: true }
     );
     return updatedOrder;
+};
+
+const reopenOrderForReassignment = async (orderId) => {
+    return await Order.findOneAndUpdate(
+        {
+            _id: orderId,
+            status: { $nin: ['Completed', 'Cancelled'] },
+        },
+        {
+            $set: {
+                status: 'Placed',
+                assigned_transporter_id: null,
+                final_price: null,
+                accepted_quote_breakdown: null,
+                assignment: {},
+                pickup_otp: null,
+                delivery_otp: null,
+                'cancellation.cancelled_by': 'transporter',
+                'cancellation.cancelled_at': new Date(),
+                'cancellation.reason_code': 'transporter_trip_cancelled',
+                'cancellation.reason_text': 'Trip cancelled by transporter and order reopened for reassignment',
+                'cancellation.stage': 'reopened_for_reassignment',
+                'cancellation.fee_amount': 0,
+                'cancellation.ledger_id': null,
+            },
+            $inc: {
+                reopened_count: 1,
+            },
+        },
+        { new: true }
+    );
 };
 
 const getActiveOrders = async (transporterId) => {
@@ -329,6 +382,7 @@ export default {
     updateOrderStatus,
     verifyOTPAndUpdateStatus,
     getOrderById,
+    reopenOrderForReassignment,
     assignVehicleToOrder,
     getCustomerDashboardStats,
 }

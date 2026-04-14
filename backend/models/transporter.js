@@ -70,6 +70,13 @@ const TransporterSchema = new mongoose.Schema(
       default: "unsubmitted",
     },
     isVerified: { type: Boolean, default: false },
+    reliability: {
+      score: { type: Number, default: 100, min: 0, max: 100 },
+      assignmentCancels30d: { type: Number, default: 0, min: 0 },
+      lateCancels30d: { type: Number, default: 0, min: 0 },
+      noShowCount30d: { type: Number, default: 0, min: 0 },
+      restrictionUntil: { type: Date, default: null },
+    },
   },
   { timestamps: true },
 );

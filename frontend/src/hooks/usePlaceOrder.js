@@ -500,7 +500,7 @@ export function usePlaceOrder() {
       showSuccess('Order placed successfully!');
       navigate('/customer/orders');
     } catch (error) {
-      showError(error || 'Failed to place order');
+      showError(error?.message || error || 'Failed to place order');
     }
   };
 

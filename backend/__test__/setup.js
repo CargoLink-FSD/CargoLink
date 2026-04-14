@@ -1,10 +1,12 @@
- import { jest } from '@jest/globals'; 
- import * as misc from '../utils/misc.js';
+import { jest } from '@jest/globals';
+import * as misc from '../utils/misc.js';
 
 // Set test environment variables
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret-key-for-jwt-tokens';
 process.env.PORT = 5001;
+process.env.RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_test_key';
+process.env.RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'rzp_test_secret';
 
 const workerId = process.env.JEST_WORKER_ID || '1';
 if (!process.env.MONGO_URI) {

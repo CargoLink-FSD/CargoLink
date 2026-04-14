@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authMiddleware } from "../middlewares/auth.js";
+import { authMiddleware, requireSignupVerification } from "../middlewares/auth.js";
 import { validate } from "../middlewares/validator.js";
 import { validationSchema } from "../middlewares/validator.js";
 import transporterController from "../controllers/transporterController.js";
@@ -10,7 +10,7 @@ const transporterRouter = Router();
 
 
 // Registration
-transporterRouter.post("/register", validate(validationSchema.transporter), transporterController.createTransporter);
+transporterRouter.post("/register", validate(validationSchema.transporter), requireSignupVerification('transporter'), transporterController.createTransporter);
 
 
 // Public profile — accessible by any authenticated user (customer or transporter)

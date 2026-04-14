@@ -87,6 +87,20 @@ const OrderSchema = new mongoose.Schema(
       vehicle_type: String,
       assigned_at: Date
     },
+    cancellation: {
+      cancelled_by: {
+        type: String,
+        enum: ["customer", "transporter", "admin", null],
+        default: null,
+      },
+      cancelled_at: { type: Date, default: null },
+      reason_code: { type: String, default: null },
+      reason_text: { type: String, default: null },
+      stage: { type: String, default: null },
+      fee_amount: { type: Number, default: 0, min: 0 },
+      ledger_id: { type: mongoose.Schema.Types.ObjectId, ref: "CancellationLedger", default: null },
+    },
+    reopened_count: { type: Number, default: 0, min: 0 },
     shipments: [ShipmentItemSchema],
   },
   { timestamps: true },

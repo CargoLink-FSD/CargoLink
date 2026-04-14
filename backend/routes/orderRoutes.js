@@ -66,7 +66,8 @@ orderRouter.get("/my-bids", authMiddleware(["transporter"]), orderController.get
 
 // Orders:
 orderRouter.post("/", authMiddleware(["customer"]), upload.single('cargo_photo'), parseFormDataJSON, validate(validationSchema.order), orderController.placeOrder); // Place order (shipment/rental)
-orderRouter.delete("/:orderId", authMiddleware(["customer"]), orderController.cancelOrder); // Cancel order
+orderRouter.get('/cancellation-dues', authMiddleware(["customer"]), orderController.getCancellationDues); // Get cancellation dues summary
+orderRouter.delete("/:orderId", authMiddleware(["customer"]), validate(validationSchema.customerCancelOrder), orderController.cancelOrder); // Cancel order
 // orderRouter.post("/:orderId/rating", authMiddleware(["customer"]), validate(validationSchema.rating), orderController.submitRating); // Submit rating for order
 
 orderRouter.get("/:orderId", authMiddleware(["customer", "transporter"]), orderController.getOrderDetails); // Get order details (role-filtered)
