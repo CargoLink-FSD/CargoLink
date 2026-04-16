@@ -1,5 +1,4 @@
 // Geocoding Service — server-side geocoding and distance calculation using Google Maps APIs
-import { GOOGLE_MAPS_API_KEY } from '../config/index.js';
 import { CACHE_EXTERNAL_TTL } from '../core/index.js';
 import { makeCacheKey, rememberCachedJson } from '../core/cache.js';
 import { AppError, logger } from '../utils/misc.js';
@@ -21,7 +20,8 @@ const geocodeAddress = async (address) => {
         key,
         ttlSeconds: CACHE_EXTERNAL_TTL,
         producer: async () => {
-            const url = `${GEOCODE_BASE}?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}&region=in`;
+            const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+            const url = `${GEOCODE_BASE}?address=${encodeURIComponent(address)}&key=${apiKey}&region=in`;
 
             const res = await fetch(url);
             const data = await res.json();
@@ -69,8 +69,8 @@ const calculateDistance = async (originCoords, destCoords) => {
         producer: async () => {
             const origin = `${originCoords.lat},${originCoords.lng}`;
             const dest = `${destCoords.lat},${destCoords.lng}`;
-
-            const url = `${DISTANCE_BASE}?origins=${origin}&destinations=${dest}&key=${GOOGLE_MAPS_API_KEY}&units=metric`;
+            const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+            const url = `${DISTANCE_BASE}?origins=${origin}&destinations=${dest}&key=${apiKey}&units=metric`;
 
             const res = await fetch(url);
             const data = await res.json();
