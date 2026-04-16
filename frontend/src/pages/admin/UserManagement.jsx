@@ -3,9 +3,8 @@ import { useNotification } from '../../context/NotificationContext';
 import http from '../../api/http';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
+import { toApiUrl } from '../../utils/apiBase';
 import './AdminStyles.css';
-
-const API_BASE = 'http://localhost:3000';
 
 export default function UserManagement() {
   const { showNotification } = useNotification();
@@ -341,7 +340,7 @@ export default function UserManagement() {
                             <span className="adm-detail-label">PAN Card</span>
                             <span className="adm-detail-value">
                               {detail.documents.pan_card?.url
-                                ? <><span className={`adm-badge ${detail.documents.pan_card.adminStatus === 'approved' ? 'green' : detail.documents.pan_card.adminStatus === 'rejected' ? 'red' : 'orange'}`}>{detail.documents.pan_card.adminStatus}</span> <a href={`${API_BASE}${detail.documents.pan_card.url}`} target="_blank" rel="noreferrer" style={{ marginLeft: 8, color: '#6366f1' }}>View</a></>
+                                ? <><span className={`adm-badge ${detail.documents.pan_card.adminStatus === 'approved' ? 'green' : detail.documents.pan_card.adminStatus === 'rejected' ? 'red' : 'orange'}`}>{detail.documents.pan_card.adminStatus}</span> <a href={toApiUrl(detail.documents.pan_card.url)} target="_blank" rel="noreferrer" style={{ marginLeft: 8, color: '#6366f1' }}>View</a></>
                                 : '—'}
                             </span>
                           </div>
@@ -349,7 +348,7 @@ export default function UserManagement() {
                             <span className="adm-detail-label">Driving License</span>
                             <span className="adm-detail-value">
                               {detail.documents.driving_license?.url
-                                ? <><span className={`adm-badge ${detail.documents.driving_license.adminStatus === 'approved' ? 'green' : detail.documents.driving_license.adminStatus === 'rejected' ? 'red' : 'orange'}`}>{detail.documents.driving_license.adminStatus}</span> <a href={`${API_BASE}${detail.documents.driving_license.url}`} target="_blank" rel="noreferrer" style={{ marginLeft: 8, color: '#6366f1' }}>View</a></>
+                                ? <><span className={`adm-badge ${detail.documents.driving_license.adminStatus === 'approved' ? 'green' : detail.documents.driving_license.adminStatus === 'rejected' ? 'red' : 'orange'}`}>{detail.documents.driving_license.adminStatus}</span> <a href={toApiUrl(detail.documents.driving_license.url)} target="_blank" rel="noreferrer" style={{ marginLeft: 8, color: '#6366f1' }}>View</a></>
                                 : '—'}
                             </span>
                           </div>

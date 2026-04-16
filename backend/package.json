@@ -19,6 +19,7 @@
     "redis:reset": "docker compose -f ../docker-compose.redis.yml down -v"
   },
   "dependencies": {
+    "@google-cloud/secret-manager": "^6.1.1",
     "@testcontainers/mongodb": "^11.8.1",
     "bcrypt": "^6.0.0",
     "compression": "^1.8.1",

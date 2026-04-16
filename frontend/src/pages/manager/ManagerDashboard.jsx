@@ -3,9 +3,10 @@ import { getVerificationQueue, approveDocument, rejectDocument, getManagerProfil
 import { Check, CircleCheck } from 'lucide-react';
 import { useNotification } from '../../context/NotificationContext';
 import Header from '../../components/common/Header';
+import { getApiBaseUrl } from '../../utils/apiBase';
 import './ManagerDashboard.css';
 
-const API_BASE = 'http://localhost:3000';
+const API_BASE = getApiBaseUrl();
 
 const statusBadge = (status) => {
   const styles = {

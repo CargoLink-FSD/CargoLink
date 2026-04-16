@@ -5,13 +5,14 @@
 
 import tokenStorage from '../utils/token';
 import { handleTokenRefresh } from '../utils/tokenRefresh';
+import { getApiBaseUrl, toApiUrl } from '../utils/apiBase';
 
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = getApiBaseUrl();
 
 export const getBaseUrl = () => API_BASE_URL;
 
 async function request(path, { method = 'GET', headers, body, credentials = 'include', _retry = false } = {}) {
-  const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
+  const url = toApiUrl(path);
 
   // Get access token and add to headers if available
   const accessToken = tokenStorage.getAccessToken();

@@ -1,0 +1,20 @@
+runtime: nodejs20
+service: frontend
+env: standard
+entrypoint: npm start
+
+automatic_scaling:
+  min_instances: 1
+  max_instances: 5
+
+handlers:
+  - url: /assets
+    static_dir: dist/assets
+
+  - url: /(.*\.(js|css|png|jpg|jpeg|svg|ico|webp|json|map|txt))
+    static_files: dist/\1
+    upload: dist/(.*\.(js|css|png|jpg|jpeg|svg|ico|webp|json|map|txt))
+
+  - url: /.*
+    static_files: dist/index.html
+    upload: dist/index.html

@@ -7,6 +7,7 @@ import { paymentAPI } from '../../api/payment';
 import Header from '../../components/common/Header';
 import TransporterProfileModal, { StarRating } from '../../components/common/TransporterProfileModal';
 import ReviewModal from '../../components/customer/ReviewModal';
+import { toApiUrl } from '../../utils/apiBase';
 import './OrderDetails.css';
 
 function QuoteBreakdownTable({ breakdown, total }) {
@@ -295,7 +296,7 @@ export default function OrderDetails() {
                 <span className="label">Cargo Photo</span>
                 <div className="cargo-photo-display">
                   <img
-                    src={`http://localhost:3000${order.cargo_photo}`}
+                    src={toApiUrl(order.cargo_photo)}
                     alt="Cargo"
                     className="cargo-photo-full"
                     onError={(e) => { e.target.style.display = 'none'; }}

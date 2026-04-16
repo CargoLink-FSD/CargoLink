@@ -8,6 +8,7 @@ import ChatWindow from '../components/trackOrders/ChatWindow';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import { getOrderTracking } from '../api/trips';
+import { toApiUrl } from '../utils/apiBase';
 
 import '../styles/TrackOrder.css';
 
@@ -365,7 +366,7 @@ const TrackOrderPage = () => {
                       <p className="detail-label">Cargo Photo</p>
                       <div className="cargo-photo-wrapper">
                         <img
-                          src={`http://localhost:3000${currentOrder.cargo_photo}`}
+                          src={toApiUrl(currentOrder.cargo_photo)}
                           alt="Cargo"
                           className="cargo-photo"
                           onError={(e) => { e.target.style.display = 'none'; }}

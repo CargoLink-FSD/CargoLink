@@ -1,16 +1,8 @@
 import multer from 'multer';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
+import { ensureUploadSubdir } from './uploadPaths.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Create uploads directory for profile pictures if it doesn't exist
-const uploadsDir = path.join(__dirname, '..', 'uploads', 'profile-pictures');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-}
+const uploadsDir = ensureUploadSubdir('profile-pictures');
 
 // Configure storage
 const storage = multer.diskStorage({

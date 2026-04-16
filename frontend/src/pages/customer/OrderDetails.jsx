@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import http from '../../api/http';
+import { toApiUrl } from '../../utils/apiBase';
 import '../../pages/customer/CustomerOrders.css';
 export default function OrderDetails(){
   const { orderId } = useParams();
@@ -42,7 +43,7 @@ export default function OrderDetails(){
 
   const handlePayNow = () => {
     // open backend paynow endpoint which renders payment success page
-    window.open(`http://localhost:3000/customer/paynow?orderId=${id}`, '_blank');
+    window.open(toApiUrl(`/customer/paynow?orderId=${id}`), '_blank');
   };
 
   const callTransporter = () => {
