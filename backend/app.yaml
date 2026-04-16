@@ -11,10 +11,12 @@ automatic_scaling:
 
 env_variables:
   NODE_ENV: production
-  CACHE_ENABLED: "true"
   UPLOAD_ROOT: /tmp/uploads
 
-  # Secret Manager pointers â€” values are resolved at startup via secrets.js
+  # Disable Redis — no Memorystore configured in GAE standard
+  CACHE_ENABLED: "false"
+
+  # Secret Manager pointers — resolved at startup by loadAllSecrets()
   MONGO_URI_SECRET_NAME: MONGO_URI
   MONGO_URI_SECRET_VERSION: latest
   JWT_ACCESS_SECRET_NAME: JWT_ACCESS_SECRET

@@ -8,62 +8,53 @@ substitutions:
   _MONGO_URI_SECRET_NAME: MONGO_URI
 
 steps:
-  # ── Install ──────────────────────────────────────────────────────────────
+  # ── 0: Install backend deps ──────────────────────────────────────────────
   - id: backend-install
-    name: node:20
+    name: node:22
     entrypoint: npm
     dir: backend
     args: ["ci", "--prefer-offline", "--no-audit"]
 
+  # ── 1: Install frontend deps (parallel with backend) ────────────────────
   - id: frontend-install
-    name: node:20
+    name: node:22
     entrypoint: npm
     dir: frontend
     args: ["ci", "--prefer-offline", "--no-audit"]
-    waitFor: ["-"]   # run in parallel with backend-install
+    waitFor: ["-"]
 
-  # ── Build frontend ────────────────────────────────────────────────────────
+  # ── 2: Build frontend ────────────────────────────────────────────────────
   - id: frontend-build
-    name: node:20
+    name: node:22
     entrypoint: npm
     dir: frontend
     args: ["run", "build"]
     waitFor: ["frontend-install"]
 
-  # ── Verify MONGO_URI secret is accessible ─────────────────────────────────
-  - id: verify-runtime-secret
+  # ── 3: Verify MONGO_URI secret is accessible ─────────────────────────────
+  - id: verify-secret
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
     waitFor: ["backend-install", "frontend-build"]
     args:
       - -ceu
       - |
-        SECRET_NAME="${_MONGO_URI_SECRET_NAME}"
-        if [ -z "$${SECRET_NAME}" ]; then
-          echo "ERROR: _MONGO_URI_SECRET_NAME substitution is not set."
-          exit 1
-        fi
-        gcloud secrets versions access latest --secret="$${SECRET_NAME}" > /dev/null
-        echo "Secret $${SECRET_NAME} is accessible."
+        gcloud secrets versions access latest --secret="${_MONGO_URI_SECRET_NAME}" > /dev/null
+        echo "Secret ${_MONGO_URI_SECRET_NAME} is accessible."
 
-  # ── Compute a short, RFC-compliant App Engine version ID ─────────────────
-  #    Format: cl-<SHORT_SHA>  (always ≤ 20 chars, lowercase alphanum + dash)
+  # ── 4: Compute short, RFC-compliant version ID ───────────────────────────
   - id: compute-version
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
-    waitFor: ["verify-runtime-secret"]
+    waitFor: ["verify-secret"]
     args:
       - -ceu
       - |
-        RAW="cl-${SHORT_SHA}"
-        VERSION="$(echo "$${RAW}" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed -E 's/^-+//; s/-+$//')"
-        if [ -z "$${VERSION}" ]; then
-          VERSION="cl-fallback"
-        fi
+        VERSION="cl-${SHORT_SHA}"
         echo -n "$${VERSION}" > /workspace/.gae-version
-        echo "App Engine version: $${VERSION}"
+        echo "Version: $${VERSION}"
 
-  # ── Deploy backend (no traffic yet) ──────────────────────────────────────
+  # ── 5 & 6: Deploy services in parallel (no traffic yet) ──────────────────
   - id: deploy-backend
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -72,12 +63,8 @@ steps:
       - -ceu
       - |
         VERSION="$(cat /workspace/.gae-version)"
-        gcloud app deploy backend/app.yaml \
-          --version="$${VERSION}" \
-          --no-promote \
-          --quiet
+        gcloud app deploy backend/app.yaml --version="$${VERSION}" --no-promote --quiet
 
-  # ── Deploy frontend (no traffic yet) ─────────────────────────────────────
   - id: deploy-frontend
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -86,12 +73,9 @@ steps:
       - -ceu
       - |
         VERSION="$(cat /workspace/.gae-version)"
-        gcloud app deploy frontend/app.yaml \
-          --version="$${VERSION}" \
-          --no-promote \
-          --quiet
+        gcloud app deploy frontend/app.yaml --version="$${VERSION}" --no-promote --quiet
 
-  # ── Deploy dispatch rules ─────────────────────────────────────────────────
+  # ── 7: Deploy dispatch rules ─────────────────────────────────────────────
   - id: deploy-dispatch
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -101,7 +85,7 @@ steps:
       - |
         gcloud app deploy dispatch.yaml --quiet
 
-  # ── Promote traffic to the new version ───────────────────────────────────
+  # ── 8: Promote traffic ───────────────────────────────────────────────────
   - id: promote-traffic
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -112,12 +96,9 @@ steps:
         VERSION="$(cat /workspace/.gae-version)"
         gcloud app services set-traffic default  --splits "$${VERSION}=1" --quiet
         gcloud app services set-traffic frontend --splits "$${VERSION}=1" --quiet
-        echo "Traffic promoted to version: $${VERSION}"
+        echo "Traffic promoted to: $${VERSION}"
 
-  # ── Readiness poll: wait for the live app to respond ─────────────────────
-  #    Uses the Cloud Build built-in $PROJECT_ID to build the hostname
-  #    (avoids needing gcloud app describe and its IAM dependency).
-  #    30s cold-start wait, then 10 retries × 10s = 100s total window.
+  # ── 9: Smoke test — wait for /healthz to return 200 ─────────────────────
   - id: smoke-tests
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -125,54 +106,32 @@ steps:
     args:
       - -cu
       - |
-        BACKEND_URL="https://cargolink-489712.el.r.appspot.com/healthz"
-        FRONTEND_URL="https://cargolink-489712.el.r.appspot.com/"
-
-        echo "Waiting 30s for GAE cold start to complete..."
-        sleep 30
-
-        echo "Polling backend: $${BACKEND_URL}"
+        echo "Waiting 45s for GAE instances to start..."
+        sleep 45
         ok=0
         for i in 1 2 3 4 5 6 7 8 9 10; do
-          STATUS="$(curl --silent --output /dev/null -w '%{http_code}' --max-time 15 "$${BACKEND_URL}" || echo '000')"
-          echo "  Attempt $${i}/10: HTTP $${STATUS}"
-          if [ "$${STATUS}" = "200" ]; then ok=1; break; fi
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 https://cargolink-489712.el.r.appspot.com/healthz || echo 000)
+          echo "  /healthz attempt $${i}: HTTP $${CODE}"
+          if [ "$${CODE}" = "200" ]; then ok=1; break; fi
           sleep 10
         done
-        if [ "$${ok}" = "0" ]; then
-          echo "ERROR: Backend /healthz did not return 200 after 100s."
-          exit 1
-        fi
-        echo "Backend /healthz: OK"
+        if [ "$${ok}" = "0" ]; then echo "FAIL: /healthz never returned 200"; exit 1; fi
+        echo "Backend OK."
+        CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 https://cargolink-489712.el.r.appspot.com/ || echo 000)
+        echo "  / returned: HTTP $${CODE}"
+        if [ "$${CODE}" != "200" ]; then echo "FAIL: / did not return 200"; exit 1; fi
+        echo "Frontend OK."
 
-        echo "Polling frontend: $${FRONTEND_URL}"
-        ok=0
-        for i in 1 2 3 4 5 6 7 8 9 10; do
-          STATUS="$(curl --silent --output /dev/null -w '%{http_code}' --max-time 15 "$${FRONTEND_URL}" || echo '000')"
-          echo "  Attempt $${i}/10: HTTP $${STATUS}"
-          if [ "$${STATUS}" = "200" ]; then ok=1; break; fi
-          sleep 10
-        done
-        if [ "$${ok}" = "0" ]; then
-          echo "ERROR: Frontend / did not return 200 after 100s."
-          exit 1
-        fi
-        echo "Frontend /: OK"
-
-  # ── Deployment summary ────────────────────────────────────────────────────
-  - id: deployment-summary
+  # ── 10: Summary ──────────────────────────────────────────────────────────
+  - id: summary
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
     waitFor: ["smoke-tests"]
     args:
-      - -ceu
+      - -cu
       - |
-        HOSTNAME="$(gcloud app describe --format='value(defaultHostname)')"
         VERSION="$(cat /workspace/.gae-version)"
         echo "========================================"
-        echo "  Deployment succeeded!"
-        echo "  Version : $${VERSION}"
-        echo "  App URL : https://$${HOSTNAME}"
-        echo "  Health  : https://$${HOSTNAME}/healthz"
-        echo "  API     : https://$${HOSTNAME}/api"
+        echo "  SUCCESS — version: $${VERSION}"
+        echo "  URL: https://cargolink-489712.el.r.appspot.com"
         echo "========================================"

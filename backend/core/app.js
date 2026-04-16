@@ -20,6 +20,13 @@ const swaggerDocument = YAML.load(openApiPath);
 const app = express();
 const uploadsRoot = getUploadRoot();
 
+// GAE terminates SSL and proxies requests — trust the X-Forwarded-For header
+// so express-rate-limit and req.ip work correctly behind the load balancer.
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', true);
+}
+
+
 const parseAllowedOrigins = () => {
   if (process.env.CORS_ALLOWED_ORIGINS) {
     return new Set(

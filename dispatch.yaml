@@ -1,20 +1,12 @@
 dispatch:
-  # Backend API routes
   - url: "*/api/*"
     service: default
 
-  # File uploads served by the backend
   - url: "*/uploads/*"
     service: default
 
-  # Backend health check
   - url: "*/healthz"
     service: default
 
-  # Swagger API docs
   - url: "*/api-docs*"
     service: default
-
-  # Everything else â†’ React SPA (frontend service)
-  - url: "*/*"
-    service: frontend
