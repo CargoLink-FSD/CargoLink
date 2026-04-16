@@ -14,7 +14,7 @@ env_variables:
   CACHE_ENABLED: "true"
   UPLOAD_ROOT: /tmp/uploads
 
-  # Secret Manager pointers — values are resolved at startup via secrets.js
+  # Secret Manager pointers â€” values are resolved at startup via secrets.js
   MONGO_URI_SECRET_NAME: MONGO_URI
   MONGO_URI_SECRET_VERSION: latest
   JWT_ACCESS_SECRET_NAME: JWT_ACCESS_SECRET

@@ -15,6 +15,6 @@ dispatch:
   - url: "*/api-docs*"
     service: default
 
-  # Everything else → React SPA (frontend service)
+  # Everything else â†’ React SPA (frontend service)
   - url: "*/*"
     service: frontend

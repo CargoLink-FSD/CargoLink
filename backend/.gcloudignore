@@ -1,6 +1,6 @@
 # Cloud Build / gcloud deploy will NOT upload any of the following.
 
-# Dependencies — installed fresh during the build in Cloud Build
+# Dependencies â€” installed fresh during the build in Cloud Build
 node_modules/
 
 # Test artifacts
