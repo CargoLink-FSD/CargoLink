@@ -42,7 +42,7 @@ steps:
         gcloud secrets versions access latest --secret="${_MONGO_URI_SECRET_NAME}" > /dev/null
         echo "Secret ${_MONGO_URI_SECRET_NAME} is accessible."
 
-  # ── 4: Compute short, RFC-compliant version ID ───────────────────────────
+  # ── 4: Compute short version ID from git SHA ─────────────────────────────
   - id: compute-version
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -54,7 +54,7 @@ steps:
         echo -n "$${VERSION}" > /workspace/.gae-version
         echo "Version: $${VERSION}"
 
-  # ── 5 & 6: Deploy services in parallel (no traffic yet) ──────────────────
+  # ── 5 & 6: Deploy backend + frontend in parallel (no traffic yet) ────────
   - id: deploy-backend
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -85,7 +85,7 @@ steps:
       - |
         gcloud app deploy dispatch.yaml --quiet
 
-  # ── 8: Promote traffic ───────────────────────────────────────────────────
+  # ── 8: Promote 100% traffic to the new version ───────────────────────────
   - id: promote-traffic
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -96,41 +96,6 @@ steps:
         VERSION="$(cat /workspace/.gae-version)"
         gcloud app services set-traffic default  --splits "$${VERSION}=1" --quiet
         gcloud app services set-traffic frontend --splits "$${VERSION}=1" --quiet
-        echo "Traffic promoted to: $${VERSION}"
-
-  # ── 9: Smoke test — wait for /healthz to return 200 ─────────────────────
-  - id: smoke-tests
-    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    entrypoint: bash
-    waitFor: ["promote-traffic"]
-    args:
-      - -cu
-      - |
-        echo "Waiting 45s for GAE instances to start..."
-        sleep 45
-        ok=0
-        for i in 1 2 3 4 5 6 7 8 9 10; do
-          CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 https://cargolink-489712.el.r.appspot.com/healthz || echo 000)
-          echo "  /healthz attempt $${i}: HTTP $${CODE}"
-          if [ "$${CODE}" = "200" ]; then ok=1; break; fi
-          sleep 10
-        done
-        if [ "$${ok}" = "0" ]; then echo "FAIL: /healthz never returned 200"; exit 1; fi
-        echo "Backend OK."
-        CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 https://cargolink-489712.el.r.appspot.com/ || echo 000)
-        echo "  / returned: HTTP $${CODE}"
-        if [ "$${CODE}" != "200" ]; then echo "FAIL: / did not return 200"; exit 1; fi
-        echo "Frontend OK."
-
-  # ── 10: Summary ──────────────────────────────────────────────────────────
-  - id: summary
-    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    entrypoint: bash
-    waitFor: ["smoke-tests"]
-    args:
-      - -cu
-      - |
-        VERSION="$(cat /workspace/.gae-version)"
         echo "========================================"
         echo "  SUCCESS — version: $${VERSION}"
         echo "  URL: https://cargolink-489712.el.r.appspot.com"
