@@ -1,0 +1,8 @@
+[
+  {
+    "name": "Admin Dashboard Stats",
+    "method": "GET",
+    "path": "/api/admin/dashboard/stats",
+    "auth": true
+  }
+]

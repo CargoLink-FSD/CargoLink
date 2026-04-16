@@ -178,3 +178,28 @@ export function generatePassword() {
   }
   return password;
 }
+
+export function parsePaginationParams(params = {}, options = {}) {
+  const { defaultLimit = 20, maxLimit = 100 } = options;
+  const hasPage = params.page !== undefined && params.page !== null && params.page !== '';
+  const hasLimit = params.limit !== undefined && params.limit !== null && params.limit !== '';
+
+  if (!hasPage && !hasLimit) {
+    return null;
+  }
+
+  const page = Math.max(1, Number.parseInt(params.page, 10) || 1);
+  const rawLimit = Number.parseInt(params.limit, 10);
+  const normalizedLimit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : defaultLimit;
+  const limit = Math.min(normalizedLimit, maxLimit);
+
+  return {
+    page,
+    limit,
+    skip: (page - 1) * limit,
+  };
+}
+
+export function escapeRegex(input = '') {
+  return String(input).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}

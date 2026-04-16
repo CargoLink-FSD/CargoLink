@@ -13,6 +13,11 @@ async function createTrip(req, res, next) {
 async function getTrips(req, res, next) {
   try {
     const trips = await tripServices.getTrips(req.user.id, req.query);
+
+    if (trips?.items) {
+      return res.status(200).json({ success: true, data: trips.items, pagination: trips.pagination });
+    }
+
     res.status(200).json({ success: true, data: trips });
   } catch (err) { next(err); }
 }
@@ -40,8 +45,15 @@ async function deleteTrip(req, res, next) {
 
 async function cancelTrip(req, res, next) {
   try {
-    const trip = await tripServices.cancelTrip(req.user.id, req.params.tripId);
-    res.status(200).json({ success: true, data: trip });
+    const { reasonCode, reasonText } = req.body || {};
+    const result = await tripServices.cancelTrip(req.user.id, req.params.tripId, { reasonCode, reasonText });
+    res.status(200).json({
+      success: true,
+      data: result,
+      message: result?.policy?.penaltyPoints
+        ? `Trip cancelled. Reliability penalty applied (${result.policy.penaltyPoints} points).`
+        : 'Trip cancelled successfully',
+    });
   } catch (err) { next(err); }
 }
 
@@ -78,6 +90,11 @@ async function getAvailableVehicles(req, res, next) {
 async function getDriverTrips(req, res, next) {
   try {
     const trips = await tripServices.getDriverTrips(req.user.id, req.query);
+
+    if (trips?.items) {
+      return res.status(200).json({ success: true, data: trips.items, pagination: trips.pagination });
+    }
+
     res.status(200).json({ success: true, data: trips });
   } catch (err) { next(err); }
 }

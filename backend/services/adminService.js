@@ -1,66 +1,78 @@
 import adminRepo from '../repositories/adminRepo.js';
-import { AppError } from '../utils/misc.js';
+import { AppError, escapeRegex } from '../utils/misc.js';
+import mongoose from 'mongoose';
+import { CACHE_DEFAULT_TTL } from '../core/index.js';
+import { makeCacheKey, rememberCachedJson } from '../core/cache.js';
 
 // Dashboard Statistics
 const getDashboardStats = async () => {
-    const [
-        ordersPerDay,
-        revenuePerDay,
-        topTransporters,
-        orderStatusDistribution,
-        fleetUtilization,
-        newCustomersPerMonth,
-        mostRequestedTruckTypes,
-        pendingVsCompletedOrders,
-        avgBidAmount,
-        totalCustomers,
-        totalTransporters,
-        totalVehicles,
-        openTickets,
-        pendingVerifications
-    ] = await Promise.all([
-        adminRepo.getOrdersPerDay(),
-        adminRepo.getRevenuePerDay(),
-        adminRepo.getTopTransporters(),
-        adminRepo.getOrderStatusDistribution(),
-        adminRepo.getFleetUtilization(),
-        adminRepo.getNewCustomersPerMonth(),
-        adminRepo.getMostRequestedTruckTypes(),
-        adminRepo.getPendingVsCompletedOrders(),
-        adminRepo.getAverageBidAmount(),
-        adminRepo.getTotalCustomers(),
-        adminRepo.getTotalTransporters(),
-        adminRepo.getTotalVehicles(),
-        adminRepo.getOpenTickets(),
-        adminRepo.getPendingVerifications()
-    ]);
+    const cacheKey = makeCacheKey('svc:admin-dashboard:', { dashboard: 'stats' });
+    const { value } = await rememberCachedJson({
+        key: cacheKey,
+        ttlSeconds: Math.max(20, Math.floor(CACHE_DEFAULT_TTL / 2)),
+        producer: async () => {
+            const [
+                ordersPerDay,
+                revenuePerDay,
+                topTransporters,
+                orderStatusDistribution,
+                fleetUtilization,
+                newCustomersPerMonth,
+                mostRequestedTruckTypes,
+                pendingVsCompletedOrders,
+                avgBidAmount,
+                totalCustomers,
+                totalTransporters,
+                totalVehicles,
+                openTickets,
+                pendingVerifications
+            ] = await Promise.all([
+                adminRepo.getOrdersPerDay(),
+                adminRepo.getRevenuePerDay(),
+                adminRepo.getTopTransporters(),
+                adminRepo.getOrderStatusDistribution(),
+                adminRepo.getFleetUtilization(),
+                adminRepo.getNewCustomersPerMonth(),
+                adminRepo.getMostRequestedTruckTypes(),
+                adminRepo.getPendingVsCompletedOrders(),
+                adminRepo.getAverageBidAmount(),
+                adminRepo.getTotalCustomers(),
+                adminRepo.getTotalTransporters(),
+                adminRepo.getTotalVehicles(),
+                adminRepo.getOpenTickets(),
+                adminRepo.getPendingVerifications()
+            ]);
 
-    return {
-        totalOrders: ordersPerDay.reduce((sum, day) => sum + day.total_orders, 0),
-        totalRevenue: revenuePerDay.reduce((sum, day) => sum + day.total_revenue, 0),
-        pendingOrders: pendingVsCompletedOrders.pending_orders || 0,
-        completedOrders: pendingVsCompletedOrders.completed_orders || 0,
-        newCustomers: newCustomersPerMonth.reduce((sum, month) => sum + month.new_customers, 0),
-        totalCustomers,
-        totalTransporters,
-        totalVehicles,
-        openTickets,
-        pendingVerifications,
-        ordersPerDay,
-        revenuePerDay,
-        topTransporters,
-        orderStatusDistribution,
-        fleetUtilization,
-        newCustomersPerMonth,
-        truckTypes: mostRequestedTruckTypes,
-        orderRatio: pendingVsCompletedOrders,
-        avgBidAmount: avgBidAmount?.avg_bid || 0
-    };
+            return {
+                totalOrders: ordersPerDay.reduce((sum, day) => sum + day.total_orders, 0),
+                totalRevenue: revenuePerDay.reduce((sum, day) => sum + day.total_revenue, 0),
+                pendingOrders: pendingVsCompletedOrders.pending_orders || 0,
+                completedOrders: pendingVsCompletedOrders.completed_orders || 0,
+                newCustomers: newCustomersPerMonth.reduce((sum, month) => sum + month.new_customers, 0),
+                totalCustomers,
+                totalTransporters,
+                totalVehicles,
+                openTickets,
+                pendingVerifications,
+                ordersPerDay,
+                revenuePerDay,
+                topTransporters,
+                orderStatusDistribution,
+                fleetUtilization,
+                newCustomersPerMonth,
+                truckTypes: mostRequestedTruckTypes,
+                orderRatio: pendingVsCompletedOrders,
+                avgBidAmount: avgBidAmount?.avg_bid || 0
+            };
+        },
+    });
+
+    return value;
 };
 
 // Order Management
 const getAllOrders = async (filters = {}) => {
-    const { search, status, fromDate, toDate, sort = 'date' } = filters;
+    const { search, status, fromDate, toDate, sort = 'date', page, limit } = filters;
 
     let query = {};
     let sortOptions = {};
@@ -89,27 +101,36 @@ const getAllOrders = async (filters = {}) => {
             sortOptions = { createdAt: -1 };
     }
 
-    let orders = await adminRepo.getAllOrders(query, sortOptions);
-
-    // Search filter (applied after population)
     if (search) {
-        orders = orders.filter(order => {
-            const customerName = order.customer_id
-                ? `${order.customer_id.firstName} ${order.customer_id.lastName}`.toLowerCase()
-                : '';
-            const transporterName = order.assigned_transporter_id?.name?.toLowerCase() || '';
+        const regex = new RegExp(escapeRegex(search), 'i');
+        const [customerIds, transporterIds] = await Promise.all([
+            adminRepo.searchCustomerIds(search),
+            adminRepo.searchTransporterIds(search),
+        ]);
 
-            return (
-                customerName.includes(search.toLowerCase()) ||
-                transporterName.includes(search.toLowerCase()) ||
-                order.pickup_location?.toLowerCase().includes(search.toLowerCase()) ||
-                order.dropoff_location?.toLowerCase().includes(search.toLowerCase()) ||
-                order._id.toString().includes(search)
-            );
-        });
+        const orConditions = [
+            { 'pickup.city': regex },
+            { 'pickup.state': regex },
+            { 'delivery.city': regex },
+            { 'delivery.state': regex },
+        ];
+
+        if (mongoose.Types.ObjectId.isValid(search)) {
+            orConditions.push({ _id: new mongoose.Types.ObjectId(search) });
+        }
+
+        if (customerIds.length > 0) {
+            orConditions.push({ customer_id: { $in: customerIds } });
+        }
+
+        if (transporterIds.length > 0) {
+            orConditions.push({ assigned_transporter_id: { $in: transporterIds } });
+        }
+
+        query.$or = orConditions;
     }
 
-    return orders;
+    return await adminRepo.getAllOrders(query, sortOptions, { page, limit });
 };
 
 const getOrderDetails = async (orderId) => {
@@ -140,7 +161,7 @@ const getBidCountForOrder = async (orderId) => {
 
 // User Management
 const getAllUsers = async (role, filters = {}) => {
-    const { search, sort = 'date' } = filters;
+    const { search, sort = 'date', page, limit } = filters;
 
     if (!['customer', 'transporter'].includes(role.toLowerCase())) {
         throw new AppError(400, "ValidationError", "Invalid role specified", "ERR_VALIDATION");
@@ -173,10 +194,11 @@ const getAllUsers = async (role, filters = {}) => {
                 sortOptions = { createdAt: -1 };
         }
 
-        const users = await adminRepo.getAllCustomers(query, sortOptions);
-        const orderCountMap = await adminRepo.getOrderCountByCustomer();
+        const customerResult = await adminRepo.getAllCustomers(query, sortOptions, { page, limit });
+        const users = Array.isArray(customerResult) ? customerResult : customerResult.items;
+        const orderCountMap = await adminRepo.getOrderCountByCustomer(users.map((user) => user._id));
 
-        return users.map(user => ({
+        const formattedUsers = users.map(user => ({
             _id: user._id,
             customer_id: user._id,
             first_name: user.firstName,
@@ -186,6 +208,15 @@ const getAllUsers = async (role, filters = {}) => {
             createdAt: user.createdAt,
             noOfOrders: orderCountMap[user._id.toString()] || 0
         }));
+
+        if (!Array.isArray(customerResult)) {
+            return {
+                items: formattedUsers,
+                pagination: customerResult.pagination,
+            };
+        }
+
+        return formattedUsers;
     } else {
         // Search filter for transporters
         if (search) {
@@ -209,10 +240,11 @@ const getAllUsers = async (role, filters = {}) => {
                 sortOptions = { createdAt: -1 };
         }
 
-        const users = await adminRepo.getAllTransporters(query, sortOptions);
-        const orderCountMap = await adminRepo.getOrderCountByTransporter();
+        const transporterResult = await adminRepo.getAllTransporters(query, sortOptions, { page, limit });
+        const users = Array.isArray(transporterResult) ? transporterResult : transporterResult.items;
+        const orderCountMap = await adminRepo.getOrderCountByTransporter(users.map((user) => user._id));
 
-        return users.map(user => ({
+        const formattedUsers = users.map(user => ({
             _id: user._id,
             transporter_id: user._id,
             name: user.name,
@@ -221,6 +253,15 @@ const getAllUsers = async (role, filters = {}) => {
             createdAt: user.createdAt,
             noOfOrders: orderCountMap[user._id.toString()] || 0
         }));
+
+        if (!Array.isArray(transporterResult)) {
+            return {
+                items: formattedUsers,
+                pagination: transporterResult.pagination,
+            };
+        }
+
+        return formattedUsers;
     }
 };
 

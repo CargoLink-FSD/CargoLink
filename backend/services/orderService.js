@@ -2,6 +2,13 @@ import orderRepo from "../repositories/orderRepo.js"
 import bidRepo from "../repositories/bidRepo.js"
 import Fleet from "../models/fleet.js"
 import { AppError, logger } from "../utils/misc.js"
+import {
+    evaluateCustomerOrderGate,
+    applyCustomerCancellationPolicy,
+    getCustomerDuesSummary,
+    settleCustomerDues,
+    assertTransporterCanOperate,
+} from "./cancellationPolicyService.js"
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -10,10 +17,20 @@ const getOrdersByUser = async (userId, role, filters = {}) => {
     if (role === 'customer') {
         orders = await orderRepo.getOrdersByCustomer(userId, filters);
     } else if (role === 'transporter') {
-        orders = await orderRepo.getOrdersByTransporter(userId);
-        orders.forEach(order => {
-            delete order.otp;
+        orders = await orderRepo.getOrdersByTransporter(userId, {
+            status: filters.status,
+            page: filters.page,
+            limit: filters.limit,
         });
+        if (Array.isArray(orders)) {
+            orders.forEach(order => {
+                delete order.otp;
+            });
+        } else if (orders?.items) {
+            orders.items.forEach(order => {
+                delete order.otp;
+            });
+        }
     }
     return orders;
 
@@ -33,39 +50,85 @@ const getOrderDetails = async (orderId, userId, role) => {
 };
 
 const placeOrder = async (orderData) => {
+    await evaluateCustomerOrderGate(orderData.customer_id);
     const order = await orderRepo.createOrder(orderData);
     return order;
 };
 
-const cancelOrder = async (orderId, customerId) => {
-    const exist = await orderRepo.existsOrderForCustomer(orderId, customerId);
-    if (!exist) {
+const cancelOrder = async (orderId, customerId, { reasonCode, reasonText } = {}) => {
+    const order = await orderRepo.getOrderById(orderId);
+    if (!order || order.customer_id?.toString() !== customerId) {
         throw new AppError(404, "NotFound", "Order not found or access denied", "ERR_NOT_FOUND");
     }
-    const order = await orderRepo.cancelOrder(orderId, customerId);
-    if (!order) {
-        throw new AppError(400, "InvalidOperation", "Only placed orders can be cancelled", "ERR_INVALID_OPERATION");
+
+    if (!["Placed", "Assigned"].includes(order.status)) {
+        throw new AppError(400, "InvalidOperation", "Only placed or assigned orders can be cancelled", "ERR_INVALID_OPERATION");
     }
-    return order;
+
+    const policyDecision = await applyCustomerCancellationPolicy({
+        order,
+        customerId,
+        reasonCode,
+        reasonText,
+    });
+
+    const cancelledOrder = await orderRepo.cancelOrder(orderId, customerId, {
+        reasonCode: reasonCode || 'customer_requested',
+        reasonText,
+        stage: policyDecision.stage,
+        feeAmount: policyDecision.feeAmount,
+        ledgerId: policyDecision.ledgerId,
+    });
+
+    if (!cancelledOrder) {
+        throw new AppError(400, "InvalidOperation", "Order cannot be cancelled in current state", "ERR_INVALID_OPERATION");
+    }
+
+    return {
+        order: cancelledOrder,
+        cancellation: {
+            feeAmount: policyDecision.feeAmount,
+            stage: policyDecision.stage,
+            customerStats: policyDecision.customerStats,
+        },
+    };
 };
 
-const getActiveOrders = async (transporterId) => {
-    const orders = await orderRepo.getActiveOrders(transporterId);
+const getCancellationDues = async (customerId) => {
+    return await getCustomerDuesSummary(customerId);
+};
 
-    orders.forEach(order => {
-        order.already_bid = !!order.bid_by_transporter;
-        delete order.bid_by_transporter;
-    });
+const settleCancellationDuesForCustomer = async (customerId, amount) => {
+    return await settleCustomerDues(customerId, amount);
+};
+
+const getActiveOrders = async (transporterId, filters = {}) => {
+    const orders = await orderRepo.getActiveOrders(transporterId, filters);
+
+    if (Array.isArray(orders)) {
+        orders.forEach(order => {
+            order.already_bid = !!order.bid_by_transporter;
+            delete order.bid_by_transporter;
+        });
+        return orders;
+    }
+
+    if (orders?.items) {
+        orders.items.forEach(order => {
+            order.already_bid = !!order.bid_by_transporter;
+            delete order.bid_by_transporter;
+        });
+    }
 
     return orders;
 };
 
-const getCurrentBids = async (customerId, orderId) => {
+const getCurrentBids = async (customerId, orderId, filters = {}) => {
     const exist = await orderRepo.existsOrderForCustomer(orderId, customerId);
     if (!exist) {
         throw new AppError(404, "NotFound", "Order not found or access denied", "ERR_NOT_FOUND");
     }
-    const bids = await bidRepo.getBidsForOrder(orderId);
+    const bids = await bidRepo.getBidsForOrder(orderId, filters);
     return bids;
 };
 
@@ -122,12 +185,14 @@ const rejectBid = async (customerId, orderId, bidId) => {
     return;
 };
 
-const getTransporterBids = async (transporterId) => {
-    const bids = await bidRepo.getBidsByTransporter(transporterId);
+const getTransporterBids = async (transporterId, filters = {}) => {
+    const bids = await bidRepo.getBidsByTransporter(transporterId, filters);
     return bids;
 };
 
 const submitBid = async (transporterId, orderId, bidAmount, notes, quoteBreakdown) => {
+    await assertTransporterCanOperate(transporterId);
+
     // Check if order exists and is open for bidding (must be at least 2 days before pickup)
     const active = await orderRepo.checkActiveOrder(orderId, transporterId);
     if (!active) {
@@ -285,7 +350,7 @@ const getTransporterVehicles = async (transporterId) => {
         transporter_id: transporterId,
         status: 'Available'
     });
-        return availableVehicles;
+    return availableVehicles;
 };
 
 const getAvailableVehicles = async (transporterId) => {
@@ -309,6 +374,8 @@ export default {
     getOrderDetails,
     placeOrder,
     cancelOrder,
+    getCancellationDues,
+    settleCancellationDuesForCustomer,
     getActiveOrders,
 
     getCurrentBids,

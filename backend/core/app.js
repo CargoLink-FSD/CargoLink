@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
 import router from '../routes/index.js';
 import { requestLogger } from '../middlewares/requestLogger.js';
 import { errorHandler, logger } from '../utils/misc.js';
@@ -11,8 +13,16 @@ import rateLimit from 'express-rate-limit';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const openApiPath = path.join(__dirname, '..', 'docs', 'openapi.yaml');
+const swaggerDocument = YAML.load(openApiPath);
 
 const app = express();
+
+// Serve OpenAPI docs before helmet CSP headers to avoid Swagger UI script restrictions.
+app.get('/api-docs/openapi.yaml', (req, res) => {
+  res.sendFile(openApiPath);
+});
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 
 app.use(

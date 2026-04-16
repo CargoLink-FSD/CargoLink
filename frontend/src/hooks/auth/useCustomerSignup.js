@@ -1,5 +1,5 @@
 // Custom hook for customer signup with multi-step form validation
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
@@ -22,11 +22,21 @@ const steps = [
 export const useCustomerSignup = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { showError, showSuccess } = useNotification();
+  const { showError, showSuccess, showInfo } = useNotification();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [signupOtpState, setSignupOtpState] = useState({
+    active: false,
+    maskedEmail: null,
+    otp: ['', '', '', '', '', ''],
+    verifiedToken: null,
+    sending: false,
+    verifying: false,
+    resending: false,
+  });
+  const otpRefs = useRef([]);
   const { currentStep, totalSteps, nextStep: goNext, prevStep } = useStepForm(4);
 
   // Initialize form with react-hook-form and Zod validation
@@ -37,17 +47,61 @@ export const useCustomerSignup = () => {
     reValidateMode: 'onChange',
   });
 
+  useEffect(() => {
+    if (signupOtpState.active && otpRefs.current[0]) {
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+    }
+  }, [signupOtpState.active]);
+
+  const requestSignupOtp = async (email, resend = false) => {
+    const stateKey = resend ? 'resending' : 'sending';
+
+    setSignupOtpState((prev) => ({ ...prev, [stateKey]: true }));
+    try {
+      const otpResponse = await authApi.requestSignupOtp({ email, role: 'customer' });
+      setSignupOtpState((prev) => ({
+        ...prev,
+        active: true,
+        maskedEmail: otpResponse.maskedEmail,
+        otp: ['', '', '', '', '', ''],
+        [stateKey]: false,
+      }));
+
+      if (resend) {
+        showSuccess('A new verification code has been sent to your email.');
+      } else {
+        showInfo(`Verification code sent to ${otpResponse.maskedEmail}`);
+      }
+    } catch (error) {
+      setSignupOtpState((prev) => ({ ...prev, [stateKey]: false }));
+      showError(error?.message || 'Failed to send verification code.');
+    }
+  };
+
+  const completeSignup = async (data, signupVerificationToken) => {
+    await dispatch(signupUser({
+      signupData: {
+        ...data,
+        address: { street: data.street_address, city: data.city, state: data.state, pin: data.pin },
+      },
+      userType: 'customer',
+      signupVerificationToken,
+    })).unwrap();
+
+    showSuccess('Registration successful!');
+    redirectAfterSignup('customer', navigate);
+  };
+
   // Handle form submission
   const onSubmit = async (data) => {
+    if (!signupOtpState.verifiedToken) {
+      await requestSignupOtp(data.email, false);
+      return;
+    }
+
     setLoading(true);
     try {
-      // Dispatch signup action with formatted data
-      await dispatch(signupUser({ 
-        signupData: { ...data, address: { street: data.street_address, city: data.city, state: data.state, pin: data.pin } },
-        userType: 'customer' 
-      })).unwrap();
-      showSuccess('Registration successful!');
-      redirectAfterSignup('customer', navigate);
+      await completeSignup(data, signupOtpState.verifiedToken);
     } catch (error) {
       // Handle validation errors from server
       const errs = error?.errors || error?.payload?.errors;
@@ -66,6 +120,97 @@ export const useCustomerSignup = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOtpChange = useCallback((index, value) => {
+    const digit = value.replace(/\D/g, '').slice(-1);
+
+    setSignupOtpState((prev) => {
+      const updatedOtp = [...prev.otp];
+      updatedOtp[index] = digit;
+      return { ...prev, otp: updatedOtp };
+    });
+
+    if (digit && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  }, []);
+
+  const handleOtpKeyDown = useCallback((index, event) => {
+    if (event.key === 'Backspace' && !signupOtpState.otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  }, [signupOtpState.otp]);
+
+  const handleOtpPaste = useCallback((event) => {
+    event.preventDefault();
+    const pasted = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pasted) return;
+
+    setSignupOtpState((prev) => {
+      const updatedOtp = [...prev.otp];
+      for (let index = 0; index < pasted.length; index += 1) {
+        updatedOtp[index] = pasted[index];
+      }
+      return { ...prev, otp: updatedOtp };
+    });
+
+    otpRefs.current[Math.min(pasted.length, 5)]?.focus();
+  }, []);
+
+  const submitSignupOtp = async () => {
+    const otp = signupOtpState.otp.join('');
+    if (otp.length !== 6) {
+      showError('Please enter all 6 OTP digits.');
+      return;
+    }
+
+    setSignupOtpState((prev) => ({ ...prev, verifying: true }));
+    setLoading(true);
+
+    try {
+      const values = getValues();
+      const verificationResult = await authApi.verifySignupOtp({
+        email: values.email,
+        role: 'customer',
+        otp,
+      });
+
+      setSignupOtpState((prev) => ({
+        ...prev,
+        active: false,
+        verifying: false,
+        verifiedToken: verificationResult.signupVerificationToken,
+      }));
+
+      await completeSignup(values, verificationResult.signupVerificationToken);
+    } catch (error) {
+      setSignupOtpState((prev) => ({
+        ...prev,
+        verifying: false,
+        otp: ['', '', '', '', '', ''],
+      }));
+      showError(error?.message || 'OTP verification failed.');
+      otpRefs.current[0]?.focus();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendSignupOtp = async () => {
+    const values = getValues();
+    await requestSignupOtp(values.email, true);
+  };
+
+  const cancelSignupOtp = () => {
+    setSignupOtpState((prev) => ({
+      ...prev,
+      active: false,
+      otp: ['', '', '', '', '', ''],
+      verifying: false,
+      resending: false,
+      sending: false,
+    }));
   };
 
   // Validate current step before proceeding to next
@@ -106,7 +251,7 @@ export const useCustomerSignup = () => {
       const response = await authApi.googleVerify({
         credential: credentialResponse.credential,
       });
-      
+
       // Populate only the email field
       setValue('email', response.email, { shouldValidate: true });
       showSuccess('Email fetched from Google. Please complete the rest of the form.');
@@ -126,7 +271,7 @@ export const useCustomerSignup = () => {
   return {
     formData: watch(),
     errors,
-    loading: loading || googleLoading,
+    loading: loading || googleLoading || signupOtpState.sending || signupOtpState.verifying || signupOtpState.resending,
     register,
     handleSubmit: handleSubmit(onSubmit),
     currentStep,
@@ -141,5 +286,13 @@ export const useCustomerSignup = () => {
     setError,
     handleGoogleSignup,
     handleGoogleError,
+    signupOtpState,
+    otpRefs,
+    handleOtpChange,
+    handleOtpKeyDown,
+    handleOtpPaste,
+    submitSignupOtp,
+    resendSignupOtp,
+    cancelSignupOtp,
   };
 };

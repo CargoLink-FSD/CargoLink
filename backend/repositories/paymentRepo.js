@@ -20,6 +20,14 @@ const findByRazorpayOrderId = async (razorpayOrderId) => {
     return await Payment.findOne({ razorpay_order_id: razorpayOrderId });
 };
 
+const findPendingByCustomerAndType = async (customerId, paymentType) => {
+    return await Payment.findOne({
+        customer_id: customerId,
+        payment_type: paymentType,
+        status: { $in: ['Created', 'Pending'] },
+    }).sort({ createdAt: -1 });
+};
+
 /**
  * Update payment status and Razorpay details after verification
  */
@@ -52,6 +60,7 @@ export default {
     findByOrderId,
     findByOrderAndType,
     findByRazorpayOrderId,
+    findPendingByCustomerAndType,
     updatePaymentAfterVerification,
     getPaymentHistory,
 };

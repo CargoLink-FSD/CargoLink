@@ -43,8 +43,8 @@ const createTicket = async (userId, userRole, userName, userEmail, ticketData) =
     return ticket;
 };
 
-const getMyTickets = async (userId) => {
-    return await ticketRepo.getTicketsByUser(userId);
+const getMyTickets = async (userId, options = {}) => {
+    return await ticketRepo.getTicketsByUser(userId, options);
 };
 
 const getTicketDetail = async (ticketId, userId, userRole) => {
@@ -80,17 +80,14 @@ const addUserReply = async (ticketId, userId, userRole, userName, text) => {
 };
 
 // Manager functions
-const getAllTickets = async (filters, managerId = null) => {
-    // If managerId is provided, only show tickets assigned to this manager
+const getAllTickets = async (filters, managerId = null, options = {}) => {
+    const queryFilters = { ...filters };
+
     if (managerId) {
-        const Ticket = (await import('../models/ticket.js')).default;
-        const query = { assignedManager: managerId };
-        if (filters.status) query.status = filters.status;
-        if (filters.userRole) query.userRole = filters.userRole;
-        if (filters.priority) query.priority = filters.priority;
-        return Ticket.find(query).sort({ createdAt: -1 });
+        queryFilters.assignedManager = managerId;
     }
-    return await ticketRepo.getAllTickets(filters);
+
+    return await ticketRepo.getAllTickets(queryFilters, options);
 };
 
 const getTicketStats = async (managerId = null) => {

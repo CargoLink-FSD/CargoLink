@@ -4,14 +4,26 @@ export const paymentAPI = {
   /**
    * Initiate payment — creates a Razorpay order on the backend
    */
-  initiatePayment: (orderId) => 
+  initiatePayment: (orderId) =>
     http.post(`/api/payments/orders/${orderId}/initiate`),
 
   /**
    * Verify Razorpay payment after checkout
    */
-  verifyPayment: (orderId, paymentData) => 
+  verifyPayment: (orderId, paymentData) =>
     http.post(`/api/payments/orders/${orderId}/verify`, paymentData),
+
+  /**
+   * Initiate Razorpay order for cancellation dues settlement
+   */
+  initiateCancellationDuesPayment: () =>
+    http.post('/api/payments/cancellation-dues/initiate'),
+
+  /**
+   * Verify Razorpay dues payment and settle ledger
+   */
+  verifyCancellationDuesPayment: (paymentData) =>
+    http.post('/api/payments/cancellation-dues/verify', paymentData),
 
   /**
    * Submit a review for a completed order
@@ -30,7 +42,7 @@ export const paymentAPI = {
   /**
    * Get payment history
    */
-  getHistory: () => 
+  getHistory: () =>
     http.get("/api/payments/history"),
 };
 

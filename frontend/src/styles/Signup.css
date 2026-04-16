@@ -315,7 +315,7 @@
     margin-bottom: 1rem;
 }
 
-.google-signup-container > div {
+.google-signup-container>div {
     width: 100% !important;
 }
 
@@ -325,4 +325,71 @@
     color: #6b7280;
     margin-top: 0.5rem;
     margin-bottom: 0;
+}
+
+/* Signup OTP verification */
+.otp-verification {
+    text-align: center;
+}
+
+.otp-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #eef2ff;
+    color: #3b82f6;
+    margin-bottom: 1rem;
+}
+
+.otp-inputs {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin: 1rem 0;
+}
+
+.otp-box {
+    width: 44px;
+    height: 48px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.otp-box:focus {
+    border-color: var(--primary);
+    outline: none;
+}
+
+.otp-box.filled {
+    border-color: #60a5fa;
+}
+
+.otp-hint {
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.resend-text {
+    margin-top: 1rem;
+    color: #4b5563;
+    font-size: 0.9rem;
+}
+
+.resend-btn {
+    border: none;
+    background: transparent;
+    color: var(--primary);
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.resend-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }

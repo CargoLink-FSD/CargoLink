@@ -69,9 +69,23 @@ const TripSchema = new mongoose.Schema(
     actual_end_at: Date,
     total_distance_km: Number,
     total_duration_minutes: Number,
+    cancellation: {
+      reason_code: { type: String, default: null },
+      reason_text: { type: String, default: null },
+      cancelled_by: { type: String, enum: ['transporter', 'admin', null], default: null },
+      cancelled_at: { type: Date, default: null },
+      ledger_id: { type: mongoose.Schema.Types.ObjectId, ref: 'CancellationLedger', default: null },
+      penalty_points: { type: Number, default: 0, min: 0 },
+    },
   },
   { timestamps: true },
 );
+
+TripSchema.index({ transporter_id: 1, status: 1, createdAt: -1 });
+TripSchema.index({ assigned_driver_id: 1, status: 1, createdAt: -1 });
+TripSchema.index({ assigned_vehicle_id: 1, status: 1 });
+TripSchema.index({ order_ids: 1, status: 1 });
+TripSchema.index({ createdAt: -1 });
 
 const tripModel = mongoose.model("Trip", TripSchema);
 export default tripModel;

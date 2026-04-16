@@ -10,6 +10,9 @@ const createDriver = async (req, res, next) => {
     driver.password = undefined;
     logger.debug("Driver Created", driver);
     const { accessToken, refreshToken } = authService.generateTokens(driver, 'driver'); //tokens for auto login after signup.
+    if (req.signupVerificationToken) {
+      authService.consumeSignupVerificationToken(req.signupVerificationToken);
+    }
 
     res.status(201).json({
       success: true,
@@ -43,7 +46,7 @@ const getDriverProfile = async (req, res, next) => {
       pin: driver.address?.pin || '',
       transporter_id: driver.transporter_id || null,
       status: driver.status,
-   pin: driver.address?.pin || '',
+      pin: driver.address?.pin || '',
       profileImage,
       orderCount,
       // Document verification info

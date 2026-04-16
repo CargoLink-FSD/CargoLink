@@ -87,6 +87,20 @@ const OrderSchema = new mongoose.Schema(
       vehicle_type: String,
       assigned_at: Date
     },
+    cancellation: {
+      cancelled_by: {
+        type: String,
+        enum: ["customer", "transporter", "admin", null],
+        default: null,
+      },
+      cancelled_at: { type: Date, default: null },
+      reason_code: { type: String, default: null },
+      reason_text: { type: String, default: null },
+      stage: { type: String, default: null },
+      fee_amount: { type: Number, default: 0, min: 0 },
+      ledger_id: { type: mongoose.Schema.Types.ObjectId, ref: "CancellationLedger", default: null },
+    },
+    reopened_count: { type: Number, default: 0, min: 0 },
     shipments: [ShipmentItemSchema],
   },
   { timestamps: true },
@@ -98,6 +112,15 @@ OrderSchema.virtual("bid_by_transporter", {
   foreignField: "order_id",
   justOne: true,
 });
+
+OrderSchema.index({ customer_id: 1, createdAt: -1 });
+OrderSchema.index({ customer_id: 1, status: 1, createdAt: -1 });
+OrderSchema.index({ assigned_transporter_id: 1, status: 1, scheduled_at: 1 });
+OrderSchema.index({ status: 1, scheduled_at: 1 });
+OrderSchema.index({ payment_status: 1, createdAt: -1 });
+OrderSchema.index({ 'pickup.city': 1 });
+OrderSchema.index({ 'delivery.city': 1 });
+OrderSchema.index({ createdAt: -1 });
 
 const orderModel = mongoose.model("Order", OrderSchema);
 export default orderModel;

@@ -8,6 +8,8 @@
 //   MaxPrice      = Operational + Insurance + TollCost   (≥ MIN_PRICE floor)
 
 import { getTollCost } from './tollService.js';
+import { CACHE_EXTERNAL_TTL } from '../core/index.js';
+import { makeCacheKey, rememberCachedJson } from '../core/cache.js';
 
 const VEHICLE_RATES = {
     // Legacy/display labels
@@ -109,59 +111,85 @@ async function calculatePrice({
     originCoords = null,
     destCoords = null,
 }) {
-    // 1. Base cost
-    const vehicleRate = getVehicleRate(vehicle_type);
-    const baseCost = distance * vehicleRate;
-
-    // 2. Multipliers
-    const weightMultiplier = getWeightMultiplier(weight);
-    const materialMultiplier = MATERIAL_MULTIPLIERS[goods_type] || 1.0;
-
-    // 3. Operational cost (includes volume surcharge when high-volume)
-    const volumeSurcharge = getVolumeSurcharge(volume, baseCost);
-    const operational = baseCost * weightMultiplier * materialMultiplier + volumeSurcharge;
-
-    // 4. Insurance on declared cargo value
-    const insuranceRate = INSURANCE_RATES[insurance_tier] || 0;
-    const insuranceCost = cargo_value * insuranceRate;
-
-    // 5. Risk / breakage charge on declared cargo value
-    const riskCharge = Math.round(getRiskCharge(cargo_value));
-
-    // 6. Toll cost (async — from Google Maps Routes API)
-    let tollCost = 0;
-    if (originCoords && destCoords) {
-        tollCost = await getTollCost(originCoords, destCoords);
-    }
-
-    // 7. Suggested max price = operational + insurance + risk + toll
-    const rawMax = operational + insuranceCost + riskCharge + tollCost;
-    const maxPrice = Math.round(Math.max(rawMax, MIN_PRICE));
-
-    return {
-        // Inputs reflected back for transparency
-        distance_km: distance,
-        vehicle_type,
-        vehicle_rate_per_km: vehicleRate,
-
-        // Cost components
-        base_cost: Math.round(baseCost),
-        weight_kg: weight,
-        weight_multiplier: weightMultiplier,
-        material_multiplier: materialMultiplier,
-        volume_m3: volume,
-        volume_surcharge: Math.round(volumeSurcharge),
-        operational_cost: Math.round(operational),
-        cargo_value,
-        insurance_tier,
-        insurance_rate: insuranceRate,
-        insurance_cost: Math.round(insuranceCost),
-        risk_charge: riskCharge,
-        toll_cost: tollCost,
-
-        // Final price = the ceiling a transporter can bid up to
-        suggested_max_price: maxPrice,
+    const normalizedInput = {
+        distance: Number(distance || 0).toFixed(2),
+        vehicle_type: String(vehicle_type || 'default').toLowerCase(),
+        weight: Number(weight || 0).toFixed(2),
+        volume: volume == null ? null : Number(volume).toFixed(2),
+        goods_type: String(goods_type || 'general').toLowerCase(),
+        cargo_value: Number(cargo_value || 0).toFixed(2),
+        insurance_tier: String(insurance_tier || 'none').toLowerCase(),
+        originCoords: originCoords
+            ? { lat: Number(originCoords.lat || 0).toFixed(5), lng: Number(originCoords.lng || 0).toFixed(5) }
+            : null,
+        destCoords: destCoords
+            ? { lat: Number(destCoords.lat || 0).toFixed(5), lng: Number(destCoords.lng || 0).toFixed(5) }
+            : null,
     };
+
+    const cacheKey = makeCacheKey('svc:pricing:', normalizedInput);
+
+    const { value } = await rememberCachedJson({
+        key: cacheKey,
+        ttlSeconds: CACHE_EXTERNAL_TTL,
+        producer: async () => {
+            // 1. Base cost
+            const vehicleRate = getVehicleRate(vehicle_type);
+            const baseCost = distance * vehicleRate;
+
+            // 2. Multipliers
+            const weightMultiplier = getWeightMultiplier(weight);
+            const materialMultiplier = MATERIAL_MULTIPLIERS[goods_type] || 1.0;
+
+            // 3. Operational cost (includes volume surcharge when high-volume)
+            const volumeSurcharge = getVolumeSurcharge(volume, baseCost);
+            const operational = baseCost * weightMultiplier * materialMultiplier + volumeSurcharge;
+
+            // 4. Insurance on declared cargo value
+            const insuranceRate = INSURANCE_RATES[insurance_tier] || 0;
+            const insuranceCost = cargo_value * insuranceRate;
+
+            // 5. Risk / breakage charge on declared cargo value
+            const riskCharge = Math.round(getRiskCharge(cargo_value));
+
+            // 6. Toll cost (async — from Google Maps Routes API)
+            let tollCost = 0;
+            if (originCoords && destCoords) {
+                tollCost = await getTollCost(originCoords, destCoords);
+            }
+
+            // 7. Suggested max price = operational + insurance + risk + toll
+            const rawMax = operational + insuranceCost + riskCharge + tollCost;
+            const maxPrice = Math.round(Math.max(rawMax, MIN_PRICE));
+
+            return {
+                // Inputs reflected back for transparency
+                distance_km: distance,
+                vehicle_type,
+                vehicle_rate_per_km: vehicleRate,
+
+                // Cost components
+                base_cost: Math.round(baseCost),
+                weight_kg: weight,
+                weight_multiplier: weightMultiplier,
+                material_multiplier: materialMultiplier,
+                volume_m3: volume,
+                volume_surcharge: Math.round(volumeSurcharge),
+                operational_cost: Math.round(operational),
+                cargo_value,
+                insurance_tier,
+                insurance_rate: insuranceRate,
+                insurance_cost: Math.round(insuranceCost),
+                risk_charge: riskCharge,
+                toll_cost: tollCost,
+
+                // Final price = the ceiling a transporter can bid up to
+                suggested_max_price: maxPrice,
+            };
+        },
+    });
+
+    return value;
 }
 
 export default {

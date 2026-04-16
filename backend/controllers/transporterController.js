@@ -11,6 +11,9 @@ const createTransporter = async (req, res, next) => {
     transporter.password = undefined;
     logger.debug("Transporter Created", transporter);
     const { accessToken, refreshToken } = authService.generateTokens(transporter, 'transporter');
+    if (req.signupVerificationToken) {
+      authService.consumeSignupVerificationToken(req.signupVerificationToken);
+    }
 
     res.status(201).json({
       success: true,

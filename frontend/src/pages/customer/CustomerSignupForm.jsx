@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
+import { Lock } from 'lucide-react';
 import AuthLayout from '../../components/auth/AuthLayout';
 import { useCustomerSignup } from '../../hooks/auth/useCustomerSignup';
 import { Button } from '../../components/forms';
@@ -13,7 +14,7 @@ const stepConfigs = [
   [
     { label: 'First Name', type: 'text', name: 'firstName', placeholder: 'Enter your first name', required: true },
     { label: 'Last Name', type: 'text', name: 'lastName', placeholder: 'Enter your last name', required: true },
-    { label: 'Gender', type: 'select', name: 'gender', placeholder: 'Select your gender', required: true, options: [ { value: 'Male', label: 'Male' }, { value: 'Female', label: 'Female' }, { value: 'Other', label: 'Other' } ] },
+    { label: 'Gender', type: 'select', name: 'gender', placeholder: 'Select your gender', required: true, options: [{ value: 'Male', label: 'Male' }, { value: 'Female', label: 'Female' }, { value: 'Other', label: 'Other' }] },
     { label: 'Email', type: 'email', name: 'email', placeholder: 'Enter your email', required: true, showGoogleButton: true },
   ],
   [
@@ -47,7 +48,82 @@ const CustomerSignupForm = () => {
     navigate,
     handleGoogleSignup,
     handleGoogleError,
+    signupOtpState,
+    otpRefs,
+    handleOtpChange,
+    handleOtpKeyDown,
+    handleOtpPaste,
+    submitSignupOtp,
+    resendSignupOtp,
+    cancelSignupOtp,
   } = state;
+
+  if (signupOtpState.active) {
+    return (
+      <AuthLayout
+        title="Verify Your Email"
+        subtitle={`Enter the 6-digit code sent to ${signupOtpState.maskedEmail}`}
+      >
+        <div className="otp-verification">
+          <div className="otp-icon" aria-hidden="true">
+            <Lock size={40} />
+          </div>
+
+          <div className="otp-inputs" onPaste={handleOtpPaste}>
+            {signupOtpState.otp.map((digit, idx) => (
+              <input
+                key={idx}
+                ref={(el) => (otpRefs.current[idx] = el)}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                className={`otp-box ${digit ? 'filled' : ''}`}
+                value={digit}
+                onChange={(e) => handleOtpChange(idx, e.target.value)}
+                onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                disabled={signupOtpState.verifying}
+                autoComplete="one-time-code"
+              />
+            ))}
+          </div>
+
+          <p className="otp-hint">Check your email inbox (and spam folder)</p>
+
+          <div className="buttons">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={cancelSignupOtp}
+              disabled={signupOtpState.verifying}
+            >
+              Back
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={submitSignupOtp}
+              disabled={signupOtpState.verifying || signupOtpState.otp.join('').length !== 6}
+              loading={signupOtpState.verifying}
+            >
+              Verify & Create Account
+            </Button>
+          </div>
+
+          <p className="resend-text">
+            Didn't receive the code?{' '}
+            <button
+              type="button"
+              className="resend-btn"
+              onClick={resendSignupOtp}
+              disabled={signupOtpState.resending}
+            >
+              {signupOtpState.resending ? 'Sending...' : 'Resend Code'}
+            </button>
+          </p>
+        </div>
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout
@@ -61,7 +137,7 @@ const CustomerSignupForm = () => {
           <div className="form-step">
             {stepConfigs[currentStep - 1].map((field, idx) => {
               const error = errors?.[field.name]?.message || '';
-              
+
               if (field.type === 'select') {
                 return (
                   <div key={`${currentStep}-${idx}`} className="form-group">
@@ -98,7 +174,7 @@ const CustomerSignupForm = () => {
                     {...register(field.name)}
                   />
                   {error && <span className="error-message">{error}</span>}
-                  
+
                   {/* Google OAuth button for email field */}
                   {field.showGoogleButton && currentStep === 1 && (
                     <>

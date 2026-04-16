@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-04-16T11:23:59.536Z",
+  "baseUrl": "http://localhost:3011",
+  "runs": 20,
+  "warmup": 3,
+  "results": [
+    {
+      "name": "Admin Orders Page 1",
+      "path": "/api/admin/orders?page=1&limit=20",
+      "cold": {
+        "count": 20,
+        "successRate": 100,
+        "minMs": 2.386800000000008,
+        "maxMs": 3.976399999999998,
+        "avgMs": 3.0174600000000007,
+        "p95Ms": 3.9398000000000053
+      },
+      "warm": {
+        "count": 20,
+        "successRate": 100,
+        "minMs": 1.1998000000000104,
+        "maxMs": 4.217500000000001,
+        "avgMs": 1.8527850000000001,
+        "p95Ms": 2.9390999999999963
+      }
+    }
+  ]
+}

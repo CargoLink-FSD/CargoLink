@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.js";
 import locationController from "../controllers/locationController.js";
+import { invalidateCacheOnSuccess } from "../middlewares/cache.js";
 
 const locationRouter = Router();
 
@@ -8,6 +9,7 @@ const locationRouter = Router();
 locationRouter.post(
     "/calculate-distance",
     authMiddleware(["customer"]),
+    invalidateCacheOnSuccess(['orders']),
     locationController.calculateDistance
 );
 

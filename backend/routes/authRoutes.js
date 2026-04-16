@@ -5,6 +5,10 @@ import { validationSchema } from "../middlewares/validator.js";
 
 const authRouter = Router();
 
+// Signup OTP verification flow (signup-only 2FA)
+authRouter.post("/signup/send-otp", validate(validationSchema.signupOtpRequest), authController.requestSignupOtp);
+authRouter.post("/signup/verify-otp", validate(validationSchema.signupOtpVerify), authController.verifySignupOtp);
+
 // Login (same endpoint for both roles)
 authRouter.post("/login", validate(validationSchema.login), authController.login);
 

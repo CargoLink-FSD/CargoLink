@@ -4,6 +4,13 @@ import Review from "../models/review.js";
 import paymentRepo from "../repositories/paymentRepo.js";
 import razorpay from "../config/razorpay.js";
 import { AppError } from "../utils/misc.js";
+import { getCustomerDuesSummary, settleCustomerDues } from "./cancellationPolicyService.js";
+
+const assertRazorpaySigningConfigured = () => {
+  if (!process.env.RAZORPAY_KEY_SECRET) {
+    throw new AppError(500, 'ConfigError', 'Razorpay signing secret is missing', 'ERR_RAZORPAY_CONFIG');
+  }
+};
 
 export default {
 
@@ -66,9 +73,61 @@ export default {
   },
 
   /**
+   * Create Razorpay order to settle customer cancellation dues.
+   */
+  createCancellationDuesPaymentOrder: async (customerId) => {
+    const dues = await getCustomerDuesSummary(customerId);
+    const amount = Number(dues.outstandingCancellationDues || 0);
+
+    if (amount <= 0) {
+      throw new AppError(400, 'InvalidOperation', 'No pending cancellation dues to settle', 'ERR_NO_DUES');
+    }
+
+    const existing = await paymentRepo.findPendingByCustomerAndType(customerId, 'cancellation_due');
+    if (existing) {
+      return {
+        razorpay_order_id: existing.razorpay_order_id,
+        razorpay_key_id: process.env.RAZORPAY_KEY_ID,
+        amount: existing.amount,
+        currency: 'INR',
+        payment_id: existing._id,
+      };
+    }
+
+    const razorpayOrder = await razorpay.orders.create({
+      amount: Math.round(amount * 100),
+      currency: 'INR',
+      receipt: `dues_${String(customerId).slice(-8)}_${Date.now()}`,
+      notes: {
+        payment_type: 'cancellation_due',
+        customer_id: customerId,
+      },
+    });
+
+    const payment = await paymentRepo.createPayment({
+      order_id: null,
+      customer_id: customerId,
+      amount,
+      payment_type: 'cancellation_due',
+      razorpay_order_id: razorpayOrder.id,
+      status: 'Created',
+    });
+
+    return {
+      razorpay_order_id: razorpayOrder.id,
+      razorpay_key_id: process.env.RAZORPAY_KEY_ID,
+      amount,
+      currency: 'INR',
+      payment_id: payment._id,
+    };
+  },
+
+  /**
    * Verify Razorpay payment signature & update records
    */
   verifyPayment: async (orderId, { razorpay_order_id, razorpay_payment_id, razorpay_signature }) => {
+    assertRazorpaySigningConfigured();
+
     // 1. Verify signature using HMAC SHA256
     const generatedSignature = crypto
       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
@@ -113,6 +172,50 @@ export default {
       payment_type: payment.payment_type,
       order_payment_status: order.payment_status,
       order_status: order.status,
+    };
+  },
+
+  /**
+   * Verify cancellation dues payment and settle dues ledger.
+   */
+  verifyCancellationDuesPayment: async (customerId, { razorpay_order_id, razorpay_payment_id, razorpay_signature }) => {
+    assertRazorpaySigningConfigured();
+
+    const generatedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest('hex');
+
+    const payment = await paymentRepo.findByRazorpayOrderId(razorpay_order_id);
+    if (!payment || payment.payment_type !== 'cancellation_due') {
+      throw new AppError(404, 'NotFound', 'Cancellation dues payment record not found', 'ERR_NOT_FOUND');
+    }
+
+    if (payment.customer_id.toString() !== customerId) {
+      throw new AppError(403, 'Forbidden', 'Not your payment', 'ERR_FORBIDDEN');
+    }
+
+    if (generatedSignature !== razorpay_signature) {
+      await paymentRepo.updatePaymentAfterVerification(razorpay_order_id, {
+        status: 'Failed',
+      });
+      throw new AppError(400, 'PaymentError', 'Payment verification failed — invalid signature', 'ERR_PAYMENT_FAILED');
+    }
+
+    const updatedPayment = await paymentRepo.updatePaymentAfterVerification(razorpay_order_id, {
+      razorpay_payment_id,
+      razorpay_signature,
+      status: 'Completed',
+      payment_type: 'cancellation_due',
+    });
+
+    const settlement = await settleCustomerDues(customerId, updatedPayment.amount);
+
+    return {
+      payment_id: updatedPayment._id,
+      status: updatedPayment.status,
+      payment_type: updatedPayment.payment_type,
+      dues: settlement,
     };
   },
 

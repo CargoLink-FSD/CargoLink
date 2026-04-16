@@ -1,5 +1,5 @@
 // Custom hook for driver signup with multi-step form validation
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
@@ -23,11 +23,21 @@ const steps = [
 export const useDriverSignup = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { showError, showSuccess } = useNotification();
+  const { showError, showSuccess, showInfo } = useNotification();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [signupOtpState, setSignupOtpState] = useState({
+    active: false,
+    maskedEmail: null,
+    otp: ['', '', '', '', '', ''],
+    verifiedToken: null,
+    sending: false,
+    verifying: false,
+    resending: false,
+  });
+  const otpRefs = useRef([]);
   const { currentStep, totalSteps, nextStep: goNext, prevStep } = useStepForm(4);
 
   // Document upload state
@@ -42,6 +52,12 @@ export const useDriverSignup = () => {
     reValidateMode: 'onChange',
   });
 
+  useEffect(() => {
+    if (signupOtpState.active && otpRefs.current[0]) {
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+    }
+  }, [signupOtpState.active]);
+
   // Validate document files for step 3
   const validateDocuments = () => {
     const errs = {};
@@ -49,6 +65,63 @@ export const useDriverSignup = () => {
     if (!documentFiles.driving_license) errs.driving_license = 'Driving License is required';
     setDocumentErrors(errs);
     return Object.keys(errs).length === 0;
+  };
+
+  const requestSignupOtp = async (email, resend = false) => {
+    const stateKey = resend ? 'resending' : 'sending';
+    setSignupOtpState((prev) => ({ ...prev, [stateKey]: true }));
+
+    try {
+      const otpResponse = await authApi.requestSignupOtp({ email, role: 'driver' });
+      setSignupOtpState((prev) => ({
+        ...prev,
+        active: true,
+        maskedEmail: otpResponse.maskedEmail,
+        otp: ['', '', '', '', '', ''],
+        [stateKey]: false,
+      }));
+
+      if (resend) {
+        showSuccess('A new verification code has been sent to your email.');
+      } else {
+        showInfo(`Verification code sent to ${otpResponse.maskedEmail}`);
+      }
+    } catch (error) {
+      setSignupOtpState((prev) => ({ ...prev, [stateKey]: false }));
+      showError(error?.message || 'Failed to send verification code.');
+    }
+  };
+
+  const completeSignup = async (data, signupVerificationToken) => {
+    await dispatch(signupUser({
+      signupData: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        gender: data.gender,
+        phone: data.phone,
+        email: data.email,
+        licenseNumber: data.licenseNumber,
+        street: data.address,
+        city: data.city,
+        state: data.state,
+        pin: data.pin,
+        password: data.password,
+      },
+      userType: 'driver',
+      signupVerificationToken,
+    })).unwrap();
+
+    try {
+      const formData = new FormData();
+      if (documentFiles.pan_card) formData.append('pan_card', documentFiles.pan_card);
+      if (documentFiles.driving_license) formData.append('driving_license', documentFiles.driving_license);
+      await uploadDriverDocuments(formData);
+      showSuccess('Registration successful! Documents uploaded for verification.');
+    } catch (_docError) {
+      showSuccess('Registration successful! You can upload documents later from your profile.');
+    }
+
+    redirectAfterSignup('driver', navigate);
   };
 
   // Handle form submission
@@ -59,39 +132,14 @@ export const useDriverSignup = () => {
       return;
     }
 
+    if (!signupOtpState.verifiedToken) {
+      await requestSignupOtp(data.email, false);
+      return;
+    }
+
     setLoading(true);
     try {
-      // Step 1: Register the driver account
-      // Backend validator expects flat street/city/state/pin (driver model stores them flat)
-      await dispatch(signupUser({
-        signupData: {
-          firstName: data.firstName,
-          lastName: data.lastName,
-          gender: data.gender,
-          phone: data.phone,
-          email: data.email,
-          licenseNumber: data.licenseNumber,
-          street: data.address,
-          city: data.city,
-          state: data.state,
-          pin: data.pin,
-          password: data.password
-        },
-        userType: 'driver'
-      })).unwrap();
-
-      // Step 2: Upload documents using the newly obtained auth token
-      try {
-        const formData = new FormData();
-        if (documentFiles.pan_card) formData.append('pan_card', documentFiles.pan_card);
-        if (documentFiles.driving_license) formData.append('driving_license', documentFiles.driving_license);
-        await uploadDriverDocuments(formData);
-        showSuccess('Registration successful! Documents uploaded for verification.');
-      } catch (docError) {
-        showSuccess('Registration successful! You can upload documents later from your profile.');
-      }
-
-      redirectAfterSignup('driver', navigate);
+      await completeSignup(data, signupOtpState.verifiedToken);
     } catch (error) {
       // Handle validation errors from server
       const errs = error?.errors || error?.payload?.errors;
@@ -110,6 +158,102 @@ export const useDriverSignup = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOtpChange = useCallback((index, value) => {
+    const digit = value.replace(/\D/g, '').slice(-1);
+
+    setSignupOtpState((prev) => {
+      const updatedOtp = [...prev.otp];
+      updatedOtp[index] = digit;
+      return { ...prev, otp: updatedOtp };
+    });
+
+    if (digit && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  }, []);
+
+  const handleOtpKeyDown = useCallback((index, event) => {
+    if (event.key === 'Backspace' && !signupOtpState.otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  }, [signupOtpState.otp]);
+
+  const handleOtpPaste = useCallback((event) => {
+    event.preventDefault();
+    const pasted = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pasted) return;
+
+    setSignupOtpState((prev) => {
+      const updatedOtp = [...prev.otp];
+      for (let index = 0; index < pasted.length; index += 1) {
+        updatedOtp[index] = pasted[index];
+      }
+      return { ...prev, otp: updatedOtp };
+    });
+
+    otpRefs.current[Math.min(pasted.length, 5)]?.focus();
+  }, []);
+
+  const submitSignupOtp = async () => {
+    if (!validateDocuments()) {
+      showError('Please upload all required documents.');
+      return;
+    }
+
+    const otp = signupOtpState.otp.join('');
+    if (otp.length !== 6) {
+      showError('Please enter all 6 OTP digits.');
+      return;
+    }
+
+    setSignupOtpState((prev) => ({ ...prev, verifying: true }));
+    setLoading(true);
+
+    try {
+      const values = getValues();
+      const verificationResult = await authApi.verifySignupOtp({
+        email: values.email,
+        role: 'driver',
+        otp,
+      });
+
+      setSignupOtpState((prev) => ({
+        ...prev,
+        active: false,
+        verifying: false,
+        verifiedToken: verificationResult.signupVerificationToken,
+      }));
+
+      await completeSignup(values, verificationResult.signupVerificationToken);
+    } catch (error) {
+      setSignupOtpState((prev) => ({
+        ...prev,
+        verifying: false,
+        otp: ['', '', '', '', '', ''],
+      }));
+      showError(error?.message || 'OTP verification failed.');
+      otpRefs.current[0]?.focus();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendSignupOtp = async () => {
+    const values = getValues();
+    await requestSignupOtp(values.email, true);
+  };
+
+  const cancelSignupOtp = () => {
+    setSignupOtpState((prev) => ({
+      ...prev,
+      active: false,
+      otp: ['', '', '', '', '', ''],
+      verifying: false,
+      resending: false,
+      sending: false,
+    }));
   };
 
   // Validate current step before proceeding to next
@@ -185,7 +329,7 @@ export const useDriverSignup = () => {
   return {
     formData: watch(),
     errors,
-    loading: loading || googleLoading,
+    loading: loading || googleLoading || signupOtpState.sending || signupOtpState.verifying || signupOtpState.resending,
     register,
     handleSubmit: handleSubmit(onSubmit),
     currentStep,
@@ -204,5 +348,13 @@ export const useDriverSignup = () => {
     setDocumentFiles,
     documentErrors,
     setDocumentErrors,
+    signupOtpState,
+    otpRefs,
+    handleOtpChange,
+    handleOtpKeyDown,
+    handleOtpPaste,
+    submitSignupOtp,
+    resendSignupOtp,
+    cancelSignupOtp,
   };
 };

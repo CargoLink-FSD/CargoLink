@@ -35,6 +35,9 @@ export default function SupportTickets() {
         return true;
     });
     const [tickets, setTickets] = useState([]);
+    const [pagination, setPagination] = useState(null);
+    const [page, setPage] = useState(1);
+    const limit = 10;
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState({ category: '', subject: '', message: '', priority: 'medium', orderId: '' });
@@ -50,14 +53,15 @@ export default function SupportTickets() {
     const loadTickets = useCallback(async () => {
         setLoading(true);
         try {
-            const data = await getMyTickets();
-            setTickets(data || []);
+            const response = await getMyTickets({ page, limit });
+            setTickets(response?.items || []);
+            setPagination(response?.pagination || null);
         } catch (err) {
             setError(err.message || 'Failed to load tickets');
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [page]);
 
     useEffect(() => { loadTickets(); }, [loadTickets]);
 
@@ -114,6 +118,7 @@ export default function SupportTickets() {
             setForm({ category: '', subject: '', message: '', priority: 'medium', orderId: '' });
             setPhoto(null);
             setPhotoPreview(null);
+            setPage(1);
             await loadTickets();
         } catch (err) {
             setError(err.message || 'Failed to create ticket');
@@ -293,6 +298,30 @@ export default function SupportTickets() {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                )}
+
+                {!loading && pagination && pagination.totalPages > 1 && (
+                    <div style={{ marginTop: 16, display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'center' }}>
+                        <button
+                            className="raise-ticket-btn"
+                            style={{ padding: '8px 14px' }}
+                            disabled={page <= 1}
+                            onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        >
+                            Previous
+                        </button>
+                        <span style={{ fontSize: '0.9rem', color: '#64748b' }}>
+                            Page {pagination.page} of {pagination.totalPages}
+                        </span>
+                        <button
+                            className="raise-ticket-btn"
+                            style={{ padding: '8px 14px' }}
+                            disabled={page >= pagination.totalPages}
+                            onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                        >
+                            Next
+                        </button>
                     </div>
                 )}
             </div>

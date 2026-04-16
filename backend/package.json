@@ -9,9 +9,14 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
-    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
-    "lint": "eslint"
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "lint": "eslint",
+    "benchmark:cache": "node scripts/benchmark-cache.mjs",
+    "redis:up": "docker compose -f ../docker-compose.redis.yml up -d",
+    "redis:down": "docker compose -f ../docker-compose.redis.yml down",
+    "redis:logs": "docker compose -f ../docker-compose.redis.yml logs -f redis",
+    "redis:reset": "docker compose -f ../docker-compose.redis.yml down -v"
   },
   "dependencies": {
     "@testcontainers/mongodb": "^11.8.1",
@@ -32,9 +37,12 @@
     "nodemailer": "^7.0.11",
     "pdfkit": "^0.17.2",
     "razorpay": "^2.9.6",
+    "redis": "^5.12.1",
     "rotating-file-stream": "^3.2.8",
     "svg-to-pdfkit": "^0.1.8",
-    "ws": "^8.13.0"
+    "swagger-ui-express": "^5.0.1",
+    "ws": "^8.13.0",
+    "yamljs": "^0.3.0"
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",
@@ -42,6 +50,7 @@
     "@babel/preset-env": "^7.28.3",
     "@eslint/js": "^9.37.0",
     "@faker-js/faker": "^10.1.0",
+    "cross-env": "^10.1.0",
     "eslint": "^9.37.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-config-xo": "^0.49.0",

@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-04-16T11:10:26.828Z",
+  "baseUrl": "http://localhost:3000",
+  "runs": 20,
+  "warmup": 5,
+  "results": [
+    {
+      "name": "Admin Dashboard Stats",
+      "path": "/api/admin/dashboard/stats",
+      "cold": {
+        "count": 20,
+        "successRate": 100,
+        "minMs": 3.1178999999999917,
+        "maxMs": 5.441800000000001,
+        "avgMs": 3.869085000000001,
+        "p95Ms": 4.724000000000018
+      },
+      "warm": {
+        "count": 20,
+        "successRate": 100,
+        "minMs": 2.5726999999999975,
+        "maxMs": 7.002900000000011,
+        "avgMs": 4.25295500000001,
+        "p95Ms": 5.868400000000008
+      }
+    }
+  ]
+}

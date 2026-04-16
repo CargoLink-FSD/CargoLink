@@ -47,6 +47,9 @@ export default function ManagerSupport() {
 
     // ─── List view state ───
     const [tickets, setTickets] = useState([]);
+    const [pagination, setPagination] = useState(null);
+    const [page, setPage] = useState(1);
+    const limit = 10;
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({ status: '', userRole: '', priority: '' });
@@ -67,13 +70,16 @@ export default function ManagerSupport() {
             if (filters.status) activeFilters.status = filters.status;
             if (filters.userRole) activeFilters.userRole = filters.userRole;
             if (filters.priority) activeFilters.priority = filters.priority;
+            activeFilters.page = page;
+            activeFilters.limit = limit;
 
             const [ticketData, statsData, profileData] = await Promise.all([
                 getAllTickets(activeFilters),
                 getTicketStats(),
                 getManagerProfile(),
             ]);
-            setTickets(Array.isArray(ticketData) ? ticketData : ticketData.tickets || []);
+            setTickets(ticketData?.items || []);
+            setPagination(ticketData?.pagination || null);
             setStats(statsData);
             setManagerProfile(profileData);
         } catch (err) {
@@ -81,9 +87,13 @@ export default function ManagerSupport() {
         } finally {
             setLoading(false);
         }
-    }, [filters]);
+    }, [filters, page]);
 
     useEffect(() => { loadData(); }, [loadData]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [filters.status, filters.userRole, filters.priority]);
 
     /* ─── Open Ticket Detail ─── */
     const openTicket = async (id) => {
@@ -247,6 +257,30 @@ export default function ManagerSupport() {
                                         </div>
                                     );
                                 })}
+                            </div>
+                        )}
+
+                        {!loading && pagination && pagination.totalPages > 1 && (
+                            <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10 }}>
+                                <button
+                                    className="mgr-send-btn"
+                                    style={{ width: 'auto', padding: '8px 12px' }}
+                                    disabled={page <= 1}
+                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                >
+                                    Previous
+                                </button>
+                                <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>
+                                    Page {pagination.page} of {pagination.totalPages}
+                                </span>
+                                <button
+                                    className="mgr-send-btn"
+                                    style={{ width: 'auto', padding: '8px 12px' }}
+                                    disabled={page >= pagination.totalPages}
+                                    onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                                >
+                                    Next
+                                </button>
                             </div>
                         )}
                     </div>

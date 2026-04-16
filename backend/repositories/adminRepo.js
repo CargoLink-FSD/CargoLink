@@ -6,6 +6,7 @@ import Bid from '../models/bids.js';
 import Ticket from '../models/ticket.js';
 import Review from '../models/review.js';
 import Payment from '../models/payment.js';
+import { escapeRegex, parsePaginationParams } from '../utils/misc.js';
 
 // Dashboard Analytics Queries
 const getOrdersPerDay = async () => {
@@ -208,12 +209,31 @@ const getAverageBidAmount = async () => {
 };
 
 // Order Management
-const getAllOrders = async (query = {}, sortOptions = { createdAt: -1 }) => {
-    const orders = await Order.find(query)
+const getAllOrders = async (query = {}, sortOptions = { createdAt: -1 }, options = {}) => {
+    const pagination = parsePaginationParams(options, { defaultLimit: 20, maxLimit: 100 });
+    const findQuery = Order.find(query)
         .populate('customer_id', 'firstName lastName email phone')
         .populate('assigned_transporter_id', 'name email primary_contact')
         .sort(sortOptions);
-    return orders;
+
+    if (pagination) {
+        const [items, total] = await Promise.all([
+            findQuery.skip(pagination.skip).limit(pagination.limit).lean(),
+            Order.countDocuments(query),
+        ]);
+
+        return {
+            items,
+            pagination: {
+                page: pagination.page,
+                limit: pagination.limit,
+                total,
+                totalPages: Math.ceil(total / pagination.limit) || 1,
+            },
+        };
+    }
+
+    return await findQuery.lean();
 };
 
 const getOrderById = async (orderId) => {
@@ -236,14 +256,81 @@ const getBidCountForOrder = async (orderId) => {
 };
 
 // User Management
-const getAllCustomers = async (query = {}, sortOptions = { createdAt: -1 }) => {
-    const customers = await Customer.find(query).sort(sortOptions);
-    return customers;
+const getAllCustomers = async (query = {}, sortOptions = { createdAt: -1 }, options = {}) => {
+    const pagination = parsePaginationParams(options, { defaultLimit: 20, maxLimit: 100 });
+    const findQuery = Customer.find(query)
+        .select('firstName lastName email phone createdAt')
+        .sort(sortOptions);
+
+    if (pagination) {
+        const [items, total] = await Promise.all([
+            findQuery.skip(pagination.skip).limit(pagination.limit).lean(),
+            Customer.countDocuments(query),
+        ]);
+
+        return {
+            items,
+            pagination: {
+                page: pagination.page,
+                limit: pagination.limit,
+                total,
+                totalPages: Math.ceil(total / pagination.limit) || 1,
+            },
+        };
+    }
+
+    return await findQuery.lean();
 };
 
-const getAllTransporters = async (query = {}, sortOptions = { createdAt: -1 }) => {
-    const transporters = await Transporter.find(query).sort(sortOptions);
-    return transporters;
+const getAllTransporters = async (query = {}, sortOptions = { createdAt: -1 }, options = {}) => {
+    const pagination = parsePaginationParams(options, { defaultLimit: 20, maxLimit: 100 });
+    const findQuery = Transporter.find(query)
+        .select('name email primary_contact createdAt')
+        .sort(sortOptions);
+
+    if (pagination) {
+        const [items, total] = await Promise.all([
+            findQuery.skip(pagination.skip).limit(pagination.limit).lean(),
+            Transporter.countDocuments(query),
+        ]);
+
+        return {
+            items,
+            pagination: {
+                page: pagination.page,
+                limit: pagination.limit,
+                total,
+                totalPages: Math.ceil(total / pagination.limit) || 1,
+            },
+        };
+    }
+
+    return await findQuery.lean();
+};
+
+const searchCustomerIds = async (search) => {
+    const regex = new RegExp(escapeRegex(search), 'i');
+    const customers = await Customer.find({
+        $or: [
+            { firstName: { $regex: regex } },
+            { lastName: { $regex: regex } },
+            { email: { $regex: regex } },
+        ]
+    }).select('_id').limit(1000).lean();
+
+    return customers.map((customer) => customer._id);
+};
+
+const searchTransporterIds = async (search) => {
+    const regex = new RegExp(escapeRegex(search), 'i');
+    const transporters = await Transporter.find({
+        $or: [
+            { name: { $regex: regex } },
+            { email: { $regex: regex } },
+        ]
+    }).select('_id').limit(1000).lean();
+
+    return transporters.map((transporter) => transporter._id);
 };
 
 const getCustomerById = async (customerId) => {
@@ -262,15 +349,27 @@ const deleteTransporterById = async (transporterId) => {
     return await Transporter.findByIdAndDelete(transporterId);
 };
 
-const getOrderCountByCustomer = async () => {
-    const result = await Order.aggregate([
+const getOrderCountByCustomer = async (customerIds = []) => {
+    const pipeline = [];
+
+    if (customerIds.length > 0) {
+        pipeline.push({
+            $match: {
+                customer_id: { $in: customerIds },
+            }
+        });
+    }
+
+    pipeline.push(
         {
             $group: {
                 _id: "$customer_id",
                 noOfOrders: { $sum: 1 }
             }
         }
-    ]);
+    );
+
+    const result = await Order.aggregate(pipeline);
 
     const orderCountMap = {};
     result.forEach((entry) => {
@@ -279,10 +378,15 @@ const getOrderCountByCustomer = async () => {
     return orderCountMap;
 };
 
-const getOrderCountByTransporter = async () => {
+const getOrderCountByTransporter = async (transporterIds = []) => {
+    const match = { assigned_transporter_id: { $ne: null } };
+    if (transporterIds.length > 0) {
+        match.assigned_transporter_id.$in = transporterIds;
+    }
+
     const result = await Order.aggregate([
         {
-            $match: { assigned_transporter_id: { $ne: null } }
+            $match: match
         },
         {
             $group: {
@@ -425,6 +529,8 @@ export default {
     // User Management
     getAllCustomers,
     getAllTransporters,
+    searchCustomerIds,
+    searchTransporterIds,
     getCustomerById,
     getTransporterById,
     deleteCustomerById,

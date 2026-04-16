@@ -64,6 +64,8 @@ const BidSchema = new mongoose.Schema(
 );
 
 BidSchema.index({ order_id: 1, transporter_id: 1 }, { unique: true });
+BidSchema.index({ transporter_id: 1, createdAt: -1 });
+BidSchema.index({ order_id: 1, bid_amount: 1, createdAt: -1 });
 
 const bidModel = mongoose.model("Bid", BidSchema);
 export default bidModel;

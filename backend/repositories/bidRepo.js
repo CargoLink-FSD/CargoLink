@@ -1,9 +1,30 @@
 import Bid from '../models/bids.js';
+import { parsePaginationParams } from '../utils/misc.js';
 
-const getBidsForOrder = async (orderId) => {
-    const bids = await Bid.find({ order_id: orderId })
-        .populate('transporter_id', 'name primary_contact email');
-    return bids;
+const getBidsForOrder = async (orderId, { page, limit } = {}) => {
+    const query = { order_id: orderId };
+    const pagination = parsePaginationParams({ page, limit }, { defaultLimit: 10, maxLimit: 100 });
+    const findQuery = Bid.find(query)
+        .populate('transporter_id', 'name primary_contact email')
+        .sort({ bid_amount: 1, createdAt: -1 });
+
+    if (pagination) {
+        const [bids, total] = await Promise.all([
+            findQuery.skip(pagination.skip).limit(pagination.limit).lean(),
+            Bid.countDocuments(query),
+        ]);
+        return {
+            items: bids,
+            pagination: {
+                page: pagination.page,
+                limit: pagination.limit,
+                total,
+                totalPages: Math.ceil(total / pagination.limit) || 1,
+            },
+        };
+    }
+
+    return await findQuery.lean();
 };
 
 const deleteBidsForOrder = async (orderId) => {
@@ -18,10 +39,31 @@ const deleteBidById = async (bidId) => {
     await Bid.findByIdAndDelete(bidId);
 };
 
-const getBidsByTransporter = async (transporterId) => {
-    const bids = await Bid.find({ transporter_id: transporterId })
-        .populate('order_id' , 'pickup delivery status createdAt'); // these are actual objects not the old one
-    return bids;
+const getBidsByTransporter = async (transporterId, { page, limit } = {}) => {
+    const query = { transporter_id: transporterId };
+    const pagination = parsePaginationParams({ page, limit }, { defaultLimit: 10, maxLimit: 100 });
+    const findQuery = Bid.find(query)
+        .populate('order_id', 'pickup delivery status createdAt')
+        .sort({ createdAt: -1 });
+
+    if (pagination) {
+        const [bids, total] = await Promise.all([
+            findQuery.skip(pagination.skip).limit(pagination.limit).lean(),
+            Bid.countDocuments(query),
+        ]);
+
+        return {
+            items: bids,
+            pagination: {
+                page: pagination.page,
+                limit: pagination.limit,
+                total,
+                totalPages: Math.ceil(total / pagination.limit) || 1,
+            },
+        };
+    }
+
+    return await findQuery.lean();
 };
 
 const createBid = async (bidData) => {

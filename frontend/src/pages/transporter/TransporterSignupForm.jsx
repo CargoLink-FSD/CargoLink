@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
+import { Lock } from 'lucide-react';
 import AuthLayout from '../../components/auth/AuthLayout';
 import { useTransporterSignup } from '../../hooks/auth/useTransporterSignup';
 import { Button } from '../../components/forms';
@@ -59,7 +60,82 @@ const TransporterSignupForm = () => {
     rcFiles,
     rcErrors,
     handleRcFileChange,
+    signupOtpState,
+    otpRefs,
+    handleOtpChange,
+    handleOtpKeyDown,
+    handleOtpPaste,
+    submitSignupOtp,
+    resendSignupOtp,
+    cancelSignupOtp,
   } = state;
+
+  if (signupOtpState.active) {
+    return (
+      <AuthLayout
+        title="Verify Your Email"
+        subtitle={`Enter the 6-digit code sent to ${signupOtpState.maskedEmail}`}
+      >
+        <div className="otp-verification">
+          <div className="otp-icon" aria-hidden="true">
+            <Lock size={40} />
+          </div>
+
+          <div className="otp-inputs" onPaste={handleOtpPaste}>
+            {signupOtpState.otp.map((digit, idx) => (
+              <input
+                key={idx}
+                ref={(el) => (otpRefs.current[idx] = el)}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                className={`otp-box ${digit ? 'filled' : ''}`}
+                value={digit}
+                onChange={(e) => handleOtpChange(idx, e.target.value)}
+                onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                disabled={signupOtpState.verifying}
+                autoComplete="one-time-code"
+              />
+            ))}
+          </div>
+
+          <p className="otp-hint">Check your email inbox (and spam folder)</p>
+
+          <div className="buttons">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={cancelSignupOtp}
+              disabled={signupOtpState.verifying}
+            >
+              Back
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={submitSignupOtp}
+              disabled={signupOtpState.verifying || signupOtpState.otp.join('').length !== 6}
+              loading={signupOtpState.verifying}
+            >
+              Verify & Create Account
+            </Button>
+          </div>
+
+          <p className="resend-text">
+            Didn't receive the code?{' '}
+            <button
+              type="button"
+              className="resend-btn"
+              onClick={resendSignupOtp}
+              disabled={signupOtpState.resending}
+            >
+              {signupOtpState.resending ? 'Sending...' : 'Resend Code'}
+            </button>
+          </p>
+        </div>
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout

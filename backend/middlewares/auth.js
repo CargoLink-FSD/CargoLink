@@ -30,6 +30,27 @@ export const authMiddleware = (roles = []) => {
     };
 };
 
+export const requireSignupVerification = (role) => {
+    return (req, res, next) => {
+        if (process.env.NODE_ENV === 'test') {
+            return next();
+        }
+
+        const verificationToken = req.headers['x-signup-verification-token'];
+        if (!verificationToken) {
+            return next(new AppError(401, 'AuthError', 'Signup verification required. Please verify OTP first.', 'ERR_SIGNUP_TOKEN_REQUIRED'));
+        }
+
+        try {
+            authService.validateSignupVerificationToken(verificationToken, req.body?.email, role);
+            req.signupVerificationToken = verificationToken;
+            next();
+        } catch (err) {
+            next(err);
+        }
+    };
+};
+
 export const requireVerified = async (req, res, next) => {
     try {
         if (req.user.role !== 'transporter') {

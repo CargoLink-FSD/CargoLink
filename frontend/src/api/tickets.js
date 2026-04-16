@@ -18,9 +18,16 @@ export const createTicket = async (data) => {
     return res.data;
 };
 
-export const getMyTickets = async () => {
-    const res = await http.get('/api/tickets/my');
-    return res.data;
+export const getMyTickets = async ({ page, limit } = {}) => {
+    const params = new URLSearchParams();
+    if (page) params.append('page', String(page));
+    if (limit) params.append('limit', String(limit));
+    const qs = params.toString();
+    const res = await http.get(`/api/tickets/my${qs ? `?${qs}` : ''}`);
+    return {
+        items: Array.isArray(res.data) ? res.data : [],
+        pagination: res.pagination || null,
+    };
 };
 
 export const getTicketDetail = async (id) => {
@@ -44,9 +51,14 @@ export const getAllTickets = async (filters = {}) => {
     if (filters.status) params.append('status', filters.status);
     if (filters.userRole) params.append('userRole', filters.userRole);
     if (filters.priority) params.append('priority', filters.priority);
+    if (filters.page) params.append('page', String(filters.page));
+    if (filters.limit) params.append('limit', String(filters.limit));
     const qs = params.toString();
     const res = await http.get(`/api/tickets/manager/all${qs ? `?${qs}` : ''}`);
-    return res.data;
+    return {
+        items: Array.isArray(res.data) ? res.data : (res.data?.tickets || []),
+        pagination: res.pagination || null,
+    };
 };
 
 export const getTicketStats = async () => {

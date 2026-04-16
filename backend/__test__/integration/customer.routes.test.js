@@ -24,25 +24,24 @@ afterAll(async () => {
 });
 
 describe('Customer Routes Integration Tests', () => {
-  
+
   describe('POST /api/customers/register', () => {
     it('should register a new customer successfully', async () => {
       const customerData = createMockCustomerInput();
-      
+
       const response = await request(app)
         .post('/api/customers/register')
         .send(customerData)
-        .expect(201);      
+        .expect(201);
 
       expect(response.body).toHaveProperty('success', true);
       expect(response.body).toHaveProperty('data');
-      expect(response.body.data).toHaveProperty('_id');
-      expect(response.body.data).toHaveProperty('email', customerData.email);
-      expect(response.body.data).not.toHaveProperty('password');
+      expect(response.body.data).toHaveProperty('accessToken');
+      expect(response.body.data).toHaveProperty('refreshToken');
       expect(response.body.message).toBe('Customer registered successfully');
 
       // Verify customer exists in database
-      const customer = await Customer.findById(response.body.data._id);
+      const customer = await Customer.findOne({ email: customerData.email });
       expect(customer).toBeTruthy();
       expect(customer.email).toBe(customerData.email);
     });
@@ -55,9 +54,10 @@ describe('Customer Routes Integration Tests', () => {
         .send(customerData)
         .expect(201);
 
-      expect(response.body.data.addresses).toBeDefined();
-      expect(response.body.data.addresses).toHaveLength(1);
-      expect(response.body.data.addresses[0].address_label).toBe('Home');
+      const customer = await Customer.findOne({ email: customerData.email });
+      expect(customer.addresses).toBeDefined();
+      expect(customer.addresses).toHaveLength(1);
+      expect(customer.addresses[0].address_label).toBe('Home');
     });
 
     it('should create customer without address', async () => {
@@ -67,27 +67,29 @@ describe('Customer Routes Integration Tests', () => {
         .post('/api/customers/register')
         .send(customerData)
         .expect(201);
-      expect(response.body.data.addresses).toBeDefined();
-      expect(response.body.data.addresses).toHaveLength(0);
+
+      const customer = await Customer.findOne({ email: customerData.email });
+      expect(customer.addresses).toBeDefined();
+      expect(customer.addresses).toHaveLength(0);
     });
 
     it('should return 409 if email already exists', async () => {
       const customerData = createMockCustomerInput();
-            
+
       // Register first customer
       const res1 = await request(app)
-      .post('/api/customers/register')
-      .send(customerData)
-      .expect(201);
-      
+        .post('/api/customers/register')
+        .send(customerData)
+        .expect(201);
+
 
       // Try to register with same email
       const response = await request(app)
         .post('/api/customers/register')
         .send(customerData)
-        .expect(409);  
+        .expect(409);
 
-      
+
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Key already exists');
@@ -119,7 +121,7 @@ describe('Customer Routes Integration Tests', () => {
         .send(customerData)
         .expect(201);
 
-      const customer = await Customer.findById(response.body.data._id);
+      const customer = await Customer.findOne({ email: customerData.email });
       expect(customer.password).not.toBe(customerData.password);
       expect(customer.password).toHaveLength(60); // bcrypt hash length
     });
@@ -129,22 +131,23 @@ describe('Customer Routes Integration Tests', () => {
     beforeEach(async () => {
       // Register and login a customer for authenticated tests
       const customerData = createMockCustomerInput();
-      
-      const registerResponse = await request(app)
+
+      await request(app)
         .post('/api/customers/register')
         .send(customerData);
-      
-      customerId = registerResponse.body.data._id;
+
+      const createdCustomer = await Customer.findOne({ email: customerData.email });
+      customerId = createdCustomer?._id?.toString();
 
       // Mock login to get token (adjust based on your auth implementation)
       const loginResponse = await request(app)
         .post('/api/auth/login')
-        .send({ 
-          email: customerData.email, 
+        .send({
+          email: customerData.email,
           password: customerData.password,
           role: 'customer'
         });
-      
+
       authToken = loginResponse.body.data.accessToken;
     });
 
@@ -172,7 +175,7 @@ describe('Customer Routes Integration Tests', () => {
 
     describe('PUT /api/customers/profile', () => {
       it('should update customer profile', async () => {
-        const updates = { 
+        const updates = {
           firstName: 'UpdatedName',
           phone: '9876543210'
         };
@@ -258,9 +261,9 @@ describe('Customer Routes Integration Tests', () => {
       });
 
       it('should return 400 for invalid address data', async () => {
-          const newAddress = createMockAddress({ address_label: 'Work', randomExtraField: 'Should be ignored'});
+        const newAddress = createMockAddress({ address_label: 'Work', randomExtraField: 'Should be ignored' });
 
-          const response = await request(app)
+        const response = await request(app)
           .post('/api/customers/addresses')
           .set('Authorization', `Bearer ${authToken}`)
           .send(newAddress)
@@ -311,7 +314,7 @@ describe('Customer Routes Integration Tests', () => {
           .expect(200);
 
         expect(response.body.success).toBe(true);
-        
+
         // Verify address was removed
         const customer = await Customer.findById(customerId);
         expect(customer.addresses.length).toBe(1);

@@ -7,10 +7,10 @@ import { getTrips, cancelTrip, completeTrip as completeTripApi, deleteTrip } fro
 import '../../styles/TripManagement.css';
 
 const STATUS_CONFIG = {
-  Scheduled:   { label: 'Scheduled',  color: '#1976d2' },
-  Active:      { label: 'Active',     color: '#388e3c' },
-  Completed:   { label: 'Completed',  color: '#00796b' },
-  Cancelled:   { label: 'Cancelled',  color: '#757575' },
+  Scheduled: { label: 'Scheduled', color: '#1976d2' },
+  Active: { label: 'Active', color: '#388e3c' },
+  Completed: { label: 'Completed', color: '#00796b' },
+  Cancelled: { label: 'Cancelled', color: '#757575' },
 };
 
 const formatDate = (iso) => {
@@ -146,8 +146,18 @@ const TripManagement = () => {
 
   const handleCancel = async (trip) => {
     if (!window.confirm(`Cancel trip #${trip._id?.slice(-6)}?`)) return;
+    const promptValue = window.prompt('Reason for trip cancellation (optional):');
+    if (promptValue === null) return;
     try {
-      await cancelTrip(trip._id);
+      const result = await cancelTrip(trip._id, {
+        reasonCode: 'operational_issue',
+        reasonText: promptValue?.trim() || '',
+      });
+
+      if (result?.policy?.reliability?.restrictionUntil) {
+        alert(`Trip cancelled. Account restricted until ${new Date(result.policy.reliability.restrictionUntil).toLocaleString()}.`);
+      }
+
       loadTrips();
     } catch (err) { alert('Failed: ' + err.message); }
   };

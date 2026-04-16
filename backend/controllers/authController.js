@@ -10,6 +10,26 @@ function send(res, statusCode, payload) {
   res.status(statusCode).json({ success: true, ...payload });
 }
 
+const requestSignupOtp = async (req, res, next) => {
+  try {
+    const { email, role } = req.body;
+    const result = await authService.requestSignupOtp({ email, role });
+    send(res, 200, { message: 'Signup OTP sent successfully', data: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const verifySignupOtp = async (req, res, next) => {
+  try {
+    const { email, role, otp } = req.body;
+    const result = await authService.verifySignupOtp({ email, role, otp });
+    send(res, 200, { message: 'Signup OTP verified successfully', data: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const login = async (req, res, next) => {
   try {
     const { email, password, role } = req.body;
@@ -174,6 +194,8 @@ const googleVerify = async (req, res, next) => {
 };
 
 export default {
+  requestSignupOtp,
+  verifySignupOtp,
   login,
   refreshToken,
   logout,

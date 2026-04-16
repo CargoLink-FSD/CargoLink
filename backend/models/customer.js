@@ -29,6 +29,15 @@ const CustomerSchema = new mongoose.Schema(
     googleId: { type: String },
     profilePicture: { type: String },
     isEmailVerified: { type: Boolean, default: false },
+    cancellation_stats: {
+      cancels7d: { type: Number, default: 0, min: 0 },
+      cancels30d: { type: Number, default: 0, min: 0 },
+      abuseTier: { type: Number, default: 0, min: 0, max: 10 },
+      gateMode: { type: String, enum: ["none", "soft", "hard"], default: "none" },
+      cooldownUntil: { type: Date, default: null },
+      outstandingCancellationDues: { type: Number, default: 0, min: 0 },
+      enforceAdvanceToken: { type: Boolean, default: false },
+    },
   },
   { timestamps: true },
 );
@@ -48,6 +57,8 @@ CustomerSchema.methods.updatePassword = async function (newPassword) {
   this.password = newPassword;
   await this.save({ validateModifiedOnly: true });
 };
+
+CustomerSchema.index({ createdAt: -1 });
 
 const customerModel = mongoose.model("Customer", CustomerSchema);
 export default customerModel;
