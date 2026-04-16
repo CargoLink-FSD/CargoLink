@@ -115,18 +115,18 @@ steps:
         echo "Traffic promoted to version: $${VERSION}"
 
   # ── Readiness poll: wait for the live app to respond ─────────────────────
-  #    Gives GAE 30s to complete the cold start after traffic promotion,
-  #    then retries up to 10 times at 10s intervals (100s total window).
+  #    Uses the Cloud Build built-in $PROJECT_ID to build the hostname
+  #    (avoids needing gcloud app describe and its IAM dependency).
+  #    30s cold-start wait, then 10 retries × 10s = 100s total window.
   - id: smoke-tests
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
     waitFor: ["promote-traffic"]
     args:
-      - -eu
+      - -u
       - |
-        HOSTNAME="$(gcloud app describe --format='value(defaultHostname)')"
-        BACKEND_URL="https://$${HOSTNAME}/healthz"
-        FRONTEND_URL="https://$${HOSTNAME}/"
+        BACKEND_URL="https://cargolink-489712.el.r.appspot.com/healthz"
+        FRONTEND_URL="https://cargolink-489712.el.r.appspot.com/"
 
         echo "Waiting 30s for GAE cold start to complete..."
         sleep 30
@@ -134,30 +134,30 @@ steps:
         echo "Polling backend: $${BACKEND_URL}"
         ok=0
         for i in 1 2 3 4 5 6 7 8 9 10; do
-          STATUS="$(curl --silent --output /dev/null -w "%{http_code}" --max-time 15 "$${BACKEND_URL}" 2>/dev/null || echo "000")"
+          STATUS="$(curl --silent --output /dev/null -w '%{http_code}' --max-time 15 "$${BACKEND_URL}" || echo '000')"
           echo "  Attempt $${i}/10: HTTP $${STATUS}"
           if [ "$${STATUS}" = "200" ]; then ok=1; break; fi
           sleep 10
         done
         if [ "$${ok}" = "0" ]; then
-          echo "ERROR: Backend /healthz did not return 200."
+          echo "ERROR: Backend /healthz did not return 200 after 100s."
           exit 1
         fi
-        echo "Backend /healthz OK."
+        echo "Backend /healthz: OK"
 
         echo "Polling frontend: $${FRONTEND_URL}"
         ok=0
         for i in 1 2 3 4 5 6 7 8 9 10; do
-          STATUS="$(curl --silent --output /dev/null -w "%{http_code}" --max-time 15 "$${FRONTEND_URL}" 2>/dev/null || echo "000")"
+          STATUS="$(curl --silent --output /dev/null -w '%{http_code}' --max-time 15 "$${FRONTEND_URL}" || echo '000')"
           echo "  Attempt $${i}/10: HTTP $${STATUS}"
           if [ "$${STATUS}" = "200" ]; then ok=1; break; fi
           sleep 10
         done
         if [ "$${ok}" = "0" ]; then
-          echo "ERROR: Frontend / did not return 200."
+          echo "ERROR: Frontend / did not return 200 after 100s."
           exit 1
         fi
-        echo "Frontend / OK."
+        echo "Frontend /: OK"
 
   # ── Deployment summary ────────────────────────────────────────────────────
   - id: deployment-summary
