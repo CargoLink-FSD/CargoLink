@@ -1,20 +1,23 @@
 runtime: nodejs22
 service: frontend
 env: standard
-entrypoint: npm start
 
 automatic_scaling:
   min_instances: 1
   max_instances: 5
 
+# No entrypoint — use GAE's built-in static file serving from dist/
+# This avoids the conflict between static_files handlers and npm start.
 handlers:
   - url: /assets
     static_dir: dist/assets
 
-  - url: /(.*\.(js|css|png|jpg|jpeg|svg|ico|webp|json|map|txt))
+  - url: /(.*\.(js|css|png|jpg|jpeg|svg|ico|webp|json|map|txt|woff|woff2|ttf|eot))
     static_files: dist/\1
-    upload: dist/(.*\.(js|css|png|jpg|jpeg|svg|ico|webp|json|map|txt))
+    upload: dist/(.*\.(js|css|png|jpg|jpeg|svg|ico|webp|json|map|txt|woff|woff2|ttf|eot))
+    secure: always
 
   - url: /.*
     static_files: dist/index.html
     upload: dist/index.html
+    secure: always

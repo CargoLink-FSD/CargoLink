@@ -14,6 +14,9 @@ env_variables:
   UPLOAD_ROOT: /tmp/uploads
   CACHE_ENABLED: "false"
 
+  # Allow requests from both the custom domain AND the appspot fallback
+  CORS_ALLOWED_ORIGINS: "https://cargolink.muthuraja.tech,https://cargolink-489712.el.r.appspot.com,https://frontend-dot-cargolink-489712.el.r.appspot.com"
+
   # Secret Manager pointers — resolved at startup by loadAllSecrets()
   MONGO_URI_SECRET_NAME: MONGO_URI
   MONGO_URI_SECRET_VERSION: latest

@@ -107,7 +107,7 @@ const limiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
   max: 1000, // limit tO 100R
   message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true, 
+  standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res, _next, options) => {
     logger.warn('Rate limit exceeded', {
