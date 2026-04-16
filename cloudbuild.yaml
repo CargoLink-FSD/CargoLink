@@ -123,7 +123,7 @@ steps:
     entrypoint: bash
     waitFor: ["promote-traffic"]
     args:
-      - -u
+      - -cu
       - |
         BACKEND_URL="https://cargolink-489712.el.r.appspot.com/healthz"
         FRONTEND_URL="https://cargolink-489712.el.r.appspot.com/"
