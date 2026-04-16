@@ -12,8 +12,6 @@ automatic_scaling:
 env_variables:
   NODE_ENV: production
   UPLOAD_ROOT: /tmp/uploads
-
-  # Disable Redis — no Memorystore configured in GAE standard
   CACHE_ENABLED: "false"
 
   # Secret Manager pointers — resolved at startup by loadAllSecrets()
@@ -27,3 +25,9 @@ env_variables:
   RAZORPAY_KEY_ID_SECRET_NAME: RAZORPAY_KEY_ID
   RAZORPAY_KEY_SECRET_SECRET_NAME: RAZORPAY_KEY_SECRET
   GOOGLE_MAPS_API_KEY_SECRET_NAME: GOOGLE_MAPS_API_KEY
+
+# Route ALL requests to Node.js runtime
+handlers:
+  - url: /.*
+    script: auto
+    secure: always
