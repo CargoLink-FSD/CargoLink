@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.js";
+import { cacheResponse, invalidateCacheOnSuccess } from "../middlewares/cache.js";
 import managerController from "../controllers/managerController.js";
 
 const managerRouter = Router();
@@ -11,19 +12,19 @@ managerRouter.post("/register", managerController.register);
 managerRouter.use(authMiddleware(["manager"]));
 
 // Manager profile
-managerRouter.get("/profile", managerController.getProfile);
+managerRouter.get("/profile", cacheResponse({ domain: 'manager', ttlSeconds: 20 }), managerController.getProfile);
 
 // Verification queue - unified list of all pending documents (transporters + drivers)
-managerRouter.get("/verification-queue", managerController.getVerificationQueue);
+managerRouter.get("/verification-queue", cacheResponse({ domain: 'manager', ttlSeconds: 20 }), managerController.getVerificationQueue);
 
 // Approve a specific document (body: { entityType: 'transporter' | 'driver' })
-managerRouter.patch("/verify/:id/documents/:docType/approve", managerController.approveDocument);
+managerRouter.patch("/verify/:id/documents/:docType/approve", invalidateCacheOnSuccess(['manager', 'admin', 'transporters', 'drivers']), managerController.approveDocument);
 
 // Reject a specific document (body: { note: string, entityType: 'transporter' | 'driver' })
-managerRouter.patch("/verify/:id/documents/:docType/reject", managerController.rejectDocument);
+managerRouter.patch("/verify/:id/documents/:docType/reject", invalidateCacheOnSuccess(['manager', 'admin', 'transporters', 'drivers']), managerController.rejectDocument);
 
 // Keep legacy routes for backward compatibility
-managerRouter.patch("/transporters/:id/documents/:docType/approve", managerController.approveDocument);
-managerRouter.patch("/transporters/:id/documents/:docType/reject", managerController.rejectDocument);
+managerRouter.patch("/transporters/:id/documents/:docType/approve", invalidateCacheOnSuccess(['manager', 'admin', 'transporters', 'drivers']), managerController.approveDocument);
+managerRouter.patch("/transporters/:id/documents/:docType/reject", invalidateCacheOnSuccess(['manager', 'admin', 'transporters', 'drivers']), managerController.rejectDocument);
 
 export default managerRouter;

@@ -1,0 +1,165 @@
+import crypto from 'crypto';
+import { createClient } from 'redis';
+import {
+  CACHE_ENABLED,
+  CACHE_PREFIX,
+  CACHE_VERSION,
+  REDIS_URL,
+} from './index.js';
+import { logger } from '../utils/misc.js';
+
+let redisClient = null;
+let cacheConnected = false;
+let cacheInitialized = false;
+
+export const isCacheAvailable = () => CACHE_ENABLED && cacheConnected && !!redisClient;
+
+const scopedKey = (key) => `${CACHE_PREFIX}:${CACHE_VERSION}:${key}`;
+
+export const stableStringify = (value) => {
+  if (value === null || value === undefined) return JSON.stringify(value);
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  }
+  if (typeof value === 'object') {
+    const keys = Object.keys(value).sort();
+    return `{${keys.map((k) => `${JSON.stringify(k)}:${stableStringify(value[k])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+};
+
+export const hashPayload = (payload) => {
+  const normalized = stableStringify(payload);
+  return crypto.createHash('sha1').update(normalized).digest('hex');
+};
+
+export const makeCacheKey = (domain, payload) => {
+  return `${domain}:${hashPayload(payload)}`;
+};
+
+export const initCache = async () => {
+  if (cacheInitialized) return isCacheAvailable();
+  cacheInitialized = true;
+
+  if (!CACHE_ENABLED) {
+    logger.info('Redis cache disabled by configuration');
+    return false;
+  }
+
+  try {
+    redisClient = createClient({
+      url: REDIS_URL,
+      socket: {
+        reconnectStrategy: (retries) => {
+          if (retries > 10) return false;
+          return Math.min(retries * 200, 2000);
+        },
+      },
+    });
+
+    redisClient.on('error', (err) => {
+      cacheConnected = false;
+      logger.warn('Redis client error, cache fallback to DB/API', { error: err.message });
+    });
+
+    redisClient.on('ready', () => {
+      cacheConnected = true;
+      logger.info('Redis cache connected');
+    });
+
+    redisClient.on('end', () => {
+      cacheConnected = false;
+      logger.warn('Redis connection closed');
+    });
+
+    await redisClient.connect();
+    cacheConnected = true;
+    return true;
+  } catch (err) {
+    cacheConnected = false;
+    redisClient = null;
+    logger.warn('Redis unavailable, proceeding without cache', { error: err.message });
+    return false;
+  }
+};
+
+export const closeCache = async () => {
+  if (!redisClient) return;
+  try {
+    await redisClient.quit();
+  } catch (err) {
+    logger.warn('Error while closing Redis client', { error: err.message });
+  } finally {
+    cacheConnected = false;
+    redisClient = null;
+    cacheInitialized = false;
+  }
+};
+
+export const getCachedJson = async (key) => {
+  if (!isCacheAvailable()) return null;
+  try {
+    const raw = await redisClient.get(scopedKey(key));
+    return raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    logger.warn('Cache read failed', { key, error: err.message });
+    return null;
+  }
+};
+
+export const setCachedJson = async (key, value, ttlSeconds) => {
+  if (!isCacheAvailable()) return false;
+  try {
+    const scoped = scopedKey(key);
+    const payload = JSON.stringify(value);
+    if (ttlSeconds) {
+      await redisClient.set(scoped, payload, { EX: ttlSeconds });
+    } else {
+      await redisClient.set(scoped, payload);
+    }
+    return true;
+  } catch (err) {
+    logger.warn('Cache write failed', { key, error: err.message });
+    return false;
+  }
+};
+
+export const rememberCachedJson = async ({ key, ttlSeconds, producer }) => {
+  const cached = await getCachedJson(key);
+  if (cached !== null) {
+    return { value: cached, hit: true };
+  }
+
+  const value = await producer();
+  await setCachedJson(key, value, ttlSeconds);
+  return { value, hit: false };
+};
+
+export const invalidateByPrefix = async (prefix) => {
+  if (!isCacheAvailable()) return 0;
+
+  const pattern = scopedKey(`${prefix}*`);
+  let cursor = '0';
+  let deleted = 0;
+
+  try {
+    do {
+      const reply = await redisClient.scan(cursor, {
+        MATCH: pattern,
+        COUNT: 100,
+      });
+
+      cursor = reply.cursor;
+      const keys = reply.keys || [];
+
+      if (keys.length > 0) {
+        deleted += await redisClient.del(keys);
+      }
+    } while (cursor !== '0');
+
+    return deleted;
+  } catch (err) {
+    logger.warn('Cache invalidation failed', { prefix, error: err.message });
+    return deleted;
+  }
+};

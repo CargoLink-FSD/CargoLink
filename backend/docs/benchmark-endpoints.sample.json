@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Admin Dashboard Stats",
+    "method": "GET",
+    "path": "/api/admin/dashboard/stats",
+    "auth": true
+  },
+  {
+    "name": "Admin Orders Page 1",
+    "method": "GET",
+    "path": "/api/admin/orders?page=1&limit=20",
+    "auth": true
+  },
+  {
+    "name": "Manager Tickets Page 1",
+    "method": "GET",
+    "path": "/api/tickets/manager/all?page=1&limit=10",
+    "auth": true
+  },
+  {
+    "name": "Customer Orders Page 1",
+    "method": "GET",
+    "path": "/api/orders/my-orders?page=1&limit=10",
+    "auth": true
+  }
+]

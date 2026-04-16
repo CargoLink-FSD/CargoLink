@@ -1,62 +1,73 @@
 import adminRepo from '../repositories/adminRepo.js';
 import { AppError, escapeRegex } from '../utils/misc.js';
 import mongoose from 'mongoose';
+import { CACHE_DEFAULT_TTL } from '../core/index.js';
+import { makeCacheKey, rememberCachedJson } from '../core/cache.js';
 
 // Dashboard Statistics
 const getDashboardStats = async () => {
-    const [
-        ordersPerDay,
-        revenuePerDay,
-        topTransporters,
-        orderStatusDistribution,
-        fleetUtilization,
-        newCustomersPerMonth,
-        mostRequestedTruckTypes,
-        pendingVsCompletedOrders,
-        avgBidAmount,
-        totalCustomers,
-        totalTransporters,
-        totalVehicles,
-        openTickets,
-        pendingVerifications
-    ] = await Promise.all([
-        adminRepo.getOrdersPerDay(),
-        adminRepo.getRevenuePerDay(),
-        adminRepo.getTopTransporters(),
-        adminRepo.getOrderStatusDistribution(),
-        adminRepo.getFleetUtilization(),
-        adminRepo.getNewCustomersPerMonth(),
-        adminRepo.getMostRequestedTruckTypes(),
-        adminRepo.getPendingVsCompletedOrders(),
-        adminRepo.getAverageBidAmount(),
-        adminRepo.getTotalCustomers(),
-        adminRepo.getTotalTransporters(),
-        adminRepo.getTotalVehicles(),
-        adminRepo.getOpenTickets(),
-        adminRepo.getPendingVerifications()
-    ]);
+    const cacheKey = makeCacheKey('svc:admin-dashboard:', { dashboard: 'stats' });
+    const { value } = await rememberCachedJson({
+        key: cacheKey,
+        ttlSeconds: Math.max(20, Math.floor(CACHE_DEFAULT_TTL / 2)),
+        producer: async () => {
+            const [
+                ordersPerDay,
+                revenuePerDay,
+                topTransporters,
+                orderStatusDistribution,
+                fleetUtilization,
+                newCustomersPerMonth,
+                mostRequestedTruckTypes,
+                pendingVsCompletedOrders,
+                avgBidAmount,
+                totalCustomers,
+                totalTransporters,
+                totalVehicles,
+                openTickets,
+                pendingVerifications
+            ] = await Promise.all([
+                adminRepo.getOrdersPerDay(),
+                adminRepo.getRevenuePerDay(),
+                adminRepo.getTopTransporters(),
+                adminRepo.getOrderStatusDistribution(),
+                adminRepo.getFleetUtilization(),
+                adminRepo.getNewCustomersPerMonth(),
+                adminRepo.getMostRequestedTruckTypes(),
+                adminRepo.getPendingVsCompletedOrders(),
+                adminRepo.getAverageBidAmount(),
+                adminRepo.getTotalCustomers(),
+                adminRepo.getTotalTransporters(),
+                adminRepo.getTotalVehicles(),
+                adminRepo.getOpenTickets(),
+                adminRepo.getPendingVerifications()
+            ]);
 
-    return {
-        totalOrders: ordersPerDay.reduce((sum, day) => sum + day.total_orders, 0),
-        totalRevenue: revenuePerDay.reduce((sum, day) => sum + day.total_revenue, 0),
-        pendingOrders: pendingVsCompletedOrders.pending_orders || 0,
-        completedOrders: pendingVsCompletedOrders.completed_orders || 0,
-        newCustomers: newCustomersPerMonth.reduce((sum, month) => sum + month.new_customers, 0),
-        totalCustomers,
-        totalTransporters,
-        totalVehicles,
-        openTickets,
-        pendingVerifications,
-        ordersPerDay,
-        revenuePerDay,
-        topTransporters,
-        orderStatusDistribution,
-        fleetUtilization,
-        newCustomersPerMonth,
-        truckTypes: mostRequestedTruckTypes,
-        orderRatio: pendingVsCompletedOrders,
-        avgBidAmount: avgBidAmount?.avg_bid || 0
-    };
+            return {
+                totalOrders: ordersPerDay.reduce((sum, day) => sum + day.total_orders, 0),
+                totalRevenue: revenuePerDay.reduce((sum, day) => sum + day.total_revenue, 0),
+                pendingOrders: pendingVsCompletedOrders.pending_orders || 0,
+                completedOrders: pendingVsCompletedOrders.completed_orders || 0,
+                newCustomers: newCustomersPerMonth.reduce((sum, month) => sum + month.new_customers, 0),
+                totalCustomers,
+                totalTransporters,
+                totalVehicles,
+                openTickets,
+                pendingVerifications,
+                ordersPerDay,
+                revenuePerDay,
+                topTransporters,
+                orderStatusDistribution,
+                fleetUtilization,
+                newCustomersPerMonth,
+                truckTypes: mostRequestedTruckTypes,
+                orderRatio: pendingVsCompletedOrders,
+                avgBidAmount: avgBidAmount?.avg_bid || 0
+            };
+        },
+    });
+
+    return value;
 };
 
 // Order Management

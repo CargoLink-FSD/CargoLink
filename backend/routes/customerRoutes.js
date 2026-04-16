@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authMiddleware, requireSignupVerification } from "../middlewares/auth.js";
+import { cacheResponse, invalidateCacheOnSuccess } from "../middlewares/cache.js";
 import { validate, validationSchema } from "../middlewares/validator.js";
 import customerController from "../controllers/customerController.js";
 import profileUpload from "../config/profileMulter.js";
@@ -13,18 +14,18 @@ customerRouter.post("/register", validate(validationSchema.customer), requireSig
 customerRouter.use(authMiddleware(['transporter', 'customer'])); // Allow both transporter and customer for now, can be restricted to 'customer' if needed
 
 // Dashboard
-customerRouter.get("/dashboard-stats", customerController.getDashboardStats); // Get dashboard statistics
+customerRouter.get("/dashboard-stats", cacheResponse({ domain: 'customer', ttlSeconds: 20 }), customerController.getDashboardStats); // Get dashboard statistics
 
 // Profile
-customerRouter.get("/profile", customerController.getCustomerProfile); // Get profile
-customerRouter.put("/profile", profileUpload.single('profilePicture'), validate(validationSchema.updateCustomer), customerController.updateCustomerProfile); // Update profile
-customerRouter.delete("/profile", customerController.deleteCustomer); // Soft delete
-customerRouter.patch("/password", validate(validationSchema.password), customerController.updatePassword); // Change password
+customerRouter.get("/profile", cacheResponse({ domain: 'customer', ttlSeconds: 20 }), customerController.getCustomerProfile); // Get profile
+customerRouter.put("/profile", profileUpload.single('profilePicture'), validate(validationSchema.updateCustomer), invalidateCacheOnSuccess(['customer', 'orders', 'admin']), customerController.updateCustomerProfile); // Update profile
+customerRouter.delete("/profile", invalidateCacheOnSuccess(['customer', 'orders', 'admin']), customerController.deleteCustomer); // Soft delete
+customerRouter.patch("/password", validate(validationSchema.password), invalidateCacheOnSuccess(['customer']), customerController.updatePassword); // Change password
 
 // Address
-customerRouter.get("/addresses", customerController.getAddresses); // List addresses
-customerRouter.post("/addresses", validate(validationSchema.address), customerController.addAddress); // Add address
-customerRouter.delete("/addresses/:addressId", customerController.removeAddress); // Delete address
+customerRouter.get("/addresses", cacheResponse({ domain: 'customer', ttlSeconds: 20 }), customerController.getAddresses); // List addresses
+customerRouter.post("/addresses", validate(validationSchema.address), invalidateCacheOnSuccess(['customer']), customerController.addAddress); // Add address
+customerRouter.delete("/addresses/:addressId", invalidateCacheOnSuccess(['customer']), customerController.removeAddress); // Delete address
 
 // // Payment Methods
 // customerRouter.get("/payment-methods", customerController.getPaymentMethods); // List payment methods

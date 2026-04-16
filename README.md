@@ -45,6 +45,45 @@ npm start
 
 ---
 
+## Run Redis in Docker (Team Standard)
+
+Run these commands from the `backend` folder:
+
+Prerequisite: ensure Docker Desktop is running and `docker info` shows a Server section.
+
+```bash
+cd backend
+npm run redis:up
+```
+
+Validate Redis is healthy:
+
+```bash
+npm run redis:logs
+```
+
+Stop Redis container:
+
+```bash
+npm run redis:down
+```
+
+Reset Redis data volume (only when needed):
+
+```bash
+npm run redis:reset
+```
+
+Backend should point to:
+
+```env
+REDIS_URL=redis://127.0.0.1:6379
+```
+
+The app remains fallback-safe if Redis is unavailable, but keeping Docker Redis running gives consistent benchmark and demo behavior across all team machines.
+
+---
+
 ## Start Frontend
 
 ```bash
