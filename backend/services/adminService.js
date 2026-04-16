@@ -1,8 +1,16 @@
 import adminRepo from '../repositories/adminRepo.js';
-import { AppError, escapeRegex } from '../utils/misc.js';
+import { AppError, escapeRegex, parsePaginationParams } from '../utils/misc.js';
 import mongoose from 'mongoose';
 import { CACHE_DEFAULT_TTL } from '../core/index.js';
 import { makeCacheKey, rememberCachedJson } from '../core/cache.js';
+import { searchAdminOrderIdsViaSolr, searchAdminUserIdsViaSolr } from './solr/adminSearchSolrAdapter.js';
+
+const reorderByIds = (items = [], ids = []) => {
+    if (!ids.length) return items;
+
+    const itemMap = new Map(items.map((item) => [String(item._id), item]));
+    return ids.map((id) => itemMap.get(String(id))).filter(Boolean);
+};
 
 // Dashboard Statistics
 const getDashboardStats = async () => {
@@ -73,6 +81,8 @@ const getDashboardStats = async () => {
 // Order Management
 const getAllOrders = async (filters = {}) => {
     const { search, status, fromDate, toDate, sort = 'date', page, limit } = filters;
+    const hasSearchTerm = String(search || '').trim().length > 0;
+    const pagination = parsePaginationParams({ page, limit }, { defaultLimit: 20, maxLimit: 100 });
 
     let query = {};
     let sortOptions = {};
@@ -99,6 +109,29 @@ const getAllOrders = async (filters = {}) => {
             break;
         default:
             sortOptions = { createdAt: -1 };
+    }
+
+    if (hasSearchTerm) {
+        const solrResult = await searchAdminOrderIdsViaSolr({
+            search,
+            status,
+            fromDate,
+            toDate,
+            sort,
+            page: pagination?.page,
+            limit: pagination?.limit,
+        });
+
+        if (solrResult) {
+            const items = solrResult.ids.length > 0
+                ? reorderByIds(await adminRepo.getOrdersByIds(solrResult.ids), solrResult.ids)
+                : [];
+
+            return {
+                items,
+                pagination: solrResult.pagination,
+            };
+        }
     }
 
     if (search) {
@@ -162,15 +195,51 @@ const getBidCountForOrder = async (orderId) => {
 // User Management
 const getAllUsers = async (role, filters = {}) => {
     const { search, sort = 'date', page, limit } = filters;
+    const normalizedRole = role.toLowerCase();
+    const hasSearchTerm = String(search || '').trim().length > 0;
+    const pagination = parsePaginationParams({ page, limit }, { defaultLimit: 20, maxLimit: 100 });
 
-    if (!['customer', 'transporter'].includes(role.toLowerCase())) {
+    if (!['customer', 'transporter'].includes(normalizedRole)) {
         throw new AppError(400, "ValidationError", "Invalid role specified", "ERR_VALIDATION");
     }
 
     let query = {};
     let sortOptions = {};
 
-    if (role.toLowerCase() === 'customer') {
+    if (normalizedRole === 'customer') {
+        const solrResult = hasSearchTerm
+            ? await searchAdminUserIdsViaSolr({
+                role: 'customer',
+                search,
+                sort,
+                page: pagination?.page,
+                limit: pagination?.limit,
+            })
+            : null;
+
+        if (solrResult) {
+            const users = solrResult.ids.length > 0
+                ? reorderByIds(await adminRepo.getCustomersByIds(solrResult.ids), solrResult.ids)
+                : [];
+
+            const orderCountMap = await adminRepo.getOrderCountByCustomer(users.map((user) => user._id));
+            const formattedUsers = users.map(user => ({
+                _id: user._id,
+                customer_id: user._id,
+                first_name: user.firstName,
+                last_name: user.lastName,
+                email: user.email,
+                phone: user.phone,
+                createdAt: user.createdAt,
+                noOfOrders: orderCountMap[user._id.toString()] || 0
+            }));
+
+            return {
+                items: formattedUsers,
+                pagination: solrResult.pagination,
+            };
+        }
+
         // Search filter for customers
         if (search) {
             query = {
@@ -218,6 +287,38 @@ const getAllUsers = async (role, filters = {}) => {
 
         return formattedUsers;
     } else {
+        const solrResult = hasSearchTerm
+            ? await searchAdminUserIdsViaSolr({
+                role: 'transporter',
+                search,
+                sort,
+                page: pagination?.page,
+                limit: pagination?.limit,
+            })
+            : null;
+
+        if (solrResult) {
+            const users = solrResult.ids.length > 0
+                ? reorderByIds(await adminRepo.getTransportersByIds(solrResult.ids), solrResult.ids)
+                : [];
+
+            const orderCountMap = await adminRepo.getOrderCountByTransporter(users.map((user) => user._id));
+            const formattedUsers = users.map(user => ({
+                _id: user._id,
+                transporter_id: user._id,
+                name: user.name,
+                email: user.email,
+                primary_contact: user.primary_contact,
+                createdAt: user.createdAt,
+                noOfOrders: orderCountMap[user._id.toString()] || 0
+            }));
+
+            return {
+                items: formattedUsers,
+                pagination: solrResult.pagination,
+            };
+        }
+
         // Search filter for transporters
         if (search) {
             query = {

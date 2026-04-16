@@ -84,6 +84,64 @@ The app remains fallback-safe if Redis is unavailable, but keeping Docker Redis 
 
 ---
 
+## Run Solr in Docker (Search Phase 1)
+
+Run these commands from the `backend` folder:
+
+Prerequisite: ensure Docker Desktop is running and `docker info` shows a Server section.
+
+```bash
+cd backend
+npm run solr:up
+```
+
+Check Solr health from backend config:
+
+```bash
+npm run search:health
+```
+
+Rebuild Solr index from MongoDB:
+
+```bash
+npm run search:reindex
+```
+
+Follow logs:
+
+```bash
+npm run solr:logs
+```
+
+Stop Solr container:
+
+```bash
+npm run solr:down
+```
+
+Reset Solr data volume (only when needed):
+
+```bash
+npm run solr:reset
+```
+
+Backend feature flags:
+
+```env
+SEARCH_PROVIDER=mongo
+SOLR_URL=http://127.0.0.1:8983/solr
+SOLR_CORE=cargolink
+SOLR_TIMEOUT_MS=2500
+```
+
+Phase 1 behavior:
+
+- Solr is used only for admin search on orders and users when `SEARCH_PROVIDER=solr`.
+- If Solr is unavailable or returns errors, backend falls back to Mongo search automatically.
+- Other modules continue using existing logic unchanged.
+
+---
+
 ## Start Frontend
 
 ```bash

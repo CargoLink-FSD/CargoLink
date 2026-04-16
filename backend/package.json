@@ -16,7 +16,13 @@
     "redis:up": "docker compose -f ../docker-compose.redis.yml up -d",
     "redis:down": "docker compose -f ../docker-compose.redis.yml down",
     "redis:logs": "docker compose -f ../docker-compose.redis.yml logs -f redis",
-    "redis:reset": "docker compose -f ../docker-compose.redis.yml down -v"
+    "redis:reset": "docker compose -f ../docker-compose.redis.yml down -v",
+    "solr:up": "docker compose -f ../docker-compose.search.yml up -d",
+    "solr:down": "docker compose -f ../docker-compose.search.yml down",
+    "solr:logs": "docker compose -f ../docker-compose.search.yml logs -f solr",
+    "solr:reset": "docker compose -f ../docker-compose.search.yml down -v",
+    "search:health": "node scripts/check-solr.mjs",
+    "search:reindex": "node scripts/reindex-solr.mjs"
   },
   "dependencies": {
     "@testcontainers/mongodb": "^11.8.1",

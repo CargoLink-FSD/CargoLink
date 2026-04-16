@@ -59,10 +59,10 @@ function getWeightMultiplier(weightKg) {
 
 // Threshold: 20 m³ (~20,000 litres). Below this → no surcharge..
 function getVolumeSurcharge(volumeM3, baseCost) {
-    if (!volumeM3 || volumeM3 <= 20) return 0;   
-    if (volumeM3 <= 40) return baseCost * 0.10;   
-    if (volumeM3 <= 70) return baseCost * 0.20;   
-    return baseCost * 0.35;                       
+    if (!volumeM3 || volumeM3 <= 20) return 0;
+    if (volumeM3 <= 40) return baseCost * 0.10;
+    if (volumeM3 <= 70) return baseCost * 0.20;
+    return baseCost * 0.35;
 }
 
 
@@ -84,7 +84,7 @@ const INSURANCE_RATES = {
     comprehensive: 0.05,// 5.0%
 };
 
-const MIN_PRICE = 2000; 
+const MIN_PRICE = 2000;
 // High-value goods carry higher handling risk, so the freight rate includes
 // a risk surcharge on top of insurance.
 //

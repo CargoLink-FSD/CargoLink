@@ -236,6 +236,15 @@ const getAllOrders = async (query = {}, sortOptions = { createdAt: -1 }, options
     return await findQuery.lean();
 };
 
+const getOrdersByIds = async (orderIds = []) => {
+    if (!orderIds.length) return [];
+
+    return Order.find({ _id: { $in: orderIds } })
+        .populate('customer_id', 'firstName lastName email phone')
+        .populate('assigned_transporter_id', 'name email primary_contact')
+        .lean();
+};
+
 const getOrderById = async (orderId) => {
     const order = await Order.findById(orderId)
         .populate('customer_id', 'firstName lastName email phone')
@@ -282,6 +291,14 @@ const getAllCustomers = async (query = {}, sortOptions = { createdAt: -1 }, opti
     return await findQuery.lean();
 };
 
+const getCustomersByIds = async (customerIds = []) => {
+    if (!customerIds.length) return [];
+
+    return Customer.find({ _id: { $in: customerIds } })
+        .select('firstName lastName email phone createdAt')
+        .lean();
+};
+
 const getAllTransporters = async (query = {}, sortOptions = { createdAt: -1 }, options = {}) => {
     const pagination = parsePaginationParams(options, { defaultLimit: 20, maxLimit: 100 });
     const findQuery = Transporter.find(query)
@@ -306,6 +323,14 @@ const getAllTransporters = async (query = {}, sortOptions = { createdAt: -1 }, o
     }
 
     return await findQuery.lean();
+};
+
+const getTransportersByIds = async (transporterIds = []) => {
+    if (!transporterIds.length) return [];
+
+    return Transporter.find({ _id: { $in: transporterIds } })
+        .select('name email primary_contact createdAt')
+        .lean();
 };
 
 const searchCustomerIds = async (search) => {
@@ -522,13 +547,16 @@ export default {
 
     // Order Management
     getAllOrders,
+    getOrdersByIds,
     getOrderById,
     getBidsForOrder,
     getBidCountForOrder,
 
     // User Management
     getAllCustomers,
+    getCustomersByIds,
     getAllTransporters,
+    getTransportersByIds,
     searchCustomerIds,
     searchTransporterIds,
     getCustomerById,

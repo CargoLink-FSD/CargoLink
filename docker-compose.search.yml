@@ -1,0 +1,12 @@
+services:
+  solr:
+    image: solr:9
+    restart: unless-stopped
+    ports:
+      - "8983:8983"
+    volumes:
+      - cargolink-solr-data:/var/solr
+    command: [ "solr-precreate", "cargolink" ]
+
+volumes:
+  cargolink-solr-data:
