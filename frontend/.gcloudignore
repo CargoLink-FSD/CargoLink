@@ -1,19 +1,13 @@
-# Cloud Build / gcloud deploy will NOT upload any of the following.
+# Cloud Build / gcloud deploy will NOT upload the following.
 
-# Dependencies — not needed since GAE serves static assets from dist/
+# Dependencies — installed by App Engine's internal build if needed,
+# but since we use gcp-build no-op, npm install --production runs instead
 node_modules/
 
-# Tests
+# Test artifacts
 __test__/
 playwright-report/
 test-results/
-
-# Source files — only dist/ is needed at runtime
-src/
-index.html
-vite.config.js
-eslint.config.js
-playwright.config.js
 
 # Local env
 .env
@@ -27,5 +21,3 @@ playwright.config.js
 .idea/
 .DS_Store
 Thumbs.db
-
-# Lock file intentionally included.

@@ -1,4 +1,4 @@
-runtime: nodejs20
+runtime: nodejs22
 service: frontend
 env: standard
 entrypoint: npm start
