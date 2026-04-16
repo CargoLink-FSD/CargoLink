@@ -5,6 +5,7 @@ import { closeCache, initCache } from './core/cache.js';
 import { logger, errorHandler } from './utils/misc.js';
 import { PORT, MONGO_URI } from './core/index.js';
 import managerService from './services/managerService.js';
+import { resolveMongoUri, loadAllSecrets } from './core/secrets.js';
 
 // Handle uncaught exceptions (synchronous errors outside request cycle)
 process.on('uncaughtException', (err) => {
@@ -19,8 +20,16 @@ process.on('unhandledRejection', (reason, promise) => {
 // Connect to DB then start server and ws
 (async () => {
   try {
+    // 1. Bootstrap secrets from Secret Manager first — must run before any
+    //    config module reads process.env values (all imports above are fine
+    //    because they only read env vars lazily when their functions are called).
+    await loadAllSecrets();
+
     await initCache();
-    await connectDB(MONGO_URI);
+
+    // resolveMongoUri respects process.env.MONGO_URI which was just set above
+    const mongoUri = await resolveMongoUri(MONGO_URI);
+    await connectDB(mongoUri);
 
     // Seed default manager if not exists
     await managerService.seedDefaultManager();
