@@ -115,8 +115,8 @@ steps:
         echo "Traffic promoted to version: $${VERSION}"
 
   # ── Readiness poll: wait for the live app to respond ─────────────────────
-  #    Polls /healthz and / on the canonical URL after traffic promotion.
-  #    Retries up to 10 times with 6s between attempts (60s total window).
+  #    Gives GAE 30s to complete the cold start after traffic promotion,
+  #    then retries up to 10 times at 10s intervals (100s total window).
   - id: smoke-tests
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -128,30 +128,33 @@ steps:
         BACKEND_URL="https://$${HOSTNAME}/healthz"
         FRONTEND_URL="https://$${HOSTNAME}/"
 
+        echo "Waiting 30s for GAE cold start to complete..."
+        sleep 30
+
         echo "Polling backend: $${BACKEND_URL}"
-        MAX=10; DELAY=6; ok=0
-        for i in $(seq 1 $${MAX}); do
-          STATUS="$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 10 "$${BACKEND_URL}" || true)"
-          echo "  Attempt $${i}/$${MAX}: HTTP $${STATUS}"
+        ok=0
+        for i in 1 2 3 4 5 6 7 8 9 10; do
+          STATUS="$(curl --silent --output /dev/null -w "%{http_code}" --max-time 15 "$${BACKEND_URL}" 2>/dev/null || echo "000")"
+          echo "  Attempt $${i}/10: HTTP $${STATUS}"
           if [ "$${STATUS}" = "200" ]; then ok=1; break; fi
-          sleep "$${DELAY}"
+          sleep 10
         done
         if [ "$${ok}" = "0" ]; then
-          echo "ERROR: Backend /healthz did not return 200 after $$(( MAX * DELAY ))s."
+          echo "ERROR: Backend /healthz did not return 200."
           exit 1
         fi
         echo "Backend /healthz OK."
 
         echo "Polling frontend: $${FRONTEND_URL}"
         ok=0
-        for i in $(seq 1 $${MAX}); do
-          STATUS="$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 10 "$${FRONTEND_URL}" || true)"
-          echo "  Attempt $${i}/$${MAX}: HTTP $${STATUS}"
+        for i in 1 2 3 4 5 6 7 8 9 10; do
+          STATUS="$(curl --silent --output /dev/null -w "%{http_code}" --max-time 15 "$${FRONTEND_URL}" 2>/dev/null || echo "000")"
+          echo "  Attempt $${i}/10: HTTP $${STATUS}"
           if [ "$${STATUS}" = "200" ]; then ok=1; break; fi
-          sleep "$${DELAY}"
+          sleep 10
         done
         if [ "$${ok}" = "0" ]; then
-          echo "ERROR: Frontend / did not return 200 after $$(( MAX * DELAY ))s."
+          echo "ERROR: Frontend / did not return 200."
           exit 1
         fi
         echo "Frontend / OK."
