@@ -1,5 +1,15 @@
 import paymentService from "../services/paymentService.js";
 import { AppError } from "../utils/misc.js";
+import {
+    acquireDistributedLock,
+    getCachedJson,
+    releaseDistributedLock,
+    setCachedJson,
+} from "../core/cache.js";
+import {
+    buildIdempotencyCacheKey,
+    getRequestIdempotencyKey,
+} from "../utils/idempotency.js";
 
 const initiatePayment = async (req, res, next) => {
     try {
@@ -21,6 +31,9 @@ const initiateCancellationDuesPayment = async (req, res, next) => {
 };
 
 const verifyPayment = async (req, res, next) => {
+    let lockToken = null;
+    let lockKey = null;
+
     try {
         const { orderId } = req.params;
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
@@ -29,19 +42,64 @@ const verifyPayment = async (req, res, next) => {
             throw new AppError(400, "ValidationError", "Missing Razorpay payment details", "ERR_VALIDATION");
         }
 
+        const requestIdempotencyKey = getRequestIdempotencyKey(req);
+        const fallbackIdempotencyKey = `${razorpay_order_id}:${razorpay_payment_id}`;
+        const idempotencyCacheKey = buildIdempotencyCacheKey({
+            scope: 'payments:verify-order',
+            payload: { orderId, customerId: req.user.id },
+            requestKey: requestIdempotencyKey,
+            fallbackKey: fallbackIdempotencyKey,
+        });
+
+        if (idempotencyCacheKey) {
+            const cached = await getCachedJson(idempotencyCacheKey);
+            if (cached) {
+                res.setHeader('X-Idempotency-Status', 'REPLAY');
+                return res.status(cached.statusCode || 200).json(cached.payload);
+            }
+        }
+
+        lockKey = `lock:payments:verify:${razorpay_order_id}`;
+        const lock = await acquireDistributedLock(lockKey, { ttlSeconds: 20 });
+        if (!lock.acquired) {
+            throw new AppError(
+                409,
+                "ConflictError",
+                "Payment verification is already in progress for this Razorpay order.",
+                "ERR_PAYMENT_VERIFY_IN_PROGRESS"
+            );
+        }
+        lockToken = lock.token;
+
         const result = await paymentService.verifyPayment(orderId, {
             razorpay_order_id,
             razorpay_payment_id,
             razorpay_signature,
         });
 
-        res.status(200).json({ success: true, message: "Payment verified successfully", data: result });
+        const payload = { success: true, message: "Payment verified successfully", data: result };
+
+        if (idempotencyCacheKey) {
+            await setCachedJson(idempotencyCacheKey, {
+                statusCode: 200,
+                payload,
+            }, 60 * 60 * 24);
+        }
+
+        res.status(200).json(payload);
     } catch (error) {
         next(error);
+    } finally {
+        if (lockKey && lockToken) {
+            await releaseDistributedLock(lockKey, lockToken);
+        }
     }
 };
 
 const verifyCancellationDuesPayment = async (req, res, next) => {
+    let lockToken = null;
+    let lockKey = null;
+
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
@@ -49,15 +107,61 @@ const verifyCancellationDuesPayment = async (req, res, next) => {
             throw new AppError(400, "ValidationError", "Missing Razorpay payment details", "ERR_VALIDATION");
         }
 
+        const requestIdempotencyKey = getRequestIdempotencyKey(req);
+        const fallbackIdempotencyKey = `${razorpay_order_id}:${razorpay_payment_id}`;
+        const idempotencyCacheKey = buildIdempotencyCacheKey({
+            scope: 'payments:verify-dues',
+            payload: { customerId: req.user.id },
+            requestKey: requestIdempotencyKey,
+            fallbackKey: fallbackIdempotencyKey,
+        });
+
+        if (idempotencyCacheKey) {
+            const cached = await getCachedJson(idempotencyCacheKey);
+            if (cached) {
+                res.setHeader('X-Idempotency-Status', 'REPLAY');
+                return res.status(cached.statusCode || 200).json(cached.payload);
+            }
+        }
+
+        lockKey = `lock:payments:dues-verify:${razorpay_order_id}`;
+        const lock = await acquireDistributedLock(lockKey, { ttlSeconds: 20 });
+        if (!lock.acquired) {
+            throw new AppError(
+                409,
+                "ConflictError",
+                "Cancellation dues verification is already in progress for this Razorpay order.",
+                "ERR_DUES_VERIFY_IN_PROGRESS"
+            );
+        }
+        lockToken = lock.token;
+
         const result = await paymentService.verifyCancellationDuesPayment(req.user.id, {
             razorpay_order_id,
             razorpay_payment_id,
             razorpay_signature,
         });
 
-        res.status(200).json({ success: true, message: "Cancellation dues payment verified successfully", data: result });
+        const payload = {
+            success: true,
+            message: "Cancellation dues payment verified successfully",
+            data: result,
+        };
+
+        if (idempotencyCacheKey) {
+            await setCachedJson(idempotencyCacheKey, {
+                statusCode: 200,
+                payload,
+            }, 60 * 60 * 24);
+        }
+
+        res.status(200).json(payload);
     } catch (error) {
         next(error);
+    } finally {
+        if (lockKey && lockToken) {
+            await releaseDistributedLock(lockKey, lockToken);
+        }
     }
 };
 

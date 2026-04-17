@@ -1,0 +1,38 @@
+﻿[
+    {
+        "name":  "Driver Profile",
+        "method":  "GET",
+        "path":  "/api/drivers/profile",
+        "auth":  true
+    },
+    {
+        "name":  "Driver Verification Status",
+        "method":  "GET",
+        "path":  "/api/drivers/verification-status",
+        "auth":  true
+    },
+    {
+        "name":  "Driver Schedule",
+        "method":  "GET",
+        "path":  "/api/drivers/schedule",
+        "auth":  true
+    },
+    {
+        "name":  "Driver Transporters",
+        "method":  "GET",
+        "path":  "/api/drivers/transporters",
+        "auth":  true
+    },
+    {
+        "name":  "Driver Applications",
+        "method":  "GET",
+        "path":  "/api/drivers/applications?page=1\u0026limit=20",
+        "auth":  true
+    },
+    {
+        "name":  "Driver Trips",
+        "method":  "GET",
+        "path":  "/api/trips/driver/my-trips?page=1\u0026limit=20",
+        "auth":  true
+    }
+]

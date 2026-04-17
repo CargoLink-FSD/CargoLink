@@ -124,6 +124,55 @@ export const setCachedJson = async (key, value, ttlSeconds) => {
   }
 };
 
+const LOCK_RELEASE_SCRIPT = `
+if redis.call('get', KEYS[1]) == ARGV[1] then
+  return redis.call('del', KEYS[1])
+else
+  return 0
+end
+`;
+
+export const acquireDistributedLock = async (key, { ttlSeconds = 15 } = {}) => {
+  if (!isCacheAvailable()) {
+    return { acquired: true, token: null, degraded: true };
+  }
+
+  try {
+    const token = crypto.randomBytes(16).toString('hex');
+    const result = await redisClient.set(scopedKey(key), token, {
+      NX: true,
+      EX: ttlSeconds,
+    });
+
+    return {
+      acquired: result === 'OK',
+      token: result === 'OK' ? token : null,
+      degraded: false,
+    };
+  } catch (err) {
+    logger.warn('Distributed lock acquisition failed, continuing without lock', {
+      key,
+      error: err.message,
+    });
+    return { acquired: true, token: null, degraded: true };
+  }
+};
+
+export const releaseDistributedLock = async (key, token) => {
+  if (!isCacheAvailable() || !token) return true;
+
+  try {
+    const released = await redisClient.eval(LOCK_RELEASE_SCRIPT, {
+      keys: [scopedKey(key)],
+      arguments: [token],
+    });
+    return released === 1;
+  } catch (err) {
+    logger.warn('Distributed lock release failed', { key, error: err.message });
+    return false;
+  }
+};
+
 export const rememberCachedJson = async ({ key, ttlSeconds, producer }) => {
   const cached = await getCachedJson(key);
   if (cached !== null) {

@@ -1,0 +1,44 @@
+[
+    {
+        "name": "Admin Dashboard Stats",
+        "method": "GET",
+        "path": "/api/admin/dashboard/stats",
+        "auth": true
+    },
+    {
+        "name": "Admin Orders",
+        "method": "GET",
+        "path": "/api/admin/orders?page=1&limit=20",
+        "auth": true
+    },
+    {
+        "name": "Admin Users",
+        "method": "GET",
+        "path": "/api/admin/users?page=1&limit=20",
+        "auth": true
+    },
+    {
+        "name": "Admin Fleet",
+        "method": "GET",
+        "path": "/api/admin/fleet?page=1&limit=20",
+        "auth": true
+    },
+    {
+        "name": "Admin Managers",
+        "method": "GET",
+        "path": "/api/admin/managers?page=1&limit=20",
+        "auth": true
+    },
+    {
+        "name": "Admin Thresholds",
+        "method": "GET",
+        "path": "/api/admin/thresholds",
+        "auth": true
+    },
+    {
+        "name": "Admin Ticket Volume",
+        "method": "GET",
+        "path": "/api/admin/ticket-volume",
+        "auth": true
+    }
+]
