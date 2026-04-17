@@ -6,7 +6,6 @@ uploads/
 logs/
 __test__/
 benchmark-results/
-docs/
 scripts/
 *.md
 .git/
