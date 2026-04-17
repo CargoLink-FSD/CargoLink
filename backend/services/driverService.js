@@ -225,7 +225,7 @@ const uploadDocuments = async (driverId, files) => {
 
   if (files.pan_card && files.pan_card[0]) {
     docData['documents.pan_card'] = {
-      url: `/uploads/driver-docs/${files.pan_card[0].filename}`,
+      url: files.pan_card[0].publicUrl || `/uploads/driver-docs/${files.pan_card[0].filename}`,
       uploadedAt: new Date(),
       adminStatus: 'pending',
     };
@@ -233,7 +233,7 @@ const uploadDocuments = async (driverId, files) => {
 
   if (files.driving_license && files.driving_license[0]) {
     docData['documents.driving_license'] = {
-      url: `/uploads/driver-docs/${files.driving_license[0].filename}`,
+      url: files.driving_license[0].publicUrl || `/uploads/driver-docs/${files.driving_license[0].filename}`,
       uploadedAt: new Date(),
       adminStatus: 'pending',
     };

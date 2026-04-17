@@ -11,9 +11,8 @@ import {
 import { getManagerProfile } from '../../api/manager';
 import { useNotification } from '../../context/NotificationContext';
 import Header from '../../components/common/Header';
+import { toApiUrl } from '../../utils/apiBase';
 import './ManagerSupport.css';
-
-const API_BASE = 'http://localhost:3000';
 
 const STATUS_OPTIONS = ['open', 'in_progress', 'closed'];
 const ROLE_OPTIONS = ['customer', 'transporter', 'driver'];
@@ -377,8 +376,8 @@ export default function ManagerSupport() {
                                                 <span className="mgr-msg-sender">{msg.senderName || msg.sender}</span>
                                                 <div className="mgr-msg-text">{msg.text}</div>
                                                 {msg.attachment && (
-                                                    <a href={`${API_BASE}${msg.attachment}`} target="_blank" rel="noreferrer" className="mgr-msg-photo">
-                                                        <img src={`${API_BASE}${msg.attachment}`} alt="Attachment" />
+                                                    <a href={toApiUrl(msg.attachment)} target="_blank" rel="noreferrer" className="mgr-msg-photo">
+                                                        <img src={toApiUrl(msg.attachment)} alt="Attachment" />
                                                     </a>
                                                 )}
                                                 <span className="mgr-msg-time">{formatDate(msg.createdAt)}</span>

@@ -3,11 +3,12 @@ import { authMiddleware } from '../middlewares/auth.js';
 import { cacheResponse, invalidateCacheOnSuccess } from '../middlewares/cache.js';
 import ticketController from '../controllers/ticketController.js';
 import ticketUpload from '../config/ticketMulter.js';
+import gcsUpload from '../middlewares/gcsUpload.js';
 
 const ticketRouter = Router();
 
 // ─── User routes (customer + transporter + driver) ────────────────
-ticketRouter.post('/', authMiddleware(['customer', 'transporter', 'driver']), ticketUpload.single('photo'), invalidateCacheOnSuccess(['tickets', 'admin', 'manager']), ticketController.createTicket);
+ticketRouter.post('/', authMiddleware(['customer', 'transporter', 'driver']), ticketUpload.single('photo'), gcsUpload('ticket-attachments'), invalidateCacheOnSuccess(['tickets', 'admin', 'manager']), ticketController.createTicket);
 ticketRouter.get('/my', authMiddleware(['customer', 'transporter', 'driver']), cacheResponse({ domain: 'tickets', ttlSeconds: 20 }), ticketController.getMyTickets);
 ticketRouter.get('/:id', authMiddleware(['customer', 'transporter', 'driver', 'manager']), cacheResponse({ domain: 'tickets', ttlSeconds: 15 }), ticketController.getTicketDetail);
 ticketRouter.post('/:id/reply', authMiddleware(['customer', 'transporter', 'driver']), invalidateCacheOnSuccess(['tickets', 'admin', 'manager']), ticketController.addReply);

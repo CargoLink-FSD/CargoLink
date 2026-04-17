@@ -30,7 +30,7 @@ const createTicket = async (req, res, next) => {
 
         // Handle photo attachment from multer
         if (req.file) {
-            ticketData.attachment = `/uploads/ticket-attachments/${req.file.filename}`;
+            ticketData.attachment = req.file.publicUrl || `/uploads/ticket-attachments/${req.file.filename}`;
         }
 
         const ticket = await ticketService.createTicket(userId, role, userName, userEmail, ticketData);

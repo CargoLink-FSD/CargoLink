@@ -1,0 +1,17 @@
+node_modules/
+npm-debug.log*
+.env
+.env.*
+uploads/
+logs/
+__test__/
+benchmark-results/
+scripts/
+*.md
+.git/
+.gitignore
+.gcloudignore
+app.yaml
+jest.config.mjs
+.dockerignore
+Dockerfile

@@ -1,0 +1,36 @@
+runtime: nodejs22
+service: default
+env: standard
+
+instance_class: F2
+automatic_scaling:
+  min_instances: 1
+  max_instances: 5
+  target_cpu_utilization: 0.7
+  max_concurrent_requests: 50
+
+env_variables:
+  NODE_ENV: production
+  UPLOAD_ROOT: /tmp/uploads
+  CACHE_ENABLED: "false"
+
+  # Allow requests from both the custom domain AND the appspot fallback
+  CORS_ALLOWED_ORIGINS: "https://cargolink.muthuraja.tech,https://cargolink-489712.el.r.appspot.com,https://frontend-dot-cargolink-489712.el.r.appspot.com"
+
+  # Secret Manager pointers — resolved at startup by loadAllSecrets()
+  MONGO_URI_SECRET_NAME: MONGO_URI
+  MONGO_URI_SECRET_VERSION: latest
+  JWT_ACCESS_SECRET_NAME: JWT_ACCESS_SECRET
+  JWT_REFRESH_SECRET_NAME: JWT_REFRESH_SECRET
+  GOOGLE_CLIENT_ID_SECRET_NAME: GOOGLE_CLIENT_ID
+  ADMIN_EMAIL_SECRET_NAME: ADMIN_EMAIL
+  ADMIN_PASSWORD_SECRET_NAME: ADMIN_PASSWORD
+  RAZORPAY_KEY_ID_SECRET_NAME: RAZORPAY_KEY_ID
+  RAZORPAY_KEY_SECRET_SECRET_NAME: RAZORPAY_KEY_SECRET
+  GOOGLE_MAPS_API_KEY_SECRET_NAME: GOOGLE_MAPS_API_KEY
+
+# Route ALL requests to Node.js runtime
+handlers:
+  - url: /.*
+    script: auto
+    secure: always
