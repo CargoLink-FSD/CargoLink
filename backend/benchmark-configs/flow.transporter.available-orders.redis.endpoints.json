@@ -1,0 +1,8 @@
+[
+    {
+        "name": "Transporter Place Bid Page - Available Orders",
+        "method": "GET",
+        "path": "/api/orders/available?page=1&limit=20",
+        "auth": true
+    }
+]

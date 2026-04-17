@@ -1,0 +1,8 @@
+[
+    {
+        "name": "Customer Accept Bid Page - Order Bids",
+        "method": "GET",
+        "path": "/api/orders/69e21a699b1df4606cf79623/bids",
+        "auth": true
+    }
+]
