@@ -21,7 +21,7 @@ substitutions:
   _CLOUD_RUN_SERVICE: cargolink-backend
   _GCS_BUCKET: cargolink-uploads-489712
   _VPC_CONNECTOR: cargolink-vpc
-  _REDIS_HOST: ""   # Filled at deploy time via Cloud Run env vars
+  _REDIS_HOST: "10.14.52.243"   # Memorystore Redis IP (asia-south1)
 
 steps:
   # ── 1: Build backend Docker image ──────────────────────────────────────────
@@ -66,23 +66,10 @@ steps:
   - id: deploy-backend
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
-    waitFor: ["push-backend", "fetch-redis-ip"]
+    waitFor: ["push-backend"]
     args:
       - -ceu
       - |
-        REDIS_IP=$$(cat /workspace/.redis-ip)
-
-        # Build env vars string
-        ENV_VARS="NODE_ENV=production,CACHE_ENABLED=true,GCS_BUCKET=${_GCS_BUCKET}"
-        ENV_VARS="$${ENV_VARS},CORS_ALLOWED_ORIGINS=https://cargolink.muthuraja.tech"
-
-        # Add Redis host if available
-        if [ -n "$${REDIS_IP}" ]; then
-          ENV_VARS="$${ENV_VARS},REDIS_HOST=$${REDIS_IP},REDIS_PORT=6379"
-        else
-          ENV_VARS="$${ENV_VARS},CACHE_ENABLED=false"
-        fi
-
         SECRETS="MONGO_URI=MONGO_URI:latest,JWT_ACCESS_SECRET=JWT_ACCESS_SECRET:latest,JWT_REFRESH_SECRET=JWT_REFRESH_SECRET:latest,GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,ADMIN_EMAIL=ADMIN_EMAIL:latest,ADMIN_PASSWORD=ADMIN_PASSWORD:latest,RAZORPAY_KEY_ID=RAZORPAY_KEY_ID:latest,RAZORPAY_KEY_SECRET=RAZORPAY_KEY_SECRET:latest,GOOGLE_MAPS_API_KEY=GOOGLE_MAPS_API_KEY:latest"
 
         gcloud run deploy ${_CLOUD_RUN_SERVICE} \
@@ -92,7 +79,7 @@ steps:
           --allow-unauthenticated \
           --port 8080 \
           --vpc-connector ${_VPC_CONNECTOR} \
-          --set-env-vars "$${ENV_VARS}" \
+          --set-env-vars "NODE_ENV=production,CACHE_ENABLED=true,GCS_BUCKET=${_GCS_BUCKET},REDIS_HOST=${_REDIS_HOST},REDIS_PORT=6379,CORS_ALLOWED_ORIGINS=https://cargolink.muthuraja.tech" \
           --update-secrets "$${SECRETS}" \
           --memory 512Mi \
           --cpu 1 \
