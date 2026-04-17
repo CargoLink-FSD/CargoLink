@@ -74,7 +74,7 @@ app.get('/api-docs/openapi.yaml', (req, res) => {
 });
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-app.get('/healthz', (_req, res) => {
+app.get('/api/health', (_req, res) => {
   res.status(200).json({
     status: 'ok',
     uptime: process.uptime(),

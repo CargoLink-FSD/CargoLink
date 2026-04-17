@@ -6,9 +6,6 @@ dispatch:
   - url: "*/uploads/*"
     service: default
 
-  - url: "*/healthz"
-    service: default
-
   - url: "*/api-docs*"
     service: default
 
