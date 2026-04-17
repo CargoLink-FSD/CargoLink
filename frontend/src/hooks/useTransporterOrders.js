@@ -32,8 +32,8 @@ export const useTransporterOrders = () => {
   const error = useSelector(selectTransporterOrdersError);
 
   // Fetch transporter's assigned orders
-  const loadOrders = useCallback(() => {
-    return dispatch(fetchTransporterOrders());
+  const loadOrders = useCallback((params = {}) => {
+    return dispatch(fetchTransporterOrders(params));
   }, [dispatch]);
 
   // Fetch available orders for bidding

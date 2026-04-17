@@ -390,7 +390,16 @@ const getFleetOverview = async (req, res, next) => {
 // Tickets Overview
 const getTicketsOverview = async (req, res, next) => {
   try {
-    const data = await adminService.getTicketsOverview();
+    const { search, status, priority, category, userRole, page, limit } = req.query;
+    const data = await adminService.getTicketsOverview({
+      search,
+      status,
+      priority,
+      category,
+      userRole,
+      page,
+      limit,
+    });
     res.status(200).json({ success: true, data, message: "Tickets overview fetched successfully" });
   } catch (err) {
     next(err);

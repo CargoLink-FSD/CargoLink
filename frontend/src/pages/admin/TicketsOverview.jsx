@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNotification } from '../../context/NotificationContext';
 import http from '../../api/http';
 import Header from '../../components/common/Header';
@@ -21,39 +21,36 @@ export default function TicketsOverview() {
     const [roleFilter, setRoleFilter] = useState('');
     const [selected, setSelected] = useState(null);
 
-    useEffect(() => { fetchTickets(); }, []);
-
-    const fetchTickets = async () => {
+    const fetchTickets = useCallback(async () => {
         try {
             setLoading(true);
-            const res = await http.get('/api/admin/tickets');
-            setTickets(res.data.tickets || []);
-            setStats(res.data.stats || {});
+            const params = new URLSearchParams();
+            if (search.trim()) params.set('search', search.trim());
+            if (statusFilter) params.set('status', statusFilter);
+            if (priorityFilter) params.set('priority', priorityFilter);
+            if (categoryFilter) params.set('category', categoryFilter);
+            if (roleFilter) params.set('userRole', roleFilter);
+
+            const qs = params.toString() ? `?${params.toString()}` : '';
+            const res = await http.get(`/api/admin/tickets${qs}`);
+            setTickets(res.data?.tickets || []);
+            setStats(res.data?.stats || {});
         } catch {
             showNotification({ message: 'Failed to load tickets', type: 'error' });
         } finally {
             setLoading(false);
         }
-    };
+    }, [search, statusFilter, priorityFilter, categoryFilter, roleFilter, showNotification]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchTickets();
+        }, 250);
+
+        return () => clearTimeout(timer);
+    }, [fetchTickets]);
 
     const categories = [...new Set(tickets.map(t => t.category).filter(Boolean))];
-
-    const filtered = tickets.filter(t => {
-        if (statusFilter && t.status !== statusFilter) return false;
-        if (priorityFilter && t.priority !== priorityFilter) return false;
-        if (categoryFilter && t.category !== categoryFilter) return false;
-        if (roleFilter && t.userRole !== roleFilter) return false;
-        if (search) {
-            const s = search.toLowerCase();
-            return (
-                t.ticketId?.toLowerCase().includes(s) ||
-                t.userName?.toLowerCase().includes(s) ||
-                t.userEmail?.toLowerCase().includes(s) ||
-                t.subject?.toLowerCase().includes(s)
-            );
-        }
-        return true;
-    });
 
     const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
     const formatTime = (d) => d ? new Date(d).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
@@ -143,10 +140,10 @@ export default function TicketsOverview() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filtered.length === 0 ? (
+                                {tickets.length === 0 ? (
                                     <tr><td colSpan={10} className="adm-empty">No tickets found</td></tr>
                                 ) : (
-                                    filtered.map(t => (
+                                    tickets.map(t => (
                                         <tr key={t._id}>
                                             <td style={{ fontWeight: 700, color: '#6366f1' }}>{t.ticketId}</td>
                                             <td>{t.userName}</td>
@@ -185,7 +182,7 @@ export default function TicketsOverview() {
                 </div>
 
                 <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: 12 }}>
-                    Showing {filtered.length} of {tickets.length} tickets
+                    Showing {tickets.length} tickets
                 </p>
 
                 {/* Detail Modal */}

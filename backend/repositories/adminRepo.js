@@ -466,10 +466,41 @@ const getAllFleetVehicles = async () => {
 };
 
 // ─── Tickets Overview ───
-const getAllTickets = async () => {
-    return Ticket.find()
-        .sort({ createdAt: -1 })
-        .lean();
+const getAllTickets = async (filters = {}, options = {}) => {
+    const query = {};
+    const pagination = parsePaginationParams(options, { defaultLimit: 20, maxLimit: 100 });
+
+    if (filters.status) query.status = filters.status;
+    if (filters.priority) query.priority = filters.priority;
+    if (filters.category) query.category = filters.category;
+    if (filters.userRole) query.userRole = filters.userRole;
+    if (filters.assignedManager) query.assignedManager = filters.assignedManager;
+
+    const findQuery = Ticket.find(query).sort({ createdAt: -1 });
+
+    if (pagination) {
+        const [items, total] = await Promise.all([
+            findQuery.skip(pagination.skip).limit(pagination.limit).lean(),
+            Ticket.countDocuments(query),
+        ]);
+
+        return {
+            items,
+            pagination: {
+                page: pagination.page,
+                limit: pagination.limit,
+                total,
+                totalPages: Math.ceil(total / pagination.limit) || 1,
+            },
+        };
+    }
+
+    return await findQuery.lean();
+};
+
+const getTicketsByIds = async (ids = []) => {
+    if (!Array.isArray(ids) || ids.length === 0) return [];
+    return Ticket.find({ _id: { $in: ids } }).lean();
 };
 
 const getTicketStats = async () => {
@@ -573,5 +604,6 @@ export default {
 
     // Tickets Overview
     getAllTickets,
+    getTicketsByIds,
     getTicketStats,
 };

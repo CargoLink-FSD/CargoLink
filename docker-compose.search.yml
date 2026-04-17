@@ -1,4 +1,18 @@
 services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - cargolink-redis-data:/data
+    command: [ "redis-server", "--appendonly", "yes", "--save", "60", "1000" ]
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   solr:
     image: solr:9
     restart: unless-stopped
@@ -9,4 +23,5 @@ services:
     command: [ "solr-precreate", "cargolink" ]
 
 volumes:
+  cargolink-redis-data:
   cargolink-solr-data:

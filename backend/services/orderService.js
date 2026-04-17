@@ -2,6 +2,7 @@ import orderRepo from "../repositories/orderRepo.js"
 import bidRepo from "../repositories/bidRepo.js"
 import Fleet from "../models/fleet.js"
 import { AppError, logger } from "../utils/misc.js"
+import { searchCustomerOrderIdsViaSolr, searchTransporterOrderIdsViaSolr } from './solr/orderTicketSearchSolrAdapter.js';
 import {
     evaluateCustomerOrderGate,
     applyCustomerCancellationPolicy,
@@ -12,16 +13,71 @@ import {
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
+const reorderByIds = (items = [], ids = []) => {
+    if (!ids.length) return items;
+
+    const itemMap = new Map(items.map((item) => [String(item._id), item]));
+    return ids.map((id) => itemMap.get(String(id))).filter(Boolean);
+};
+
 const getOrdersByUser = async (userId, role, filters = {}) => {
     let orders;
+    const hasSearchTerm = String(filters.search || '').trim().length > 0;
+
     if (role === 'customer') {
-        orders = await orderRepo.getOrdersByCustomer(userId, filters);
+        if (hasSearchTerm) {
+            const solrResult = await searchCustomerOrderIdsViaSolr({
+                customerId: userId,
+                search: filters.search,
+                status: filters.status,
+                page: filters.page,
+                limit: filters.limit,
+            });
+
+            if (solrResult) {
+                const hydrated = solrResult.ids.length > 0
+                    ? await orderRepo.getOrdersByCustomerIds(userId, solrResult.ids)
+                    : [];
+                const orderedItems = reorderByIds(hydrated, solrResult.ids);
+                orders = solrResult.pagination
+                    ? { items: orderedItems, pagination: solrResult.pagination }
+                    : orderedItems;
+            }
+        }
+
+        if (!orders) {
+            orders = await orderRepo.getOrdersByCustomer(userId, filters);
+        }
     } else if (role === 'transporter') {
-        orders = await orderRepo.getOrdersByTransporter(userId, {
-            status: filters.status,
-            page: filters.page,
-            limit: filters.limit,
-        });
+        if (hasSearchTerm) {
+            const solrResult = await searchTransporterOrderIdsViaSolr({
+                transporterId: userId,
+                search: filters.search,
+                status: filters.status,
+                page: filters.page,
+                limit: filters.limit,
+            });
+
+            if (solrResult) {
+                const hydrated = solrResult.ids.length > 0
+                    ? await orderRepo.getOrdersByTransporterIds(userId, solrResult.ids)
+                    : [];
+                const orderedItems = reorderByIds(hydrated, solrResult.ids);
+                orders = solrResult.pagination
+                    ? { items: orderedItems, pagination: solrResult.pagination }
+                    : orderedItems;
+            }
+        }
+
+        if (!orders) {
+            orders = await orderRepo.getOrdersByTransporter(userId, {
+                search: filters.search,
+                status: filters.status,
+                page: filters.page,
+                limit: filters.limit,
+            });
+        }
+
         if (Array.isArray(orders)) {
             orders.forEach(order => {
                 delete order.otp;

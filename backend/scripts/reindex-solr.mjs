@@ -4,6 +4,7 @@ import { connectDB } from '../core/db.js';
 import { MONGO_URI } from '../core/index.js';
 import Customer from '../models/customer.js';
 import Order from '../models/order.js';
+import Ticket from '../models/ticket.js';
 import Transporter from '../models/transporter.js';
 import { commitSolr, deleteByQuery, isSolrSearchEnabled, pingSolr, updateSolrDocuments } from '../services/solr/solrClient.js';
 
@@ -111,6 +112,41 @@ const buildOrderDocs = (orders) => {
     });
 };
 
+const buildTicketDocs = (tickets) => {
+    return tickets.map((item) => {
+        const messagesText = Array.isArray(item.messages)
+            ? item.messages.map((message) => message?.text).filter(Boolean).join(' ')
+            : '';
+
+        return {
+            id: `ticket_${item._id}`,
+            doc_type_s: 'ticket',
+            ticket_id_s: String(item._id),
+            ticket_id_text_t: String(item._id),
+            ticket_number_t: item.ticketId || '',
+            status_s: item.status || '',
+            priority_s: item.priority || '',
+            category_s: item.category || '',
+            category_t: item.category || '',
+            user_role_s: item.userRole || '',
+            user_name_t: item.userName || '',
+            user_email_t: item.userEmail || '',
+            subject_t: item.subject || '',
+            createdAt_dt: toIso(item.createdAt),
+            search_text_t: [
+                item._id,
+                item.ticketId,
+                item.subject,
+                item.category,
+                item.userName,
+                item.userEmail,
+                item.userRole,
+                messagesText,
+            ].filter(Boolean).join(' '),
+        };
+    });
+};
+
 const uploadBatches = async (docs, label) => {
     const groups = chunk(docs, BATCH_SIZE);
     for (let index = 0; index < groups.length; index += 1) {
@@ -135,7 +171,7 @@ const main = async () => {
 
     try {
         console.log('Loading data from MongoDB...');
-        const [customers, transporters, orders] = await Promise.all([
+        const [customers, transporters, orders, tickets] = await Promise.all([
             Customer.find({}).select('firstName lastName email phone addresses createdAt').lean(),
             Transporter.find({}).select('name email primary_contact city state createdAt').lean(),
             Order.find({})
@@ -143,17 +179,22 @@ const main = async () => {
                 .populate('customer_id', 'firstName lastName email')
                 .populate('assigned_transporter_id', 'name email')
                 .lean(),
+            Ticket.find({})
+                .select('ticketId status priority category userRole userName userEmail subject messages createdAt')
+                .lean(),
         ]);
 
-        console.log(`Loaded ${customers.length} customers, ${transporters.length} transporters, ${orders.length} orders.`);
+        console.log(`Loaded ${customers.length} customers, ${transporters.length} transporters, ${orders.length} orders, ${tickets.length} tickets.`);
 
-        await deleteByQuery({ query: 'doc_type_s:user OR doc_type_s:order', commit: false });
+        await deleteByQuery({ query: 'doc_type_s:user OR doc_type_s:order OR doc_type_s:ticket', commit: false });
 
         const userDocs = buildUserDocs({ customers, transporters });
         const orderDocs = buildOrderDocs(orders);
+        const ticketDocs = buildTicketDocs(tickets);
 
         await uploadBatches(userDocs, 'Users');
         await uploadBatches(orderDocs, 'Orders');
+        await uploadBatches(ticketDocs, 'Tickets');
 
         await commitSolr();
 

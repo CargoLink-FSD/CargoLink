@@ -7,9 +7,9 @@ import * as transporterOrdersApi from '../../api/transporterOrders';
 // Async thunk for fetching transporter's assigned orders
 export const fetchTransporterOrders = createAsyncThunk(
   'transporterOrders/fetchOrders',
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      const orders = await transporterOrdersApi.getTransporterOrders();
+      const orders = await transporterOrdersApi.getTransporterOrders(params);
       return orders;
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to fetch orders');

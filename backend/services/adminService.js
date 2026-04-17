@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import { CACHE_DEFAULT_TTL } from '../core/index.js';
 import { makeCacheKey, rememberCachedJson } from '../core/cache.js';
 import { searchAdminOrderIdsViaSolr, searchAdminUserIdsViaSolr } from './solr/adminSearchSolrAdapter.js';
+import { searchAdminTicketIdsViaSolr } from './solr/orderTicketSearchSolrAdapter.js';
 
 const reorderByIds = (items = [], ids = []) => {
     if (!ids.length) return items;
@@ -404,12 +405,61 @@ const getFleetOverview = async () => {
 };
 
 // Tickets Overview
-const getTicketsOverview = async () => {
-    const [tickets, stats] = await Promise.all([
-        adminRepo.getAllTickets(),
-        adminRepo.getTicketStats()
-    ]);
-    return { tickets, stats };
+const getTicketsOverview = async (filters = {}) => {
+    const {
+        search,
+        status,
+        priority,
+        category,
+        userRole,
+        page,
+        limit,
+    } = filters;
+
+    const hasSearchTerm = String(search || '').trim().length > 0;
+    const pagination = parsePaginationParams({ page, limit }, { defaultLimit: 20, maxLimit: 100 });
+    let ticketsResult = null;
+
+    if (hasSearchTerm) {
+        const solrResult = await searchAdminTicketIdsViaSolr({
+            search,
+            status,
+            priority,
+            category,
+            userRole,
+            page: pagination?.page,
+            limit: pagination?.limit,
+        });
+
+        if (solrResult) {
+            const items = solrResult.ids.length > 0
+                ? reorderByIds(await adminRepo.getTicketsByIds(solrResult.ids), solrResult.ids)
+                : [];
+
+            ticketsResult = solrResult.pagination
+                ? { items, pagination: solrResult.pagination }
+                : items;
+        }
+    }
+
+    if (!ticketsResult) {
+        ticketsResult = await adminRepo.getAllTickets(
+            { status, priority, category, userRole },
+            { page, limit }
+        );
+    }
+
+    const stats = await adminRepo.getTicketStats();
+
+    if (Array.isArray(ticketsResult)) {
+        return { tickets: ticketsResult, stats };
+    }
+
+    return {
+        tickets: ticketsResult.items,
+        pagination: ticketsResult.pagination,
+        stats,
+    };
 };
 
 // Individual User Detail

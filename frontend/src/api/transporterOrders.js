@@ -3,8 +3,15 @@ import http from './http.js';
 /**
  * Fetch all orders assigned to the authenticated transporter
  */
-export async function getTransporterOrders() {
-  const response = await http.get('/api/orders/my-orders');
+export async function getTransporterOrders({ search = '', status = 'all', page, limit } = {}) {
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  if (status && status !== 'all') params.set('status', status);
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+
+  const qs = params.toString() ? `?${params.toString()}` : '';
+  const response = await http.get(`/api/orders/my-orders${qs}`);
   console.log('Transporter orders response:', response);
   return response.data || response || [];
 }

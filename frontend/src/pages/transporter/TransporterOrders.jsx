@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useTransporterOrders } from '../../hooks/useTransporterOrders';
 import OrderCard from '../../components/common/OrderCard';
 import AssignVehicleModal from '../../components/common/AssignVehicleModal';
@@ -10,34 +10,36 @@ import Footer from '../../components/common/Footer';
 const TransporterOrders = () => {
   const {
     orders,
-    vehicles,
     loading,
     error,
     loadOrders,
-    filterOrders,
   } = useTransporterOrders();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const debounceRef = useRef(null);
 
   useEffect(() => {
-    loadOrders().catch(err => {
-      console.error('Error loading orders:', err);
-    });
-  }, [loadOrders]);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      loadOrders({ search: searchTerm, status: statusFilter }).catch(err => {
+        console.error('Error loading orders:', err);
+      });
+    }, 300);
+
+    return () => clearTimeout(debounceRef.current);
+  }, [loadOrders, searchTerm, statusFilter]);
 
   const handleSearch = (e) => {
     const value = e.target.value;
     setSearchTerm(value);
-    filterOrders(value, statusFilter);
   };
 
   const handleStatusFilter = (e) => {
     const value = e.target.value;
     setStatusFilter(value);
-    filterOrders(searchTerm, value);
   };
 
 

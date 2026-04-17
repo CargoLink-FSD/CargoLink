@@ -2,6 +2,25 @@ import mongoose from 'mongoose';
 import Order from '../models/order.js';
 import { escapeRegex, parsePaginationParams } from '../utils/misc.js';
 
+const ORDER_STATUS_MAP = {
+    placed: 'Placed',
+    assigned: 'Assigned',
+    scheduled: 'Scheduled',
+    started: 'Started',
+    in_transit: 'In Transit',
+    'in transit': 'In Transit',
+    intransit: 'In Transit',
+    completed: 'Completed',
+    cancelled: 'Cancelled',
+};
+
+const normalizeOrderStatus = (status) => {
+    const raw = String(status || '').trim();
+    if (!raw || raw.toLowerCase() === 'all') return '';
+    const normalizedKey = raw.toLowerCase().replace(/\s+/g, ' ');
+    return ORDER_STATUS_MAP[normalizedKey] || raw;
+};
+
 
 const countOrdersByCustomer = async (customerId) => {
     return Order.aggregate()
@@ -22,18 +41,26 @@ const getOrdersByCustomer = async (customerId, { search, status, page, limit } =
     const query = { customer_id: customerId };
     const pagination = parsePaginationParams({ page, limit }, { defaultLimit: 10, maxLimit: 100 });
 
-    if (status && status !== 'all') {
-        // Capitalise first letter to match stored values (e.g. "completed" → "Completed")
-        const formatted = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
-        query.status = formatted;
+    const normalizedStatus = normalizeOrderStatus(status);
+    if (normalizedStatus) {
+        query.status = normalizedStatus;
     }
 
     if (search) {
-        const re = new RegExp(escapeRegex(search), 'i');
-        query.$or = [
+        const term = String(search).trim();
+        const re = new RegExp(escapeRegex(term), 'i');
+        const orConditions = [
             { 'pickup.city': re },
+            { 'pickup.state': re },
             { 'delivery.city': re },
+            { 'delivery.state': re },
         ];
+
+        if (mongoose.Types.ObjectId.isValid(term)) {
+            orConditions.push({ _id: new mongoose.Types.ObjectId(term) });
+        }
+
+        query.$or = orConditions;
     }
 
     const findQuery = Order.find(query).sort({ createdAt: -1 });
@@ -58,12 +85,30 @@ const getOrdersByCustomer = async (customerId, { search, status, page, limit } =
     return await findQuery.lean();
 };
 
-const getOrdersByTransporter = async (transporterId, { status, page, limit } = {}) => {
+const getOrdersByTransporter = async (transporterId, { search, status, page, limit } = {}) => {
     const query = { assigned_transporter_id: transporterId };
     const pagination = parsePaginationParams({ page, limit }, { defaultLimit: 10, maxLimit: 100 });
 
-    if (status && status !== 'all') {
-        query.status = status;
+    const normalizedStatus = normalizeOrderStatus(status);
+    if (normalizedStatus) {
+        query.status = normalizedStatus;
+    }
+
+    if (search) {
+        const term = String(search).trim();
+        const re = new RegExp(escapeRegex(term), 'i');
+        const orConditions = [
+            { 'pickup.city': re },
+            { 'pickup.state': re },
+            { 'delivery.city': re },
+            { 'delivery.state': re },
+        ];
+
+        if (mongoose.Types.ObjectId.isValid(term)) {
+            orConditions.push({ _id: new mongoose.Types.ObjectId(term) });
+        }
+
+        query.$or = orConditions;
     }
 
     const findQuery = Order.find(query)
@@ -88,6 +133,23 @@ const getOrdersByTransporter = async (transporterId, { status, page, limit } = {
     }
 
     return await findQuery.lean();
+};
+const getOrdersByCustomerIds = async (customerId, ids = []) => {
+    if (!Array.isArray(ids) || ids.length === 0) return [];
+    return await Order.find({
+        _id: { $in: ids },
+        customer_id: customerId,
+    }).lean();
+};
+
+const getOrdersByTransporterIds = async (transporterId, ids = []) => {
+    if (!Array.isArray(ids) || ids.length === 0) return [];
+    return await Order.find({
+        _id: { $in: ids },
+        assigned_transporter_id: transporterId,
+    })
+        .select('-bid_by_transporter -otp')
+        .lean();
 };
 
 const getOrderDetailsForCustomer = async (orderId, customerId) => {
@@ -439,6 +501,8 @@ export default {
     countOrdersByTransporter,
     getOrdersByCustomer,
     getOrdersByTransporter,
+    getOrdersByCustomerIds,
+    getOrdersByTransporterIds,
     getOrderDetailsForCustomer,
     getOrderDetailsForTransporter,
     existsOrderForCustomer,

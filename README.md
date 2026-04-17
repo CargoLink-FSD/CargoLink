@@ -47,6 +47,8 @@ npm start
 
 ## Run Redis in Docker (Team Standard)
 
+Both Redis and Solr are managed from one compose file: `docker-compose.search.yml`.
+
 Run these commands from the `backend` folder:
 
 Prerequisite: ensure Docker Desktop is running and `docker info` shows a Server section.
@@ -86,6 +88,8 @@ The app remains fallback-safe if Redis is unavailable, but keeping Docker Redis 
 
 ## Run Solr in Docker (Search Phase 1)
 
+Both Redis and Solr are managed from one compose file: `docker-compose.search.yml`.
+
 Run these commands from the `backend` folder:
 
 Prerequisite: ensure Docker Desktop is running and `docker info` shows a Server section.
@@ -119,6 +123,18 @@ Stop Solr container:
 npm run solr:down
 ```
 
+Start both infrastructure containers together:
+
+```bash
+npm run infra:up
+```
+
+Stop both infrastructure containers:
+
+```bash
+npm run infra:down
+```
+
 Reset Solr data volume (only when needed):
 
 ```bash
@@ -134,9 +150,13 @@ SOLR_CORE=cargolink
 SOLR_TIMEOUT_MS=2500
 ```
 
-Phase 1 behavior:
+Current Solr behavior:
 
-- Solr is used only for admin search on orders and users when `SEARCH_PROVIDER=solr`.
+- Solr is used for text search on:
+  - admin orders and admin users
+  - customer order search (`/api/orders/my-orders`)
+  - transporter order search (`/api/orders/my-orders`)
+  - admin tickets search (`/api/admin/tickets`)
 - If Solr is unavailable or returns errors, backend falls back to Mongo search automatically.
 - Other modules continue using existing logic unchanged.
 
