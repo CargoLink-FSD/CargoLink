@@ -1,8 +1,8 @@
 # ── Stage 1: Install production dependencies ────────────────────────────────
 FROM node:20-slim AS deps
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+COPY package*.json ./
+RUN npm install --omit=dev
 
 # ── Stage 2: Production image ───────────────────────────────────────────────
 FROM node:20-slim

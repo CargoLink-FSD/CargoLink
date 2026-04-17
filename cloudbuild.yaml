@@ -24,10 +24,40 @@ substitutions:
   _REDIS_HOST: "10.14.52.243"   # Memorystore Redis IP (asia-south1)
 
 steps:
+  # ── 0.1: Install backend deps & Test ───────────────────────────────────────
+  - id: backend-install-test
+    name: node:22
+    entrypoint: npm
+    dir: backend
+    args: ["install", "--prefer-offline", "--no-audit"]
+
+  - id: backend-test
+    name: node:22
+    entrypoint: npm
+    dir: backend
+    args: ["test"]
+    waitFor: ["backend-install-test"]
+
+  # ── 0.2: Install frontend deps & Test ──────────────────────────────────────
+  - id: frontend-install-test
+    name: node:22
+    entrypoint: npm
+    dir: frontend
+    args: ["install", "--prefer-offline", "--no-audit"]
+    waitFor: ["-"]
+
+  - id: frontend-test
+    name: node:22
+    entrypoint: npm
+    dir: frontend
+    args: ["test"]
+    waitFor: ["frontend-install-test", "fetch-frontend-secrets"]
+
   # ── 1: Build backend Docker image ──────────────────────────────────────────
   - id: build-backend
     name: gcr.io/cloud-builders/docker
     dir: backend
+    waitFor: ["backend-test", "frontend-test"]
     args:
       - build
       - -t
@@ -62,14 +92,19 @@ steps:
           echo "WARNING: No Redis instance found. Cache will be disabled."
         fi
 
-  # ── 4: Deploy backend to Cloud Run ─────────────────────────────────────────
+  # ── 4: Deploy backend to Cloud Run (MAIN ONLY) ─────────────────────────────
   - id: deploy-backend
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
-    waitFor: ["push-backend"]
+    waitFor: ["push-backend", "backend-test"]
     args:
       - -ceu
       - |
+        if [ "${BRANCH_NAME:-}" != "main" ] && [ "${BRANCH_NAME:-}" != "master" ]; then
+          echo "Skipping backend deployment for branch: ${BRANCH_NAME:-unknown}"
+          exit 0
+        fi
+
         SECRETS="MONGO_URI=MONGO_URI:latest,JWT_ACCESS_SECRET=JWT_ACCESS_SECRET:latest,JWT_REFRESH_SECRET=JWT_REFRESH_SECRET:latest,GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,ADMIN_EMAIL=ADMIN_EMAIL:latest,ADMIN_PASSWORD=ADMIN_PASSWORD:latest,RAZORPAY_KEY_ID=RAZORPAY_KEY_ID:latest,RAZORPAY_KEY_SECRET=RAZORPAY_KEY_SECRET:latest,GOOGLE_MAPS_API_KEY=GOOGLE_MAPS_API_KEY:latest"
 
         gcloud run deploy ${_CLOUD_RUN_SERVICE} \
@@ -125,7 +160,7 @@ steps:
     args: ["run", "build"]
     waitFor: ["frontend-install", "fetch-frontend-secrets"]
 
-  # ── 8: Deploy frontend to App Engine ───────────────────────────────────────
+  # ── 8: Deploy frontend to App Engine (MAIN ONLY) ───────────────────────────
   - id: deploy-frontend
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -133,10 +168,15 @@ steps:
     args:
       - -ceu
       - |
+        if [ "${BRANCH_NAME:-}" != "main" ] && [ "${BRANCH_NAME:-}" != "master" ]; then
+          echo "Skipping frontend deployment for branch: ${BRANCH_NAME:-unknown}"
+          exit 0
+        fi
+
         VERSION="cl-${SHORT_SHA}"
         gcloud app deploy frontend/app.yaml --version="$${VERSION}" --no-promote --quiet
 
-  # ── 9: Promote frontend traffic ────────────────────────────────────────────
+  # ── 9: Promote frontend traffic (MAIN ONLY) ────────────────────────────────
   - id: promote-frontend
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -144,6 +184,11 @@ steps:
     args:
       - -ceu
       - |
+        if [ "${BRANCH_NAME:-}" != "main" ] && [ "${BRANCH_NAME:-}" != "master" ]; then
+          echo "Skipping traffic shift for branch: ${BRANCH_NAME:-unknown}"
+          exit 0
+        fi
+
         VERSION="cl-${SHORT_SHA}"
         gcloud app services set-traffic frontend --splits "$${VERSION}=1" --quiet
         BACKEND_URL=$$(cat /workspace/.backend-url || echo "N/A")

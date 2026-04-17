@@ -4,6 +4,8 @@
 /** @type {import('jest').Config} */
 export default {
   testEnvironment: 'node',
+  // 2-minute timeout: GCP Build machines need extra time to download mongodb-memory-server binary
+  testTimeout: 120000,
   // Keep Jest focused on the backend folder
   rootDir: '.',
   // Look for tests inside backend/__test__/

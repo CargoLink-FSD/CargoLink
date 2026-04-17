@@ -9,9 +9,9 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "test": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest --silent --noStackTrace",
-    "test:coverage": "cross-env NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest --coverage",
-    "test:watch": "cross-env NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest --watch",
+    "test": "cross-env NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest --silent --noStackTrace",
+    "test:coverage": "cross-env NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest --coverage",
+    "test:watch": "cross-env NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest --watch",
     "coverage:routes": "node scripts/route-coverage-report.mjs",
     "lint": "eslint",
     "benchmark:cache": "node scripts/benchmark-cache.mjs",
@@ -25,7 +25,6 @@
   "dependencies": {
     "@google-cloud/secret-manager": "^6.1.1",
     "@google-cloud/storage": "^7.19.0",
-    "@testcontainers/mongodb": "^11.8.1",
     "bcrypt": "^6.0.0",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
@@ -51,6 +50,7 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "@testcontainers/mongodb": "^11.8.1",
     "@babel/core": "^7.28.4",
     "@babel/node": "^7.28.0",
     "@babel/preset-env": "^7.28.3",
