@@ -1,0 +1,1344 @@
+{
+  "generatedAt": "2026-04-17T00:03:55.355Z",
+  "summary": {
+    "totalRoutes": 152,
+    "coveredRoutes": 104,
+    "uncoveredRoutes": 48,
+    "coveragePercent": 68.42
+  },
+  "routes": [
+    {
+      "method": "DELETE",
+      "path": "/api/admin/managers/:id",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/admin.routes.test.js"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/users/:role/:id",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/customers/addresses/:addressId",
+      "sourceFile": "routes/customerRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/customer/account.routes.test.js"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/customers/profile",
+      "sourceFile": "routes/customerRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/drivers/application/:applicationId",
+      "sourceFile": "routes/driverRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/driver/account-schedule.routes.test.js",
+        "__test__/pipelines/driver-management/driver-join.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/drivers/profile",
+      "sourceFile": "routes/driverRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/drivers/schedule/block/:blockId",
+      "sourceFile": "routes/driverRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/driver/account-schedule.routes.test.js"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/orders/:orderId",
+      "sourceFile": "routes/orderRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/orders/common.routes.test.js"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/orders/:orderId/bids/:bidId",
+      "sourceFile": "routes/orderRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/orders/bids.routes.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/transporters/drivers/:driverId",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/transporters/fleet/:truckId",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/transporter/fleet-management.routes.test.js"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/transporters/fleet/:truckId/schedule/block/:blockId",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/transporter/fleet-management.routes.test.js"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/transporters/profile",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/trips/:tripId",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/trips.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/dashboard/avg-bid",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/dashboard/fleet-utilization",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/dashboard/new-customers",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/dashboard/order-ratio",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/dashboard/order-status",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/dashboard/orders-per-day",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/dashboard/revenue-per-day",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/dashboard/stats",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/dashboard/top-transporters",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/dashboard/truck-types",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/fleet",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/admin.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/managers",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/admin.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/managers/invitations",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/admin.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/orders",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/admin.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/orders/:orderId",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/users-orders.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/orders/:orderId/bid-count",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/users-orders.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/orders/:orderId/bids",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/users-orders.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/thresholds",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/admin.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/ticket-volume",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/admin.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/tickets",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/admin.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/admin.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users/:role/:id",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/users-orders.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/verify-email/:token",
+      "sourceFile": "routes/authRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/chat/orders/:orderId",
+      "sourceFile": "routes/chatRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/chat/chat.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/customers/addresses",
+      "sourceFile": "routes/customerRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/customer/account.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/customers/dashboard-stats",
+      "sourceFile": "routes/customerRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/customers/profile",
+      "sourceFile": "routes/customerRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/customer/account.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/drivers/applications",
+      "sourceFile": "routes/driverRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/pipelines/driver-management/driver-join.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/drivers/dashboard-stats",
+      "sourceFile": "routes/driverRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/driver/register-get.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/drivers/profile",
+      "sourceFile": "routes/driverRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/driver/register-get.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/drivers/schedule",
+      "sourceFile": "routes/driverRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/driver/register-get.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/drivers/transporters",
+      "sourceFile": "routes/driverRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/driver/register-get.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/drivers/verification-status",
+      "sourceFile": "routes/driverRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/driver/register-get.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/manager/profile",
+      "sourceFile": "routes/managerRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/manager/verification-queue",
+      "sourceFile": "routes/managerRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/orders/:orderId",
+      "sourceFile": "routes/orderRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/orders/bids.routes.test.js",
+        "__test__/integration/orders/common.routes.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/orders/:orderId/bids",
+      "sourceFile": "routes/orderRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/orders/bids.routes.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/orders/:orderId/bids/:bidId/quote-pdf",
+      "sourceFile": "routes/orderRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/orders/bids.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/orders/available",
+      "sourceFile": "routes/orderRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/orders/bids.routes.test.js",
+        "__test__/integration/orders/common.routes.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/orders/cancellation-dues",
+      "sourceFile": "routes/orderRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/orders/bids.routes.test.js",
+        "__test__/integration/orders/common.routes.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/orders/my-bids",
+      "sourceFile": "routes/orderRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/orders/bids.routes.test.js",
+        "__test__/integration/orders/common.routes.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/orders/my-orders",
+      "sourceFile": "routes/orderRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/orders/bids.routes.test.js",
+        "__test__/integration/orders/common.routes.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/payments/:paymentId/invoice",
+      "sourceFile": "routes/paymentRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/payments/history",
+      "sourceFile": "routes/paymentRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/payments/orders/:orderId/review",
+      "sourceFile": "routes/paymentRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets/:id",
+      "sourceFile": "routes/ticketRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/tickets/tickets.routes.test.js",
+        "__test__/pipelines/tickets/ticket-manager.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets/manager/:id",
+      "sourceFile": "routes/ticketRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/pipelines/tickets/ticket-manager.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets/manager/all",
+      "sourceFile": "routes/ticketRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/pipelines/tickets/ticket-manager.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets/manager/stats",
+      "sourceFile": "routes/ticketRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets/my",
+      "sourceFile": "routes/ticketRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/tickets/tickets.routes.test.js",
+        "__test__/pipelines/tickets/ticket-manager.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/transporters/:transporterId/public-profile",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/transporter/fleet-management.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/transporters/dashboard-stats",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/transporters/driver-requests",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/transporter/driver-management.routes.test.js",
+        "__test__/integration/trips/resources-tracking.routes.test.js",
+        "__test__/integration/trips/trips.routes.test.js",
+        "__test__/pipelines/driver-management/driver-join.pipeline.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/transporters/drivers",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/transporter/driver-management.routes.test.js",
+        "__test__/pipelines/driver-management/driver-join.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/transporters/drivers/:driverId/schedule",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/transporter/driver-management.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/transporters/fleet",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/transporter/fleet-management.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/transporters/fleet/:truckId",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/transporter/fleet-management.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/transporters/fleet/:truckId/schedule",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/transporter/fleet-management.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/transporters/profile",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/transporter/account.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/transporters/ratings",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/transporters/verification-status",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/trips",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/trips.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/trips/:tripId",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/trips.routes.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/trips/driver/:tripId",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/trips.routes.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/trips/driver/my-trips",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/trips.routes.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/trips/resources/assignable-orders",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/resources-tracking.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/trips/resources/available-drivers",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/resources-tracking.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/trips/resources/available-vehicles",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/resources-tracking.routes.test.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/trips/track/:orderId",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/resources-tracking.routes.test.js"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/managers/:id/categories",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/admin.routes.test.js"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/managers/:id/status",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/admin.routes.test.js"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/customers/password",
+      "sourceFile": "routes/customerRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/customer/account.routes.test.js"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/drivers/password",
+      "sourceFile": "routes/driverRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/manager/transporters/:id/documents/:docType/approve",
+      "sourceFile": "routes/managerRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/manager/transporters/:id/documents/:docType/reject",
+      "sourceFile": "routes/managerRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/manager/verify/:id/documents/:docType/approve",
+      "sourceFile": "routes/managerRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/documents/documents.routes.test.js"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/manager/verify/:id/documents/:docType/reject",
+      "sourceFile": "routes/managerRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/documents/documents.routes.test.js"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/tickets/manager/:id/status",
+      "sourceFile": "routes/ticketRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/tickets/tickets.routes.test.js",
+        "__test__/pipelines/tickets/ticket-manager.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/transporters/password",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/transporter/account.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/managers/invite",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/admin.routes.test.js",
+        "__test__/pipelines/tickets/ticket-manager.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/thresholds/reset-alert",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/admin.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/forgot-password",
+      "sourceFile": "routes/authRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/google-login",
+      "sourceFile": "routes/authRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/google-verify",
+      "sourceFile": "routes/authRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "sourceFile": "routes/authRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/customer/account.routes.test.js",
+        "__test__/integration/transporter/account.routes.test.js",
+        "__test__/pipelines/tickets/ticket-manager.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "sourceFile": "routes/authRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/refresh-token",
+      "sourceFile": "routes/authRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/resend-verification",
+      "sourceFile": "routes/authRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/reset-password/:token",
+      "sourceFile": "routes/authRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/signup/send-otp",
+      "sourceFile": "routes/authRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/signup/verify-otp",
+      "sourceFile": "routes/authRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/orders/:orderId",
+      "sourceFile": "routes/chatRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/chat/chat.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/customers/addresses",
+      "sourceFile": "routes/customerRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/customer/account.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/customers/register",
+      "sourceFile": "routes/customerRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/customer/account.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/drivers/apply/:transporterId",
+      "sourceFile": "routes/driverRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/driver/account-schedule.routes.test.js",
+        "__test__/integration/transporter/driver-management.routes.test.js",
+        "__test__/integration/trips/resources-tracking.routes.test.js",
+        "__test__/integration/trips/trips.routes.test.js",
+        "__test__/pipelines/driver-management/driver-join.pipeline.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/drivers/documents",
+      "sourceFile": "routes/driverRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/documents/documents.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/drivers/register",
+      "sourceFile": "routes/driverRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/driver/register-get.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/drivers/schedule/block",
+      "sourceFile": "routes/driverRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/driver/account-schedule.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/location/calculate-distance",
+      "sourceFile": "routes/locationRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/manager/register",
+      "sourceFile": "routes/managerRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/admin.routes.test.js",
+        "__test__/pipelines/tickets/ticket-manager.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/orders",
+      "sourceFile": "routes/orderRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/users-orders.routes.test.js",
+        "__test__/integration/chat/chat.routes.test.js",
+        "__test__/integration/orders/bids.routes.test.js",
+        "__test__/integration/orders/common.routes.test.js",
+        "__test__/integration/trips/resources-tracking.routes.test.js",
+        "__test__/integration/trips/trips.routes.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/orders/:orderId/bids",
+      "sourceFile": "routes/orderRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/users-orders.routes.test.js",
+        "__test__/integration/chat/chat.routes.test.js",
+        "__test__/integration/orders/bids.routes.test.js",
+        "__test__/integration/trips/resources-tracking.routes.test.js",
+        "__test__/integration/trips/trips.routes.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/orders/:orderId/bids/:bidId/accept",
+      "sourceFile": "routes/orderRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/chat/chat.routes.test.js",
+        "__test__/integration/orders/bids.routes.test.js",
+        "__test__/integration/trips/resources-tracking.routes.test.js",
+        "__test__/integration/trips/trips.routes.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/orders/estimate-price",
+      "sourceFile": "routes/orderRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/orders/common.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/payments/cancellation-dues/initiate",
+      "sourceFile": "routes/paymentRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/payments/cancellation-dues/verify",
+      "sourceFile": "routes/paymentRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/payments/orders/:orderId/initiate",
+      "sourceFile": "routes/paymentRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/payments/orders/:orderId/review",
+      "sourceFile": "routes/paymentRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/payments/orders/:orderId/verify",
+      "sourceFile": "routes/paymentRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/payments/payout",
+      "sourceFile": "routes/paymentRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/tickets",
+      "sourceFile": "routes/ticketRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/tickets/tickets.routes.test.js",
+        "__test__/pipelines/tickets/ticket-manager.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/tickets/:id/reopen",
+      "sourceFile": "routes/ticketRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/tickets/tickets.routes.test.js",
+        "__test__/pipelines/tickets/ticket-manager.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/tickets/:id/reply",
+      "sourceFile": "routes/ticketRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/tickets/tickets.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/tickets/manager/:id/reply",
+      "sourceFile": "routes/ticketRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/tickets/tickets.routes.test.js",
+        "__test__/pipelines/tickets/ticket-manager.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/transporters/documents",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/documents/documents.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/transporters/driver-requests/:applicationId/accept",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/transporter/driver-management.routes.test.js",
+        "__test__/integration/trips/resources-tracking.routes.test.js",
+        "__test__/integration/trips/trips.routes.test.js",
+        "__test__/pipelines/driver-management/driver-join.pipeline.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/transporters/driver-requests/:applicationId/reject",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/transporter/driver-management.routes.test.js",
+        "__test__/pipelines/driver-management/driver-join.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/transporters/fleet",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/transporter/fleet-management.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/transporters/fleet/:truckId/schedule/block",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/transporter/fleet-management.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/transporters/fleet/:vehicleId/upload-rc",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/transporters/register",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/transporter/account.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/trips",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/resources-tracking.routes.test.js",
+        "__test__/integration/trips/trips.routes.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/trips/:tripId/cancel",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/resources-tracking.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/trips/:tripId/complete",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/trips.routes.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/trips/driver/:tripId/clear-delay",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/resources-tracking.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/trips/driver/:tripId/delay",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/trips.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/trips/driver/:tripId/location",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/trips.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/trips/driver/:tripId/start",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/trips.routes.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/trips/driver/:tripId/stops/:stopId/arrive",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/trips/driver/:tripId/stops/:stopId/confirm-delivery",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/resources-tracking.routes.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/trips/driver/:tripId/stops/:stopId/confirm-pickup",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/trips.routes.test.js",
+        "__test__/pipelines/orders/orders-lifecycle.pipeline.test.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/trips/driver/:tripId/stops/:stopId/depart",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": false,
+      "matchedBy": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/thresholds",
+      "sourceFile": "routes/adminRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/admin/admin.routes.test.js"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/customers/profile",
+      "sourceFile": "routes/customerRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/customer/account.routes.test.js"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/drivers/profile",
+      "sourceFile": "routes/driverRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/driver/account-schedule.routes.test.js"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/transporters/fleet/:truckId",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/transporter/fleet-management.routes.test.js"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/transporters/profile",
+      "sourceFile": "routes/transporterRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/transporter/account.routes.test.js"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/trips/:tripId",
+      "sourceFile": "routes/tripRoutes.js",
+      "tested": true,
+      "matchedBy": [
+        "__test__/integration/trips/trips.routes.test.js"
+      ]
+    }
+  ]
+}

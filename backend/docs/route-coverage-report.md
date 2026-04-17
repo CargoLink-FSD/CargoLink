@@ -1,0 +1,168 @@
+# Route Coverage Report
+
+Generated: 2026-04-17T00:03:55.357Z
+
+## Summary
+
+- Total routes: 152
+- Covered routes: 104
+- Uncovered routes: 48
+- Coverage: 68.42%
+
+## Covered Routes
+
+- [x] DELETE /api/admin/managers/:id ← __test__/integration/admin/admin.routes.test.js
+- [x] DELETE /api/customers/addresses/:addressId ← __test__/integration/customer/account.routes.test.js
+- [x] DELETE /api/drivers/application/:applicationId ← __test__/integration/driver/account-schedule.routes.test.js, __test__/pipelines/driver-management/driver-join.pipeline.test.js
+- [x] DELETE /api/drivers/schedule/block/:blockId ← __test__/integration/driver/account-schedule.routes.test.js
+- [x] DELETE /api/orders/:orderId ← __test__/integration/orders/common.routes.test.js
+- [x] DELETE /api/orders/:orderId/bids/:bidId ← __test__/integration/orders/bids.routes.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] DELETE /api/transporters/fleet/:truckId ← __test__/integration/transporter/fleet-management.routes.test.js
+- [x] DELETE /api/transporters/fleet/:truckId/schedule/block/:blockId ← __test__/integration/transporter/fleet-management.routes.test.js
+- [x] DELETE /api/trips/:tripId ← __test__/integration/trips/trips.routes.test.js
+- [x] GET /api/admin/fleet ← __test__/integration/admin/admin.routes.test.js
+- [x] GET /api/admin/managers ← __test__/integration/admin/admin.routes.test.js
+- [x] GET /api/admin/managers/invitations ← __test__/integration/admin/admin.routes.test.js
+- [x] GET /api/admin/orders ← __test__/integration/admin/admin.routes.test.js
+- [x] GET /api/admin/orders/:orderId ← __test__/integration/admin/users-orders.routes.test.js
+- [x] GET /api/admin/orders/:orderId/bid-count ← __test__/integration/admin/users-orders.routes.test.js
+- [x] GET /api/admin/orders/:orderId/bids ← __test__/integration/admin/users-orders.routes.test.js
+- [x] GET /api/admin/thresholds ← __test__/integration/admin/admin.routes.test.js
+- [x] GET /api/admin/ticket-volume ← __test__/integration/admin/admin.routes.test.js
+- [x] GET /api/admin/tickets ← __test__/integration/admin/admin.routes.test.js
+- [x] GET /api/admin/users ← __test__/integration/admin/admin.routes.test.js
+- [x] GET /api/admin/users/:role/:id ← __test__/integration/admin/users-orders.routes.test.js
+- [x] GET /api/chat/orders/:orderId ← __test__/integration/chat/chat.routes.test.js
+- [x] GET /api/customers/addresses ← __test__/integration/customer/account.routes.test.js
+- [x] GET /api/customers/profile ← __test__/integration/customer/account.routes.test.js
+- [x] GET /api/drivers/applications ← __test__/pipelines/driver-management/driver-join.pipeline.test.js
+- [x] GET /api/drivers/dashboard-stats ← __test__/integration/driver/register-get.routes.test.js
+- [x] GET /api/drivers/profile ← __test__/integration/driver/register-get.routes.test.js
+- [x] GET /api/drivers/schedule ← __test__/integration/driver/register-get.routes.test.js
+- [x] GET /api/drivers/transporters ← __test__/integration/driver/register-get.routes.test.js
+- [x] GET /api/drivers/verification-status ← __test__/integration/driver/register-get.routes.test.js
+- [x] GET /api/orders/:orderId ← __test__/integration/orders/bids.routes.test.js, __test__/integration/orders/common.routes.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] GET /api/orders/:orderId/bids ← __test__/integration/orders/bids.routes.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] GET /api/orders/:orderId/bids/:bidId/quote-pdf ← __test__/integration/orders/bids.routes.test.js
+- [x] GET /api/orders/available ← __test__/integration/orders/bids.routes.test.js, __test__/integration/orders/common.routes.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] GET /api/orders/cancellation-dues ← __test__/integration/orders/bids.routes.test.js, __test__/integration/orders/common.routes.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] GET /api/orders/my-bids ← __test__/integration/orders/bids.routes.test.js, __test__/integration/orders/common.routes.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] GET /api/orders/my-orders ← __test__/integration/orders/bids.routes.test.js, __test__/integration/orders/common.routes.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] GET /api/tickets/:id ← __test__/integration/tickets/tickets.routes.test.js, __test__/pipelines/tickets/ticket-manager.pipeline.test.js
+- [x] GET /api/tickets/manager/:id ← __test__/pipelines/tickets/ticket-manager.pipeline.test.js
+- [x] GET /api/tickets/manager/all ← __test__/pipelines/tickets/ticket-manager.pipeline.test.js
+- [x] GET /api/tickets/my ← __test__/integration/tickets/tickets.routes.test.js, __test__/pipelines/tickets/ticket-manager.pipeline.test.js
+- [x] GET /api/transporters/:transporterId/public-profile ← __test__/integration/transporter/fleet-management.routes.test.js
+- [x] GET /api/transporters/driver-requests ← __test__/integration/transporter/driver-management.routes.test.js, __test__/integration/trips/resources-tracking.routes.test.js, __test__/integration/trips/trips.routes.test.js, __test__/pipelines/driver-management/driver-join.pipeline.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] GET /api/transporters/drivers ← __test__/integration/transporter/driver-management.routes.test.js, __test__/pipelines/driver-management/driver-join.pipeline.test.js
+- [x] GET /api/transporters/drivers/:driverId/schedule ← __test__/integration/transporter/driver-management.routes.test.js
+- [x] GET /api/transporters/fleet ← __test__/integration/transporter/fleet-management.routes.test.js
+- [x] GET /api/transporters/fleet/:truckId ← __test__/integration/transporter/fleet-management.routes.test.js
+- [x] GET /api/transporters/fleet/:truckId/schedule ← __test__/integration/transporter/fleet-management.routes.test.js
+- [x] GET /api/transporters/profile ← __test__/integration/transporter/account.routes.test.js
+- [x] GET /api/trips ← __test__/integration/trips/trips.routes.test.js
+- [x] GET /api/trips/:tripId ← __test__/integration/trips/trips.routes.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] GET /api/trips/driver/:tripId ← __test__/integration/trips/trips.routes.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] GET /api/trips/driver/my-trips ← __test__/integration/trips/trips.routes.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] GET /api/trips/resources/assignable-orders ← __test__/integration/trips/resources-tracking.routes.test.js
+- [x] GET /api/trips/resources/available-drivers ← __test__/integration/trips/resources-tracking.routes.test.js
+- [x] GET /api/trips/resources/available-vehicles ← __test__/integration/trips/resources-tracking.routes.test.js
+- [x] GET /api/trips/track/:orderId ← __test__/integration/trips/resources-tracking.routes.test.js
+- [x] PATCH /api/admin/managers/:id/categories ← __test__/integration/admin/admin.routes.test.js
+- [x] PATCH /api/admin/managers/:id/status ← __test__/integration/admin/admin.routes.test.js
+- [x] PATCH /api/customers/password ← __test__/integration/customer/account.routes.test.js
+- [x] PATCH /api/manager/verify/:id/documents/:docType/approve ← __test__/integration/documents/documents.routes.test.js
+- [x] PATCH /api/manager/verify/:id/documents/:docType/reject ← __test__/integration/documents/documents.routes.test.js
+- [x] PATCH /api/tickets/manager/:id/status ← __test__/integration/tickets/tickets.routes.test.js, __test__/pipelines/tickets/ticket-manager.pipeline.test.js
+- [x] PATCH /api/transporters/password ← __test__/integration/transporter/account.routes.test.js
+- [x] POST /api/admin/managers/invite ← __test__/integration/admin/admin.routes.test.js, __test__/pipelines/tickets/ticket-manager.pipeline.test.js
+- [x] POST /api/admin/thresholds/reset-alert ← __test__/integration/admin/admin.routes.test.js
+- [x] POST /api/auth/login ← __test__/integration/customer/account.routes.test.js, __test__/integration/transporter/account.routes.test.js, __test__/pipelines/tickets/ticket-manager.pipeline.test.js
+- [x] POST /api/chat/orders/:orderId ← __test__/integration/chat/chat.routes.test.js
+- [x] POST /api/customers/addresses ← __test__/integration/customer/account.routes.test.js
+- [x] POST /api/customers/register ← __test__/integration/customer/account.routes.test.js
+- [x] POST /api/drivers/apply/:transporterId ← __test__/integration/driver/account-schedule.routes.test.js, __test__/integration/transporter/driver-management.routes.test.js, __test__/integration/trips/resources-tracking.routes.test.js, __test__/integration/trips/trips.routes.test.js, __test__/pipelines/driver-management/driver-join.pipeline.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] POST /api/drivers/documents ← __test__/integration/documents/documents.routes.test.js
+- [x] POST /api/drivers/register ← __test__/integration/driver/register-get.routes.test.js
+- [x] POST /api/drivers/schedule/block ← __test__/integration/driver/account-schedule.routes.test.js
+- [x] POST /api/manager/register ← __test__/integration/admin/admin.routes.test.js, __test__/pipelines/tickets/ticket-manager.pipeline.test.js
+- [x] POST /api/orders ← __test__/integration/admin/users-orders.routes.test.js, __test__/integration/chat/chat.routes.test.js, __test__/integration/orders/bids.routes.test.js, __test__/integration/orders/common.routes.test.js, __test__/integration/trips/resources-tracking.routes.test.js, __test__/integration/trips/trips.routes.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] POST /api/orders/:orderId/bids ← __test__/integration/admin/users-orders.routes.test.js, __test__/integration/chat/chat.routes.test.js, __test__/integration/orders/bids.routes.test.js, __test__/integration/trips/resources-tracking.routes.test.js, __test__/integration/trips/trips.routes.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] POST /api/orders/:orderId/bids/:bidId/accept ← __test__/integration/chat/chat.routes.test.js, __test__/integration/orders/bids.routes.test.js, __test__/integration/trips/resources-tracking.routes.test.js, __test__/integration/trips/trips.routes.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] POST /api/orders/estimate-price ← __test__/integration/orders/common.routes.test.js
+- [x] POST /api/tickets ← __test__/integration/tickets/tickets.routes.test.js, __test__/pipelines/tickets/ticket-manager.pipeline.test.js
+- [x] POST /api/tickets/:id/reopen ← __test__/integration/tickets/tickets.routes.test.js, __test__/pipelines/tickets/ticket-manager.pipeline.test.js
+- [x] POST /api/tickets/:id/reply ← __test__/integration/tickets/tickets.routes.test.js
+- [x] POST /api/tickets/manager/:id/reply ← __test__/integration/tickets/tickets.routes.test.js, __test__/pipelines/tickets/ticket-manager.pipeline.test.js
+- [x] POST /api/transporters/documents ← __test__/integration/documents/documents.routes.test.js
+- [x] POST /api/transporters/driver-requests/:applicationId/accept ← __test__/integration/transporter/driver-management.routes.test.js, __test__/integration/trips/resources-tracking.routes.test.js, __test__/integration/trips/trips.routes.test.js, __test__/pipelines/driver-management/driver-join.pipeline.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] POST /api/transporters/driver-requests/:applicationId/reject ← __test__/integration/transporter/driver-management.routes.test.js, __test__/pipelines/driver-management/driver-join.pipeline.test.js
+- [x] POST /api/transporters/fleet ← __test__/integration/transporter/fleet-management.routes.test.js
+- [x] POST /api/transporters/fleet/:truckId/schedule/block ← __test__/integration/transporter/fleet-management.routes.test.js
+- [x] POST /api/transporters/register ← __test__/integration/transporter/account.routes.test.js
+- [x] POST /api/trips ← __test__/integration/trips/resources-tracking.routes.test.js, __test__/integration/trips/trips.routes.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] POST /api/trips/:tripId/cancel ← __test__/integration/trips/resources-tracking.routes.test.js
+- [x] POST /api/trips/:tripId/complete ← __test__/integration/trips/trips.routes.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] POST /api/trips/driver/:tripId/clear-delay ← __test__/integration/trips/resources-tracking.routes.test.js
+- [x] POST /api/trips/driver/:tripId/delay ← __test__/integration/trips/trips.routes.test.js
+- [x] POST /api/trips/driver/:tripId/location ← __test__/integration/trips/trips.routes.test.js
+- [x] POST /api/trips/driver/:tripId/start ← __test__/integration/trips/trips.routes.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] POST /api/trips/driver/:tripId/stops/:stopId/confirm-delivery ← __test__/integration/trips/resources-tracking.routes.test.js
+- [x] POST /api/trips/driver/:tripId/stops/:stopId/confirm-pickup ← __test__/integration/trips/trips.routes.test.js, __test__/pipelines/orders/orders-lifecycle.pipeline.test.js
+- [x] PUT /api/admin/thresholds ← __test__/integration/admin/admin.routes.test.js
+- [x] PUT /api/customers/profile ← __test__/integration/customer/account.routes.test.js
+- [x] PUT /api/drivers/profile ← __test__/integration/driver/account-schedule.routes.test.js
+- [x] PUT /api/transporters/fleet/:truckId ← __test__/integration/transporter/fleet-management.routes.test.js
+- [x] PUT /api/transporters/profile ← __test__/integration/transporter/account.routes.test.js
+- [x] PUT /api/trips/:tripId ← __test__/integration/trips/trips.routes.test.js
+
+## Uncovered Routes
+
+- [ ] DELETE /api/admin/users/:role/:id (routes/adminRoutes.js)
+- [ ] DELETE /api/customers/profile (routes/customerRoutes.js)
+- [ ] DELETE /api/drivers/profile (routes/driverRoutes.js)
+- [ ] DELETE /api/transporters/drivers/:driverId (routes/transporterRoutes.js)
+- [ ] DELETE /api/transporters/profile (routes/transporterRoutes.js)
+- [ ] GET /api/admin/dashboard/avg-bid (routes/adminRoutes.js)
+- [ ] GET /api/admin/dashboard/fleet-utilization (routes/adminRoutes.js)
+- [ ] GET /api/admin/dashboard/new-customers (routes/adminRoutes.js)
+- [ ] GET /api/admin/dashboard/order-ratio (routes/adminRoutes.js)
+- [ ] GET /api/admin/dashboard/order-status (routes/adminRoutes.js)
+- [ ] GET /api/admin/dashboard/orders-per-day (routes/adminRoutes.js)
+- [ ] GET /api/admin/dashboard/revenue-per-day (routes/adminRoutes.js)
+- [ ] GET /api/admin/dashboard/stats (routes/adminRoutes.js)
+- [ ] GET /api/admin/dashboard/top-transporters (routes/adminRoutes.js)
+- [ ] GET /api/admin/dashboard/truck-types (routes/adminRoutes.js)
+- [ ] GET /api/auth/verify-email/:token (routes/authRoutes.js)
+- [ ] GET /api/customers/dashboard-stats (routes/customerRoutes.js)
+- [ ] GET /api/manager/profile (routes/managerRoutes.js)
+- [ ] GET /api/manager/verification-queue (routes/managerRoutes.js)
+- [ ] GET /api/payments/:paymentId/invoice (routes/paymentRoutes.js)
+- [ ] GET /api/payments/history (routes/paymentRoutes.js)
+- [ ] GET /api/payments/orders/:orderId/review (routes/paymentRoutes.js)
+- [ ] GET /api/tickets/manager/stats (routes/ticketRoutes.js)
+- [ ] GET /api/transporters/dashboard-stats (routes/transporterRoutes.js)
+- [ ] GET /api/transporters/ratings (routes/transporterRoutes.js)
+- [ ] GET /api/transporters/verification-status (routes/transporterRoutes.js)
+- [ ] PATCH /api/drivers/password (routes/driverRoutes.js)
+- [ ] PATCH /api/manager/transporters/:id/documents/:docType/approve (routes/managerRoutes.js)
+- [ ] PATCH /api/manager/transporters/:id/documents/:docType/reject (routes/managerRoutes.js)
+- [ ] POST /api/auth/forgot-password (routes/authRoutes.js)
+- [ ] POST /api/auth/google-login (routes/authRoutes.js)
+- [ ] POST /api/auth/google-verify (routes/authRoutes.js)
+- [ ] POST /api/auth/logout (routes/authRoutes.js)
+- [ ] POST /api/auth/refresh-token (routes/authRoutes.js)
+- [ ] POST /api/auth/resend-verification (routes/authRoutes.js)
+- [ ] POST /api/auth/reset-password/:token (routes/authRoutes.js)
+- [ ] POST /api/auth/signup/send-otp (routes/authRoutes.js)
+- [ ] POST /api/auth/signup/verify-otp (routes/authRoutes.js)
+- [ ] POST /api/location/calculate-distance (routes/locationRoutes.js)
+- [ ] POST /api/payments/cancellation-dues/initiate (routes/paymentRoutes.js)
+- [ ] POST /api/payments/cancellation-dues/verify (routes/paymentRoutes.js)
+- [ ] POST /api/payments/orders/:orderId/initiate (routes/paymentRoutes.js)
+- [ ] POST /api/payments/orders/:orderId/review (routes/paymentRoutes.js)
+- [ ] POST /api/payments/orders/:orderId/verify (routes/paymentRoutes.js)
+- [ ] POST /api/payments/payout (routes/paymentRoutes.js)
+- [ ] POST /api/transporters/fleet/:vehicleId/upload-rc (routes/transporterRoutes.js)
+- [ ] POST /api/trips/driver/:tripId/stops/:stopId/arrive (routes/tripRoutes.js)
+- [ ] POST /api/trips/driver/:tripId/stops/:stopId/depart (routes/tripRoutes.js)

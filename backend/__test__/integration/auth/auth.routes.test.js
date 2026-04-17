@@ -1,27 +1,22 @@
 import request from 'supertest';
-import app from '../../core/app.js';
-import mongoose from 'mongoose';
-
-
-let db;
-beforeAll(async () => {
-  db = await mongoose.connect(process.env.MONGO_URI);
-});
-
-afterEach(async () => {
-  // clean database after each test
-  const collections = await mongoose.connection.db.collections();
-  for (const collection of collections) {
-    await collection.deleteMany({});
-  }
-});
-
-afterAll(async () => {
-  await mongoose.connection.close();
-});
+import app from '../../../core/app.js';
+import { clearInMemoryDb, connectInMemoryDb, disconnectInMemoryDb } from '../../utils/inMemoryDb.js';
 
 describe('Auth Routes', () => {
   const base = '/api/auth';
+
+  beforeAll(async () => {
+    await connectInMemoryDb();
+  });
+
+  afterEach(async () => {
+    await clearInMemoryDb();
+  });
+
+  afterAll(async () => {
+    await disconnectInMemoryDb();
+  });
+
   it('returns 400 on missing login fields', async () => {
     const res = await request(app).post(base + '/login').send({});
     expect(res.status).toBe(400);

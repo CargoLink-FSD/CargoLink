@@ -8,11 +8,6 @@ process.env.PORT = 5001;
 process.env.RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_test_key';
 process.env.RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'rzp_test_secret';
 
-const workerId = process.env.JEST_WORKER_ID || '1';
-if (!process.env.MONGO_URI) {
-  process.env.MONGO_URI = `mongodb://127.0.0.1:27017/testdb_${workerId}`;
-}
-
 
 
 // Global test timeout
@@ -24,7 +19,7 @@ jest.setTimeout(30000);
 misc.logger.debug = jest.fn();
 misc.logger.info = jest.fn();
 misc.logger.warn = jest.fn();
-// misc.logger.error = jest.fn();
+misc.logger.error = jest.fn();
 
 
 // Clear all mocks before each test

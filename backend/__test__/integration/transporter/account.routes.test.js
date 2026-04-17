@@ -1,35 +1,30 @@
 import request from 'supertest';
-import mongoose from 'mongoose';
-import app from '../../core/app.js';
-import Transporter from '../../models/transporter.js';
-import Fleet from '../../models/fleet.js';
-import { createMockTransporterInput, createMockVehicle } from '../factories/transporter.factory.js';
+import app from '../../../core/app.js';
+import Transporter from '../../../models/transporter.js';
+import Fleet from '../../../models/fleet.js';
+import { createMockTransporterInput, createMockVehicle } from '../../factories/transporter.factory.js';
+import { clearInMemoryDb, connectInMemoryDb, disconnectInMemoryDb } from '../../utils/inMemoryDb.js';
 
 let authToken;
 let transporterId;
 
 beforeAll(async () => {
-  await mongoose.connect(process.env.MONGO_URI);
+  await connectInMemoryDb();
 });
 
 afterEach(async () => {
-  // clean database after each test
-  const collections = await mongoose.connection.db.collections();
-  for (const collection of collections) {
-    await collection.deleteMany({});
-  }
+  await clearInMemoryDb();
 });
 
 afterAll(async () => {
-  await mongoose.connection.close();
+  await disconnectInMemoryDb();
 });
 
 describe('Transporter Routes Tests', () => {
-
   describe('POST /api/transporters/register', () => {
     it('should register a new transporter successfully', async () => {
       const transporterData = createMockTransporterInput();
-      transporterData.vehicles = [createMockVehicle()]
+      transporterData.vehicles = [createMockVehicle()];
 
       const response = await request(app)
         .post('/api/transporters/register')
@@ -42,7 +37,6 @@ describe('Transporter Routes Tests', () => {
       expect(response.body.data).toHaveProperty('refreshToken');
       expect(response.body.message).toBe('Transporter registered successfully');
 
-      // Verify transporter exists in database
       const transporter = await Transporter.findOne({ email: transporterData.email });
       expect(transporter).toBeTruthy();
       expect(transporter.email).toBe(transporterData.email);
@@ -59,7 +53,6 @@ describe('Transporter Routes Tests', () => {
 
       expect(response.body).toHaveProperty('success', true);
 
-      // Verify vehicles stored in separate Fleet collection
       const transporter = await Transporter.findOne({ email: transporterData.email });
       const fleet = await Fleet.find({ transporter_id: transporter._id });
       expect(fleet).toHaveLength(1);
@@ -77,7 +70,6 @@ describe('Transporter Routes Tests', () => {
 
       expect(response.body).toHaveProperty('success', true);
 
-      // Verify vehicles stored in separate Fleet collection
       const transporter = await Transporter.findOne({ email: transporterData.email });
       const fleet = await Fleet.find({ transporter_id: transporter._id });
       expect(fleet).toHaveLength(2);
@@ -96,7 +88,6 @@ describe('Transporter Routes Tests', () => {
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Input Validation failed');
 
-      // verify no change in database
       const transporter = await Transporter.findOne({ email: transporterData.email });
       expect(transporter).toBeNull();
     });
@@ -105,12 +96,10 @@ describe('Transporter Routes Tests', () => {
       const transporterData = createMockTransporterInput();
       transporterData.vehicles = [createMockVehicle()];
 
-      // Register first transporter
       await request(app)
         .post('/api/transporters/register')
         .send(transporterData);
 
-      // Try to register with same email
       const response = await request(app)
         .post('/api/transporters/register')
         .send(transporterData)
@@ -143,21 +132,19 @@ describe('Transporter Routes Tests', () => {
       const transporterData = createMockTransporterInput();
       transporterData.vehicles = [createMockVehicle()];
 
-      const response = await request(app)
+      await request(app)
         .post('/api/transporters/register')
         .send(transporterData)
         .expect(201);
 
-
       const transporter = await Transporter.findOne({ email: transporterData.email });
       expect(transporter.password).not.toBe(transporterData.password);
-      expect(transporter.password).toHaveLength(60); // bcrypt hash length
+      expect(transporter.password).toHaveLength(60);
     });
   });
 
   describe('Authenticated Routes', () => {
     beforeEach(async () => {
-      // Register and login a transporter for authenticated tests
       const transporterData = createMockTransporterInput();
       transporterData.vehicles = [createMockVehicle()];
 
@@ -168,20 +155,19 @@ describe('Transporter Routes Tests', () => {
       const createdTransporter = await Transporter.findOne({ email: transporterData.email });
       transporterId = createdTransporter?._id?.toString();
 
-      // Mock login to get token (adjust based on your auth implementation)
       const loginResponse = await request(app)
         .post('/api/auth/login')
         .send({
           email: transporterData.email,
           password: transporterData.password,
-          role: 'transporter'
+          role: 'transporter',
         });
 
       authToken = loginResponse.body.data.accessToken;
     });
 
     describe('GET /api/transporters/profile', () => {
-      it('should return trnapsorters profile', async () => {
+      it('should return transporter profile', async () => {
         const response = await request(app)
           .get('/api/transporters/profile')
           .set('Authorization', `Bearer ${authToken}`)
@@ -207,7 +193,7 @@ describe('Transporter Routes Tests', () => {
       it('should update transporter profile', async () => {
         const updates = {
           name: 'UpdatedName',
-          primary_contact: '9876543210'
+          primary_contact: '9876543210',
         };
 
         const response = await request(app)
@@ -220,7 +206,6 @@ describe('Transporter Routes Tests', () => {
         expect(response.body.data.name).toBe(updates.name);
         expect(response.body.data.primary_contact).toBe(updates.primary_contact);
 
-        // Verify update in database
         const transporter = await Transporter.findById(transporterId);
         expect(transporter.name).toBe(updates.name);
       });
@@ -244,18 +229,16 @@ describe('Transporter Routes Tests', () => {
 
         expect(response.body.success).toBe(false);
 
-        // Verify no update in database
         const transporter = await Transporter.findById(transporterId);
         expect(transporter.email).not.toBe(updates.email);
       });
-
     });
 
     describe('PATCH /api/transporters/password', () => {
       it('should update password successfully', async () => {
         const passwordData = {
           oldPassword: 'Password1',
-          newPassword: 'newPassword123'
+          newPassword: 'newPassword123',
         };
 
         const response = await request(app)

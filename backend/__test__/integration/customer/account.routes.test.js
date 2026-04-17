@@ -1,30 +1,25 @@
 import request from 'supertest';
-import mongoose from 'mongoose';
-import app from '../../core/app.js';
-import Customer from '../../models/customer.js';
-import { createMockCustomerInput, createMockAddress } from '../factories/customer.factory.js';
+import app from '../../../core/app.js';
+import Customer from '../../../models/customer.js';
+import { createMockCustomerInput, createMockAddress } from '../../factories/customer.factory.js';
+import { clearInMemoryDb, connectInMemoryDb, disconnectInMemoryDb } from '../../utils/inMemoryDb.js';
 
 let authToken;
 let customerId;
 
 beforeAll(async () => {
-  await mongoose.connect(process.env.MONGO_URI);
+  await connectInMemoryDb();
 });
 
 afterEach(async () => {
-  // clean database after each test
-  const collections = await mongoose.connection.db.collections();
-  for (const collection of collections) {
-    await collection.deleteMany({});
-  }
+  await clearInMemoryDb();
 });
 
 afterAll(async () => {
-  await mongoose.connection.close();
+  await disconnectInMemoryDb();
 });
 
 describe('Customer Routes Integration Tests', () => {
-
   describe('POST /api/customers/register', () => {
     it('should register a new customer successfully', async () => {
       const customerData = createMockCustomerInput();
@@ -40,7 +35,6 @@ describe('Customer Routes Integration Tests', () => {
       expect(response.body.data).toHaveProperty('refreshToken');
       expect(response.body.message).toBe('Customer registered successfully');
 
-      // Verify customer exists in database
       const customer = await Customer.findOne({ email: customerData.email });
       expect(customer).toBeTruthy();
       expect(customer.email).toBe(customerData.email);
@@ -49,7 +43,7 @@ describe('Customer Routes Integration Tests', () => {
     it('should create customer with address', async () => {
       const customerData = createMockCustomerInput();
 
-      const response = await request(app)
+      await request(app)
         .post('/api/customers/register')
         .send(customerData)
         .expect(201);
@@ -63,7 +57,7 @@ describe('Customer Routes Integration Tests', () => {
     it('should create customer without address', async () => {
       const customerData = createMockCustomerInput({ address: undefined });
 
-      const response = await request(app)
+      await request(app)
         .post('/api/customers/register')
         .send(customerData)
         .expect(201);
@@ -76,20 +70,15 @@ describe('Customer Routes Integration Tests', () => {
     it('should return 409 if email already exists', async () => {
       const customerData = createMockCustomerInput();
 
-      // Register first customer
-      const res1 = await request(app)
+      await request(app)
         .post('/api/customers/register')
         .send(customerData)
         .expect(201);
 
-
-      // Try to register with same email
       const response = await request(app)
         .post('/api/customers/register')
         .send(customerData)
         .expect(409);
-
-
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Key already exists');
@@ -116,20 +105,19 @@ describe('Customer Routes Integration Tests', () => {
     it('should hash password before saving', async () => {
       const customerData = createMockCustomerInput();
 
-      const response = await request(app)
+      await request(app)
         .post('/api/customers/register')
         .send(customerData)
         .expect(201);
 
       const customer = await Customer.findOne({ email: customerData.email });
       expect(customer.password).not.toBe(customerData.password);
-      expect(customer.password).toHaveLength(60); // bcrypt hash length
+      expect(customer.password).toHaveLength(60);
     });
   });
 
   describe('Authenticated Routes', () => {
     beforeEach(async () => {
-      // Register and login a customer for authenticated tests
       const customerData = createMockCustomerInput();
 
       await request(app)
@@ -139,13 +127,12 @@ describe('Customer Routes Integration Tests', () => {
       const createdCustomer = await Customer.findOne({ email: customerData.email });
       customerId = createdCustomer?._id?.toString();
 
-      // Mock login to get token (adjust based on your auth implementation)
       const loginResponse = await request(app)
         .post('/api/auth/login')
         .send({
           email: customerData.email,
           password: customerData.password,
-          role: 'customer'
+          role: 'customer',
         });
 
       authToken = loginResponse.body.data.accessToken;
@@ -177,7 +164,7 @@ describe('Customer Routes Integration Tests', () => {
       it('should update customer profile', async () => {
         const updates = {
           firstName: 'UpdatedName',
-          phone: '9876543210'
+          phone: '9876543210',
         };
 
         const response = await request(app)
@@ -190,7 +177,6 @@ describe('Customer Routes Integration Tests', () => {
         expect(response.body.data.firstName).toBe(updates.firstName);
         expect(response.body.data.phone).toBe(updates.phone);
 
-        // Verify update in database
         const customer = await Customer.findById(customerId);
         expect(customer.firstName).toBe(updates.firstName);
       });
@@ -214,11 +200,9 @@ describe('Customer Routes Integration Tests', () => {
 
         expect(response.body.success).toBe(false);
 
-        // Verify no update in database
         const customer = await Customer.findById(customerId);
         expect(customer.email).not.toBe(updates.email);
       });
-
     });
 
     describe('GET /api/customers/addresses', () => {
@@ -254,7 +238,6 @@ describe('Customer Routes Integration Tests', () => {
         expect(response.body.success).toBe(true);
         expect(response.body.data.addresses).toBeDefined();
 
-        // Verify address was added
         const customer = await Customer.findById(customerId);
         expect(customer.addresses.length).toBeGreaterThan(1);
         expect(customer.addresses.some(addr => addr.address_label === 'Work')).toBe(true);
@@ -271,7 +254,6 @@ describe('Customer Routes Integration Tests', () => {
 
         expect(response.body.success).toBe(true);
 
-        // Verify address was added without extra field
         const customer = await Customer.findById(customerId);
         const addedAddress = customer.addresses.find(addr => addr.address_label === 'Work');
         expect(addedAddress).toBeDefined();
@@ -286,7 +268,6 @@ describe('Customer Routes Integration Tests', () => {
           .expect(400);
       });
 
-
       it('should validate pin code format', async () => {
         const invalidAddress = createMockAddress({ pin: 'invalid' });
 
@@ -300,14 +281,12 @@ describe('Customer Routes Integration Tests', () => {
 
     describe('DELETE /api/customers/addresses/:addressId', () => {
       it('should remove address by index', async () => {
-        // First add multiple addresses
         const address1 = createMockAddress({ address_label: 'Work' });
         await request(app)
           .post('/api/customers/addresses')
           .set('Authorization', `Bearer ${authToken}`)
           .send(address1);
 
-        // Remove first address
         const response = await request(app)
           .delete('/api/customers/addresses/0')
           .set('Authorization', `Bearer ${authToken}`)
@@ -315,7 +294,6 @@ describe('Customer Routes Integration Tests', () => {
 
         expect(response.body.success).toBe(true);
 
-        // Verify address was removed
         const customer = await Customer.findById(customerId);
         expect(customer.addresses.length).toBe(1);
         expect(customer.addresses[0].address_label).toBe('Work');
@@ -347,7 +325,7 @@ describe('Customer Routes Integration Tests', () => {
       it('should update password successfully', async () => {
         const passwordData = {
           oldPassword: 'Password1',
-          newPassword: 'newPassword123'
+          newPassword: 'newPassword123',
         };
 
         const response = await request(app)
