@@ -2,6 +2,7 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { createNoopTestStorage } from './testUploadStorage.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,16 +14,18 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 // Configure storage
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadsDir);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        const ext = path.extname(file.originalname);
-        cb(null, `driver-${file.fieldname}-${uniqueSuffix}${ext}`);
-    },
-});
+const storage = process.env.NODE_ENV === 'test'
+    ? createNoopTestStorage('driver-doc')
+    : multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, uploadsDir);
+        },
+        filename: function (req, file, cb) {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+            const ext = path.extname(file.originalname);
+            cb(null, `driver-${file.fieldname}-${uniqueSuffix}${ext}`);
+        },
+    });
 
 // File filter to accept images and PDFs
 const fileFilter = (req, file, cb) => {

@@ -6,6 +6,16 @@ import { geocodeAddress } from "../utils/osrm.js";
 import orderRepo from "../repositories/orderRepo.js";
 import bidRepo from "../repositories/bidRepo.js";
 import generateQuotePdf from "../utils/generateQuotePdf.js";
+import {
+  acquireDistributedLock,
+  getCachedJson,
+  releaseDistributedLock,
+  setCachedJson,
+} from "../core/cache.js";
+import {
+  buildIdempotencyCacheKey,
+  getRequestIdempotencyKey,
+} from "../utils/idempotency.js";
 
 
 const getUserOrders = async (req, res, next) => {
@@ -275,6 +285,9 @@ const downloadBidQuotePdf = async (req, res, next) => {
 
 
 const acceptBid = async (req, res, next) => {
+  let lockToken = null;
+  let lockKey = null;
+
   try {
     const customerId = req.user.id;
     const orderId = req.params.orderId;
@@ -291,15 +304,57 @@ const acceptBid = async (req, res, next) => {
       );
     }
 
+    const requestIdempotencyKey = getRequestIdempotencyKey(req);
+    const fallbackIdempotencyKey = `${customerId}:${orderId}:${bidId}`;
+    const idempotencyCacheKey = buildIdempotencyCacheKey({
+      scope: 'orders:accept-bid',
+      payload: { customerId, orderId, bidId },
+      requestKey: requestIdempotencyKey,
+      fallbackKey: fallbackIdempotencyKey,
+    });
+
+    if (idempotencyCacheKey) {
+      const cached = await getCachedJson(idempotencyCacheKey);
+      if (cached) {
+        res.setHeader('X-Idempotency-Status', 'REPLAY');
+        return res.status(cached.statusCode || 200).json(cached.payload);
+      }
+    }
+
+    lockKey = `lock:orders:accept-bid:${orderId}`;
+    const lock = await acquireDistributedLock(lockKey, { ttlSeconds: 15 });
+    if (!lock.acquired) {
+      throw new AppError(
+        409,
+        "ConflictError",
+        "This order is currently being assigned. Please try again in a few seconds.",
+        "ERR_BID_ACCEPT_IN_PROGRESS"
+      );
+    }
+    lockToken = lock.token;
+
     await orderService.acceptBid(customerId, orderId, bidId);
 
-    res.status(200).json({
+    const payload = {
       success: true,
       message: "Bid accepted and order assigned successfully"
-    });
+    };
+
+    if (idempotencyCacheKey) {
+      await setCachedJson(idempotencyCacheKey, {
+        statusCode: 200,
+        payload,
+      }, 60 * 60 * 6);
+    }
+
+    res.status(200).json(payload);
 
   } catch (err) {
     next(err);
+  } finally {
+    if (lockKey && lockToken) {
+      await releaseDistributedLock(lockKey, lockToken);
+    }
   }
 };
 
@@ -370,13 +425,40 @@ const submitBid = async (req, res, next) => {
       );
     }
 
+    const requestIdempotencyKey = getRequestIdempotencyKey(req);
+    const fallbackIdempotencyKey = `${transporterId}:${orderId}`;
+    const idempotencyTtlSeconds = requestIdempotencyKey ? 60 * 60 * 6 : 120;
+    const idempotencyCacheKey = buildIdempotencyCacheKey({
+      scope: 'orders:submit-bid',
+      payload: { transporterId, orderId },
+      requestKey: requestIdempotencyKey,
+      fallbackKey: fallbackIdempotencyKey,
+    });
+
+    if (idempotencyCacheKey) {
+      const cached = await getCachedJson(idempotencyCacheKey);
+      if (cached) {
+        res.setHeader('X-Idempotency-Status', 'REPLAY');
+        return res.status(cached.statusCode || 201).json(cached.payload);
+      }
+    }
+
     const bid = await orderService.submitBid(transporterId, orderId, bidAmount, notes, quoteBreakdown);
 
-    res.status(201).json({
+    const payload = {
       success: true,
       data: { bidId: bid._id },
       message: "Bid submitted successfully",
-    });
+    };
+
+    if (idempotencyCacheKey) {
+      await setCachedJson(idempotencyCacheKey, {
+        statusCode: 201,
+        payload,
+      }, idempotencyTtlSeconds);
+    }
+
+    res.status(201).json(payload);
 
   } catch (err) {
     next(err);
