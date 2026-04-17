@@ -23,13 +23,27 @@ steps:
     args: ["ci", "--prefer-offline", "--no-audit"]
     waitFor: ["-"]
 
-  # ── 2: Build frontend ────────────────────────────────────────────────────
+  # ── 2: Fetch frontend secrets ─────────────────────────────────────────────
+  - id: fetch-frontend-secrets
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        CLIENT_ID="$$(gcloud secrets versions access latest --secret=GOOGLE_CLIENT_ID | tr -d '\n')"
+        MAPS_KEY="$$(gcloud secrets versions access latest --secret=GOOGLE_MAPS_API_KEY | tr -d '\n')"
+        echo "" >> frontend/.env
+        echo "VITE_GOOGLE_CLIENT_ID=$${CLIENT_ID}" >> frontend/.env
+        echo "VITE_GOOGLE_MAPS_API_KEY=$${MAPS_KEY}" >> frontend/.env
+        echo "Frontend secrets successfully fetched and appended to .env."
+
+  # ── 3: Build frontend ────────────────────────────────────────────────────
   - id: frontend-build
     name: node:22
     entrypoint: npm
     dir: frontend
     args: ["run", "build"]
-    waitFor: ["frontend-install"]
+    waitFor: ["frontend-install", "fetch-frontend-secrets"]
 
   # ── 3: Verify MONGO_URI secret is accessible ─────────────────────────────
   - id: verify-secret
