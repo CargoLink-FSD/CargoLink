@@ -48,6 +48,9 @@ test-results/
 backend/logs/
 *.log
 
+# Backend benchmark results
+backend/benchmark-results/
+
 # Logs (anywhere)
 logs/
 **/logs/
@@ -59,3 +62,4 @@ uploads/
 # Common backend upload locations
 backend/uploads/
 backend/public/uploads/
+

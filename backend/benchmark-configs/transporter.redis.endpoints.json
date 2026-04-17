@@ -1,0 +1,74 @@
+[
+    {
+        "name": "Transporter Dashboard",
+        "method": "GET",
+        "path": "/api/transporters/dashboard-stats",
+        "auth": true
+    },
+    {
+        "name": "Transporter Profile",
+        "method": "GET",
+        "path": "/api/transporters/profile",
+        "auth": true
+    },
+    {
+        "name": "Transporter Fleet",
+        "method": "GET",
+        "path": "/api/transporters/fleet",
+        "auth": true
+    },
+    {
+        "name": "Transporter Drivers",
+        "method": "GET",
+        "path": "/api/transporters/drivers",
+        "auth": true
+    },
+    {
+        "name": "Transporter Driver Requests",
+        "method": "GET",
+        "path": "/api/transporters/driver-requests?page=1&limit=20",
+        "auth": true
+    },
+    {
+        "name": "Transporter Available Orders",
+        "method": "GET",
+        "path": "/api/orders/available?page=1&limit=20",
+        "auth": true
+    },
+    {
+        "name": "Transporter My Bids",
+        "method": "GET",
+        "path": "/api/orders/my-bids?page=1&limit=20",
+        "auth": true
+    },
+    {
+        "name": "Transporter Trips",
+        "method": "GET",
+        "path": "/api/trips?page=1&limit=20",
+        "auth": true
+    },
+    {
+        "name": "Transporter Assignable Orders",
+        "method": "GET",
+        "path": "/api/trips/resources/assignable-orders",
+        "auth": true
+    },
+    {
+        "name": "Transporter Available Drivers",
+        "method": "GET",
+        "path": "/api/trips/resources/available-drivers",
+        "auth": true
+    },
+    {
+        "name": "Transporter Available Vehicles",
+        "method": "GET",
+        "path": "/api/trips/resources/available-vehicles",
+        "auth": true
+    },
+    {
+        "name": "Transporter Payment History",
+        "method": "GET",
+        "path": "/api/payments/history?page=1&limit=20",
+        "auth": true
+    }
+]

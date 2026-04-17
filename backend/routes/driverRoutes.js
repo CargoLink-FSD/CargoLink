@@ -43,7 +43,7 @@ driverRouter.post("/schedule/block", validate(validationSchema.scheduleBlock), i
 driverRouter.delete("/schedule/block/:blockId", invalidateCacheOnSuccess(['drivers', 'trips']), driverController.removeScheduleBlock);
 
 // Join Transporter
-driverRouter.get("/transporters", cacheResponse({ domain: 'drivers', ttlSeconds: 20 }), driverController.getTransporters);
+driverRouter.get("/transporters", cacheResponse({ domain: 'drivers', ttlSeconds: 20, includeUser: false }), driverController.getTransporters);
 driverRouter.post("/apply/:transporterId", invalidateCacheOnSuccess(['drivers', 'transporters', 'admin']), driverController.applyToTransporter);
 driverRouter.get("/applications", cacheResponse({ domain: 'drivers', ttlSeconds: 15 }), driverController.getApplicationStatus);
 driverRouter.delete("/application/:applicationId", invalidateCacheOnSuccess(['drivers', 'transporters', 'admin']), driverController.withdrawApplication);

@@ -49,6 +49,18 @@ const withQuery = (url, params) => {
   return parsed.toString();
 };
 
+const stripBom = (value) => value.replace(/^\uFEFF/, '');
+
+const fetchWithTimeout = async (url, options = {}, timeoutMs = 15000) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
 const runPhase = async ({ endpoint, baseUrl, token, runs, warmup, phase }) => {
   const method = (endpoint.method || 'GET').toUpperCase();
   const samples = [];
@@ -70,19 +82,31 @@ const runPhase = async ({ endpoint, baseUrl, token, runs, warmup, phase }) => {
     }
 
     const start = performance.now();
-    const response = await fetch(targetUrl, {
-      method,
-      headers,
-      body: endpoint.body ? JSON.stringify(endpoint.body) : undefined,
-    });
-    const end = performance.now();
-
-    if (shouldCapture) {
-      samples.push({
-        ms: end - start,
-        status: response.status,
-        ok: response.ok,
+    try {
+      const response = await fetchWithTimeout(targetUrl, {
+        method,
+        headers,
+        body: endpoint.body ? JSON.stringify(endpoint.body) : undefined,
       });
+      const end = performance.now();
+
+      if (shouldCapture) {
+        samples.push({
+          ms: end - start,
+          status: response.status,
+          ok: response.ok,
+        });
+      }
+    } catch (error) {
+      const end = performance.now();
+      if (shouldCapture) {
+        samples.push({
+          ms: end - start,
+          status: 0,
+          ok: false,
+          error: error?.message || 'fetch failed',
+        });
+      }
     }
   }
 
@@ -112,7 +136,7 @@ const main = async () => {
   const args = parseArgs(process.argv.slice(2));
 
   const baseUrl = args.baseUrl || process.env.BENCH_BASE_URL || 'http://localhost:3000';
-  const token = args.token || process.env.BENCH_TOKEN || '';
+  const token = args.token || process.env.BENCH_TOKEN || 'YOUR_JWT';
   const runs = Number.parseInt(args.runs || process.env.BENCH_RUNS || '30', 10);
   const warmup = Number.parseInt(args.warmup || process.env.BENCH_WARMUP || '5', 10);
   const outDir = args.outDir || process.env.BENCH_OUT_DIR || './benchmark-results';
@@ -121,7 +145,7 @@ const main = async () => {
   if (args.config) {
     const resolved = path.resolve(args.config);
     const raw = await fs.readFile(resolved, 'utf8');
-    endpoints = JSON.parse(raw);
+    endpoints = JSON.parse(stripBom(raw));
   }
 
   const results = [];

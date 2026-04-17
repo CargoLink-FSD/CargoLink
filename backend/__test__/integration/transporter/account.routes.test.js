@@ -1,0 +1,279 @@
+import request from 'supertest';
+import app from '../../../core/app.js';
+import Transporter from '../../../models/transporter.js';
+import Fleet from '../../../models/fleet.js';
+import { createMockTransporterInput, createMockVehicle } from '../../factories/transporter.factory.js';
+import { clearInMemoryDb, connectInMemoryDb, disconnectInMemoryDb } from '../../utils/inMemoryDb.js';
+
+let authToken;
+let transporterId;
+
+beforeAll(async () => {
+  await connectInMemoryDb();
+});
+
+afterEach(async () => {
+  await clearInMemoryDb();
+});
+
+afterAll(async () => {
+  await disconnectInMemoryDb();
+});
+
+describe('Transporter Routes Tests', () => {
+  describe('POST /api/transporters/register', () => {
+    it('should register a new transporter successfully', async () => {
+      const transporterData = createMockTransporterInput();
+      transporterData.vehicles = [createMockVehicle()];
+
+      const response = await request(app)
+        .post('/api/transporters/register')
+        .send(transporterData)
+        .expect(201);
+
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('data');
+      expect(response.body.data).toHaveProperty('accessToken');
+      expect(response.body.data).toHaveProperty('refreshToken');
+      expect(response.body.message).toBe('Transporter registered successfully');
+
+      const transporter = await Transporter.findOne({ email: transporterData.email });
+      expect(transporter).toBeTruthy();
+      expect(transporter.email).toBe(transporterData.email);
+    });
+
+    it('should add transporters vehicle', async () => {
+      const transporterData = createMockTransporterInput();
+      transporterData.vehicles = [createMockVehicle()];
+
+      const response = await request(app)
+        .post('/api/transporters/register')
+        .send(transporterData)
+        .expect(201);
+
+      expect(response.body).toHaveProperty('success', true);
+
+      const transporter = await Transporter.findOne({ email: transporterData.email });
+      const fleet = await Fleet.find({ transporter_id: transporter._id });
+      expect(fleet).toHaveLength(1);
+      expect(fleet[0].name).toBe('truck 1');
+    });
+
+    it('should create transporter with multiple vehicles', async () => {
+      const transporterData = createMockTransporterInput();
+      transporterData.vehicles = [createMockVehicle(), createMockVehicle({ name: 'truck 2', registration: 'TN01B2345' })];
+
+      const response = await request(app)
+        .post('/api/transporters/register')
+        .send(transporterData)
+        .expect(201);
+
+      expect(response.body).toHaveProperty('success', true);
+
+      const transporter = await Transporter.findOne({ email: transporterData.email });
+      const fleet = await Fleet.find({ transporter_id: transporter._id });
+      expect(fleet).toHaveLength(2);
+      expect(fleet[0].name).toBe('truck 1');
+      expect(fleet[1].name).toBe('truck 2');
+    });
+
+    it('should reject transporters without vehicles', async () => {
+      const transporterData = createMockTransporterInput();
+
+      const response = await request(app)
+        .post('/api/transporters/register')
+        .send(transporterData)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Input Validation failed');
+
+      const transporter = await Transporter.findOne({ email: transporterData.email });
+      expect(transporter).toBeNull();
+    });
+
+    it('should return 409 if email already exists', async () => {
+      const transporterData = createMockTransporterInput();
+      transporterData.vehicles = [createMockVehicle()];
+
+      await request(app)
+        .post('/api/transporters/register')
+        .send(transporterData);
+
+      const response = await request(app)
+        .post('/api/transporters/register')
+        .send(transporterData)
+        .expect(409);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Key already exists');
+    });
+
+    it('should return 400 for missing required fields', async () => {
+      const response = await request(app)
+        .post('/api/transporters/register')
+        .send({ email: 'test@example.com' })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should return 400 for invalid email format', async () => {
+      const transporterData = createMockTransporterInput({ email: 'invalid-email' });
+      transporterData.vehicles = [createMockVehicle()];
+
+      await request(app)
+        .post('/api/transporters/register')
+        .send(transporterData)
+        .expect(400);
+    });
+
+    it('should hash password before saving', async () => {
+      const transporterData = createMockTransporterInput();
+      transporterData.vehicles = [createMockVehicle()];
+
+      await request(app)
+        .post('/api/transporters/register')
+        .send(transporterData)
+        .expect(201);
+
+      const transporter = await Transporter.findOne({ email: transporterData.email });
+      expect(transporter.password).not.toBe(transporterData.password);
+      expect(transporter.password).toHaveLength(60);
+    });
+  });
+
+  describe('Authenticated Routes', () => {
+    beforeEach(async () => {
+      const transporterData = createMockTransporterInput();
+      transporterData.vehicles = [createMockVehicle()];
+
+      await request(app)
+        .post('/api/transporters/register')
+        .send(transporterData);
+
+      const createdTransporter = await Transporter.findOne({ email: transporterData.email });
+      transporterId = createdTransporter?._id?.toString();
+
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: transporterData.email,
+          password: transporterData.password,
+          role: 'transporter',
+        });
+
+      authToken = loginResponse.body.data.accessToken;
+    });
+
+    describe('GET /api/transporters/profile', () => {
+      it('should return transporter profile', async () => {
+        const response = await request(app)
+          .get('/api/transporters/profile')
+          .set('Authorization', `Bearer ${authToken}`)
+          .expect(200);
+
+        expect(response.body.success).toBe(true);
+        expect(response.body.data).toHaveProperty('companyName');
+        expect(response.body.data).toHaveProperty('email');
+        expect(response.body.data).toHaveProperty('orderCount');
+        expect(response.body.data).toHaveProperty('profileImage');
+        expect(response.body.data).toHaveProperty('fleetCount');
+        expect(response.body.data).not.toHaveProperty('password');
+      });
+
+      it('should return 401 without authentication', async () => {
+        await request(app)
+          .get('/api/transporters/profile')
+          .expect(401);
+      });
+    });
+
+    describe('PUT /api/transporters/profile', () => {
+      it('should update transporter profile', async () => {
+        const updates = {
+          name: 'UpdatedName',
+          primary_contact: '9876543210',
+        };
+
+        const response = await request(app)
+          .put('/api/transporters/profile')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send(updates)
+          .expect(200);
+
+        expect(response.body.success).toBe(true);
+        expect(response.body.data.name).toBe(updates.name);
+        expect(response.body.data.primary_contact).toBe(updates.primary_contact);
+
+        const transporter = await Transporter.findById(transporterId);
+        expect(transporter.name).toBe(updates.name);
+      });
+
+      it('should return 400 for empty update', async () => {
+        await request(app)
+          .put('/api/transporters/profile')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({})
+          .expect(400);
+      });
+
+      it('should validate email format on update', async () => {
+        const updates = { email: 'invalid-email' };
+
+        const response = await request(app)
+          .put('/api/transporters/profile')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send(updates)
+          .expect(400);
+
+        expect(response.body.success).toBe(false);
+
+        const transporter = await Transporter.findById(transporterId);
+        expect(transporter.email).not.toBe(updates.email);
+      });
+    });
+
+    describe('PATCH /api/transporters/password', () => {
+      it('should update password successfully', async () => {
+        const passwordData = {
+          oldPassword: 'Password1',
+          newPassword: 'newPassword123',
+        };
+
+        const response = await request(app)
+          .patch('/api/transporters/password')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send(passwordData)
+          .expect(200);
+
+        expect(response.body.success).toBe(true);
+        expect(response.body.message).toBe('Password changed successfully');
+      });
+
+      it('should return 400 for missing old password', async () => {
+        await request(app)
+          .patch('/api/transporters/password')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ newPassword: 'newPassword123' })
+          .expect(400);
+      });
+
+      it('should return 401 for incorrect password', async () => {
+        await request(app)
+          .patch('/api/transporters/password')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ oldPassword: 'Password3', newPassword: 'newPassword123' })
+          .expect(401);
+      });
+
+      it('should return 400 for weak new password', async () => {
+        await request(app)
+          .patch('/api/transporters/password')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ oldPassword: 'Password1', newPassword: '123' })
+          .expect(400);
+      });
+    });
+  });
+});
