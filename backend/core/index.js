@@ -15,7 +15,15 @@ const parseNumber = (value, fallback) => {
 
 export const PORT = process.env.PORT || 3000;
 export const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/CargoLink_v2';
-export const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+const buildRedisUrl = () => {
+  if (process.env.REDIS_URL) return process.env.REDIS_URL;
+  if (process.env.REDIS_HOST) {
+    const port = process.env.REDIS_PORT || 6379;
+    return `redis://${process.env.REDIS_HOST}:${port}`;
+  }
+  return 'redis://127.0.0.1:6379';
+};
+export const REDIS_URL = buildRedisUrl();
 export const CACHE_ENABLED = parseBool(process.env.CACHE_ENABLED, true);
 export const CACHE_PREFIX = process.env.CACHE_PREFIX || `cargolink:${process.env.NODE_ENV || 'development'}`;
 export const CACHE_VERSION = process.env.CACHE_VERSION || 'v1';

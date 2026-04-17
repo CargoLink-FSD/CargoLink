@@ -97,7 +97,7 @@ const placeOrder = async (req, res, next) => {
 
     // If a cargo photo was uploaded, add the path to orderData
     if (req.file) {
-      orderData.cargo_photo = `/uploads/cargo-photos/${req.file.filename}`;
+      orderData.cargo_photo = req.file.publicUrl || `/uploads/cargo-photos/${req.file.filename}`;
     }
 
     const order = await orderService.placeOrder(orderData);

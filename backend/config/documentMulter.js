@@ -1,21 +1,9 @@
 import multer from 'multer';
 import path from 'path';
-import { ensureUploadSubdir } from './uploadPaths.js';
 
-const uploadsDir = ensureUploadSubdir('transporter-docs');
-
-// Configure storage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsDir);
-  },
-  filename: function (req, file, cb) {
-    // Generate unique filename: doc-{fieldname}-{timestamp}-{random}.{ext}
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, `doc-${file.fieldname}-${uniqueSuffix}${ext}`);
-  },
-});
+// Use in-memory storage — files are buffered and then uploaded to GCS
+// by the gcsUpload middleware (or kept in memory for local dev).
+const storage = multer.memoryStorage();
 
 // File filter to accept images and PDFs
 const fileFilter = (req, file, cb) => {

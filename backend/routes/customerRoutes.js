@@ -4,6 +4,7 @@ import { cacheResponse, invalidateCacheOnSuccess } from "../middlewares/cache.js
 import { validate, validationSchema } from "../middlewares/validator.js";
 import customerController from "../controllers/customerController.js";
 import profileUpload from "../config/profileMulter.js";
+import gcsUpload from "../middlewares/gcsUpload.js";
 
 const customerRouter = Router();
 
@@ -18,7 +19,7 @@ customerRouter.get("/dashboard-stats", cacheResponse({ domain: 'customer', ttlSe
 
 // Profile
 customerRouter.get("/profile", cacheResponse({ domain: 'customer', ttlSeconds: 20 }), customerController.getCustomerProfile); // Get profile
-customerRouter.put("/profile", profileUpload.single('profilePicture'), validate(validationSchema.updateCustomer), invalidateCacheOnSuccess(['customer', 'orders', 'admin']), customerController.updateCustomerProfile); // Update profile
+customerRouter.put("/profile", profileUpload.single('profilePicture'), gcsUpload('profile-pictures'), validate(validationSchema.updateCustomer), invalidateCacheOnSuccess(['customer', 'orders', 'admin']), customerController.updateCustomerProfile); // Update profile
 customerRouter.delete("/profile", invalidateCacheOnSuccess(['customer', 'orders', 'admin']), customerController.deleteCustomer); // Soft delete
 customerRouter.patch("/password", validate(validationSchema.password), invalidateCacheOnSuccess(['customer']), customerController.updatePassword); // Change password
 

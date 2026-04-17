@@ -1,3 +1,14 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# CargoLink — Cloud Build CI/CD
+# Trigger: Push to main branch
+#
+# Pipeline:
+#   1. Build & push backend Docker image → Artifact Registry
+#   2. Deploy backend to Cloud Run (asia-south1)
+#   3. Build frontend (Vite) → deploy to App Engine (frontend service)
+#   4. Update dispatch rules
+# ═══════════════════════════════════════════════════════════════════════════════
+
 timeout: 1200s
 
 options:
@@ -5,17 +16,109 @@ options:
   substitution_option: ALLOW_LOOSE
 
 substitutions:
-  _MONGO_URI_SECRET_NAME: MONGO_URI
+  _REGION: asia-south1
+  _BACKEND_IMAGE: "asia-south1-docker.pkg.dev/${PROJECT_ID}/cargolink-docker/cargolink-backend"
+  _CLOUD_RUN_SERVICE: cargolink-backend
+  _GCS_BUCKET: cargolink-uploads-489712
+  _VPC_CONNECTOR: cargolink-vpc
+  _REDIS_HOST: ""   # Filled at deploy time via Cloud Run env vars
 
 steps:
-  # ── 0: Install backend deps ──────────────────────────────────────────────
-  - id: backend-install
-    name: node:22
-    entrypoint: npm
+  # ── 1: Build backend Docker image ──────────────────────────────────────────
+  - id: build-backend
+    name: gcr.io/cloud-builders/docker
     dir: backend
-    args: ["ci", "--prefer-offline", "--no-audit"]
+    args:
+      - build
+      - -t
+      - "${_BACKEND_IMAGE}:${SHORT_SHA}"
+      - -t
+      - "${_BACKEND_IMAGE}:latest"
+      - .
 
-  # ── 1: Install frontend deps (parallel with backend) ────────────────────
+  # ── 2: Push backend image to Artifact Registry ─────────────────────────────
+  - id: push-backend
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - "${_BACKEND_IMAGE}"
+    waitFor: ["build-backend"]
+
+  # ── 3: Fetch Redis IP for Cloud Run deployment ─────────────────────────────
+  - id: fetch-redis-ip
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    waitFor: ["-"]
+    args:
+      - -ceu
+      - |
+        REDIS_IP=$$(gcloud redis instances describe cargolink-redis \
+          --region=${_REGION} --format="get(host)" 2>/dev/null || echo "")
+        echo -n "$${REDIS_IP}" > /workspace/.redis-ip
+        if [ -n "$${REDIS_IP}" ]; then
+          echo "Redis IP: $${REDIS_IP}"
+        else
+          echo "WARNING: No Redis instance found. Cache will be disabled."
+        fi
+
+  # ── 4: Deploy backend to Cloud Run ─────────────────────────────────────────
+  - id: deploy-backend
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    waitFor: ["push-backend", "fetch-redis-ip"]
+    args:
+      - -ceu
+      - |
+        REDIS_IP=$$(cat /workspace/.redis-ip)
+
+        # Build env vars string
+        ENV_VARS="NODE_ENV=production"
+        ENV_VARS="$${ENV_VARS},CACHE_ENABLED=true"
+        ENV_VARS="$${ENV_VARS},GCS_BUCKET=${_GCS_BUCKET}"
+        ENV_VARS="$${ENV_VARS},CORS_ALLOWED_ORIGINS=https://cargolink.muthuraja.tech,https://cargolink-489712.el.r.appspot.com,https://frontend-dot-cargolink-489712.el.r.appspot.com"
+
+        # Add Redis host if available
+        if [ -n "$${REDIS_IP}" ]; then
+          ENV_VARS="$${ENV_VARS},REDIS_HOST=$${REDIS_IP},REDIS_PORT=6379"
+        else
+          ENV_VARS="$${ENV_VARS},CACHE_ENABLED=false"
+        fi
+
+        # Deploy command
+        gcloud run deploy ${_CLOUD_RUN_SERVICE} \
+          --image "${_BACKEND_IMAGE}:${SHORT_SHA}" \
+          --platform managed \
+          --region ${_REGION} \
+          --allow-unauthenticated \
+          --port 8080 \
+          --vpc-connector ${_VPC_CONNECTOR} \
+          --set-env-vars "$${ENV_VARS}" \
+          --update-secrets "\
+        MONGO_URI=MONGO_URI:latest,\
+        JWT_ACCESS_SECRET=JWT_ACCESS_SECRET:latest,\
+        JWT_REFRESH_SECRET=JWT_REFRESH_SECRET:latest,\
+        GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,\
+        ADMIN_EMAIL=ADMIN_EMAIL:latest,\
+        ADMIN_PASSWORD=ADMIN_PASSWORD:latest,\
+        RAZORPAY_KEY_ID=RAZORPAY_KEY_ID:latest,\
+        RAZORPAY_KEY_SECRET=RAZORPAY_KEY_SECRET:latest,\
+        GOOGLE_MAPS_API_KEY=GOOGLE_MAPS_API_KEY:latest" \
+          --memory 512Mi \
+          --cpu 1 \
+          --min-instances 0 \
+          --max-instances 5 \
+          --quiet
+
+        # Print the Cloud Run URL
+        URL=$$(gcloud run services describe ${_CLOUD_RUN_SERVICE} \
+          --region=${_REGION} --format="get(status.url)")
+        echo "========================================="
+        echo "  Backend deployed: $${URL}"
+        echo "========================================="
+        echo -n "$${URL}" > /workspace/.backend-url
+
+  # ── 5: Install frontend deps ───────────────────────────────────────────────
   - id: frontend-install
     name: node:22
     entrypoint: npm
@@ -23,10 +126,11 @@ steps:
     args: ["ci", "--prefer-offline", "--no-audit"]
     waitFor: ["-"]
 
-  # ── 2: Fetch frontend secrets ─────────────────────────────────────────────
+  # ── 6: Fetch frontend secrets ──────────────────────────────────────────────
   - id: fetch-frontend-secrets
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
+    waitFor: ["-"]
     args:
       - -ceu
       - |
@@ -35,9 +139,9 @@ steps:
         echo "" >> frontend/.env
         echo "VITE_GOOGLE_CLIENT_ID=$${CLIENT_ID}" >> frontend/.env
         echo "VITE_GOOGLE_MAPS_API_KEY=$${MAPS_KEY}" >> frontend/.env
-        echo "Frontend secrets successfully fetched and appended to .env."
+        echo "Frontend secrets fetched."
 
-  # ── 3: Build frontend ────────────────────────────────────────────────────
+  # ── 7: Build frontend ─────────────────────────────────────────────────────
   - id: frontend-build
     name: node:22
     entrypoint: npm
@@ -45,72 +149,34 @@ steps:
     args: ["run", "build"]
     waitFor: ["frontend-install", "fetch-frontend-secrets"]
 
-  # ── 3: Verify MONGO_URI secret is accessible ─────────────────────────────
-  - id: verify-secret
+  # ── 8: Deploy frontend to App Engine ───────────────────────────────────────
+  - id: deploy-frontend
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
-    waitFor: ["backend-install", "frontend-build"]
-    args:
-      - -ceu
-      - |
-        gcloud secrets versions access latest --secret="${_MONGO_URI_SECRET_NAME}" > /dev/null
-        echo "Secret ${_MONGO_URI_SECRET_NAME} is accessible."
-
-  # ── 4: Compute short version ID from git SHA ─────────────────────────────
-  - id: compute-version
-    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    entrypoint: bash
-    waitFor: ["verify-secret"]
+    waitFor: ["frontend-build"]
     args:
       - -ceu
       - |
         VERSION="cl-${SHORT_SHA}"
-        echo -n "$${VERSION}" > /workspace/.gae-version
-        echo "Version: $${VERSION}"
-
-  # ── 5 & 6: Deploy backend + frontend in parallel (no traffic yet) ────────
-  - id: deploy-backend
-    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    entrypoint: bash
-    waitFor: ["compute-version"]
-    args:
-      - -ceu
-      - |
-        VERSION="$(cat /workspace/.gae-version)"
-        gcloud app deploy backend/app.yaml --version="$${VERSION}" --no-promote --quiet
-
-  - id: deploy-frontend
-    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    entrypoint: bash
-    waitFor: ["compute-version"]
-    args:
-      - -ceu
-      - |
-        VERSION="$(cat /workspace/.gae-version)"
         gcloud app deploy frontend/app.yaml --version="$${VERSION}" --no-promote --quiet
 
-  # ── 7: Deploy dispatch rules ─────────────────────────────────────────────
-  - id: deploy-dispatch
+  # ── 9: Promote frontend traffic ────────────────────────────────────────────
+  - id: promote-frontend
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
-    waitFor: ["deploy-backend", "deploy-frontend"]
+    waitFor: ["deploy-frontend", "deploy-backend"]
     args:
       - -ceu
       - |
-        gcloud app deploy dispatch.yaml --quiet
-
-  # ── 8: Promote 100% traffic to the new version ───────────────────────────
-  - id: promote-traffic
-    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    entrypoint: bash
-    waitFor: ["deploy-dispatch"]
-    args:
-      - -ceu
-      - |
-        VERSION="$(cat /workspace/.gae-version)"
-        gcloud app services set-traffic default  --splits "$${VERSION}=1" --quiet
+        VERSION="cl-${SHORT_SHA}"
         gcloud app services set-traffic frontend --splits "$${VERSION}=1" --quiet
+        BACKEND_URL=$$(cat /workspace/.backend-url || echo "N/A")
         echo "========================================"
         echo "  SUCCESS — version: $${VERSION}"
-        echo "  URL: https://cargolink-489712.el.r.appspot.com"
+        echo "  Backend:  $${BACKEND_URL}"
+        echo "  Frontend: https://cargolink.muthuraja.tech"
         echo "========================================"
+
+images:
+  - "${_BACKEND_IMAGE}:${SHORT_SHA}"
+  - "${_BACKEND_IMAGE}:latest"

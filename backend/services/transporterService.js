@@ -689,7 +689,7 @@ const uploadDocuments = async (transporterId, files) => {
   // Process pan_card
   if (files.pan_card && files.pan_card[0]) {
     docData['documents.pan_card'] = {
-      url: `/uploads/transporter-docs/${files.pan_card[0].filename}`,
+      url: files.pan_card[0].publicUrl || `/uploads/transporter-docs/${files.pan_card[0].filename}`,
       uploadedAt: new Date(),
       autoVerified: true,
       adminStatus: 'pending',
@@ -699,7 +699,7 @@ const uploadDocuments = async (transporterId, files) => {
   // Process driving_license
   if (files.driving_license && files.driving_license[0]) {
     docData['documents.driving_license'] = {
-      url: `/uploads/transporter-docs/${files.driving_license[0].filename}`,
+      url: files.driving_license[0].publicUrl || `/uploads/transporter-docs/${files.driving_license[0].filename}`,
       uploadedAt: new Date(),
       autoVerified: true,
       adminStatus: 'pending',
@@ -712,7 +712,7 @@ const uploadDocuments = async (transporterId, files) => {
   for (let i = 0; i < fleet.length; i++) {
     const fieldName = `vehicle_rc_${i}`;
     if (files[fieldName] && files[fieldName][0]) {
-      const rcUrl = `/uploads/transporter-docs/${files[fieldName][0].filename}`;
+      const rcUrl = files[fieldName][0].publicUrl || `/uploads/transporter-docs/${files[fieldName][0].filename}`;
       vehicleRcs.push({
         url: rcUrl,
         uploadedAt: new Date(),
@@ -738,7 +738,7 @@ const uploadVehicleRc = async (transporterId, vehicleId, file) => {
   if (!file) {
     throw new AppError(400, 'ValidationError', 'RC file is required', 'ERR_VALIDATION');
   }
-  const rcUrl = `/uploads/transporter-docs/${file.filename}`;
+  const rcUrl = file.publicUrl || `/uploads/transporter-docs/${file.filename}`;
   const result = await transporterRepo.uploadVehicleRc(transporterId, vehicleId, rcUrl);
   if (!result) {
     throw new AppError(404, 'NotFoundError', 'Vehicle not found', 'ERR_NOT_FOUND');

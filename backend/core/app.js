@@ -142,8 +142,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
 
-// Serve uploaded files statically
-app.use('/uploads', express.static(uploadsRoot));
+// Serve uploaded files statically (local dev only — on Cloud Run files are in GCS)
+if (!process.env.GCS_BUCKET) {
+  app.use('/uploads', express.static(uploadsRoot));
+}
 
 // Set up Routes
 app.use(router);

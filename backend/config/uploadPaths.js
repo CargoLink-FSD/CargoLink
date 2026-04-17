@@ -18,7 +18,10 @@ const ensureDirectory = (dirPath) => {
   return dirPath;
 };
 
-export const getUploadRoot = () => ensureDirectory(uploadRoot);
+export const getUploadRoot = () => {
+  if (process.env.GCS_BUCKET) return uploadRoot; // GCS mode — skip mkdir
+  return ensureDirectory(uploadRoot);
+};
 
 export const ensureUploadSubdir = (subdirName) => {
   const root = getUploadRoot();
