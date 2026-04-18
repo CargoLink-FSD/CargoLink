@@ -68,6 +68,9 @@ export const sendToUser = (userId, payload) => {
       } catch (err) {
         logger.warn('Failed to send websocket message', { userId, error: err.message });
       }
+    } else if (client.readyState > 1) {
+      // FIX 1: prune dead/closing sockets so they don't accumulate
+      sockets.delete(client);
     }
   });
 
@@ -79,67 +82,91 @@ export function createWebsocketServer(server) {
     const wss = new WebSocketServer({ server, path: '/ws' });
     websocketServer = wss;
 
-    wss.on('connection', async (ws, req) => {
-      const token = getTokenFromRequest(req);
-      if (!token) {
-        ws.close(4401, 'Authentication token required');
-        return;
-      }
-
-      let authPayload = null;
-      try {
-        const decoded = verifyAccessToken(token);
-        authPayload = authService.validateAccessTokenPayload(decoded);
-      } catch (err) {
-        ws.close(4401, 'Invalid token');
-        return;
-      }
-
-      const userId = String(authPayload.userId);
-      const role = authPayload.role;
-      ws.userId = userId;
-      ws.userRole = role;
-
-      await registerConnection(userId, role, ws);
-
-      logger.info('WebSocket client connected', { userId, role });
-
-      ws.send(JSON.stringify({
-        type: 'ws:connected',
-        data: {
-          userId,
-          role,
-          connectedAt: new Date().toISOString(),
-        },
-      }));
-
-      ws.on('message', (msg) => {
-        try {
-          const parsed = JSON.parse(String(msg));
-          if (parsed?.type === 'ws:ping') {
-            ws.send(JSON.stringify({ type: 'ws:pong', data: { ts: Date.now() } }));
-            return;
-          }
-          logger.debug('WS message received', { userId, type: parsed?.type || 'unknown' });
-        } catch {
-          logger.debug('WS non-JSON message received', { userId });
+    // FIX 2: protocol-level heartbeat to detect ghost connections
+    const heartbeatInterval = setInterval(() => {
+      wss.clients.forEach((ws) => {
+        if (!ws.isAlive) {
+          ws.terminate();
+          return;
         }
+        ws.isAlive = false;
+        ws.ping();
       });
+    }, 30000);
 
-      ws.on('close', () => {
-        void unregisterConnection(userId, ws);
-        logger.info('WebSocket client disconnected', { userId, role });
-      });
+    wss.on('close', () => clearInterval(heartbeatInterval));
 
-      ws.on('error', (err) => {
-        logger.warn('WebSocket client error', { userId, error: err.message });
-      });
+    // FIX 3: wrap async connection handler in try/catch
+    wss.on('connection', async (ws, req) => {
+      try {
+        ws.isAlive = true;
+        ws.on('pong', () => { ws.isAlive = true; });
+
+        const token = getTokenFromRequest(req);
+        if (!token) {
+          ws.close(4401, 'Authentication token required');
+          return;
+        }
+
+        let authPayload = null;
+        try {
+          const decoded = verifyAccessToken(token);
+          authPayload = authService.validateAccessTokenPayload(decoded);
+        } catch (err) {
+          ws.close(4401, 'Invalid token');
+          return;
+        }
+
+        const userId = String(authPayload.userId);
+        const role = authPayload.role;
+        ws.userId = userId;
+        ws.userRole = role;
+
+        await registerConnection(userId, role, ws);
+
+        logger.info('WebSocket client connected', { userId, role });
+
+        ws.send(JSON.stringify({
+          type: 'ws:connected',
+          data: {
+            userId,
+            role,
+            connectedAt: new Date().toISOString(),
+          },
+        }));
+
+        ws.on('message', (msg) => {
+          try {
+            const parsed = JSON.parse(String(msg));
+            if (parsed?.type === 'ws:ping') {
+              ws.send(JSON.stringify({ type: 'ws:pong', data: { ts: Date.now() } }));
+              return;
+            }
+            logger.debug('WS message received', { userId, type: parsed?.type || 'unknown' });
+          } catch {
+            logger.debug('WS non-JSON message received', { userId });
+          }
+        });
+
+        ws.on('close', () => {
+          void unregisterConnection(userId, ws);
+          logger.info('WebSocket client disconnected', { userId, role });
+        });
+
+        ws.on('error', (err) => {
+          logger.warn('WebSocket client error', { userId, error: err.message });
+        });
+
+      } catch (err) {
+        logger.error('WS connection handler error', { error: err.message });
+        ws.close(1011, 'Internal error');
+      }
     });
 
     return wss;
   } catch (err) {
     logger.error('WebSocket server creation failed', { stack: err.stack });
-    throw err
+    throw err;
   }
 }
 
