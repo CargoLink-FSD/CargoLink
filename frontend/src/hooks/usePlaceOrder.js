@@ -17,7 +17,7 @@ export function usePlaceOrder() {
     pickup: { street: '', city: '', state: '', pin: '', coordinates: null },
     delivery: { street: '', city: '', state: '', pin: '', coordinates: null },
     transit: { date: '', time: '', distance: '' },
-    cargo: { type: '', vehicle: '', weight: '', volume: '', description: '', maxPrice: '' },
+    cargo: { type: '', weight: '', volume: '', description: '', maxPrice: '' },
     shipments: [{ name: '', quantity: '', price: '' }]
   });
 
@@ -92,8 +92,8 @@ export function usePlaceOrder() {
     }
   }, [formData.pickup.coordinates, formData.delivery.coordinates]);
 
-  // Auto-calculate max price via backend pricing engine
-  // Triggers whenever distance, vehicle, weight, goods type, volume, or shipments change.
+  // Auto-calculate max price via backend pricing engine.
+  // Vehicle choice is transporter-assigned later, so estimation uses a neutral baseline.
   useEffect(() => {
     if (priceTimerRef.current) clearTimeout(priceTimerRef.current);
 
@@ -119,7 +119,7 @@ export function usePlaceOrder() {
       try {
         const breakdown = await apiEstimatePrice({
           distance,
-          vehicle_type: formData.cargo.vehicle || 'truck-medium',
+          vehicle_type: 'truck-medium',
           // weight in the UI is in tonnes; backend expects kg
           weight: weight * 1000,
           volume: formData.cargo.volume ? parseFloat(formData.cargo.volume) : null,
@@ -153,7 +153,6 @@ export function usePlaceOrder() {
     return () => { if (priceTimerRef.current) clearTimeout(priceTimerRef.current); };
   }, [
     formData.transit.distance,
-    formData.cargo.vehicle,
     formData.cargo.weight,
     formData.cargo.type,
     formData.cargo.volume,
@@ -163,21 +162,6 @@ export function usePlaceOrder() {
     pickupCoords,
     deliveryCoords,
   ]);
-
-  // Auto-recommend vehicle type based on goods type and weight
-  useEffect(() => {
-    const { type } = formData.cargo;
-    const weight = parseFloat(formData.cargo.weight);
-
-    if (!type || isNaN(weight)) return;
-
-    let recommendedVehicle = getRecommendedVehicle(type, weight);
-
-    setFormData(prev => ({
-      ...prev,
-      cargo: { ...prev.cargo, vehicle: recommendedVehicle }
-    }));
-  }, [formData.cargo.type, formData.cargo.weight]);
 
   // (Distance is handled by Leaflet coords effect above)
 
@@ -199,30 +183,6 @@ export function usePlaceOrder() {
       }
       return updated;
     });
-  };
-
-  // Get recommended vehicle based on goods type and weight
-  const getRecommendedVehicle = (type, weight) => {
-    switch (type) {
-      case 'general':
-        return weight < 1 ? 'van' : weight < 5 ? 'truck-small' : weight < 10 ? 'truck-medium' : 'truck-large';
-      case 'fragile':
-        return weight < 5 ? 'truck-small' : 'truck-medium';
-      case 'perishable':
-        return 'refrigerated';
-      case 'hazardous':
-        return 'container';
-      case 'machinery':
-        return weight < 10 ? 'flatbed' : 'truck-large';
-      case 'furniture':
-        return weight < 5 ? 'truck-small' : 'truck-medium';
-      case 'agricultural':
-        return weight < 10 ? 'truck-medium' : 'truck-large';
-      case 'construction':
-        return 'flatbed';
-      default:
-        return 'truck-medium';
-    }
   };
 
   // Calculate bidding end time (2 days before pickup)
@@ -279,7 +239,6 @@ export function usePlaceOrder() {
 
     if (section === 'cargo') {
       if (field === 'type' && !value) return 'Goods type is required';
-      if (field === 'vehicle' && !value) return 'Vehicle type is required';
       if (field === 'weight') {
         if (!value) return 'Weight is required';
         if (parseFloat(value) <= 0) return 'Weight must be positive';
@@ -404,7 +363,7 @@ export function usePlaceOrder() {
     ['date', 'time', 'distance'].forEach(field => {
       allTouched[`transit.${field}`] = true;
     });
-    ['type', 'vehicle', 'weight', 'description', 'maxPrice'].forEach(field => {
+    ['type', 'weight', 'description', 'maxPrice'].forEach(field => {
       allTouched[`cargo.${field}`] = true;
     });
     formData.shipments.forEach((_, index) => {
@@ -439,7 +398,7 @@ export function usePlaceOrder() {
     });
 
     // Validate cargo
-    ['type', 'vehicle', 'weight', 'description', 'maxPrice'].forEach(field => {
+    ['type', 'weight', 'description', 'maxPrice'].forEach(field => {
       const error = validateField('cargo', field, formData.cargo[field]);
       if (error) {
         newErrors[`cargo.${field}`] = error;
@@ -486,7 +445,6 @@ export function usePlaceOrder() {
         return sum + (parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0);
       }, 0),
       toll_cost: priceBreakdown?.toll_cost ?? undefined,
-      truck_type: formData.cargo.vehicle,
       description: formData.cargo.description,
       shipments: formData.shipments.map(item => ({
         item_name: item.name,

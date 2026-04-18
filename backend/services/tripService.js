@@ -9,7 +9,6 @@ import {
   assertTransporterCanOperate,
 } from "./cancellationPolicyService.js";
 import { DOMAIN_EVENTS, emitDomainEvent } from '../utils/eventEmitter.js';
-import walletService from "./walletService.js";
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 const LOADING_DELAY_MINUTES = 30; // fixed delay per pickup/dropoff for loading/unloading
@@ -334,12 +333,8 @@ const completeTrip = async (transporterId, tripId) => {
   }
   for (const orderId of trip.order_ids) {
     const order = await orderRepo.getOrderById(orderId);
-    if (order && order.status !== 'Completed') {
-      await orderRepo.updateOrderStatus(orderId, 'Completed');
-      // Credit transporter wallet — idempotent, safe on retry
-      if (order.final_price) {
-        await walletService.creditOrderEarnings(transporterId, orderId, order.final_price);
-      }
+    if (order && !['Cancelled', 'Completed'].includes(order.status)) {
+      await orderRepo.updateOrderStatus(orderId, 'Payment Pending');
     }
   }
   return await tripRepo.updateTrip(tripId, { status: 'Completed', actual_end_at: new Date() });
@@ -481,7 +476,7 @@ const confirmDelivery = async (driverId, tripId, stopId, otp) => {
   }
 
   await tripRepo.updateStopStatus(tripId, stopId, { status: 'Completed', actual_departure_at: new Date() });
-  await orderRepo.updateOrderStatus(orderId, 'Completed');
+  await orderRepo.updateOrderStatus(orderId, 'Payment Pending');
 
   emitDomainEvent(DOMAIN_EVENTS.TRIP_DELIVERY_CONFIRMED, {
     type: 'trip.delivery.confirmed',
@@ -578,13 +573,14 @@ const getOrderTracking = async (customerId, orderId) => {
   if (!trip) return { order, trip: null, stops: [] };
 
   const relevantStops = trip.stops.filter(s =>
-    s.order_id?.toString() === orderId || s.type === 'Waypoint' || s.type === 'Delay'
+    (s.order_id?._id || s.order_id)?.toString() === orderId || s.type === 'Waypoint' || s.type === 'Delay'
   );
 
   return {
     order,
     trip: {
       _id: trip._id, status: trip.status,
+      transporter: trip.transporter_id,
       assigned_vehicle: trip.assigned_vehicle_id,
       assigned_driver: trip.assigned_driver_id,
       current_location: trip.current_location,
@@ -614,14 +610,8 @@ const _advanceToNextStop = async (tripId) => {
   if (nextIndex === -1) {
     for (const orderId of trip.order_ids) {
       const order = await orderRepo.getOrderById(orderId);
-      if (order && order.status !== 'Completed') {
-        await orderRepo.updateOrderStatus(orderId, 'Completed');
-        // Credit transporter wallet — idempotent, safe on retry
-        if (order.final_price) {
-          await walletService.creditOrderEarnings(
-            trip.transporter_id.toString(), orderId, order.final_price
-          );
-        }
+      if (order && !['Cancelled', 'Completed'].includes(order.status)) {
+        await orderRepo.updateOrderStatus(orderId, 'Payment Pending');
       }
     }
     return await tripRepo.updateTrip(tripId, {

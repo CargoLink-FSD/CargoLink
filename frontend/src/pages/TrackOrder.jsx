@@ -66,8 +66,6 @@ const TrackOrderPage = () => {
   const driverMarkerRef = useRef(null);
 
 
-  console.log({ currentOrder, orderId })
-
   useEffect(() => {
     if (orderId && userType) {
       dispatch(fetchOrderDetails(orderId));
@@ -297,6 +295,23 @@ const TrackOrderPage = () => {
     return <p>No Current Order</p>
   }
 
+  const scheduledAssignment = currentOrder.scheduled_assignment || null;
+  const assignedVehicleLabel =
+    scheduledAssignment?.vehicle?.registration ||
+    currentOrder.assignment?.vehicle_number ||
+    'Not assigned yet';
+  const assignedVehicleType =
+    scheduledAssignment?.vehicle?.truck_type ||
+    currentOrder.assignment?.vehicle_type ||
+    'N/A';
+  const assignedDriverName = scheduledAssignment?.driver
+    ? `${scheduledAssignment.driver.firstName || ''} ${scheduledAssignment.driver.lastName || ''}`.trim()
+    : 'Not assigned yet';
+  const assignedTransporterName =
+    scheduledAssignment?.transporter?.name ||
+    currentOrder.assigned_transporter_id?.name ||
+    'Not assigned yet';
+
   return (
     <>
       <Header />
@@ -353,7 +368,15 @@ const TrackOrderPage = () => {
                   </div>
                   <div className="detail-group">
                     <p className="detail-label">Vehicle Assigned</p>
-                    <p className="detail-value">{currentOrder.truck_type || "Not assigned yet"}</p>
+                    <p className="detail-value">{assignedVehicleLabel} ({assignedVehicleType})</p>
+                  </div>
+                  <div className="detail-group">
+                    <p className="detail-label">Assigned Driver</p>
+                    <p className="detail-value">{assignedDriverName}</p>
+                  </div>
+                  <div className="detail-group">
+                    <p className="detail-label">Transporter</p>
+                    <p className="detail-value">{assignedTransporterName}</p>
                   </div>
                   <div className="detail-group">
                     <p className="detail-label">Payment Amount</p>
@@ -510,8 +533,17 @@ const TrackOrderPage = () => {
                   {tracking?.trip && (
                     <div style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', color: '#4b5563', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                       <span><strong>Status:</strong> {tracking.trip.status || '—'}</span>
-                      {tracking.trip.assigned_vehicle?.registration && <span><strong>Vehicle:</strong> {tracking.trip.assigned_vehicle.registration}</span>}
-                      {tracking.trip.assigned_driver && <span><strong>Driver:</strong> {tracking.trip.assigned_driver.firstName} {tracking.trip.assigned_driver.lastName}</span>}
+                      {tracking.trip.transporter?.name && <span><strong>Transporter:</strong> {tracking.trip.transporter.name}</span>}
+                      <span><strong>Vehicle:</strong> {tracking.trip.assigned_vehicle?.registration || assignedVehicleLabel || '—'}</span>
+                      {(tracking.trip.assigned_driver || assignedDriverName !== 'Not assigned yet') && (
+                        <span>
+                          <strong>Driver:</strong>{' '}
+                          {tracking.trip.assigned_driver
+                            ? `${tracking.trip.assigned_driver.firstName || ''} ${tracking.trip.assigned_driver.lastName || ''}`.trim() || '—'
+                            : assignedDriverName}
+                          {tracking.trip.assigned_driver?.phone ? ` (${tracking.trip.assigned_driver.phone})` : ''}
+                        </span>
+                      )}
                       {tracking.stops?.length > 0 && <span><strong>Progress:</strong> {tracking.stops.filter(s => s.status === 'Completed').length} / {tracking.stops.length} stops</span>}
                       {tracking.trip.current_location?.updated_at && <span><strong>Updated:</strong> {new Date(tracking.trip.current_location.updated_at).toLocaleTimeString('en-IN')}</span>}
                     </div>

@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchAvailableOrders, submitBid as submitBidAction } from '../store/slices/bidsSlice';
 import { useNotification } from '../context/NotificationContext';
 
-const initialFilters = { location: '', vehicleType: '', minPrice: '', maxPrice: '' };
+const initialFilters = { location: '', minPrice: '', maxPrice: '' };
 
 export function useBids() {
   const dispatch = useDispatch();
@@ -39,11 +39,10 @@ export function useBids() {
     const locOk = !filters.location || 
       pickupCity.toLowerCase().includes(filters.location.toLowerCase()) ||
       deliveryCity.toLowerCase().includes(filters.location.toLowerCase());
-    const typeOk = !filters.vehicleType || o.truck_type?.toLowerCase() === filters.vehicleType.toLowerCase();
     const min = filters.minPrice ? parseFloat(filters.minPrice) : 0;
     const max = filters.maxPrice ? parseFloat(filters.maxPrice) : Infinity;
     const priceOk = o.max_price >= min && o.max_price <= max;
-    return locOk && typeOk && priceOk;
+    return locOk && priceOk;
   });
 
   const placeBid = async (index, orderId) => {

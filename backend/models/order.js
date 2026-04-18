@@ -48,7 +48,7 @@ const OrderSchema = new mongoose.Schema(
     volume: { type: Number, min: 0 },
     cargo_value: { type: Number, min: 0 },
     toll_cost: { type: Number, min: 0 },
-    truck_type: { type: String, required: true },
+    truck_type: { type: String },
     description: { type: String, required: true },
     special_instructions: String,
     cargo_photo: { type: String }, // Path to uploaded cargo photo
@@ -58,7 +58,7 @@ const OrderSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["Placed", "Assigned", "Scheduled", "Started", "In Transit", "Completed", "Cancelled"],
+      enum: ["Placed", "Assigned", "Scheduled", "Started", "In Transit", "Payment Pending", "Completed", "Cancelled"],
       default: "Placed",
     },
     assigned_transporter_id: {

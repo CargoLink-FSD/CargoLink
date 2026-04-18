@@ -78,6 +78,11 @@
   color: #00796b;
 }
 
+.status-badge.payment-pending {
+  background: #fff4e5;
+  color: #b45309;
+}
+
 .status-badge.cancelled {
   background: #ffebee;
   color: #c62828;

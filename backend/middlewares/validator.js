@@ -418,9 +418,6 @@ const order = [
   body('goods_type')
     .trim().notEmpty().withMessage('Goods type is required'),
 
-  body('truck_type')
-    .trim().notEmpty().withMessage('Truck type is required'),
-
   // Weight
   body('weight')
     .notEmpty().withMessage('Weight is required')
@@ -470,7 +467,7 @@ const driver = [
     .trim()
     .notEmpty().withMessage('License number is required'),
 
-  ...addressSchema('address.'),
+  ...addressSchema(''),
 ];
 
 
