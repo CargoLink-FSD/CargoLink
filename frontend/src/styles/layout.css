@@ -60,6 +60,27 @@
   transition: var(--transition);
 }
 
+.notification-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.notification-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  padding: 0 4px;
+  font-size: 0.7rem;
+  line-height: 1;
+  font-weight: 700;
+  color: #fff;
+  background: #ef4444;
+}
+
 
 /* Profile Link & Photo */
 .profile-link {
@@ -359,6 +380,13 @@
   color: var(--dark) !important;
   font-weight: 500;
   border-bottom: 1px solid #f3f4f6;
+}
+
+.dropdown-content .notification-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 

@@ -5,6 +5,7 @@ import paymentRepo from "../repositories/paymentRepo.js";
 import razorpay from "../config/razorpay.js";
 import { AppError } from "../utils/misc.js";
 import { getCustomerDuesSummary, settleCustomerDues } from "./cancellationPolicyService.js";
+import { DOMAIN_EVENTS, emitDomainEvent } from '../utils/eventEmitter.js';
 
 const assertRazorpaySigningConfigured = () => {
   if (!process.env.RAZORPAY_KEY_SECRET) {
@@ -166,6 +167,24 @@ export default {
     }
     await order.save();
 
+    const recipients = [{ userId: order.customer_id?.toString(), role: 'customer' }];
+    if (order.assigned_transporter_id) {
+      recipients.push({ userId: order.assigned_transporter_id.toString(), role: 'transporter' });
+    }
+
+    emitDomainEvent(DOMAIN_EVENTS.PAYMENT_COMPLETED, {
+      type: 'payment.completed',
+      title: 'Payment completed',
+      message: `Payment was completed for order ${orderId}`,
+      recipients,
+      actor: { userId: order.customer_id?.toString(), role: 'customer' },
+      meta: {
+        orderId: order._id.toString(),
+        paymentId: payment._id.toString(),
+        amount: payment.amount,
+      },
+    });
+
     return {
       payment_id: payment._id,
       status: payment.status,
@@ -211,6 +230,18 @@ export default {
 
     const settlement = await settleCustomerDues(customerId, updatedPayment.amount);
 
+    emitDomainEvent(DOMAIN_EVENTS.CANCELLATION_DUES_PAID, {
+      type: 'payment.cancellation_dues.paid',
+      title: 'Cancellation dues settled',
+      message: 'Your pending cancellation dues payment was completed successfully.',
+      recipients: [{ userId: customerId, role: 'customer' }],
+      actor: { userId: customerId, role: 'customer' },
+      meta: {
+        paymentId: updatedPayment._id.toString(),
+        amount: updatedPayment.amount,
+      },
+    });
+
     return {
       payment_id: updatedPayment._id,
       status: updatedPayment.status,
@@ -251,6 +282,19 @@ export default {
 
     order.is_reviewed = true;
     await order.save();
+
+    emitDomainEvent(DOMAIN_EVENTS.ORDER_REVIEW_SUBMITTED, {
+      type: 'order.review.submitted',
+      title: 'New order review',
+      message: `A customer submitted a review for order ${orderId}`,
+      recipients: [{ userId: order.assigned_transporter_id.toString(), role: 'transporter' }],
+      actor: { userId: customerId, role: 'customer' },
+      meta: {
+        orderId,
+        reviewId: review._id.toString(),
+        rating: review.rating,
+      },
+    });
 
     return review;
   },

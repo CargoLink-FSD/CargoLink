@@ -3,6 +3,7 @@ import transporterRepo from "../repositories/transporterRepo.js";
 import orderRepo from "../repositories/orderRepo.js";
 import tripRepo from "../repositories/tripRepo.js";
 import { AppError, logger } from "../utils/misc.js";
+import { DOMAIN_EVENTS, emitDomainEvent } from '../utils/eventEmitter.js';
 
 const registerDriver = async (driverData) => {
 
@@ -189,6 +190,19 @@ const applyToTransporter = async (driverId, transporterId, message) => {
     driver_id: driverId,
     transporter_id: transporterId,
     message: message || '',
+  });
+
+  emitDomainEvent(DOMAIN_EVENTS.DRIVER_APPLICATION_SUBMITTED, {
+    type: 'driver.application.submitted',
+    title: 'New driver application',
+    message: 'A driver has applied to join your transporter company',
+    recipients: [{ userId: transporterId, role: 'transporter' }],
+    actor: { userId: driverId, role: 'driver' },
+    meta: {
+      applicationId: application._id.toString(),
+      driverId,
+      transporterId,
+    },
   });
 
   return application;

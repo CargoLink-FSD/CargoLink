@@ -142,6 +142,27 @@ export default function DriverManagement() {
     fetchRequests();
   }, [fetchDrivers, fetchRequests]);
 
+  useEffect(() => {
+    const relevantTypes = new Set([
+      'driver.application.submitted',
+      'driver.application.accepted',
+      'driver.application.rejected',
+    ]);
+
+    const handleRealtimeNotification = (event) => {
+      const notification = event?.detail;
+      const type = notification?.type || '';
+      if (!relevantTypes.has(type)) return;
+      fetchRequests();
+      fetchDrivers();
+    };
+
+    window.addEventListener('cargolink:notification', handleRealtimeNotification);
+    return () => {
+      window.removeEventListener('cargolink:notification', handleRealtimeNotification);
+    };
+  }, [fetchDrivers, fetchRequests]);
+
   const handleAccept = async (applicationId) => {
     try {
       setError(null);

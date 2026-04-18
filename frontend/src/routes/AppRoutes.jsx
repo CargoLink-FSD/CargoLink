@@ -8,6 +8,7 @@ import Home from '../pages/common/Home';
 import Login from '../pages/common/login';
 import ForgotPassword from '../pages/common/ForgotPassword';
 import NotFound from '../pages/common/NotFound';
+import NotificationsPage from '../pages/common/NotificationsPage';
 import ProtectedRoute from './ProtectedRoute';
 
 import CustomerSignupForm from '../pages/customer/CustomerSignupForm';
@@ -191,6 +192,10 @@ export default function AppRoutes() {
         <Route path="/chat/orders/:orderId" element={placeholder('Chat: Order Conversation')} />
         <Route path="/support/tickets" element={<SupportTickets />} />
         <Route path="/support/tickets/:id" element={<TicketDetail />} />
+      </Route>
+
+      <Route element={<ProtectedRoute allowedRoles={['customer', 'transporter', 'driver', 'admin', 'manager']} />}>
+        <Route path="/notifications" element={<NotificationsPage />} />
       </Route>
 
 

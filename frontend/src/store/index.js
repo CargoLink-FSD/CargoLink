@@ -9,6 +9,7 @@ import ordersReducer from './slices/ordersSlice';
 import transporterOrdersReducer from './slices/transporterOrdersSlice';
 import bidsReducer from './slices/bidsSlice';
 import chatReducer from './slices/chatSlice';
+import notificationsReducer from './slices/notificationsSlice';
 import walletReducer from './slices/walletSlice';
 import adminCashoutsReducer from './slices/adminCashoutsSlice';
 
@@ -23,6 +24,7 @@ export const store = configureStore({
     transporterOrders: transporterOrdersReducer,
     bids: bidsReducer,
     chat: chatReducer,
+    notifications: notificationsReducer,
     wallet: walletReducer,
     adminCashouts: adminCashoutsReducer,
   },

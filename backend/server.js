@@ -6,6 +6,7 @@ import { startCronJobs } from './core/cron.js';
 import { logger, errorHandler } from './utils/misc.js';
 import { PORT, MONGO_URI } from './core/index.js';
 import managerService from './services/managerService.js';
+import { initializeNotificationService } from './services/notificationService.js';
 import { resolveMongoUri, loadAllSecrets } from './core/secrets.js';
 
 // Handle uncaught exceptions (synchronous errors outside request cycle)
@@ -45,6 +46,7 @@ process.on('unhandledRejection', (reason, promise) => {
     // Initialize WebSocket server attached to the same HTTP server
     // `createWebsocketServer` now handles its own errors and returns null on failure.
     createWebsocketServer(server);
+    initializeNotificationService();
 
     const shutdown = async (signal) => {
       logger.info(`Received ${signal}, shutting down server...`);

@@ -54,6 +54,21 @@ export default function JoinTransporter() {
     fetchApplications();
   }, [fetchTransporters, fetchApplications]);
 
+  useEffect(() => {
+    const relevantTypes = new Set(['driver.application.accepted', 'driver.application.rejected', 'driver.application.submitted']);
+    const handleRealtimeNotification = (event) => {
+      const notification = event?.detail;
+      const type = notification?.type || '';
+      if (!relevantTypes.has(type)) return;
+      fetchApplications();
+    };
+
+    window.addEventListener('cargolink:notification', handleRealtimeNotification);
+    return () => {
+      window.removeEventListener('cargolink:notification', handleRealtimeNotification);
+    };
+  }, [fetchApplications]);
+
   // Check if driver already applied to a transporter
   const getApplicationFor = (transporterId) => {
     return applications.find(

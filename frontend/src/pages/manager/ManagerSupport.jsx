@@ -91,6 +91,31 @@ export default function ManagerSupport() {
     useEffect(() => { loadData(); }, [loadData]);
 
     useEffect(() => {
+        const handleRealtimeNotification = async (event) => {
+            const notification = event?.detail;
+            const type = notification?.type || '';
+            if (!type.startsWith('ticket.')) return;
+
+            await loadData();
+
+            const updatedTicketId = notification?.meta?.ticketId;
+            if (selectedTicket?._id && updatedTicketId && selectedTicket._id === updatedTicketId) {
+                try {
+                    const data = await managerGetTicket(selectedTicket._id);
+                    setSelectedTicket(data.ticket || data);
+                } catch {
+                    // Ignore detail refresh failures from realtime path
+                }
+            }
+        };
+
+        window.addEventListener('cargolink:notification', handleRealtimeNotification);
+        return () => {
+            window.removeEventListener('cargolink:notification', handleRealtimeNotification);
+        };
+    }, [loadData, selectedTicket?._id]);
+
+    useEffect(() => {
         setPage(1);
     }, [filters.status, filters.userRole, filters.priority]);
 

@@ -1,6 +1,7 @@
 import ticketRepo from '../repositories/ticketRepo.js';
 import managerService from './managerService.js';
 import { AppError } from '../utils/misc.js';
+import { DOMAIN_EVENTS, emitDomainEvent } from '../utils/eventEmitter.js';
 
 const createTicket = async (userId, userRole, userName, userEmail, ticketData) => {
     const modelMap = { customer: 'Customer', transporter: 'Transporter', driver: 'Driver' };
@@ -36,6 +37,22 @@ const createTicket = async (userId, userRole, userName, userEmail, ticketData) =
     }
 
     const ticket = await ticketRepo.createTicket(ticketPayload);
+
+    if (ticket.assignedManager) {
+        emitDomainEvent(DOMAIN_EVENTS.TICKET_CREATED, {
+            type: 'ticket.created',
+            title: 'New ticket assigned',
+            message: `A new support ticket (${ticket.ticketId}) was assigned to you.`,
+            recipients: [{ userId: ticket.assignedManager.toString(), role: 'manager' }],
+            actor: { userId, role: userRole },
+            meta: {
+                ticketId: ticket._id.toString(),
+                publicTicketId: ticket.ticketId,
+                category: ticket.category,
+                priority: ticket.priority,
+            },
+        });
+    }
 
     // Check threshold and alert admin if needed
     await managerService.checkThresholdAndAlert(ticketData.category);
@@ -76,6 +93,22 @@ const addUserReply = async (ticketId, userId, userRole, userName, text) => {
         senderName: userName,
         text,
     });
+
+    if (updated?.assignedManager) {
+        emitDomainEvent(DOMAIN_EVENTS.TICKET_USER_REPLIED, {
+            type: 'ticket.reply.user',
+            title: 'New user reply',
+            message: `A user replied on ticket ${updated.ticketId}.`,
+            recipients: [{ userId: updated.assignedManager.toString(), role: 'manager' }],
+            actor: { userId, role: userRole },
+            meta: {
+                ticketId: updated._id.toString(),
+                publicTicketId: updated.ticketId,
+                status: updated.status,
+            },
+        });
+    }
+
     return updated;
 };
 
@@ -97,7 +130,7 @@ const getTicketStats = async (managerId = null) => {
     return await ticketRepo.getTicketStats();
 };
 
-const addManagerReply = async (ticketId, text, managerName = 'Manager') => {
+const addManagerReply = async (ticketId, text, managerName = 'Manager', managerId = null) => {
     const ticket = await ticketRepo.getTicketById(ticketId);
     if (!ticket) {
         throw new AppError(404, 'NotFoundError', 'Ticket not found', 'ERR_NOT_FOUND');
@@ -111,14 +144,29 @@ const addManagerReply = async (ticketId, text, managerName = 'Manager') => {
         await ticketRepo.updateTicketStatus(ticketId, 'in_progress');
     }
 
-    return await ticketRepo.addMessage(ticketId, {
+    const updated = await ticketRepo.addMessage(ticketId, {
         sender: 'manager',
         senderName: managerName,
         text,
     });
+
+    emitDomainEvent(DOMAIN_EVENTS.TICKET_MANAGER_REPLIED, {
+        type: 'ticket.reply.manager',
+        title: 'Manager replied to your ticket',
+        message: `You have a new reply on ticket ${updated.ticketId}.`,
+        recipients: [{ userId: updated.userId.toString(), role: updated.userRole }],
+        actor: { userId: managerId, role: 'manager' },
+        meta: {
+            ticketId: updated._id.toString(),
+            publicTicketId: updated.ticketId,
+            status: updated.status,
+        },
+    });
+
+    return updated;
 };
 
-const updateTicketStatus = async (ticketId, status) => {
+const updateTicketStatus = async (ticketId, status, managerId = null) => {
     const ticket = await ticketRepo.getTicketById(ticketId);
     if (!ticket) {
         throw new AppError(404, 'NotFoundError', 'Ticket not found', 'ERR_NOT_FOUND');
@@ -133,7 +181,22 @@ const updateTicketStatus = async (ticketId, status) => {
         await managerService.handleTicketClosed(ticket.assignedManager);
     }
 
-    return await ticketRepo.updateTicketStatus(ticketId, status);
+    const updated = await ticketRepo.updateTicketStatus(ticketId, status);
+
+    emitDomainEvent(DOMAIN_EVENTS.TICKET_STATUS_UPDATED, {
+        type: 'ticket.status.updated',
+        title: 'Ticket status updated',
+        message: `Your ticket ${updated.ticketId} status changed to ${updated.status.replace('_', ' ')}.`,
+        recipients: [{ userId: updated.userId.toString(), role: updated.userRole }],
+        actor: { userId: managerId, role: 'manager' },
+        meta: {
+            ticketId: updated._id.toString(),
+            publicTicketId: updated.ticketId,
+            status: updated.status,
+        },
+    });
+
+    return updated;
 };
 
 // User can reopen a closed ticket
@@ -148,7 +211,24 @@ const reopenTicket = async (ticketId, userId) => {
     if (ticket.status !== 'closed') {
         throw new AppError(400, 'ValidationError', 'Only closed tickets can be reopened', 'ERR_INVALID_STATUS');
     }
-    return await ticketRepo.updateTicketStatus(ticketId, 'in_progress');
+    const updated = await ticketRepo.updateTicketStatus(ticketId, 'in_progress');
+
+    if (updated.assignedManager) {
+        emitDomainEvent(DOMAIN_EVENTS.TICKET_REOPENED, {
+            type: 'ticket.reopened',
+            title: 'Ticket reopened',
+            message: `Ticket ${updated.ticketId} was reopened by the user.`,
+            recipients: [{ userId: updated.assignedManager.toString(), role: 'manager' }],
+            actor: { userId, role: updated.userRole },
+            meta: {
+                ticketId: updated._id.toString(),
+                publicTicketId: updated.ticketId,
+                status: updated.status,
+            },
+        });
+    }
+
+    return updated;
 };
 
 export default {

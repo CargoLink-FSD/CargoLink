@@ -9,6 +9,7 @@ import Trip from "../models/trip.js";
 import Fleet from "../models/fleet.js";
 import mongoose from "mongoose";
 import { AppError, logger } from "../utils/misc.js";
+import { DOMAIN_EVENTS, emitDomainEvent } from '../utils/eventEmitter.js';
 
 const registerTransporter = async (transporterData) => {
 
@@ -626,6 +627,18 @@ const acceptDriverRequest = async (transporterId, applicationId) => {
   // Associate driver with transporter
   await driverRepo.setDriverTransporter(application.driver_id._id, transporterId);
 
+  emitDomainEvent(DOMAIN_EVENTS.DRIVER_APPLICATION_ACCEPTED, {
+    type: 'driver.application.accepted',
+    title: 'Application accepted',
+    message: 'Your application to join transporter was accepted',
+    recipients: [{ userId: application.driver_id._id.toString(), role: 'driver' }],
+    actor: { userId: transporterId, role: 'transporter' },
+    meta: {
+      applicationId,
+      transporterId,
+    },
+  });
+
   return updated;
 };
 
@@ -642,6 +655,20 @@ const rejectDriverRequest = async (transporterId, applicationId, rejectionReason
   }
 
   const updated = await driverRepo.updateApplicationStatus(applicationId, 'Rejected', rejectionReason);
+
+  emitDomainEvent(DOMAIN_EVENTS.DRIVER_APPLICATION_REJECTED, {
+    type: 'driver.application.rejected',
+    title: 'Application rejected',
+    message: 'Your application to join transporter was rejected',
+    recipients: [{ userId: application.driver_id._id.toString(), role: 'driver' }],
+    actor: { userId: transporterId, role: 'transporter' },
+    meta: {
+      applicationId,
+      transporterId,
+      rejectionReason: rejectionReason || '',
+    },
+  });
+
   return updated;
 };
 
