@@ -1,12 +1,18 @@
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
 import '../../styles/StaticPages.css';
+import landingPageImage from '../../assets/images/landing-page.jpg';
+import fallbackImage from '../../assets/images/default.jpg';
 
 export default function About() {
+  const handleImageError = (e) => {
+    e.currentTarget.src = fallbackImage;
+  };
+
   return (
     <>
       <Header />
-      <main className="main-content">
+      <main className="main-content static-page">
         <section className="page-header">
           <div className="container">
             <h1>About CargoLink</h1>
@@ -30,7 +36,12 @@ export default function About() {
                 <p>To become the most trusted logistics platform in Asia, known for reliability, transparency, and exceptional service.</p>
               </div>
               <div className="about-image">
-                
+                <img
+                  src={landingPageImage}
+                  alt="CargoLink logistics operations"
+                  loading="lazy"
+                  onError={handleImageError}
+                />
               </div>
             </div>
           </div>
@@ -92,19 +103,16 @@ export default function About() {
             <h2 className="section-title">Meet The Team</h2>
             <div className="team-grid">
               <div className="team-member">
-                
                 <h3>Ragavan</h3>
                 <p className="member-title"></p>
                 <p>With 15+ years in logistics and supply chain management, Vikram brings strategic vision and industry expertise to CargoLink.</p>
               </div>
               <div className="team-member">
-                
                 <h3>Dharshan</h3>
                 <p className="member-title">Chief Executive Officer</p>
                 <p>With 15+ years in logistics and supply chain management, Vikram brings strategic vision and industry expertise to CargoLink.</p>
               </div>
               <div className="team-member">
-                
                 <h3>Muthuraja S</h3>
                 <p className="member-title">Chief Executive Officer</p>
                 <p>With 15+ years in logistics and supply chain management, Vikram brings strategic vision and industry expertise to CargoLink.</p>
@@ -112,13 +120,11 @@ export default function About() {
             </div>
             <div className="team-grid2">
               <div className="team-member">
-                
                 <h3>Ankit</h3>
                 <p className="member-title">Chief Technology Officer</p>
                 <p>Priya leads our technology initiatives, bringing 12+ years of experience in building scalable platforms and innovative solutions.</p>
               </div>
               <div className="team-member">
-                
                 <h3>Trishant</h3>
                 <p className="member-title">Chief Operations Officer</p>
                 <p>Ajay oversees daily operations, ensuring smooth execution of logistics services with his 10+ years of operational expertise.</p>

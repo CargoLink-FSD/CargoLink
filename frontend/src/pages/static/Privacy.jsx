@@ -1,16 +1,35 @@
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
 import '../../styles/StaticPages.css';
+import privacyHeroImage from '../../assets/images/features/features-2.jpg';
+import fallbackImage from '../../assets/images/default.jpg';
 
 export default function Privacy() {
+  const handleImageError = (e) => {
+    e.currentTarget.src = fallbackImage;
+  };
+
   return (
     <>
       <Header />
-      <main className="main-content">
+      <main className="main-content static-page">
         <section className="page-header">
           <div className="container">
             <h1>Privacy Policy</h1>
             <p className="subtitle">Last Updated: June 15, 2023</p>
+          </div>
+        </section>
+
+        <section className="static-page-media">
+          <div className="container">
+            <div className="static-page-media-frame">
+              <img
+                src={privacyHeroImage}
+                alt="CargoLink privacy and data protection"
+                loading="lazy"
+                onError={handleImageError}
+              />
+            </div>
           </div>
         </section>
 

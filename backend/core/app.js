@@ -142,9 +142,22 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
 
-// Serve uploaded files statically (local dev only — on Cloud Run files are in GCS)
+// Serve uploaded files statically in local mode.
+// In GCS mode, keep backward compatibility for legacy `/uploads/...` URLs
+// by redirecting to the corresponding public object in the bucket.
 if (!process.env.GCS_BUCKET) {
   app.use('/uploads', express.static(uploadsRoot));
+} else {
+  app.get('/uploads/*', (req, res) => {
+    const objectPath = req.params[0];
+    if (!objectPath) {
+      res.status(404).json({ success: false, message: 'File not found' });
+      return;
+    }
+
+    const gcsUrl = `https://storage.googleapis.com/${process.env.GCS_BUCKET}/${objectPath}`;
+    res.redirect(302, gcsUrl);
+  });
 }
 
 // Set up Routes

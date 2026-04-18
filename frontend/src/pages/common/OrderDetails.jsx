@@ -466,6 +466,14 @@ export default function OrderDetails() {
             <button className="btn btn-secondary" onClick={() => navigate(-1)}>
               Back to Orders
             </button>
+            {userType === 'transporter' && (
+              <button
+                className="btn btn-primary"
+                onClick={() => navigate(`/transporter/orders/${order._id}/chat`)}
+              >
+                Open Chat
+              </button>
+            )}
           </div>
 
           {/* Ratings & Reviews (customers only) */}

@@ -19,10 +19,10 @@ export const fetchDriverProfile = createAsyncThunk(
 
 export const updateDriverField = createAsyncThunk(
   'driver/updateField',
-  async ({ fieldKey, fieldValue }, { rejectWithValue }) => {
+  async ({ fieldType, fieldValue }, { rejectWithValue }) => {
     try {
-      const response = await api.updateDriverProfile({ [fieldKey]: fieldValue });
-      return response.data || response;
+      await api.updateDriverProfile(fieldType, fieldValue);
+      return { fieldType, fieldValue };
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }
@@ -33,7 +33,7 @@ export const updateDriverPassword = createAsyncThunk(
   'driver/updatePassword',
   async (passwordData, { rejectWithValue }) => {
     try {
-      const response = await api.updateDriverPassword(passwordData);
+      const response = await api.updateDriverPassword(passwordData.oldPassword, passwordData.newPassword);
       return response.data || response;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -45,9 +45,7 @@ export const uploadDriverProfilePicture = createAsyncThunk(
   'driver/uploadProfilePicture',
   async (file, { rejectWithValue }) => {
     try {
-      const formData = new FormData();
-      formData.append('profileImage', file);
-      const response = await api.uploadDriverProfilePicture(formData);
+      const response = await api.uploadDriverProfilePicture(file);
       return response.data || response;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -99,7 +97,10 @@ const driverSlice = createSlice({
       })
       .addCase(updateDriverField.fulfilled, (state, action) => {
         state.loading = false;
-        state.profile = { ...state.profile, ...action.payload };
+        const { fieldType, fieldValue } = action.payload;
+        if (state.profile) {
+          state.profile[fieldType] = fieldValue;
+        }
         state.updateSuccess = true;
       })
       .addCase(updateDriverField.rejected, (state, action) => {

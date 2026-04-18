@@ -110,6 +110,10 @@
     align-items: stretch;
 }
 
+.track-order-page .combined-section.single-panel {
+    grid-template-columns: 1fr;
+}
+
 .track-order-page .tracking-card, .track-order-page .chat-card {
     display: flex;
     flex-direction: column;
@@ -275,6 +279,18 @@
 
 .track-order-page .chat-input button {
     padding: 0 1.5rem;
+}
+
+.track-order-page .chat-empty-state {
+    text-align: center;
+    color: var(--gray-500);
+    font-size: 0.9rem;
+    padding: 1rem 0;
+}
+
+.track-order-page .chat-availability-body {
+    padding: 1rem 1.5rem;
+    color: var(--gray-600);
 }
 
 /* Update Status Card Specific Styles */

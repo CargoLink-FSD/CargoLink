@@ -285,10 +285,10 @@ function QuoteForm({ order, navigate }) {
                         <input
                           type="number"
                           className="qb-input qb-input--small"
-                          placeholder={order?.cargo_value ? `₹${order.cargo_value}` : '0'}
-                          value={form.risk_on_declared_value}
-                          onChange={(e) => handleChange('risk_on_declared_value', e.target.value)}
+                          value={order?.cargo_value || 0}
                           min="0"
+                          readOnly
+                          disabled
                         />
                       </div>
                       <div className="qb-risk-result">
