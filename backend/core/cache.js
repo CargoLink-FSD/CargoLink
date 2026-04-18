@@ -75,7 +75,7 @@ export const initCache = async () => {
     });
 
     await redisClient.connect();
-    cacheConnected = true;
+    // FIX 4: removed redundant cacheConnected = true here — 'ready' event handles it
     return true;
   } catch (err) {
     cacheConnected = false;
@@ -186,10 +186,13 @@ export const enqueueNotification = async (userId, notification, { ttlSeconds = 6
   }
 
   try {
+    // FIX 1: use pipeline so rPush + lTrim + expire are atomic
     const scoped = scopedKey(queueKey);
-    await redisClient.rPush(scoped, JSON.stringify(notification));
-    await redisClient.lTrim(scoped, -maxItems, -1);
-    await redisClient.expire(scoped, ttlSeconds);
+    const pipeline = redisClient.multi();
+    pipeline.rPush(scoped, JSON.stringify(notification));
+    pipeline.lTrim(scoped, -maxItems, -1);
+    pipeline.expire(scoped, ttlSeconds);
+    await pipeline.exec();
     return true;
   } catch (err) {
     logger.warn('Failed to enqueue notification', { userId, error: err.message });
@@ -306,7 +309,7 @@ export const invalidateByPrefix = async (prefix) => {
   if (!isCacheAvailable()) return 0;
 
   const pattern = scopedKey(`${prefix}*`);
-  let cursor = '0';
+  let cursor = 0; // FIX 2: number not string — node-redis returns cursor as number
   let deleted = 0;
 
   try {
@@ -322,7 +325,7 @@ export const invalidateByPrefix = async (prefix) => {
       if (keys.length > 0) {
         deleted += await redisClient.del(keys);
       }
-    } while (cursor !== '0');
+    } while (cursor !== 0); // FIX 2: compare number to number, not string
 
     return deleted;
   } catch (err) {

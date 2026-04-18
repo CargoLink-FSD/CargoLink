@@ -113,12 +113,16 @@ steps:
           --region ${_REGION} \
           --allow-unauthenticated \
           --port 8080 \
+          --no-use-http2 \
+          --timeout 3600 \
+          --session-affinity \
+          --concurrency 1000 \
           --vpc-connector ${_VPC_CONNECTOR} \
           --set-env-vars "NODE_ENV=production,CACHE_ENABLED=true,GCS_BUCKET=${_GCS_BUCKET},REDIS_HOST=${_REDIS_HOST},REDIS_PORT=6379,CORS_ALLOWED_ORIGINS=https://cargolink.muthuraja.tech" \
           --update-secrets "$${SECRETS}" \
           --memory 512Mi \
           --cpu 1 \
-          --min-instances 0 \
+          --min-instances 1 \
           --max-instances 5 \
           --quiet
 
