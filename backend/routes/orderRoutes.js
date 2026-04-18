@@ -5,6 +5,7 @@ import { validate } from "../middlewares/validator.js";
 import { validationSchema } from "../middlewares/validator.js";
 import orderController from "../controllers/orderController.js";
 import upload from "../config/multer.js";
+import gcsUpload from "../middlewares/gcsUpload.js";
 
 const orderRouter = Router();
 
@@ -66,7 +67,7 @@ orderRouter.get("/available", authMiddleware(["transporter"]), cacheResponse({ d
 orderRouter.get("/my-bids", authMiddleware(["transporter"]), cacheResponse({ domain: 'bids', ttlSeconds: 20 }), orderController.getTransporterBids); // List transporter's bids
 
 // Orders:
-orderRouter.post("/", authMiddleware(["customer"]), upload.single('cargo_photo'), parseFormDataJSON, validate(validationSchema.order), invalidateCacheOnSuccess(['orders', 'admin']), orderController.placeOrder); // Place order (shipment/rental)
+orderRouter.post("/", authMiddleware(["customer"]), upload.single('cargo_photo'), gcsUpload('cargo-photos'), parseFormDataJSON, validate(validationSchema.order), invalidateCacheOnSuccess(['orders', 'admin']), orderController.placeOrder); // Place order (shipment/rental)
 orderRouter.get('/cancellation-dues', authMiddleware(["customer"]), cacheResponse({ domain: 'orders', ttlSeconds: 15 }), orderController.getCancellationDues); // Get cancellation dues summary
 orderRouter.delete("/:orderId", authMiddleware(["customer"]), validate(validationSchema.customerCancelOrder), invalidateCacheOnSuccess(['orders', 'bids', 'trips', 'admin']), orderController.cancelOrder); // Cancel order
 // orderRouter.post("/:orderId/rating", authMiddleware(["customer"]), validate(validationSchema.rating), orderController.submitRating); // Submit rating for order

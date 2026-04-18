@@ -72,7 +72,7 @@ const updateTransporterProfile = async (req, res, next) => {
 
     // If a profile picture was uploaded, add the path to updates
     if (req.file) {
-      updates.profilePicture = `/uploads/profile-pictures/${req.file.filename}`;
+      updates.profilePicture = req.file.publicUrl || `/uploads/profile-pictures/${req.file.filename}`;
     }
 
     const transporter = await transporterService.updateTransporterProfile(transporterId, updates);

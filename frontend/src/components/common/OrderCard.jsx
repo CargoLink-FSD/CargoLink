@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
+import { toApiUrl } from '../../utils/apiBase';
 import './OrderCard.css';
 
 export default function OrderCard({
@@ -140,7 +141,7 @@ export default function OrderCard({
         {order.cargo_photo && (
           <div className="cargo-photo-thumbnail">
             <img
-              src={`http://localhost:3000${order.cargo_photo}`}
+              src={toApiUrl(order.cargo_photo)}
               alt="Cargo"
               className="cargo-thumbnail-img"
               onError={(e) => { e.target.style.display = 'none'; }}

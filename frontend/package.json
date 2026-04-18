@@ -10,6 +10,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "gcp-build": "echo 'dist/ already built in Cloud Build — skipping vite build on GAE'",
+    "start": "node server.js",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",

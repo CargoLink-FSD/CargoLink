@@ -5,6 +5,7 @@ import { validate, validationSchema } from "../middlewares/validator.js";
 import driverController from "../controllers/driverController.js";
 import profileUpload from "../config/profileMulter.js";
 import driverDocUpload from "../config/driverDocMulter.js";
+import gcsUpload from "../middlewares/gcsUpload.js";
 
 const driverRouter = Router();
 
@@ -19,7 +20,7 @@ driverRouter.get("/dashboard-stats", cacheResponse({ domain: 'drivers', ttlSecon
 
 // Profile
 driverRouter.get("/profile", cacheResponse({ domain: 'drivers', ttlSeconds: 20 }), driverController.getDriverProfile);
-driverRouter.put("/profile", profileUpload.single('profilePicture'), validate(validationSchema.updateDriver), invalidateCacheOnSuccess(['drivers', 'transporters', 'admin']), driverController.updateDriverProfile);
+driverRouter.put("/profile", profileUpload.single('profilePicture'), gcsUpload('profile-pictures'), validate(validationSchema.updateDriver), invalidateCacheOnSuccess(['drivers', 'transporters', 'admin']), driverController.updateDriverProfile);
 driverRouter.delete("/profile", invalidateCacheOnSuccess(['drivers', 'transporters', 'admin']), driverController.deleteDriver);
 driverRouter.patch("/password", validate(validationSchema.password), invalidateCacheOnSuccess(['drivers']), driverController.updatePassword);
 
@@ -30,6 +31,7 @@ driverRouter.post(
         { name: 'pan_card', maxCount: 1 },
         { name: 'driving_license', maxCount: 1 },
     ]),
+    gcsUpload('driver-docs'),
     invalidateCacheOnSuccess(['drivers', 'transporters', 'admin', 'manager']),
     driverController.uploadDocuments
 );

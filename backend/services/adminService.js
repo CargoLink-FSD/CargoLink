@@ -311,6 +311,50 @@ const getTicketsOverview = async () => {
     return { tickets, stats };
 };
 
+// Cashouts Overview
+const getAllCashouts = async (filters = {}) => {
+    const { status, search, sort = 'date', page, limit } = filters;
+    let query = {};
+    let sortOptions = {};
+
+    if (status) {
+        query.status = status;
+    }
+
+    if (search) {
+        if (mongoose.Types.ObjectId.isValid(search)) {
+            query._id = new mongoose.Types.ObjectId(search);
+        } else {
+            const transporterIds = await adminRepo.searchTransporterIds(search);
+            if (transporterIds.length > 0) {
+                query.transporter_id = { $in: transporterIds };
+            }
+        }
+    }
+
+    switch (sort) {
+        case 'amount_desc': sortOptions = { requested_amount: -1 }; break;
+        case 'amount_asc': sortOptions = { requested_amount: 1 }; break;
+        case 'status': sortOptions = { status: 1 }; break;
+        default: sortOptions = { createdAt: -1 };
+    }
+
+    const cashoutsResult = await adminRepo.getAllCashouts(query, sortOptions, { page, limit });
+    
+    // Calculate global stats
+    const allCashouts = await adminRepo.getAllCashouts({}, {}, { limit: 10000 });
+    const items = Array.isArray(allCashouts) ? allCashouts : allCashouts.items || [];
+    const stats = {
+        total: items.length,
+        totalAmount: items.reduce((sum, c) => sum + c.requested_amount, 0),
+        processing: items.filter(c => c.status === 'Processing').length,
+        processed: items.filter(c => c.status === 'Processed').length,
+        pendingAmount: items.filter(c => c.status === 'Processing').reduce((sum, c) => sum + c.requested_amount, 0)
+    };
+
+    return { cashouts: cashoutsResult.items || cashoutsResult, pagination: cashoutsResult.pagination, stats };
+};
+
 // Individual User Detail
 const getUserDetail = async (role, userId) => {
     if (role === 'customer') {
@@ -343,5 +387,8 @@ export default {
     getFleetOverview,
 
     // Tickets
-    getTicketsOverview
+    getTicketsOverview,
+
+    // Cashouts
+    getAllCashouts
 };

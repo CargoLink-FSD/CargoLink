@@ -114,5 +114,18 @@ npm run dev
 
 ---
 
+## GCP CI/CD (Cloud Build + App Engine)
+
+The repository now includes production deployment manifests for Google Cloud:
+
+- `cloudbuild.yaml` for automated CI/CD
+- `backend/app.yaml` for the backend App Engine service (`default`)
+- `frontend/app.yaml` for the frontend App Engine service (`frontend`)
+- `dispatch.yaml` for route dispatching between services
+
+Setup instructions are in `docs/gcp-cicd.md`.
+
+---
+
 ```
 ```

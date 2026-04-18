@@ -1,0 +1,23 @@
+# Cloud Build / gcloud deploy will NOT upload the following.
+
+# Dependencies â€” installed by App Engine's internal build if needed,
+# but since we use gcp-build no-op, npm install --production runs instead
+node_modules/
+
+# Test artifacts
+__test__/
+playwright-report/
+test-results/
+
+# Local env
+.env
+.env.*
+
+# Logs
+*.log
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

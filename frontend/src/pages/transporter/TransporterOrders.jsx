@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useTransporterOrders } from '../../hooks/useTransporterOrders';
 import OrderCard from '../../components/common/OrderCard';
 import AssignVehicleModal from '../../components/common/AssignVehicleModal';
@@ -21,17 +21,19 @@ const TransporterOrders = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const debounceRef = useRef(null);
 
   useEffect(() => {
-    loadOrders().catch(err => {
-      console.error('Error loading orders:', err);
-    });
+    loadOrders();
   }, [loadOrders]);
 
   const handleSearch = (e) => {
     const value = e.target.value;
     setSearchTerm(value);
-    filterOrders(value, statusFilter);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      filterOrders(value, statusFilter);
+    }, 400);
   };
 
   const handleStatusFilter = (e) => {
@@ -55,7 +57,7 @@ const TransporterOrders = () => {
   return (
     <>
     <Header />
-    <div className="orders-container">
+    <div className="transporter-orders-page orders-container">
       <div className="orders-header">
         <h1>My Orders</h1>
       </div>

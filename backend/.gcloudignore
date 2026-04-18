@@ -1,0 +1,31 @@
+# Cloud Build / gcloud deploy will NOT upload any of the following.
+
+# Dependencies â€” installed fresh during the build in Cloud Build
+node_modules/
+
+# Test artifacts
+__test__/
+coverage/
+playwright-report/
+test-results/
+benchmark-results/
+
+# Local env
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+
+# Dev uploads (use /tmp/uploads on GAE)
+uploads/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Lock file is intentionally included for reproducible builds.
+# package-lock.json is NOT excluded.

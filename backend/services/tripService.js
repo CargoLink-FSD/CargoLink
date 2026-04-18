@@ -9,6 +9,7 @@ import {
   assertTransporterCanOperate,
 } from "./cancellationPolicyService.js";
 import { DOMAIN_EVENTS, emitDomainEvent } from '../utils/eventEmitter.js';
+import walletService from "./walletService.js";
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 const LOADING_DELAY_MINUTES = 30; // fixed delay per pickup/dropoff for loading/unloading
@@ -335,6 +336,10 @@ const completeTrip = async (transporterId, tripId) => {
     const order = await orderRepo.getOrderById(orderId);
     if (order && order.status !== 'Completed') {
       await orderRepo.updateOrderStatus(orderId, 'Completed');
+      // Credit transporter wallet — idempotent, safe on retry
+      if (order.final_price) {
+        await walletService.creditOrderEarnings(transporterId, orderId, order.final_price);
+      }
     }
   }
   return await tripRepo.updateTrip(tripId, { status: 'Completed', actual_end_at: new Date() });
@@ -611,6 +616,12 @@ const _advanceToNextStop = async (tripId) => {
       const order = await orderRepo.getOrderById(orderId);
       if (order && order.status !== 'Completed') {
         await orderRepo.updateOrderStatus(orderId, 'Completed');
+        // Credit transporter wallet — idempotent, safe on retry
+        if (order.final_price) {
+          await walletService.creditOrderEarnings(
+            trip.transporter_id.toString(), orderId, order.final_price
+          );
+        }
       }
     }
     return await tripRepo.updateTrip(tripId, {

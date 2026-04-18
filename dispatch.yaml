@@ -1,0 +1,14 @@
+dispatch:
+  # Backend: API, uploads, health, docs
+  - url: "*/api/*"
+    service: default
+
+  - url: "*/uploads/*"
+    service: default
+
+  - url: "*/api-docs*"
+    service: default
+
+  # Everything else → React SPA (frontend service)
+  - url: "*/*"
+    service: frontend

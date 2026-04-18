@@ -1,6 +1,7 @@
 import driverRepo from "../repositories/driverRepo.js";
 import transporterRepo from "../repositories/transporterRepo.js";
 import orderRepo from "../repositories/orderRepo.js";
+import tripRepo from "../repositories/tripRepo.js";
 import { AppError, logger } from "../utils/misc.js";
 import { DOMAIN_EVENTS, emitDomainEvent } from '../utils/eventEmitter.js';
 
@@ -82,8 +83,8 @@ const getDashboardStats = async (driverId) => {
   // Get upcoming pickups window (next 7 days)
   const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-  // Aggregation pipeline for comprehensive stats
-  const statsAggregation = await orderRepo.getDriverDashboardStats(driverId, {
+  // Use tripRepo to get metrics for the driver
+  const statsAggregation = await tripRepo.getDriverDashboardStats(driverId, {
     activeStatuses,
     startOfMonth,
     endOfMonth,
@@ -239,7 +240,7 @@ const uploadDocuments = async (driverId, files) => {
 
   if (files.pan_card && files.pan_card[0]) {
     docData['documents.pan_card'] = {
-      url: `/uploads/driver-docs/${files.pan_card[0].filename}`,
+      url: files.pan_card[0].publicUrl || `/uploads/driver-docs/${files.pan_card[0].filename}`,
       uploadedAt: new Date(),
       adminStatus: 'pending',
     };
@@ -247,7 +248,7 @@ const uploadDocuments = async (driverId, files) => {
 
   if (files.driving_license && files.driving_license[0]) {
     docData['documents.driving_license'] = {
-      url: `/uploads/driver-docs/${files.driving_license[0].filename}`,
+      url: files.driving_license[0].publicUrl || `/uploads/driver-docs/${files.driving_license[0].filename}`,
       uploadedAt: new Date(),
       adminStatus: 'pending',
     };

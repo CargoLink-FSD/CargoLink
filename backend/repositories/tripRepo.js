@@ -19,16 +19,28 @@ const createTrip = async (tripData) => {
 
 const getTripsByTransporter = async (transporterId, queryParams = {}) => {
   const filter = { transporter_id: transporterId };
-  if (queryParams.status) filter.status = queryParams.status;
+  if (queryParams.status && queryParams.status !== 'all') filter.status = queryParams.status;
   const pagination = parsePaginationParams(queryParams, { defaultLimit: 10, maxLimit: 100 });
   const baseQuery = tripModel.find(filter).sort({ createdAt: -1 });
 
-  if (pagination) {
-    const [items, total] = await Promise.all([
-      populateTrip(baseQuery.skip(pagination.skip).limit(pagination.limit)).lean(),
-      tripModel.countDocuments(filter),
-    ]);
+  let query = pagination
+    ? baseQuery.skip(pagination.skip).limit(pagination.limit)
+    : baseQuery;
 
+  let items = await populateTrip(query).lean();
+
+  // Post-populate search filter (search by vehicle reg or stop city)
+  if (queryParams.search) {
+    const q = queryParams.search.toLowerCase();
+    items = items.filter(t =>
+      t._id?.toString().toLowerCase().includes(q) ||
+      t.assigned_vehicle_id?.registration?.toLowerCase().includes(q) ||
+      t.stops?.some(s => s.address?.city?.toLowerCase().includes(q))
+    );
+  }
+
+  if (pagination) {
+    const total = await tripModel.countDocuments(filter);
     return {
       items,
       pagination: {
@@ -40,21 +52,32 @@ const getTripsByTransporter = async (transporterId, queryParams = {}) => {
     };
   }
 
-  return await populateTrip(baseQuery).lean();
+  return items;
 };
 
 const getTripsByDriver = async (driverId, queryParams = {}) => {
   const filter = { assigned_driver_id: driverId };
-  if (queryParams.status) filter.status = queryParams.status;
+  if (queryParams.status && queryParams.status !== 'all') filter.status = queryParams.status;
   const pagination = parsePaginationParams(queryParams, { defaultLimit: 10, maxLimit: 100 });
   const baseQuery = tripModel.find(filter).sort({ createdAt: -1 });
 
-  if (pagination) {
-    const [items, total] = await Promise.all([
-      populateTrip(baseQuery.skip(pagination.skip).limit(pagination.limit)).lean(),
-      tripModel.countDocuments(filter),
-    ]);
+  let query = pagination
+    ? baseQuery.skip(pagination.skip).limit(pagination.limit)
+    : baseQuery;
 
+  let items = await populateTrip(query).lean();
+
+  if (queryParams.search) {
+    const q = queryParams.search.toLowerCase();
+    items = items.filter(t =>
+      t._id?.toString().toLowerCase().includes(q) ||
+      t.assigned_vehicle_id?.registration?.toLowerCase().includes(q) ||
+      t.stops?.some(s => s.address?.city?.toLowerCase().includes(q))
+    );
+  }
+
+  if (pagination) {
+    const total = await tripModel.countDocuments(filter);
     return {
       items,
       pagination: {
@@ -66,7 +89,7 @@ const getTripsByDriver = async (driverId, queryParams = {}) => {
     };
   }
 
-  return await populateTrip(baseQuery).lean();
+  return items;
 };
 
 const getTripById = async (tripId) => {
@@ -192,6 +215,41 @@ const getCompletedTripsByDriver = async (driverId) => {
   return await tripModel.countDocuments({ assigned_driver_id: driverId, status: 'Completed' });
 };
 
+const getDriverDashboardStats = async (driverId, options = {}) => {
+  const { now = new Date(), sevenDaysFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) } = options;
+
+  const statuses = ['Scheduled', 'Active', 'Completed', 'Cancelled'];
+  const counts = await Promise.all(
+    statuses.map(status => tripModel.countDocuments({ assigned_driver_id: driverId, status }))
+  );
+
+  const statusBreakdown = {
+    Scheduled: counts[0],
+    Active: counts[1],
+    Completed: counts[2],
+    Cancelled: counts[3]
+  };
+
+  const activeTripsCount = statusBreakdown.Scheduled + statusBreakdown.Active;
+
+  const upcomingTrips = await tripModel.find({
+    assigned_driver_id: driverId,
+    status: 'Scheduled',
+    planned_start_at: { $gte: now, $lte: sevenDaysFromNow }
+  })
+    .sort({ planned_start_at: 1 })
+    .limit(5)
+    .lean();
+
+  return {
+    statusBreakdown,
+    activeTripsCount,
+    completedTripsCount: statusBreakdown.Completed,
+    upcomingTripsCount: upcomingTrips.length,
+    upcomingTrips
+  };
+};
+
 export default {
   createTrip,
   getTripsByTransporter,
@@ -216,4 +274,5 @@ export default {
   addStopToTrip,
   getTripByOrderIdWithDetails,
   getCompletedTripsByDriver,
+  getDriverDashboardStats,
 };

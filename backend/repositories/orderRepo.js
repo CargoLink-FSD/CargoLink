@@ -58,12 +58,20 @@ const getOrdersByCustomer = async (customerId, { search, status, page, limit } =
     return await findQuery.lean();
 };
 
-const getOrdersByTransporter = async (transporterId, { status, page, limit } = {}) => {
+const getOrdersByTransporter = async (transporterId, { search, status, page, limit } = {}) => {
     const query = { assigned_transporter_id: transporterId };
     const pagination = parsePaginationParams({ page, limit }, { defaultLimit: 10, maxLimit: 100 });
 
     if (status && status !== 'all') {
-        query.status = status;
+        query.status = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    }
+
+    if (search) {
+        const re = new RegExp(escapeRegex(search), 'i');
+        query.$or = [
+            { 'pickup.city': re },
+            { 'delivery.city': re },
+        ];
     }
 
     const findQuery = Order.find(query)

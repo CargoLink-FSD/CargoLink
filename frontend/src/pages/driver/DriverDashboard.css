@@ -1,0 +1,391 @@
+/* Driver Dashboard - Consistent with Transporter Dashboard Design */
+
+.dashboard-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 80px 24px 24px;
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Dashboard Header */
+.dashboard-header {
+  margin-bottom: 24px;
+}
+
+.dashboard-header h1 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.dashboard-header p {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Error Card (Non-blocking) */
+.dashboard-error-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+.dashboard-error-card button {
+  margin-left: auto;
+  padding: 6px 12px;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.dashboard-error-card button:hover {
+  background: #b91c1c;
+}
+
+/* KPI Cards Grid */
+.dashboard-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.kpi-card-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.kpi-card-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Dashboard Panels Grid */
+.dashboard-panels-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-panels-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Dashboard Panel Card */
+.dashboard-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-panel.full-width {
+  grid-column: 1 / -1;
+}
+
+.dashboard-panel h2 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Verification Status Banner */
+.verification-banner {
+  max-width: 1400px;
+  margin: 0 auto 16px;
+  padding: 14px 24px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.verification-unsubmitted {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
+}
+
+.verification-under-review {
+  background: #cce5ff;
+  color: #004085;
+  border: 1px solid #b8daff;
+}
+
+.verification-rejected {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.banner-action {
+  flex-shrink: 0;
+  padding: 6px 16px;
+  border-radius: 6px;
+  background: #fff;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid currentColor;
+  transition: opacity 0.2s;
+}
+
+.banner-action:hover {
+  opacity: 0.8;
+}
+
+/* Work List */
+.work-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.work-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  transition: border-color 0.2s ease;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.work-item:hover {
+  border-color: #d1d5db;
+}
+
+.work-item-info {
+  flex: 1;
+  min-width: 150px;
+}
+
+.work-item-route {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.work-item-date {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.work-item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Action Buttons */
+.action-btn {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+  display: inline-block;
+}
+
+.action-btn:hover {
+  opacity: 0.85;
+}
+
+.action-btn.view {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.action-btn.start {
+  background: #cffafe;
+  color: #0e7490;
+}
+
+/* Panel View All Link */
+.panel-view-all {
+  display: block;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1976d2;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.panel-view-all:hover {
+  color: #1565c0;
+}
+
+/* Loading State */
+.dashboard-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.dashboard-loading .spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f0f0f0;
+  border-top-color: #1976d2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-badge.scheduled {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.status-badge.active {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.status-badge.completed {
+  background: #d1fae5;
+  color: #047857;
+}
+
+/* Empty State */
+.empty-state-message {
+  text-align: center;
+  padding: 24px;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Donut Chart Styles */
+.donut-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.donut-empty {
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  border-radius: 50%;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.donut-segment {
+  transition: stroke-dashoffset 0.3s ease;
+}
+
+.donut-total-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  fill: #1a1a1a;
+}
+
+.donut-total-label {
+  font-size: 0.75rem;
+  fill: #6b7280;
+}
+
+.donut-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  max-width: 300px;
+}
+
+.donut-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #374151;
+}
+
+.donut-legend-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.donut-legend-label {
+  color: #6b7280;
+}
+
+.donut-legend-value {
+  font-weight: 600;
+  color: #1a1a1a;
+}
