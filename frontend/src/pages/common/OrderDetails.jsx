@@ -185,23 +185,11 @@ export default function OrderDetails() {
     });
   };
 
-  const truckTypeLabel = (t) => {
-    const map = {
-      van: 'Van',
-      'truck-small': 'Small Truck',
-      'truck-medium': 'Medium Truck',
-      'truck-large': 'Large Truck',
-      refrigerated: 'Refrigerated Truck',
-      flatbed: 'Flatbed Truck',
-      container: 'Container Truck',
-      any: 'Any',
-    };
-    return map[t] || t || '—';
-  };
-
   const getStatusClass = (status) => {
     return status ? status.toLowerCase().replace(/\s+/g, '-') : 'unknown';
   };
+
+  const scheduledAssignment = order?.scheduled_assignment || null;
 
   const calculateInsurance = () => {
     if (!order?.shipments || order.shipments.length === 0) return 0;
@@ -286,10 +274,6 @@ export default function OrderDetails() {
           <div className="info-section">
             <h3>Cargo Details</h3>
             <div className="info-grid">
-              <div className="info-item">
-                <span className="label">Vehicle Type</span>
-                <span className="value">{truckTypeLabel(order.truck_type)}</span>
-              </div>
               <div className="info-item">
                 <span className="label">Cargo Type</span>
                 <span className="value">{order.goods_type}</span>
@@ -438,6 +422,33 @@ export default function OrderDetails() {
             </div>
           )}
 
+          {/* Scheduled assignment information */}
+          {(userType === 'customer' || userType === 'transporter') && scheduledAssignment && (
+            <div className="info-section">
+              <h3>Scheduled Assignment</h3>
+              <div className="info-grid">
+                <div className="info-item">
+                  <span className="label">Assigned Driver</span>
+                  <span className="value">
+                    {scheduledAssignment.driver
+                      ? `${scheduledAssignment.driver.firstName || ''} ${scheduledAssignment.driver.lastName || ''}`.trim()
+                      : 'Not assigned'}
+                  </span>
+                </div>
+                <div className="info-item">
+                  <span className="label">Driver Contact</span>
+                  <span className="value">{scheduledAssignment.driver?.phone || 'N/A'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="label">Assigned Vehicle</span>
+                  <span className="value">
+                    {scheduledAssignment.vehicle?.registration || order.assignment?.vehicle_number || 'Not assigned'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Customer Information (for transporters) */}
           {userType === 'transporter' && order.customer_id && (
             <div className="info-section">
@@ -472,6 +483,12 @@ export default function OrderDetails() {
                 onClick={() => navigate(`/transporter/orders/${order._id}/chat`)}
               >
                 Open Chat
+            {userType === 'customer' && order.status === 'Payment Pending' && (
+              <button
+                className="btn btn-primary"
+                onClick={() => navigate(`/customer/paynow?orderId=${order._id}&amount=${order.final_price || order.max_price || 0}`)}
+              >
+                Complete Payment
               </button>
             )}
           </div>

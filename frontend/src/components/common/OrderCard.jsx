@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
+import { Building2, UserRound, Truck } from 'lucide-react';
 import { toApiUrl } from '../../utils/apiBase';
 import './OrderCard.css';
 
@@ -9,25 +10,24 @@ export default function OrderCard({
   variant = 'customer', // 'customer' or 'transporter'
   onDelete,
   onCancelOrder,
+  onCompletePayment,
   onViewDetails,
 }) {
   const navigate = useNavigate();
 
-  const truckTypeLabel = (t) => {
-    const map = {
-      van: 'Van',
-      'truck-small': 'Small Truck',
-      'truck-medium': 'Medium Truck',
-      'truck-large': 'Large Truck',
-      refrigerated: 'Refrigerated Truck',
-      flatbed: 'Flatbed Truck',
-      container: 'Container Truck',
-      any: 'Any',
-    };
-    return map[t] || t || 'Not Specified';
-  };
-
   const statusClass = order.status?.toLowerCase().replace(/\s+/g, '-') || 'unknown';
+  const scheduledAssignment = order.scheduled_assignment || null;
+  const assignedVehicleNumber =
+    scheduledAssignment?.vehicle?.registration ||
+    order.assignment?.vehicle_number ||
+    'Not Assigned';
+  const assignedDriverName = scheduledAssignment?.driver
+    ? `${scheduledAssignment.driver.firstName || ''} ${scheduledAssignment.driver.lastName || ''}`.trim()
+    : 'Not Assigned';
+  const assignedTransporterName =
+    scheduledAssignment?.transporter?.name ||
+    order.assigned_transporter_id?.name ||
+    (variant === 'transporter' ? 'You' : 'Not Assigned');
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -60,6 +60,11 @@ export default function OrderCard({
   const handleCancelOrder = (e) => {
     e.stopPropagation();
     if (onCancelOrder) onCancelOrder(order._id);
+  };
+
+  const handleCompletePayment = (e) => {
+    e.stopPropagation();
+    if (onCompletePayment) onCompletePayment(order);
   };
 
   const handleViewBids = (e) => {
@@ -115,34 +120,16 @@ export default function OrderCard({
 
         <ul className="order-list">
           <li>
-            <svg className="li-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10 17h4V5H2v12h3" />
-              <path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5" />
-              <circle cx="7.5" cy="17.5" r="2.5" />
-              <circle cx="17.5" cy="17.5" r="2.5" />
-            </svg>
-            {truckTypeLabel(order.truck_type)}
+            <Building2 size={18} className="li-icon" aria-hidden="true" />
+            {assignedTransporterName}
           </li>
           <li>
-            <svg className="li-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" />
-              <path d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9" />
-            </svg>
-            {order.goods_type || 'Not Specified'}
+            <UserRound size={18} className="li-icon" aria-hidden="true" />
+            {assignedDriverName}
           </li>
           <li>
-            <svg className="li-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2v20" />
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-            {order.final_price ? `₹${order.final_price}` : order.max_price ? `₹${order.max_price}` : '—'}
-          </li>
-          <li>
-            <svg className="li-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="8" width="18" height="8" rx="1.5" ry="1.5" />
-              <path d="M6 12h2M10 12h4M17 12h1" />
-            </svg>
-            {order.assignment?.vehicle_number || 'Not Assigned'}
+            <Truck size={18} className="li-icon" aria-hidden="true" />
+            {assignedVehicleNumber}
           </li>
         </ul>
 
@@ -183,6 +170,15 @@ export default function OrderCard({
               Cancel Order
             </button>
           </>
+        )}
+
+        {variant === 'customer' && order.status?.toLowerCase() === 'payment pending' && (
+          <button
+            className="btn btn-primary"
+            onClick={handleCompletePayment}
+          >
+            Complete Payment
+          </button>
         )}
 
         {variant === 'customer' && ['started', 'in transit', 'scheduled'].includes(order.status?.toLowerCase()) && (
@@ -228,18 +224,17 @@ OrderCard.propTypes = {
     }),
     goods_type: PropTypes.string,
     weight: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    truck_type: PropTypes.string,
     distance: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     max_price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     final_price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     assignment: PropTypes.shape({
       vehicle_number: PropTypes.string,
-      vehicle_type: PropTypes.string,
       vehicle_id: PropTypes.string,
     }),
   }).isRequired,
   variant: PropTypes.oneOf(['customer', 'transporter']),
   onDelete: PropTypes.func,
   onCancelOrder: PropTypes.func,
+  onCompletePayment: PropTypes.func,
   onViewDetails: PropTypes.func,
 };

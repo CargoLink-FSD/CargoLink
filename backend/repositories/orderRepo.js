@@ -2,6 +2,15 @@ import mongoose from 'mongoose';
 import Order from '../models/order.js';
 import { escapeRegex, parsePaginationParams } from '../utils/misc.js';
 
+const normalizeStatusFilter = (status) => {
+    if (!status || status === 'all') return null;
+    return String(status)
+        .trim()
+        .split(/\s+/)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .join(' ');
+};
+
 
 const countOrdersByCustomer = async (customerId) => {
     return Order.aggregate()
@@ -22,10 +31,9 @@ const getOrdersByCustomer = async (customerId, { search, status, page, limit } =
     const query = { customer_id: customerId };
     const pagination = parsePaginationParams({ page, limit }, { defaultLimit: 10, maxLimit: 100 });
 
-    if (status && status !== 'all') {
-        // Capitalise first letter to match stored values (e.g. "completed" → "Completed")
-        const formatted = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
-        query.status = formatted;
+    const normalizedStatus = normalizeStatusFilter(status);
+    if (normalizedStatus) {
+        query.status = normalizedStatus;
     }
 
     if (search) {
@@ -36,7 +44,9 @@ const getOrdersByCustomer = async (customerId, { search, status, page, limit } =
         ];
     }
 
-    const findQuery = Order.find(query).sort({ createdAt: -1 });
+    const findQuery = Order.find(query)
+        .populate('assigned_transporter_id', 'name primary_contact email')
+        .sort({ createdAt: -1 });
 
     if (pagination) {
         const [orders, total] = await Promise.all([
@@ -62,8 +72,9 @@ const getOrdersByTransporter = async (transporterId, { search, status, page, lim
     const query = { assigned_transporter_id: transporterId };
     const pagination = parsePaginationParams({ page, limit }, { defaultLimit: 10, maxLimit: 100 });
 
-    if (status && status !== 'all') {
-        query.status = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    const normalizedStatus = normalizeStatusFilter(status);
+    if (normalizedStatus) {
+        query.status = normalizedStatus;
     }
 
     if (search) {
@@ -354,8 +365,10 @@ const getCustomerDashboardStats = async (customerId, dateFilters) => {
         const breakdown = {
             Placed: 0,
             Assigned: 0,
+            Scheduled: 0,
             'In Transit': 0,
             Started: 0,
+            'Payment Pending': 0,
             Completed: 0,
             Cancelled: 0,
             Other: 0

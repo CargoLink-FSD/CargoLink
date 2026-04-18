@@ -205,7 +205,7 @@ const addStopToTrip = async (tripId, stop, afterIndex) => {
 
 const getTripByOrderIdWithDetails = async (orderId) => {
   return await tripModel
-    .findOne({ order_ids: orderId, status: { $in: ['Scheduled', 'In Transit', 'Delayed'] } })
+    .findOne({ order_ids: orderId, status: { $in: ['Scheduled', 'Active', 'In Transit', 'Delayed', 'Completed'] } })
     .populate({ path: 'transporter_id', select: 'name primary_contact email' })
     .populate('assigned_vehicle_id', 'name registration truck_type')
     .populate('assigned_driver_id', 'firstName lastName phone');

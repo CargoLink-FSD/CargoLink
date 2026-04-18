@@ -109,7 +109,7 @@ const getDashboardStats = async (customerId) => {
   }
 
   // Define active statuses
-  const activeStatuses = ['Placed', 'Assigned', 'In Transit', 'Started'];
+  const activeStatuses = ['Placed', 'Assigned', 'Scheduled', 'Started', 'In Transit', 'Payment Pending'];
   
   // Get current month date range
   const now = new Date();

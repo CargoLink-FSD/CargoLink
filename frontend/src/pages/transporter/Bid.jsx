@@ -106,18 +106,6 @@ export default function BidPage() {
                 </select>
               </div>
               <div className="filter-control">
-                <label htmlFor="vehicleType">Vehicle Type</label>
-                <select id="vehicle-type" name="vehicleType" value={filters.vehicleType} onChange={handleFilterChange}>
-                  <option value="">All Types</option>
-                  <option value="van">Van</option>
-                  <option value="truck">Truck</option>
-                  <option value="tanker">Tanker</option>
-                  <option value="heavyload">Heavy Load</option>
-                  <option value="refrigerated">Refrigerated</option>
-                  <option value="flatbed">Flatbed</option>
-                </select>
-              </div>
-              <div className="filter-control">
                 <label htmlFor="minPrice">Min Price ($)</label>
                 <input type="number" id="price-min" name="minPrice" value={filters.minPrice} onChange={handleFilterChange} placeholder="Minimum price" />
               </div>
@@ -149,7 +137,6 @@ export default function BidPage() {
                     <div className="bid-detail"><span className="detail-label">Pickup:</span><span>{bid.pickup?.city}, {bid.pickup?.state}</span></div>
                     <div className="bid-detail"><span className="detail-label">Delivery:</span><span>{bid.delivery?.city}, {bid.delivery?.state}</span></div>
                     <div className="bid-detail"><span className="detail-label">Distance:</span><span>{bid.distance} km</span></div>
-                    <div className="bid-detail"><span className="detail-label">Truck Type:</span><span>{bid.truck_type}</span></div>
                     <div className="bid-detail"><span className="detail-label">Weight:</span><span>{bid.weight} kg</span></div>
                     <div className="bid-detail"><span className="detail-label">Goods Type:</span><span>{bid.goods_type}</span></div>
                   </div>

@@ -20,18 +20,6 @@ const GOODS_TYPES = [
   { value: 'other', label: 'Other' }
 ];
 
-const VEHICLE_TYPES = [
-  { value: '', label: 'Select vehicle type' },
-  { value: 'van', label: 'Van' },
-  { value: 'truck-small', label: 'Small Truck' },
-  { value: 'truck-medium', label: 'Medium Truck' },
-  { value: 'truck-large', label: 'Large Truck' },
-  { value: 'refrigerated', label: 'Refrigerated Truck' },
-  { value: 'flatbed', label: 'Flatbed Truck' },
-  { value: 'container', label: 'Container Truck' },
-  { value: 'any', label: 'Any' }
-];
-
 export default function PlaceOrder() {
   const {
     formData,
@@ -317,23 +305,6 @@ export default function PlaceOrder() {
                 )}
               </div>
 
-              <div className="form-group">
-                <label htmlFor="vehicle-type" className="form-label">Vehicle Type Required</label>
-                <select
-                  id="vehicle-type"
-                  className={`input-field ${errors['cargo.vehicle'] && touched['cargo.vehicle'] ? 'error' : ''}`}
-                  value={formData.cargo.vehicle}
-                  onChange={(e) => handleInputChange('cargo', 'vehicle', e.target.value)}
-                  onBlur={() => setFieldTouched('cargo.vehicle')}
-                >
-                  {VEHICLE_TYPES.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-                {errors['cargo.vehicle'] && touched['cargo.vehicle'] && (
-                  <span className="error-message">{errors['cargo.vehicle']}</span>
-                )}
-              </div>
             </div>
 
             <div className="form-row">

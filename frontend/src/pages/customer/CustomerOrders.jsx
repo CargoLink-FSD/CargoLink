@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
+import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchCustomerOrders,
@@ -17,6 +18,7 @@ import "./CustomerOrders.css";
 
 export default function CustomerOrders() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { showNotification } = useNotification();
   const orders = useSelector(selectAllOrders);
   const loading = useSelector(selectOrdersLoading);
@@ -166,6 +168,11 @@ export default function CustomerOrders() {
     }
   }, [duesSummary, showNotification, loadCancellationDues]);
 
+  const handleCompletePayment = useCallback((order) => {
+    const amount = Number(order?.final_price || order?.max_price || 0);
+    navigate(`/customer/paynow?orderId=${order?._id}&amount=${amount}`);
+  }, [navigate]);
+
   return (
     <>
       <Header />
@@ -208,6 +215,7 @@ export default function CustomerOrders() {
             <option value="scheduled">Scheduled</option>
             <option value="started">Started</option>
             <option value="in transit">In Transit</option>
+            <option value="payment pending">Payment Pending</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
@@ -246,7 +254,12 @@ export default function CustomerOrders() {
           <div className="co-grid">
             {orders.map((order) => (
               <div key={order._id} className="co-card-wrap">
-                <OrderCard order={order} variant="customer" onCancelOrder={handleCancelOrder} />
+                <OrderCard
+                  order={order}
+                  variant="customer"
+                  onCancelOrder={handleCancelOrder}
+                  onCompletePayment={handleCompletePayment}
+                />
               </div>
             ))}
           </div>

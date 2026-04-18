@@ -6,6 +6,7 @@ import razorpay from "../config/razorpay.js";
 import { AppError } from "../utils/misc.js";
 import { getCustomerDuesSummary, settleCustomerDues } from "./cancellationPolicyService.js";
 import { DOMAIN_EVENTS, emitDomainEvent } from '../utils/eventEmitter.js';
+import walletService from './walletService.js';
 
 const assertRazorpaySigningConfigured = () => {
   if (!process.env.RAZORPAY_KEY_SECRET) {
@@ -32,6 +33,11 @@ export default {
     // Must have a transporter assigned
     if (!order.assigned_transporter_id) {
       throw new AppError(400, 'InvalidOperation', 'Cannot pay before a transporter is assigned', 'ERR_INVALID_OPERATION');
+    }
+
+    // Final payment can be made only once delivery is complete and awaiting settlement.
+    if (!['Payment Pending', 'Completed'].includes(order.status)) {
+      throw new AppError(400, 'InvalidOperation', 'Final payment is available only after delivery confirmation', 'ERR_INVALID_OPERATION');
     }
 
     // Check if payment already completed
@@ -154,8 +160,6 @@ export default {
     }
 
     // 3. Update order payment_status + status
-    // NOTE: Frontend treats "Pay Now" as delivery completion, so once final payment
-    // is verified we mark the order as Completed as well (unless cancelled).
     const order = await orderModel.findById(orderId);
     if (!order) {
       throw new AppError(404, 'NotFound', 'Order not found', 'ERR_NOT_FOUND');
@@ -166,6 +170,14 @@ export default {
       order.status = 'Completed';
     }
     await order.save();
+
+    if (order.assigned_transporter_id && order.final_price) {
+      await walletService.creditOrderEarnings(
+        order.assigned_transporter_id.toString(),
+        order._id,
+        order.final_price
+      );
+    }
 
     const recipients = [{ userId: order.customer_id?.toString(), role: 'customer' }];
     if (order.assigned_transporter_id) {

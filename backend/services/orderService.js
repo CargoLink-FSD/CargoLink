@@ -1,5 +1,6 @@
 import orderRepo from "../repositories/orderRepo.js"
 import bidRepo from "../repositories/bidRepo.js"
+import tripRepo from "../repositories/tripRepo.js"
 import Fleet from "../models/fleet.js"
 import { AppError, logger } from "../utils/misc.js"
 import { DOMAIN_EVENTS, emitDomainEvent } from '../utils/eventEmitter.js';
@@ -13,10 +14,40 @@ import {
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
+const attachScheduledAssignment = async (orderLike) => {
+    if (!orderLike?._id) return orderLike;
+    
+    const baseOrder = orderLike.toObject ? orderLike.toObject() : { ...orderLike };
+    const trip = await tripRepo.getTripByOrderIdWithDetails(baseOrder._id);
+    
+    if (!trip) return baseOrder;
+
+    baseOrder.scheduled_assignment = {
+        trip_id: trip._id,
+        transporter: trip.transporter_id || baseOrder.assigned_transporter_id || null,
+        driver: trip.assigned_driver_id || null,
+        vehicle: trip.assigned_vehicle_id || null,
+        planned_start_at: trip.planned_start_at || null,
+        planned_end_at: trip.planned_end_at || null,
+    };
+    return baseOrder;
+};
+
+const attachScheduledAssignments = async (orders = []) => {
+    if (!Array.isArray(orders) || !orders.length) return orders;
+    return await Promise.all(orders.map((order) => attachScheduledAssignment(order)));
+};
+
 const getOrdersByUser = async (userId, role, filters = {}) => {
     let orders;
     if (role === 'customer') {
+        logger.debug(`Fetching orders for customer ${userId} with filters: ${JSON.stringify(filters)}`);
         orders = await orderRepo.getOrdersByCustomer(userId, filters);
+        if (Array.isArray(orders)) {
+            orders = await attachScheduledAssignments(orders);
+        } else if (orders?.items) {
+            orders.items = await attachScheduledAssignments(orders.items);
+        }
     } else if (role === 'transporter') {
         orders = await orderRepo.getOrdersByTransporter(userId, {
             status: filters.status,
@@ -41,6 +72,9 @@ const getOrderDetails = async (orderId, userId, role) => {
     let order;
     if (role === 'customer') {
         order = await orderRepo.getOrderDetailsForCustomer(orderId, userId);
+        if (order) {
+            order = await attachScheduledAssignment(order);
+        }
     } else if (role === 'transporter') {
         order = await orderRepo.getOrderDetailsForTransporter(orderId, userId);
     }

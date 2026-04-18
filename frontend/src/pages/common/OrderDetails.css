@@ -40,6 +40,11 @@
   color: #7b1fa2;
 }
 
+.status-badge.scheduled {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
 .status-badge.in-transit,
 .status-badge.started {
   background: #e8f5e9;
@@ -49,6 +54,11 @@
 .status-badge.completed {
   background: #e0f2f1;
   color: #00796b;
+}
+
+.status-badge.payment-pending {
+  background: #fff4e5;
+  color: #b45309;
 }
 
 .status-badge.cancelled {

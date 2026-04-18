@@ -79,6 +79,11 @@
     color: white;
 }
 
+.track-order-page .status-badge.payment-pending {
+    background-color: #b45309;
+    color: white;
+}
+
 /* Main Layout Grid */
 .track-order-page .order-grid {
     display: grid;

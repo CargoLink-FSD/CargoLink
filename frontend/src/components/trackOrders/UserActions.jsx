@@ -1,6 +1,6 @@
 // src/components/trackOrder/CustomerActions.jsx
 import React, { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { CircleCheck } from 'lucide-react';
 import { useNotification } from '../../context/NotificationContext';
 
 
@@ -45,15 +45,26 @@ const CustomerActions = ({ order }) => {
             </span>
           </div>
         </div>
+      ) : order.status === 'Payment Pending' ? (
+        <div className="card update-status-card">
+          <div className="card-header">
+            <h2 className="card-title">Payment Pending</h2>
+          </div>
+          <div className="action-buttons" style={{ justifyContent: 'center', padding: '12px 0' }}>
+            <span style={{ color: '#555', fontSize: '0.95rem' }}>
+              Please complete payment from the My Orders page.
+            </span>
+          </div>
+        </div>
       ) : (
         <div className="card update-status-card">
           <div className="card-header">
-            <h2 className="card-title">Complete Delivery</h2>
+            <h2 className="card-title">Order In Progress</h2>
           </div>
-          <div className="action-buttons">
-            <Link to={`/customer/paynow?orderId=${order._id}&amount=${order.final_price}`} className="btn btn-primary">
-              Pay Now
-            </Link>
+          <div className="action-buttons" style={{ justifyContent: 'center', padding: '12px 0' }}>
+            <span style={{ color: '#555', fontSize: '0.95rem' }}>
+              Payment becomes available after delivery confirmation.
+            </span>
           </div>
         </div>
       )}
@@ -95,7 +106,6 @@ const CustomerActions = ({ order }) => {
 
 
 const TransporterActions = ({ order }) => {
-  const { orderId } = useParams();
   const [otp, setOtp] = useState('');
   const { showNotification } = useNotification();
   
@@ -199,7 +209,6 @@ const TransporterActions = ({ order }) => {
 };
 
 const UserActions = ({ order, userRole }) => {
-  console.log('UserActions received userRole:', userRole);
   return (
     <>
       {userRole === 'customer' ? (
