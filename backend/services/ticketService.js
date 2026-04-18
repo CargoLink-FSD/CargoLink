@@ -1,5 +1,6 @@
 import ticketRepo from '../repositories/ticketRepo.js';
 import managerService from './managerService.js';
+import managerRepo from '../repositories/managerRepo.js';
 import { AppError } from '../utils/misc.js';
 import { DOMAIN_EVENTS, emitDomainEvent } from '../utils/eventEmitter.js';
 
@@ -139,6 +140,11 @@ const addManagerReply = async (ticketId, text, managerName = 'Manager', managerI
         throw new AppError(400, 'ValidationError', 'Cannot reply to a closed ticket', 'ERR_TICKET_CLOSED');
     }
 
+    // Verify the ticket is assigned to this manager
+    if (managerId && ticket.assignedManager && ticket.assignedManager.toString() !== managerId.toString()) {
+        throw new AppError(403, 'ForbiddenError', 'This ticket is not assigned to you', 'ERR_FORBIDDEN');
+    }
+
     // Auto-set status to in_progress if it was open
     if (ticket.status === 'open') {
         await ticketRepo.updateTicketStatus(ticketId, 'in_progress');
@@ -174,6 +180,11 @@ const updateTicketStatus = async (ticketId, status, managerId = null) => {
     // Once closed, manager cannot change status
     if (ticket.status === 'closed') {
         throw new AppError(400, 'ValidationError', 'Closed tickets cannot be modified', 'ERR_TICKET_CLOSED');
+    }
+
+    // Verify the ticket is assigned to this manager
+    if (managerId && ticket.assignedManager && ticket.assignedManager.toString() !== managerId.toString()) {
+        throw new AppError(403, 'ForbiddenError', 'This ticket is not assigned to you', 'ERR_FORBIDDEN');
     }
 
     // If closing the ticket, decrement the assigned manager's open ticket count
@@ -212,6 +223,11 @@ const reopenTicket = async (ticketId, userId) => {
         throw new AppError(400, 'ValidationError', 'Only closed tickets can be reopened', 'ERR_INVALID_STATUS');
     }
     const updated = await ticketRepo.updateTicketStatus(ticketId, 'in_progress');
+
+    // Re-increment the manager's open ticket count since it was decremented on close
+    if (updated.assignedManager) {
+        await managerRepo.incrementOpenTicketCount(updated.assignedManager);
+    }
 
     if (updated.assignedManager) {
         emitDomainEvent(DOMAIN_EVENTS.TICKET_REOPENED, {

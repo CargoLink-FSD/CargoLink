@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Eye, EyeOff } from 'lucide-react';
 import { loginUser } from '../../store/slices/authSlice';
@@ -93,9 +93,9 @@ export default function ManagerLogin() {
 
             <p style={{ textAlign: 'center', marginTop: 16, fontSize: '0.88rem', color: '#64748b' }}>
               Have an invitation code?{' '}
-              <a href="/manager/register" style={{ color: '#6366f1', fontWeight: 600, textDecoration: 'none' }}>
+              <Link to="/manager/register" style={{ color: '#6366f1', fontWeight: 600, textDecoration: 'none' }}>
                 Register here
-              </a>
+              </Link>
             </p>
           </form>
         </div>

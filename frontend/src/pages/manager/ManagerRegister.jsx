@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNotification } from '../../context/NotificationContext';
 import { registerManager } from '../../api/manager';
@@ -151,9 +151,9 @@ export default function ManagerRegister() {
 
                         <p style={{ textAlign: 'center', marginTop: 16, fontSize: '0.88rem', color: '#64748b' }}>
                             Already registered?{' '}
-                            <a href="/manager/login" style={{ color: '#6366f1', fontWeight: 600, textDecoration: 'none' }}>
+                            <Link to="/manager/login" style={{ color: '#6366f1', fontWeight: 600, textDecoration: 'none' }}>
                                 Sign in here
-                            </a>
+                            </Link>
                         </p>
                     </form>
                 </div>

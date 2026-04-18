@@ -64,7 +64,7 @@ const approveDocument = async (req, res, next) => {
   try {
     const { id, docType } = req.params;
     const { entityType } = req.body; // 'transporter' or 'driver'
-    const result = await managerService.approveDocument(id, entityType || 'transporter', docType);
+    const result = await managerService.approveDocument(id, entityType || 'transporter', docType, req.user.id);
     res.status(200).json({
       success: true,
       data: {
@@ -89,7 +89,7 @@ const rejectDocument = async (req, res, next) => {
       throw new AppError(400, 'ValidationError', 'Rejection reason is required', 'ERR_MISSING_NOTE');
     }
 
-    const result = await managerService.rejectDocument(id, entityType || 'transporter', docType, note);
+    const result = await managerService.rejectDocument(id, entityType || 'transporter', docType, note, req.user.id);
     res.status(200).json({
       success: true,
       data: {

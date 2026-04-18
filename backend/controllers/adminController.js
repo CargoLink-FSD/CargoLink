@@ -438,7 +438,7 @@ const generateInvitationCode = async (req, res, next) => {
 
     const validCategories = [
       'Shipment Issue', 'Payment Issue', 'Transporter Complaint',
-      'Customer Complaint', 'Technical Issue', 'Account Issue', 'Other',
+      'Customer Complaint', 'Driver Complaint', 'Technical Issue', 'Account Issue', 'Other',
     ];
     const invalidCats = categories.filter(c => !validCategories.includes(c));
     if (invalidCats.length > 0) {

@@ -124,6 +124,13 @@ const getVerificationQueue = async (managerId = null) => {
         }
     }
 
+    // Sort: pending first, then by uploadedAt ascending (oldest first)
+    queue.sort((a, b) => {
+        if (a.status === 'pending' && b.status !== 'pending') return -1;
+        if (a.status !== 'pending' && b.status === 'pending') return 1;
+        return new Date(a.uploadedAt) - new Date(b.uploadedAt);
+    });
+
     // If managerId provided, filter by manager's verification categories
     if (managerId) {
         const manager = await managerRepo.findManagerById(managerId);
@@ -135,13 +142,6 @@ const getVerificationQueue = async (managerId = null) => {
         }
     }
 
-    // Sort: pending first, then by uploadedAt ascending (oldest first)
-    queue.sort((a, b) => {
-        if (a.status === 'pending' && b.status !== 'pending') return -1;
-        if (a.status !== 'pending' && b.status === 'pending') return 1;
-        return new Date(a.uploadedAt) - new Date(b.uploadedAt);
-    });
-
     return queue;
 };
 
@@ -150,20 +150,38 @@ const getRawTransporterQueue = async () => {
     return await transporterRepo.getTransportersForVerification();
 };
 
-const approveDocument = async (entityId, entityType, docType) => {
+const approveDocument = async (entityId, entityType, docType, managerId = null) => {
+    let result;
     if (entityType === 'driver') {
-        return await approveDriverDocument(entityId, docType);
+        result = await approveDriverDocument(entityId, docType);
+    } else {
+        // Default: transporter
+        result = await approveTransporterDocument(entityId, docType);
     }
-    // Default: transporter
-    return await approveTransporterDocument(entityId, docType);
+
+    // Track verification activity for the manager
+    if (managerId) {
+        await managerRepo.incrementVerifiedCount(managerId);
+    }
+
+    return result;
 };
 
-const rejectDocument = async (entityId, entityType, docType, note) => {
+const rejectDocument = async (entityId, entityType, docType, note, managerId = null) => {
+    let result;
     if (entityType === 'driver') {
-        return await rejectDriverDocument(entityId, docType, note);
+        result = await rejectDriverDocument(entityId, docType, note);
+    } else {
+        // Default: transporter
+        result = await rejectTransporterDocument(entityId, docType, note);
     }
-    // Default: transporter
-    return await rejectTransporterDocument(entityId, docType, note);
+
+    // Track verification activity for the manager
+    if (managerId) {
+        await managerRepo.incrementVerifiedCount(managerId);
+    }
+
+    return result;
 };
 
 // ─── Transporter Document Approval ───────────────────────
@@ -499,6 +517,7 @@ const seedDefaultManager = async () => {
         'Payment Issue',
         'Transporter Complaint',
         'Customer Complaint',
+        'Driver Complaint',
         'Technical Issue',
         'Account Issue',
         'Other',

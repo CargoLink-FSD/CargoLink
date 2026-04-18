@@ -53,6 +53,14 @@ const decrementOpenTicketCount = async (managerId) => {
     );
 };
 
+const incrementVerifiedCount = async (managerId) => {
+    return Manager.findByIdAndUpdate(
+        managerId,
+        { $inc: { totalVerified: 1 } },
+        { new: true }
+    );
+};
+
 const getDefaultManager = async () => {
     return Manager.findOne({ isDefault: true, status: 'active' });
 };
@@ -160,6 +168,7 @@ export default {
     getActiveManagersByCategory,
     incrementOpenTicketCount,
     decrementOpenTicketCount,
+    incrementVerifiedCount,
     getDefaultManager,
 
     // Invitation Codes

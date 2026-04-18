@@ -9,6 +9,7 @@ const ThresholdConfigSchema = new mongoose.Schema(
                 'Payment Issue',
                 'Transporter Complaint',
                 'Customer Complaint',
+                'Driver Complaint',
                 'Technical Issue',
                 'Account Issue',
                 'Other',
