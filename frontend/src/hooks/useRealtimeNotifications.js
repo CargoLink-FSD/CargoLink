@@ -11,12 +11,42 @@ import { fetchCustomerOrders } from '../store/slices/ordersSlice';
 import { fetchAvailableOrders, fetchMyBids } from '../store/slices/bidsSlice';
 import { fetchTransporterOrders } from '../store/slices/transporterOrdersSlice';
 import tokenStorage from '../utils/token';
+import { handleTokenRefresh } from '../utils/tokenRefresh';
 
 const WS_RECONNECT_DELAY_MS = 3000;
 
 const toWsUrl = (baseUrl) => {
   if (baseUrl.startsWith('https://')) return `${baseUrl.replace('https://', 'wss://')}/ws`;
   return `${baseUrl.replace('http://', 'ws://')}/ws`;
+};
+
+const resolveWsBaseUrl = () => {
+  const baseUrl = getBaseUrl();
+  if (baseUrl) return toWsUrl(baseUrl);
+
+  // In production split-deploy mode, websocket must target the backend domain.
+  // If API base URL is missing, avoid noisy reconnect loops and let polling continue.
+  if (!import.meta.env.DEV) {
+    return null;
+  }
+
+  return 'ws://localhost:3000/ws';
+};
+
+const getValidAccessToken = async () => {
+  const accessToken = tokenStorage.getAccessToken();
+  if (!accessToken) return null;
+
+  if (!tokenStorage.isTokenExpired(accessToken)) {
+    return accessToken;
+  }
+
+  try {
+    await handleTokenRefresh();
+    return tokenStorage.getAccessToken();
+  } catch {
+    return null;
+  }
 };
 
 const shouldRefreshOrders = (type = '') => {
@@ -39,12 +69,12 @@ export function useRealtimeNotifications() {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const reconnectTimerRef = useRef(null);
   const socketRef = useRef(null);
+  const reconnectAttemptsRef = useRef(0);
 
   useEffect(() => {
     const role = user?.role || user?.type;
-    const accessToken = tokenStorage.getAccessToken();
 
-    if (!isAuthenticated || !accessToken || !role) {
+    if (!isAuthenticated || !role) {
       dispatch(clearNotifications());
       if (socketRef.current) {
         socketRef.current.close();
@@ -55,13 +85,25 @@ export function useRealtimeNotifications() {
 
     let isDisposed = false;
 
-    const connect = () => {
-      const wsBase = toWsUrl(getBaseUrl());
+    const connect = async () => {
+      const wsBase = resolveWsBaseUrl();
+      if (!wsBase) {
+        dispatch(pollNotifications());
+        return;
+      }
+
+      const accessToken = await getValidAccessToken();
+      if (!accessToken) {
+        dispatch(clearNotifications());
+        return;
+      }
+
       const wsUrl = `${wsBase}?token=${encodeURIComponent(accessToken)}`;
       const ws = new WebSocket(wsUrl);
       socketRef.current = ws;
 
       ws.onopen = () => {
+        reconnectAttemptsRef.current = 0;
         dispatch(pollNotifications());
       };
 
@@ -99,9 +141,22 @@ export function useRealtimeNotifications() {
         }
       };
 
-      ws.onclose = () => {
+      ws.onclose = async (event) => {
         if (isDisposed) return;
-        reconnectTimerRef.current = setTimeout(connect, WS_RECONNECT_DELAY_MS);
+
+        // Auth failure (token expired/revoked) — try one refresh before retrying.
+        if (event?.code === 4401 && reconnectAttemptsRef.current < 1) {
+          reconnectAttemptsRef.current += 1;
+          try {
+            await handleTokenRefresh();
+          } catch {
+            return;
+          }
+        }
+
+        reconnectTimerRef.current = setTimeout(() => {
+          void connect();
+        }, WS_RECONNECT_DELAY_MS);
       };
 
       ws.onerror = () => {
@@ -109,7 +164,7 @@ export function useRealtimeNotifications() {
       };
     };
 
-    connect();
+    void connect();
 
     return () => {
       isDisposed = true;
