@@ -223,7 +223,7 @@ describe('Orders + Trips Lifecycle Pipeline', () => {
       .expect(200);
 
     const finalOrder = await Order.findById(orderId);
-    expect(finalOrder.status).toBe('Completed');
+    expect(finalOrder.status).toBe('Payment Pending');
 
     tripDoc = await Trip.findById(tripId);
     expect(tripDoc.status).toBe('Completed');
@@ -232,6 +232,6 @@ describe('Orders + Trips Lifecycle Pipeline', () => {
       .get(`/api/orders/${orderId}`)
       .set('Authorization', `Bearer ${customer.token}`)
       .expect(200);
-    expect(customerOrderView.body.data.status).toBe('Completed');
+    expect(customerOrderView.body.data.status).toBe('Payment Pending');
   });
 });

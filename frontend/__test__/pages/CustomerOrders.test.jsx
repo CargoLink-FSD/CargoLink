@@ -15,6 +15,10 @@ vi.mock('../../src/context/NotificationContext', () => ({
   useNotification: () => ({ showNotification: showNotificationMock }),
 }));
 
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => vi.fn(),
+}));
+
 vi.mock('../../src/store/slices/ordersSlice', () => ({
   fetchCustomerOrders: vi.fn((payload) => ({ type: 'orders/fetchCustomerOrders', payload })),
   deleteCustomerOrder: vi.fn((payload) => ({ type: 'orders/deleteCustomerOrder', payload })),
