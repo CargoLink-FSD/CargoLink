@@ -33,6 +33,22 @@ export default function TicketDetail() {
     useEffect(() => { loadTicket(); }, [loadTicket]);
 
     useEffect(() => {
+        const handleRealtimeNotification = (event) => {
+            const notification = event?.detail;
+            const type = notification?.type || '';
+            const ticketId = notification?.meta?.ticketId;
+            if (!type.startsWith('ticket.')) return;
+            if (!ticketId || ticketId !== id) return;
+            loadTicket();
+        };
+
+        window.addEventListener('cargolink:notification', handleRealtimeNotification);
+        return () => {
+            window.removeEventListener('cargolink:notification', handleRealtimeNotification);
+        };
+    }, [id, loadTicket]);
+
+    useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [ticket?.messages]);
 

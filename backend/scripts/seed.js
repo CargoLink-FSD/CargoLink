@@ -28,21 +28,21 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // ─── Models ────────────────────────────────────────────────────────────────────
-import Customer from "./models/customer.js";
-import Transporter from "./models/transporter.js";
-import Driver from "./models/driver.js";
-import Fleet from "./models/fleet.js";
-import Order from "./models/order.js";
-import Bid from "./models/bids.js";
-import Trip from "./models/trip.js";
-import Payment from "./models/payment.js";
-import Review from "./models/review.js";
-import Chat from "./models/chat.js";
-import Manager from "./models/manager.js";
-import InvitationCode from "./models/invitationCode.js";
-import Ticket from "./models/ticket.js";
-import ThresholdConfig from "./models/thresholdConfig.js";
-import DriverApplication from "./models/driverApplication.js";
+import Customer from "../models/customer.js";
+import Transporter from "../models/transporter.js";
+import Driver from "../models/driver.js";
+import Fleet from "../models/fleet.js";
+import Order from "../models/order.js";
+import Bid from "../models/bids.js";
+import Trip from "../models/trip.js";
+import Payment from "../models/payment.js";
+import Review from "../models/review.js";
+import Chat from "../models/chat.js";
+import Manager from "../models/manager.js";
+import InvitationCode from "../models/invitationCode.js";
+import Ticket from "../models/ticket.js";
+import ThresholdConfig from "../models/thresholdConfig.js";
+import DriverApplication from "../models/driverApplication.js";
 
 const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/CargoLink_V2";
 const DEFAULT_PASSWORD = "Password@123";
@@ -444,7 +444,7 @@ function buildTrips(orders, transporters, drivers, fleets) {
   // Group assigned/in-transit/completed orders by transporter
   const transporterOrders = {};
   orders
-    .filter((o) => ["Assigned", "In Transit", "Completed"].includes(o.status))
+    .filter((o) => ["Scheduled", "Active", "Completed"].includes(o.status))
     .forEach((o) => {
       const tid = o.assigned_transporter_id.toString();
       if (!transporterOrders[tid]) transporterOrders[tid] = [];
@@ -474,10 +474,10 @@ function buildTrips(orders, transporters, drivers, fleets) {
 
       // Determine trip status from orders
       const hasCompleted = tripOrders.some((o) => o.status === "Completed");
-      const hasInTransit = tripOrders.some((o) => o.status === "In Transit");
-      let tripStatus = "Planned";
+      const hasInTransit = tripOrders.some((o) => o.status === "Active");
+      let tripStatus = "Scheduled";
       if (hasCompleted && !hasInTransit) tripStatus = "Completed";
-      else if (hasInTransit) tripStatus = "In Transit";
+      else if (hasInTransit) tripStatus = "Active";
       else tripStatus = "Scheduled";
 
       // Build stops from order pickup/delivery in sequence
@@ -495,7 +495,7 @@ function buildTrips(orders, transporters, drivers, fleets) {
             pin: order.pickup.pin,
             coordinates: order.pickup.coordinates,
           },
-          status: tripStatus === "Completed" ? "Completed" : oi === 0 && tripStatus === "In Transit" ? "Completed" : "Pending",
+          status: tripStatus === "Completed" ? "Completed" : oi === 0 && tripStatus === "En Route" ? "Completed" : "Pending",
         });
       });
       tripOrders.forEach((order) => {
@@ -541,13 +541,13 @@ function buildTrips(orders, transporters, drivers, fleets) {
         order_ids: tripOrders.map((o) => o._id),
         status: tripStatus,
         stops,
-        current_stop_index: tripStatus === "Completed" ? stops.length - 1 : tripStatus === "In Transit" ? Math.floor(stops.length / 2) : 0,
+        current_stop_index: tripStatus === "Completed" ? stops.length - 1 : tripStatus === "Active" ? Math.floor(stops.length / 2) : 0,
         current_location: {
           coordinates: tripOrders[0].pickup.coordinates,
           updated_at: new Date(),
         },
         planned_start_at: startDate,
-        actual_start_at: ["In Transit", "Completed"].includes(tripStatus) ? startDate : undefined,
+        actual_start_at: ["Active", "Completed"].includes(tripStatus) ? startDate : undefined,
         planned_end_at: endDate,
         actual_end_at: tripStatus === "Completed" ? endDate : undefined,
         total_distance_km: totalDist,

@@ -8,6 +8,7 @@ import {
   applyTransporterCancellationPolicy,
   assertTransporterCanOperate,
 } from "./cancellationPolicyService.js";
+import { DOMAIN_EVENTS, emitDomainEvent } from '../utils/eventEmitter.js';
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 const LOADING_DELAY_MINUTES = 30; // fixed delay per pickup/dropoff for loading/unloading
@@ -180,6 +181,35 @@ const createTrip = async (transporterId, tripData) => {
       endTime: new Date(plannedEndAt),
       order_id: order_ids?.[0],
       notes: `Trip ${trip._id}`,
+    });
+  }
+
+  const recipientMap = new Map();
+  if (driverId) {
+    recipientMap.set(String(driverId), { userId: String(driverId), role: 'driver' });
+  }
+
+  for (const orderId of order_ids || []) {
+    const order = await orderRepo.getOrderById(orderId);
+    if (order?.customer_id) {
+      recipientMap.set(String(order.customer_id), {
+        userId: String(order.customer_id),
+        role: 'customer',
+      });
+    }
+  }
+
+  if (recipientMap.size > 0) {
+    emitDomainEvent(DOMAIN_EVENTS.TRIP_CREATED, {
+      type: 'trip.created',
+      title: 'Trip scheduled',
+      message: `Trip ${trip._id} has been scheduled`,
+      recipients: Array.from(recipientMap.values()),
+      actor: { userId: transporterId, role: 'transporter' },
+      meta: {
+        tripId: trip._id.toString(),
+        orderIds: (order_ids || []).map((id) => id.toString()),
+      },
     });
   }
 
@@ -372,9 +402,23 @@ const startTrip = async (driverId, tripId) => {
     await orderRepo.updateOrderStatus(firstOrderId, 'Started');
   }
 
-  return await tripRepo.updateTrip(tripId, {
+  const updatedTrip = await tripRepo.updateTrip(tripId, {
     status: 'Active', actual_start_at: new Date(), current_stop_index: 0, stops,
   });
+
+  emitDomainEvent(DOMAIN_EVENTS.TRIP_STARTED, {
+    type: 'trip.started',
+    title: 'Trip started',
+    message: `Trip ${tripId} has started`,
+    recipients: [{ userId: trip.transporter_id.toString(), role: 'transporter' }],
+    actor: { userId: driverId, role: 'driver' },
+    meta: {
+      tripId,
+      orderIds: (trip.order_ids || []).map((id) => id.toString()),
+    },
+  });
+
+  return updatedTrip;
 };
 
 const confirmPickup = async (driverId, tripId, stopId, otp) => {
@@ -397,6 +441,20 @@ const confirmPickup = async (driverId, tripId, stopId, otp) => {
   await tripRepo.updateStopStatus(tripId, stopId, { status: 'Completed', actual_departure_at: new Date() });
   // Pickup confirmed → order is now "In Transit"
   await orderRepo.updateOrderStatus(orderId, 'In Transit');
+
+  emitDomainEvent(DOMAIN_EVENTS.TRIP_PICKUP_CONFIRMED, {
+    type: 'trip.pickup.confirmed',
+    title: 'Pickup confirmed',
+    message: `Pickup confirmed for order ${orderId}`,
+    recipients: [{ userId: order.customer_id.toString(), role: 'customer' }],
+    actor: { userId: driverId, role: 'driver' },
+    meta: {
+      tripId,
+      stopId,
+      orderId: orderId.toString(),
+    },
+  });
+
   return await _advanceToNextStop(tripId);
 };
 
@@ -419,6 +477,20 @@ const confirmDelivery = async (driverId, tripId, stopId, otp) => {
 
   await tripRepo.updateStopStatus(tripId, stopId, { status: 'Completed', actual_departure_at: new Date() });
   await orderRepo.updateOrderStatus(orderId, 'Completed');
+
+  emitDomainEvent(DOMAIN_EVENTS.TRIP_DELIVERY_CONFIRMED, {
+    type: 'trip.delivery.confirmed',
+    title: 'Delivery completed',
+    message: `Delivery completed for order ${orderId}`,
+    recipients: [{ userId: order.customer_id.toString(), role: 'customer' }],
+    actor: { userId: driverId, role: 'driver' },
+    meta: {
+      tripId,
+      stopId,
+      orderId: orderId.toString(),
+    },
+  });
+
   return await _advanceToNextStop(tripId);
 };
 

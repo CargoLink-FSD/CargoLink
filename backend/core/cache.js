@@ -11,6 +11,8 @@ import { logger } from '../utils/misc.js';
 let redisClient = null;
 let cacheConnected = false;
 let cacheInitialized = false;
+const memoryPresence = new Map();
+const memoryNotificationQueues = new Map();
 
 export const isCacheAvailable = () => CACHE_ENABLED && cacheConnected && !!redisClient;
 
@@ -121,6 +123,122 @@ export const setCachedJson = async (key, value, ttlSeconds) => {
   } catch (err) {
     logger.warn('Cache write failed', { key, error: err.message });
     return false;
+  }
+};
+
+export const setUserSocketPresence = async (userId, payload = {}, ttlSeconds = 120) => {
+  if (!userId) return false;
+
+  const presenceKey = `presence:user:${userId}`;
+  const value = {
+    userId,
+    connected: payload.connected !== false,
+    role: payload.role || null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (!isCacheAvailable()) {
+    if (value.connected) {
+      memoryPresence.set(String(userId), value);
+    } else {
+      memoryPresence.delete(String(userId));
+    }
+    return true;
+  }
+
+  try {
+    if (value.connected) {
+      await redisClient.set(scopedKey(presenceKey), JSON.stringify(value), { EX: ttlSeconds });
+    } else {
+      await redisClient.del(scopedKey(presenceKey));
+    }
+    return true;
+  } catch (err) {
+    logger.warn('Failed to set user socket presence', { userId, error: err.message });
+    return false;
+  }
+};
+
+export const getUserSocketPresence = async (userId) => {
+  if (!userId) return null;
+  if (!isCacheAvailable()) {
+    return memoryPresence.get(String(userId)) || null;
+  }
+
+  try {
+    const raw = await redisClient.get(scopedKey(`presence:user:${userId}`));
+    return raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    logger.warn('Failed to read user socket presence', { userId, error: err.message });
+    return null;
+  }
+};
+
+export const enqueueNotification = async (userId, notification, { ttlSeconds = 60 * 60 * 24, maxItems = 200 } = {}) => {
+  if (!userId || !notification) return false;
+  const queueKey = `notifications:queue:user:${userId}`;
+
+  if (!isCacheAvailable()) {
+    const existing = memoryNotificationQueues.get(String(userId)) || [];
+    existing.push(notification);
+    memoryNotificationQueues.set(String(userId), existing.slice(-maxItems));
+    return true;
+  }
+
+  try {
+    const scoped = scopedKey(queueKey);
+    await redisClient.rPush(scoped, JSON.stringify(notification));
+    await redisClient.lTrim(scoped, -maxItems, -1);
+    await redisClient.expire(scoped, ttlSeconds);
+    return true;
+  } catch (err) {
+    logger.warn('Failed to enqueue notification', { userId, error: err.message });
+    return false;
+  }
+};
+
+export const dequeueAllNotifications = async (userId) => {
+  if (!userId) return [];
+  const queueKey = `notifications:queue:user:${userId}`;
+
+  if (!isCacheAvailable()) {
+    const items = memoryNotificationQueues.get(String(userId)) || [];
+    memoryNotificationQueues.delete(String(userId));
+    return items;
+  }
+
+  try {
+    const scoped = scopedKey(queueKey);
+    const items = await redisClient.lRange(scoped, 0, -1);
+    await redisClient.del(scoped);
+    return items
+      .map((item) => {
+        try {
+          return JSON.parse(item);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+  } catch (err) {
+    logger.warn('Failed to dequeue notifications', { userId, error: err.message });
+    return [];
+  }
+};
+
+export const getNotificationQueueSize = async (userId) => {
+  if (!userId) return 0;
+  const queueKey = `notifications:queue:user:${userId}`;
+
+  if (!isCacheAvailable()) {
+    return (memoryNotificationQueues.get(String(userId)) || []).length;
+  }
+
+  try {
+    return await redisClient.lLen(scopedKey(queueKey));
+  } catch (err) {
+    logger.warn('Failed to get notification queue size', { userId, error: err.message });
+    return 0;
   }
 };
 

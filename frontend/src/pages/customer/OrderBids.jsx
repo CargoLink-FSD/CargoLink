@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TriangleAlert } from 'lucide-react';
 import { useNotification } from '../../context/NotificationContext';
@@ -105,14 +105,7 @@ export default function OrderBids() {
   const [profileModal, setProfileModal] = useState(null);
   const [transporterRatings, setTransporterRatings] = useState({});
 
-  useEffect(() => {
-    loadBids();
-    // Refresh bids every 30 seconds
-    const interval = setInterval(loadBids, 30000);
-    return () => clearInterval(interval);
-  }, [orderId]);
-
-  const loadBids = async () => {
+  const loadBids = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -144,7 +137,30 @@ export default function OrderBids() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId]);
+
+  useEffect(() => {
+    loadBids();
+    // Refresh bids every 30 seconds
+    const interval = setInterval(loadBids, 30000);
+    return () => clearInterval(interval);
+  }, [loadBids]);
+
+  useEffect(() => {
+    const relevantTypes = new Set(['bid.placed', 'bid.accepted', 'order.cancelled']);
+    const handleRealtimeNotification = (event) => {
+      const notification = event?.detail;
+      const type = notification?.type || '';
+      if (!relevantTypes.has(type)) return;
+      if (notification?.meta?.orderId !== orderId) return;
+      loadBids();
+    };
+
+    window.addEventListener('cargolink:notification', handleRealtimeNotification);
+    return () => {
+      window.removeEventListener('cargolink:notification', handleRealtimeNotification);
+    };
+  }, [loadBids, orderId]);
 
   const handleAcceptBid = async (bidId) => {
     if (!window.confirm('Are you sure you want to accept this bid? This will assign the order to the transporter.')) {

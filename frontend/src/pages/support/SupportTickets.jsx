@@ -65,6 +65,20 @@ export default function SupportTickets() {
 
     useEffect(() => { loadTickets(); }, [loadTickets]);
 
+    useEffect(() => {
+        const handleRealtimeNotification = (event) => {
+            const notification = event?.detail;
+            const type = notification?.type || '';
+            if (!type.startsWith('ticket.')) return;
+            loadTickets();
+        };
+
+        window.addEventListener('cargolink:notification', handleRealtimeNotification);
+        return () => {
+            window.removeEventListener('cargolink:notification', handleRealtimeNotification);
+        };
+    }, [loadTickets]);
+
     // Fetch user's orders when an order-related category is selected
     const showOrderField = ORDER_CATEGORIES.includes(form.category);
     useEffect(() => {

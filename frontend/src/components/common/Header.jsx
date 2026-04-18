@@ -10,6 +10,7 @@ import Modal from './Modal';
 export default function Header() {
   const dispatch = useDispatch();
   const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const unreadCount = useSelector((state) => state.notifications?.unreadCount || 0);
   const userType = user?.role || user?.type;
 
 
@@ -61,6 +62,10 @@ export default function Header() {
                 <div className="profile-dropdown">
                   <span className="profile-name">Customer</span>
                   <div className="dropdown-content">
+                    <Link to="/notifications" className="dropdown-link notification-link" onClick={handleLinkClick}>
+                      Notifications
+                      {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+                    </Link>
                     <Link to="/support/tickets" className="dropdown-link" onClick={handleLinkClick}>Need Help?</Link>
                     <button onClick={handleLogout} className="logout-link">Logout</button>
                   </div>
@@ -81,6 +86,10 @@ export default function Header() {
                 <div className="profile-dropdown">
                   <span className="profile-name">Transporter</span>
                   <div className="dropdown-content">
+                    <Link to="/notifications" className="dropdown-link notification-link" onClick={handleLinkClick}>
+                      Notifications
+                      {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+                    </Link>
                     <Link to="/support/tickets" className="dropdown-link" onClick={handleLinkClick}>Need Help?</Link>
                     <button onClick={handleLogout} className="logout-link">Logout</button>
                   </div>
@@ -98,6 +107,10 @@ export default function Header() {
                 <div className="profile-dropdown">
                   <span className="profile-name">Driver</span>
                   <div className="dropdown-content">
+                    <Link to="/notifications" className="dropdown-link notification-link" onClick={handleLinkClick}>
+                      Notifications
+                      {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+                    </Link>
                     <Link to="/support/tickets" className="dropdown-link" onClick={handleLinkClick}>Need Help?</Link>
                     <button onClick={handleLogout} className="logout-link">Logout</button>
                   </div>
@@ -116,6 +129,10 @@ export default function Header() {
                 <div className="profile-dropdown">
                   <span className="profile-name">Admin</span>
                   <div className="dropdown-content">
+                    <Link to="/notifications" className="dropdown-link notification-link" onClick={handleLinkClick}>
+                      Notifications
+                      {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+                    </Link>
                     <button onClick={handleLogout} className="logout-link">Logout</button>
                   </div>
                 </div>
@@ -129,6 +146,10 @@ export default function Header() {
                 <div className="profile-dropdown">
                   <span className="profile-name">Manager</span>
                   <div className="dropdown-content">
+                    <Link to="/notifications" className="dropdown-link notification-link" onClick={handleLinkClick}>
+                      Notifications
+                      {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+                    </Link>
                     <button onClick={handleLogout} className="logout-link">Logout</button>
                   </div>
                 </div>

@@ -1,8 +1,0 @@
-[
-    {
-        "name": "Driver Page - Transporters List",
-        "method": "GET",
-        "path": "/api/drivers/transporters",
-        "auth": true
-    }
-]
