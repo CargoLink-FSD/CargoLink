@@ -10,7 +10,6 @@ const EMPTY_QUOTE = {
   toll_cost: '',
   octroi_entry_tax: '',
   risk_rate_percent: '',
-  risk_on_declared_value: '',
   gst_rate_percent: 18,
   storage_charges: '',
   notes: '',
@@ -33,12 +32,13 @@ export function useQuoteBuilder(order) {
     return isNaN(n) ? 0 : Math.max(0, n);
   };
 
+  const declaredCargoValue = useMemo(() => num(order?.cargo_value), [order?.cargo_value]);
+
   // ── computed values ──
   const riskAmount = useMemo(() => {
     const rate = num(form.risk_rate_percent) / 100;
-    const declared = num(form.risk_on_declared_value) || num(order?.cargo_value);
-    return Math.round(rate * declared);
-  }, [form.risk_rate_percent, form.risk_on_declared_value, order?.cargo_value]);
+    return Math.round(rate * declaredCargoValue);
+  }, [form.risk_rate_percent, declaredCargoValue]);
 
   const subtotal = useMemo(() => {
     let total = 0;
@@ -124,7 +124,7 @@ export function useQuoteBuilder(order) {
       octroi_entry_tax: num(form.octroi_entry_tax),
       risk_coverage: {
         rate_percent: num(form.risk_rate_percent),
-        on_declared_value: num(form.risk_on_declared_value) || num(order?.cargo_value),
+        on_declared_value: declaredCargoValue,
         amount: riskAmount,
       },
       gst: {
@@ -155,7 +155,7 @@ export function useQuoteBuilder(order) {
       showError(err || 'Failed to submit quote');
       return false;
     }
-  }, [validate, form, customItems, riskAmount, gstAmount, grandTotal, order, dispatch, showSuccess, showError]);
+  }, [validate, form, customItems, declaredCargoValue, riskAmount, gstAmount, grandTotal, order, dispatch, showSuccess, showError]);
 
   return {
     form,

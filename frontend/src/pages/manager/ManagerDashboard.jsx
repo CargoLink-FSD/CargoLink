@@ -3,10 +3,8 @@ import { getVerificationQueue, approveDocument, rejectDocument, getManagerProfil
 import { Check, CircleCheck } from 'lucide-react';
 import { useNotification } from '../../context/NotificationContext';
 import Header from '../../components/common/Header';
-import { getApiBaseUrl } from '../../utils/apiBase';
+import { toApiUrl } from '../../utils/apiBase';
 import './ManagerDashboard.css';
-
-const API_BASE = getApiBaseUrl();
 
 const statusBadge = (status) => {
   const styles = {
@@ -223,6 +221,7 @@ export default function ManagerDashboard() {
               <tbody>
                 {filteredItems.map((row, idx) => {
                   const key = `${row._id}-${row.docType}`;
+                  const previewUrl = row.url ? toApiUrl(row.url) : null;
                   const isActionLoading = actionLoading === key;
                   return (
                     <tr key={`${key}-${idx}`}>
@@ -249,14 +248,18 @@ export default function ManagerDashboard() {
                         )}
                       </td>
                       <td>
-                        <a
-                          href={`${API_BASE}${row.url}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="preview-link"
-                        >
-                          View Document
-                        </a>
+                        {previewUrl ? (
+                          <a
+                            href={previewUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="preview-link"
+                          >
+                            View Document
+                          </a>
+                        ) : (
+                          <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>Unavailable</span>
+                        )}
                       </td>
                       <td>{formatDate(row.uploadedAt)}</td>
                       <td>

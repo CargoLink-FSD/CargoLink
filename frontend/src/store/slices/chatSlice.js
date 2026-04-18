@@ -59,7 +59,7 @@ const chatSlice = createSlice({
       })
       .addCase(fetchChatMessages.fulfilled, (state, action) => {
         state.loading = false;
-        state.messages = action.payload.messages || [];
+        state.messages = Array.isArray(action.payload) ? action.payload : [];
         state.lastFetched = Date.now();
       })
       .addCase(fetchChatMessages.rejected, (state, action) => {
@@ -71,8 +71,7 @@ const chatSlice = createSlice({
       .addCase(sendChatMessage.pending, (state, action) => {
         state.error = null;
         const { message, userType } = action.meta.arg; // Removed unused `orderId`
-        console.log({message, userType});
-        
+
         const tempMessage = {
           id: `temp-${Date.now()}`, // Temporary ID
           senderType: userType, // Assuming the sender is the user
@@ -88,7 +87,9 @@ const chatSlice = createSlice({
       .addCase(sendChatMessage.rejected, (state, action) => {
         state.error = action.payload;
         // Remove the temporary message
-        state.messages = state.messages.filter(msg => !msg.id.startsWith('temp-'));
+        state.messages = state.messages.filter(
+          (msg) => !(typeof msg?.id === 'string' && msg.id.startsWith('temp-'))
+        );
       });
   }
 });

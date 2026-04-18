@@ -1,16 +1,35 @@
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
 import '../../styles/StaticPages.css';
+import contactHeroImage from '../../assets/images/features/features-3.jpg';
+import fallbackImage from '../../assets/images/default.jpg';
 
 export default function Contact() {
+  const handleImageError = (e) => {
+    e.currentTarget.src = fallbackImage;
+  };
+
   return (
     <>
       <Header />
-      <main className="main-content">
+      <main className="main-content static-page">
         <section className="page-header">
           <div className="container">
             <h1>Contact Us</h1>
             <p className="subtitle">We're Here to Help</p>
+          </div>
+        </section>
+
+        <section className="static-page-media">
+          <div className="container">
+            <div className="static-page-media-frame">
+              <img
+                src={contactHeroImage}
+                alt="Contact CargoLink"
+                loading="lazy"
+                onError={handleImageError}
+              />
+            </div>
           </div>
         </section>
 

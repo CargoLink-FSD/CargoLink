@@ -1,5 +1,7 @@
+// @vitest-environment jsdom
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 
 let mockState;
 const dispatchMock = vi.fn();
@@ -15,9 +17,13 @@ vi.mock('../../src/context/NotificationContext', () => ({
   useNotification: () => ({ showNotification: showNotificationMock }),
 }));
 
-vi.mock('react-router-dom', () => ({
-  useNavigate: () => vi.fn(),
-}));
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    useNavigate: () => vi.fn(),
+  };
+});
 
 vi.mock('../../src/store/slices/ordersSlice', () => ({
   fetchCustomerOrders: vi.fn((payload) => ({ type: 'orders/fetchCustomerOrders', payload })),
@@ -56,6 +62,14 @@ import CustomerOrders from '../../src/pages/customer/CustomerOrders';
 import { deleteCustomerOrder, fetchCustomerOrders } from '../../src/store/slices/ordersSlice';
 import { getCancellationDues } from '../../src/api/orders';
 
+function renderCustomerOrders() {
+  return render(
+    <MemoryRouter>
+      <CustomerOrders />
+    </MemoryRouter>,
+  );
+}
+
 describe('pages/CustomerOrders', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -82,7 +96,10 @@ describe('pages/CustomerOrders', () => {
       return action;
     });
 
-    vi.spyOn(window, 'prompt').mockReturnValue('Need to cancel');
+    if (!('prompt' in globalThis)) {
+      globalThis.prompt = vi.fn();
+    }
+    vi.spyOn(globalThis, 'prompt').mockReturnValue('Need to cancel');
   });
 
   afterEach(() => {
@@ -90,7 +107,7 @@ describe('pages/CustomerOrders', () => {
   });
 
   it('loads orders + cancellation dues and renders dues summary from api response', async () => {
-    render(<CustomerOrders />);
+    renderCustomerOrders();
 
     await waitFor(() => {
       expect(fetchCustomerOrders).toHaveBeenCalledWith({ search: '', status: 'all' });
@@ -103,7 +120,7 @@ describe('pages/CustomerOrders', () => {
 
   it('triggers debounced search fetch with latest query', async () => {
     vi.useFakeTimers();
-    render(<CustomerOrders />);
+    renderCustomerOrders();
 
     const searchInput = screen.getByPlaceholderText('Search by city...');
     fireEvent.change(searchInput, { target: { value: 'mumbai' } });
@@ -114,7 +131,7 @@ describe('pages/CustomerOrders', () => {
   });
 
   it('updates status filter immediately and requests filtered data', () => {
-    render(<CustomerOrders />);
+    renderCustomerOrders();
 
     const statusSelect = screen.getByDisplayValue('All Statuses');
     fireEvent.change(statusSelect, { target: { value: 'assigned' } });
@@ -125,7 +142,7 @@ describe('pages/CustomerOrders', () => {
   it('shows success notification with cancellation fee after delete response', async () => {
     deleteResult = { cancellation: { feeAmount: 200 } };
 
-    render(<CustomerOrders />);
+    renderCustomerOrders();
 
     fireEvent.click(await screen.findByRole('button', { name: 'cancel-o1' }));
 

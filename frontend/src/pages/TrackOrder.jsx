@@ -295,6 +295,10 @@ const TrackOrderPage = () => {
     return <p>No Current Order</p>
   }
 
+  const normalizedOrderStatus = String(currentOrder.status || '').toLowerCase();
+  const isInTransit = ['in transit', 'in-transit'].includes(normalizedOrderStatus);
+  const showCustomerChat = userType !== 'customer' || isInTransit;
+  const combinedSectionClass = `combined-section ${expandedSection ? 'expanded' : ''} ${showCustomerChat ? '' : 'single-panel'}`.trim();
   const scheduledAssignment = currentOrder.scheduled_assignment || null;
   const assignedVehicleLabel =
     scheduledAssignment?.vehicle?.registration ||
@@ -521,7 +525,7 @@ const TrackOrderPage = () => {
           </div>
 
           <div id="tracking-container" className="tracking-section">
-            <div className={`combined-section ${expandedSection ? 'expanded' : ''}`}>
+            <div className={combinedSectionClass}>
               <div className={`tracking-card ${expandedSection === 'tracking' ? 'expanded-card' : ''} ${expandedSection && expandedSection !== 'tracking' ? 'hidden-card' : ''}`}>
                 <div className="card">
                   <div className="card-header">
@@ -554,9 +558,20 @@ const TrackOrderPage = () => {
 
 
 
-              <div className={`chat-card ${expandedSection === 'chat' ? 'expanded-card' : ''} ${expandedSection && expandedSection !== 'chat' ? 'hidden-card' : ''}`}>
-                <ChatWindow orderId={orderId} userType={userType} />
-              </div>
+              {showCustomerChat ? (
+                <div className={`chat-card ${expandedSection === 'chat' ? 'expanded-card' : ''} ${expandedSection && expandedSection !== 'chat' ? 'hidden-card' : ''}`}>
+                  <ChatWindow orderId={orderId} userType={userType} />
+                </div>
+              ) : (
+                <div className="card chat-availability-card">
+                  <div className="card-header">
+                    <h2 className="card-title">Chat</h2>
+                  </div>
+                  <div className="chat-availability-body">
+                    Chat becomes available when your order is in transit.
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

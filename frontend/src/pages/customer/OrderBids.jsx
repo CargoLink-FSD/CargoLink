@@ -269,7 +269,7 @@ export default function OrderBids() {
   return (
     <>
       <Header />
-      <div className="orders-container">
+      <div className="orders-container order-bids-page">
         <div className="orders-header">
           <div className="header-with-back">
             <button onClick={() => navigate('/customer/orders')} className="btn-back-icon">

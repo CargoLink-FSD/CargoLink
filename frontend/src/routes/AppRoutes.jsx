@@ -36,6 +36,7 @@ import TripPlanner from '../pages/transporter/TripPlanner';
 import TripManagement from '../pages/transporter/TripManagement';
 import TripInfo from '../pages/transporter/TripInfo';
 import TransporterWallet from '../pages/transporter/TransporterWallet';
+import TransporterChat from '../pages/transporter/TransporterChat';
 
 import DriverSignupForm from '../pages/driver/DriverSignupForm';
 import DriverDashboard from '../pages/driver/DriverDashboard';
@@ -127,6 +128,7 @@ export default function AppRoutes() {
         <Route path="/transporter/orders" element={<TransporterOrders />} />
         <Route path="/transporter/orders/:orderId" element={<OrderDetails />} />
         <Route path="/transporter/orders/:orderId/track" element={<TrackOrder />} />
+        <Route path="/transporter/orders/:orderId/chat" element={<TransporterChat />} />
         <Route path="/transporter/bid" element={<BidPage />} />
         <Route path="/transporter/orders/:orderId/quote" element={<QuoteBuilder />} />
         <Route path="/transporter/my-bids" element={<MyBidsPage />} />
