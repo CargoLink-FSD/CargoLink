@@ -100,7 +100,7 @@ steps:
     args:
       - -ceu
       - |
-        if [ "${BRANCH_NAME:-}" != "main" ] && [ "${BRANCH_NAME:-}" != "master" ]; then
+        if [ "${BRANCH_NAME:-main}" != "main" ] && [ "${BRANCH_NAME:-main}" != "master" ] && [ "${BRANCH_NAME:-main}" != "ci/cd" ]; then
           echo "Skipping backend deployment for branch: ${BRANCH_NAME:-unknown}"
           exit 0
         fi
@@ -168,7 +168,7 @@ steps:
     args:
       - -ceu
       - |
-        if [ "${BRANCH_NAME:-}" != "main" ] && [ "${BRANCH_NAME:-}" != "master" ]; then
+        if [ "${BRANCH_NAME:-main}" != "main" ] && [ "${BRANCH_NAME:-main}" != "master" ] && [ "${BRANCH_NAME:-main}" != "ci/cd" ]; then
           echo "Skipping frontend deployment for branch: ${BRANCH_NAME:-unknown}"
           exit 0
         fi
@@ -184,7 +184,7 @@ steps:
     args:
       - -ceu
       - |
-        if [ "${BRANCH_NAME:-}" != "main" ] && [ "${BRANCH_NAME:-}" != "master" ]; then
+        if [ "${BRANCH_NAME:-main}" != "main" ] && [ "${BRANCH_NAME:-main}" != "master" ] && [ "${BRANCH_NAME:-main}" != "ci/cd" ]; then
           echo "Skipping traffic shift for branch: ${BRANCH_NAME:-unknown}"
           exit 0
         fi
