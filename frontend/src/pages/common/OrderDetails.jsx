@@ -483,6 +483,8 @@ export default function OrderDetails() {
                 onClick={() => navigate(`/transporter/orders/${order._id}/chat`)}
               >
                 Open Chat
+              </button>
+            )}
             {userType === 'customer' && order.status === 'Payment Pending' && (
               <button
                 className="btn btn-primary"

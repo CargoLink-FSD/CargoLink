@@ -13,6 +13,8 @@ export default {
   globalTeardown: '<rootDir>/__test__/teardown.js',
   // We don't transpile; Node ESM + --experimental-vm-modules handles imports
   transform: {},
+  // Integration suites spin up in-memory MongoDB instances; keep worker count low for stability.
+  maxWorkers: 4,
   // Show individual test results with the test suite hierarchy
   verbose: true,
 };

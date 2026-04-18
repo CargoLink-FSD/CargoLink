@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
@@ -15,6 +16,14 @@ vi.mock('react-redux', () => ({
 vi.mock('../../src/context/NotificationContext', () => ({
   useNotification: () => ({ showNotification: showNotificationMock }),
 }));
+
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    useNavigate: () => vi.fn(),
+  };
+});
 
 vi.mock('../../src/store/slices/ordersSlice', () => ({
   fetchCustomerOrders: vi.fn((payload) => ({ type: 'orders/fetchCustomerOrders', payload })),
@@ -87,7 +96,10 @@ describe('pages/CustomerOrders', () => {
       return action;
     });
 
-    vi.spyOn(window, 'prompt').mockReturnValue('Need to cancel');
+    if (!('prompt' in globalThis)) {
+      globalThis.prompt = vi.fn();
+    }
+    vi.spyOn(globalThis, 'prompt').mockReturnValue('Need to cancel');
   });
 
   afterEach(() => {
