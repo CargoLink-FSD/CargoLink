@@ -2,6 +2,7 @@ import app from './core/app.js';
 import { connectDB } from './core/db.js';
 import { createWebsocketServer } from './core/ws.js';
 import { closeCache, initCache } from './core/cache.js';
+import { startCronJobs } from './core/cron.js';
 import { logger, errorHandler } from './utils/misc.js';
 import { PORT, MONGO_URI } from './core/index.js';
 import managerService from './services/managerService.js';
@@ -37,6 +38,9 @@ process.on('unhandledRejection', (reason, promise) => {
     const server = app.listen(PORT, '0.0.0.0', () =>
       logger.info(`Server running on http://localhost:${PORT}`),
     );
+
+    // Initialize automated jobs
+    startCronJobs();
 
     // Initialize WebSocket server attached to the same HTTP server
     // `createWebsocketServer` now handles its own errors and returns null on failure.

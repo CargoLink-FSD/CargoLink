@@ -6,6 +6,7 @@ import Bid from '../models/bids.js';
 import Ticket from '../models/ticket.js';
 import Review from '../models/review.js';
 import Payment from '../models/payment.js';
+import CashoutRequest from '../models/cashoutRequest.js';
 import { escapeRegex, parsePaginationParams } from '../utils/misc.js';
 
 // Dashboard Analytics Queries
@@ -457,6 +458,33 @@ const getTicketStats = async () => {
     return stats;
 };
 
+// ─── Cashouts Overview ───
+const getAllCashouts = async (query = {}, sortOptions = { createdAt: -1 }, options = {}) => {
+    const pagination = parsePaginationParams(options, { defaultLimit: 20, maxLimit: 100 });
+    const findQuery = CashoutRequest.find(query)
+        .populate('transporter_id', 'name email primary_contact bankDetails')
+        .sort(sortOptions);
+
+    if (pagination) {
+        const [items, total] = await Promise.all([
+            findQuery.skip(pagination.skip).limit(pagination.limit).lean(),
+            CashoutRequest.countDocuments(query),
+        ]);
+
+        return {
+            items,
+            pagination: {
+                page: pagination.page,
+                limit: pagination.limit,
+                total,
+                totalPages: Math.ceil(total / pagination.limit) || 1,
+            },
+        };
+    }
+
+    return await findQuery.lean();
+};
+
 // ─── Individual User Details ───
 const getCustomerDetail = async (customerId) => {
     const customer = await Customer.findById(customerId).lean();
@@ -546,4 +574,7 @@ export default {
     // Tickets Overview
     getAllTickets,
     getTicketStats,
+
+    // Cashouts Overview
+    getAllCashouts,
 };

@@ -77,6 +77,13 @@ const TransporterSchema = new mongoose.Schema(
       noShowCount30d: { type: Number, default: 0, min: 0 },
       restrictionUntil: { type: Date, default: null },
     },
+    // Bank/UPI details for future RazorpayX payout integration — nullable for now
+    bankDetails: {
+      accountNumber: { type: String, default: null },
+      ifsc: { type: String, default: null },
+      upiId: { type: String, default: null },
+      beneficiaryName: { type: String, default: null },
+    },
   },
   { timestamps: true },
 );

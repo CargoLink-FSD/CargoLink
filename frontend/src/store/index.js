@@ -9,6 +9,8 @@ import ordersReducer from './slices/ordersSlice';
 import transporterOrdersReducer from './slices/transporterOrdersSlice';
 import bidsReducer from './slices/bidsSlice';
 import chatReducer from './slices/chatSlice';
+import walletReducer from './slices/walletSlice';
+import adminCashoutsReducer from './slices/adminCashoutsSlice';
 
 // Configure and export the Redux store
 export const store = configureStore({
@@ -21,6 +23,8 @@ export const store = configureStore({
     transporterOrders: transporterOrdersReducer,
     bids: bidsReducer,
     chat: chatReducer,
+    wallet: walletReducer,
+    adminCashouts: adminCashoutsReducer,
   },
 });
 

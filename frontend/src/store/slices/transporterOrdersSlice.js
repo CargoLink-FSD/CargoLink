@@ -7,9 +7,9 @@ import * as transporterOrdersApi from '../../api/transporterOrders';
 // Async thunk for fetching transporter's assigned orders
 export const fetchTransporterOrders = createAsyncThunk(
   'transporterOrders/fetchOrders',
-  async (_, { rejectWithValue }) => {
+  async ({ search = '', status = 'all' } = {}, { rejectWithValue }) => {
     try {
-      const orders = await transporterOrdersApi.getTransporterOrders();
+      const orders = await transporterOrdersApi.getTransporterOrders({ search, status });
       return orders;
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to fetch orders');
@@ -90,10 +90,6 @@ const initialState = {
   bids: [],
   loading: false,
   error: null,
-  filters: {
-    searchTerm: '',
-    statusFilter: 'all',
-  },
 };
 
 // Slice
@@ -101,19 +97,9 @@ const transporterOrdersSlice = createSlice({
   name: 'transporterOrders',
   initialState,
   reducers: {
-    // Clear error state
     clearError: (state) => {
       state.error = null;
     },
-    // Set search filter
-    setSearchTerm: (state, action) => {
-      state.filters.searchTerm = action.payload;
-    },
-    // Set status filter
-    setStatusFilter: (state, action) => {
-      state.filters.statusFilter = action.payload;
-    },
-    // Clear current order
     clearCurrentOrder: (state) => {
       state.currentOrder = null;
     },
@@ -213,39 +199,11 @@ const transporterOrdersSlice = createSlice({
 });
 
 // Export actions and selectors
-export const { clearError, setSearchTerm, setStatusFilter, clearCurrentOrder } = transporterOrdersSlice.actions;
+export const { clearError, clearCurrentOrder } = transporterOrdersSlice.actions;
 
 // Selectors
 export const selectAllTransporterOrders = (state) => state.transporterOrders.orders;
 export const selectAvailableOrders = (state) => state.transporterOrders.availableOrders;
-export const selectFilteredTransporterOrders = (state) => {
-  const { orders, filters } = state.transporterOrders;
-  
-  // Ensure orders is always an array
-  if (!Array.isArray(orders)) {
-    return [];
-  }
-  
-  let filtered = [...orders];
-
-  if (filters.searchTerm) {
-    const search = filters.searchTerm.toLowerCase();
-    filtered = filtered.filter(order => 
-      order._id?.toLowerCase().includes(search) ||
-      order.pickup?.city?.toLowerCase().includes(search) ||
-      order.delivery?.city?.toLowerCase().includes(search)
-    );
-  }
-
-  if (filters.statusFilter && filters.statusFilter !== 'all') {
-    filtered = filtered.filter(order => 
-      order.status?.toLowerCase() === filters.statusFilter.toLowerCase()
-    );
-  }
-
-  return filtered;
-};
-
 export const selectCurrentTransporterOrder = (state) => state.transporterOrders.currentOrder;
 export const selectTransporterBids = (state) => state.transporterOrders.bids;
 export const selectTransporterOrdersLoading = (state) => state.transporterOrders.loading;

@@ -1,5 +1,5 @@
 // src/pages/transporter/TripManagement.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
@@ -119,11 +119,15 @@ const TripManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedTrip, setSelectedTrip] = useState(null);
+  const debounceRef = useRef(null);
 
-  const loadTrips = useCallback(async () => {
+  const loadTrips = useCallback(async ({ search = '', status = 'all' } = {}) => {
     try {
       setLoading(true);
-      const data = await getTrips();
+      const params = {};
+      if (search) params.search = search;
+      if (status && status !== 'all') params.status = status;
+      const data = await getTrips(params);
       setTrips(data || []);
     } catch (err) {
       setError(err.message);
@@ -134,15 +138,20 @@ const TripManagement = () => {
 
   useEffect(() => { loadTrips(); }, [loadTrips]);
 
-  const filteredTrips = trips.filter(trip => {
-    const q = searchTerm.toLowerCase();
-    const matchSearch = !q ||
-      trip._id?.toLowerCase().includes(q) ||
-      trip.assigned_vehicle_id?.registration?.toLowerCase().includes(q) ||
-      trip.stops?.some(s => s.address?.city?.toLowerCase().includes(q));
-    const matchStatus = statusFilter === 'all' || trip.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      loadTrips({ search: value, status: statusFilter });
+    }, 400);
+  };
+
+  const handleStatusChange = (e) => {
+    const value = e.target.value;
+    setStatusFilter(value);
+    loadTrips({ search: searchTerm, status: value });
+  };
 
   const handleCancel = async (trip) => {
     if (!window.confirm(`Cancel trip #${trip._id?.slice(-6)}?`)) return;
@@ -195,12 +204,12 @@ const TripManagement = () => {
           </div>
           <div className="stats-bar">
             <button className={`stat-chip ${statusFilter === 'all' ? 'stat-chip--active' : ''}`}
-              onClick={() => setStatusFilter('all')}>
+              onClick={() => { setStatusFilter('all'); loadTrips({ search: searchTerm, status: 'all' }); }}>
               <span className="stat-chip-num">{trips.length}</span> Total
             </button>
             {Object.entries(STATUS_CONFIG).map(([key, val]) => (
               <button key={key} className={`stat-chip ${statusFilter === key ? 'stat-chip--active' : ''}`}
-                onClick={() => setStatusFilter(key)}>
+                onClick={() => { setStatusFilter(key); loadTrips({ search: searchTerm, status: key }); }}>
                 <span className="stat-chip-num">{statusCounts[key] || 0}</span> {val.label}
               </button>
             ))}
@@ -210,8 +219,8 @@ const TripManagement = () => {
         {/* Filters */}
         <div className="trips-filters">
           <input type="text" placeholder="Search by trip ID, vehicle, or city..."
-            value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="search-input" />
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="status-filter">
+            value={searchTerm} onChange={handleSearchChange} className="search-input" />
+          <select value={statusFilter} onChange={handleStatusChange} className="status-filter">
             <option value="all">All Status</option>
             {Object.entries(STATUS_CONFIG).map(([key, val]) => (
               <option key={key} value={key}>{val.label}</option>
@@ -225,20 +234,19 @@ const TripManagement = () => {
         )}
 
         {!loading && error && (
-          <div className="tm-empty-state"><h3>Error</h3><p>{error}</p><button className="btn btn-primary" onClick={loadTrips}>Retry</button></div>
+          <div className="tm-empty-state"><h3>Error</h3><p>{error}</p><button className="btn btn-primary" onClick={() => loadTrips({ search: searchTerm, status: statusFilter })}>Retry</button></div>
         )}
 
-        {!loading && !error && filteredTrips.length === 0 && (
+        {!loading && !error && trips.length === 0 && (
           <div className="tm-empty-state">
             <h3>No trips found</h3>
-            <p>{trips.length === 0 ? 'Create your first trip to get started.' : 'No trips match your filters.'}</p>
-            {trips.length === 0 && <button className="btn btn-primary" onClick={() => navigate('/transporter/trips/create')}>Create Trip</button>}
+            <p>No trips match your filters.</p>
           </div>
         )}
 
-        {!loading && !error && filteredTrips.length > 0 && (
+        {!loading && !error && trips.length > 0 && (
           <div className="trips-grid">
-            {filteredTrips.map(trip => (
+            {trips.map(trip => (
               <TripCard key={trip._id} trip={trip}
                 onView={setSelectedTrip}
                 onInfo={(t) => navigate(`/transporter/trips/${t._id}`)}

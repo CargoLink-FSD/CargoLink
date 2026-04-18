@@ -48,6 +48,11 @@ adminRouter.get("/fleet", cacheResponse({ domain: 'admin', ttlSeconds: 30 }), ad
 adminRouter.get("/tickets", cacheResponse({ domain: 'admin', ttlSeconds: 20 }), adminController.getTicketsOverview); // Get all support tickets (read-only)
 
 // ============================================
+// Cashouts Overview Routes
+// ============================================
+adminRouter.get("/cashouts", cacheResponse({ domain: 'admin', ttlSeconds: 20 }), adminController.getAllCashouts);
+
+// ============================================
 // Manager Management Routes
 // ============================================
 adminRouter.get("/managers", cacheResponse({ domain: 'admin', ttlSeconds: 20 }), adminController.getAllManagers); // Get all managers with stats
