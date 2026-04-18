@@ -1,16 +1,35 @@
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
 import '../../styles/StaticPages.css';
+import termsHeroImage from '../../assets/images/landing-page.jpg';
+import fallbackImage from '../../assets/images/default.jpg';
 
 export default function Terms() {
+  const handleImageError = (e) => {
+    e.currentTarget.src = fallbackImage;
+  };
+
   return (
     <>
       <Header />
-      <main className="main-content">
+      <main className="main-content static-page">
         <section className="page-header">
           <div className="container">
             <h1>Terms of Service</h1>
             <p className="subtitle">Last Updated: June 15, 2023</p>
+          </div>
+        </section>
+
+        <section className="static-page-media">
+          <div className="container">
+            <div className="static-page-media-frame">
+              <img
+                src={termsHeroImage}
+                alt="CargoLink terms and compliance"
+                loading="lazy"
+                onError={handleImageError}
+              />
+            </div>
           </div>
         </section>
 

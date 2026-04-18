@@ -3,6 +3,38 @@
 
 import { http } from './http';
 
+const mapDriverProfilePayload = (payload = {}) => {
+  const mapped = { ...payload };
+  const addressPatch = {
+    ...(mapped.address && typeof mapped.address === 'object' ? mapped.address : {}),
+  };
+
+  if (Object.prototype.hasOwnProperty.call(mapped, 'address')) {
+    if (typeof mapped.address === 'string') {
+      addressPatch.street = mapped.address;
+    }
+    delete mapped.address;
+  }
+  if (Object.prototype.hasOwnProperty.call(mapped, 'city')) {
+    addressPatch.city = mapped.city;
+    delete mapped.city;
+  }
+  if (Object.prototype.hasOwnProperty.call(mapped, 'state')) {
+    addressPatch.state = mapped.state;
+    delete mapped.state;
+  }
+  if (Object.prototype.hasOwnProperty.call(mapped, 'pin')) {
+    addressPatch.pin = mapped.pin;
+    delete mapped.pin;
+  }
+
+  if (Object.keys(addressPatch).length > 0) {
+    mapped.address = addressPatch;
+  }
+
+  return mapped;
+};
+
 // Get driver profile
 export const getDriverProfile = async () => {
   const response = await http.get('/api/drivers/profile');
@@ -10,24 +42,37 @@ export const getDriverProfile = async () => {
 };
 
 // Update driver profile fields
-export const updateDriverProfile = async (fieldType, fieldValue) => {
-  const response = await http.put('/api/drivers/profile', { [fieldType]: fieldValue });
+export const updateDriverProfile = async (fieldTypeOrPayload, fieldValue) => {
+  const payload =
+    typeof fieldTypeOrPayload === 'object' && fieldTypeOrPayload !== null
+      ? fieldTypeOrPayload
+      : { [fieldTypeOrPayload]: fieldValue };
+
+  const response = await http.put('/api/drivers/profile', mapDriverProfilePayload(payload));
   return response.data;
 };
 
 // Upload driver profile picture
-export const uploadDriverProfilePicture = async (file) => {
-  const formData = new FormData();
-  formData.append('profilePicture', file);
+export const uploadDriverProfilePicture = async (fileOrFormData) => {
+  const formData = fileOrFormData instanceof FormData ? fileOrFormData : new FormData();
+  if (!(fileOrFormData instanceof FormData)) {
+    formData.append('profilePicture', fileOrFormData);
+  }
+
   const response = await http.put('/api/drivers/profile', formData);
   return response.data;
 };
 
 // Update driver password
-export const updateDriverPassword = async (oldPassword, newPassword) => {
+export const updateDriverPassword = async (oldPasswordOrPayload, newPassword) => {
+  const payload =
+    typeof oldPasswordOrPayload === 'object' && oldPasswordOrPayload !== null
+      ? oldPasswordOrPayload
+      : { oldPassword: oldPasswordOrPayload, newPassword };
+
   const response = await http.patch('/api/drivers/password', {
-    oldPassword,
-    newPassword,
+    oldPassword: payload.oldPassword,
+    newPassword: payload.newPassword,
   });
   return response.data;
 };

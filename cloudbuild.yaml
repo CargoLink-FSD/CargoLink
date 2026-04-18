@@ -133,15 +133,7 @@ steps:
         echo "========================================="
         echo -n "$${URL}" > /workspace/.backend-url
 
-  # ── 5: Install frontend deps ───────────────────────────────────────────────
-  - id: frontend-install
-    name: node:22
-    entrypoint: npm
-    dir: frontend
-    args: ["ci", "--prefer-offline", "--no-audit"]
-    waitFor: ["-"]
-
-  # ── 6: Fetch frontend secrets ──────────────────────────────────────────────
+  # ── 5: Fetch frontend secrets ──────────────────────────────────────────────
   - id: fetch-frontend-secrets
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -163,15 +155,15 @@ steps:
           echo "WARN: Backend URL not found (likely non-deploy branch). Using relative API paths."
         fi
 
-  # ── 7: Build frontend ─────────────────────────────────────────────────────
+  # ── 6: Build frontend ─────────────────────────────────────────────────────
   - id: frontend-build
     name: node:22
     entrypoint: npm
     dir: frontend
     args: ["run", "build"]
-    waitFor: ["frontend-install", "fetch-frontend-secrets"]
+    waitFor: ["frontend-test", "fetch-frontend-secrets"]
 
-  # ── 8: Deploy frontend to App Engine (MAIN ONLY) ───────────────────────────
+  # ── 7: Deploy frontend to App Engine (MAIN ONLY) ───────────────────────────
   - id: deploy-frontend
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -187,7 +179,7 @@ steps:
         VERSION="cl-${SHORT_SHA}"
         gcloud app deploy frontend/app.yaml --version="$${VERSION}" --no-promote --quiet
 
-  # ── 9: Promote frontend traffic (MAIN ONLY) ────────────────────────────────
+  # ── 8: Promote frontend traffic (MAIN ONLY) ────────────────────────────────
   - id: promote-frontend
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash

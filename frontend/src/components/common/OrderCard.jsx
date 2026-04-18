@@ -71,6 +71,15 @@ export default function OrderCard({
     e.stopPropagation();
     navigate(`/customer/order/${order._id}/bids`);
   };
+
+  const handleOpenChat = (e) => {
+    e.stopPropagation();
+    navigate(`/transporter/orders/${order._id}/chat`);
+  };
+
+  const transporterCanChat =
+    variant === 'transporter' && !['placed', 'cancelled'].includes((order.status || '').toLowerCase());
+
   return (
     <div
       className={`order-card ${variant}`}
@@ -178,6 +187,15 @@ export default function OrderCard({
             onClick={handleTrackOrderClick}
           >
             Track Order
+          </button>
+        )}
+
+        {transporterCanChat && (
+          <button
+            className="btn btn-info"
+            onClick={handleOpenChat}
+          >
+            Open Chat
           </button>
         )}
       </div>

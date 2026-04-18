@@ -3,28 +3,34 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { sendChatMessage, fetchChatMessages, clearChat } from '../../store/slices/chatSlice';
 
-const ChatWindow = ({ orderId, userType}) => {
+const ChatWindow = ({ orderId, userType }) => {
   const dispatch = useDispatch();
   const chatWindowRef = useRef(null);
   const [message, setMessage] = useState('');
-  
+
   const { messages, loading, error } = useSelector((state) => state.chat);
 
-    useEffect(() => {
-        dispatch(fetchChatMessages(orderId));
-        return () => {
-            dispatch(clearChat());
-        };
-    }, []);
+  useEffect(() => {
+    if (!orderId) return;
+
+    dispatch(fetchChatMessages(orderId));
+
+    return () => {
+      dispatch(clearChat());
+    };
+  }, [dispatch, orderId]);
 
   useEffect(() => {
+    if (!orderId) return;
+
     const s = setInterval(() => {
       dispatch(fetchChatMessages(orderId));
     }, 5000); // Fetch new messages every 5 seconds
+
     return () => {
-        clearInterval(s);
+      clearInterval(s);
     };
-  }, []);
+  }, [dispatch, orderId]);
 
 
   useEffect(() => {
@@ -41,17 +47,14 @@ const ChatWindow = ({ orderId, userType}) => {
       await dispatch(sendChatMessage({ 
         orderId, 
         message: trimmedMessage,
-        userType: userType
+        userType
       })).unwrap();
-      
+
       setMessage('');
-    } catch (error) {
-      console.error('Failed to send message:', error);
+    } catch (sendError) {
+      console.error('Failed to send message:', sendError);
     }
   };
-
-  console.log("messages: ", messages);
-  
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
@@ -86,13 +89,19 @@ const ChatWindow = ({ orderId, userType}) => {
             <div className="chat-messages">
               {messages.map((msg, index) => (
                 <div
-                  key={index}
+                  key={msg.id || index}
                   className={`message ${msg.senderType === userType ? 'sent' : 'received'}`}  //css for sent/received are swapped
                 >
                   <div className="message-bubble">{msg.content}</div>
                   <div className="message-time">{formatTime(msg.timestamp)}</div>
                 </div>
               ))}
+
+              {messages.length === 0 && (
+                <div className="chat-empty-state">
+                  <p>No messages yet. Start the conversation.</p>
+                </div>
+              )}
             </div>
           )}
         </div>

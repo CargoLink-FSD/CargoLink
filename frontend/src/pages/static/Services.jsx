@@ -2,16 +2,35 @@ import { Link } from 'react-router-dom';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
 import '../../styles/StaticPages.css';
+import servicesHeroImage from '../../assets/images/features/features-1.jpg';
+import fallbackImage from '../../assets/images/default.jpg';
 
-export default function Careers() {
+export default function Services() {
+  const handleImageError = (e) => {
+    e.currentTarget.src = fallbackImage;
+  };
+
   return (
     <>
       <Header />
-      <main className="main-content">
+      <main className="main-content static-page">
         <section className="page-header">
           <div className="container">
             <h1>Our Services</h1>
             <p className="subtitle">Comprehensive Logistics Solutions for Your Business</p>
+          </div>
+        </section>
+
+        <section className="static-page-media">
+          <div className="container">
+            <div className="static-page-media-frame">
+              <img
+                src={servicesHeroImage}
+                alt="Cargo transport services"
+                loading="lazy"
+                onError={handleImageError}
+              />
+            </div>
           </div>
         </section>
 

@@ -1,38 +1,40 @@
 /* General Styles for Static Pages */
-.page-header {
+.static-page .page-header {
   background-color: var(--primary-light);
   padding: 60px 0;
+  display: block;
   text-align: center;
   margin-bottom: 50px;
 }
 
-.page-header h1 {
+.static-page .page-header h1 {
   font-size: 2.5rem;
   color: var(--primary-dark);
   margin-bottom: 10px;
 }
 
-.subtitle {
+.static-page .subtitle {
   font-size: 1.2rem;
   color: var(--text-secondary);
   max-width: 600px;
   margin: 0 auto;
 } 
 
-.section-title {
+.static-page .section-title {
   font-size: 2rem;
   color: var(--text-primary);
   margin-bottom: 30px;
   text-align: center;
 }
 
-.container {
+.static-page .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+  min-height: auto;
 }
 
-section {
+.static-page section {
   margin-bottom: 60px;
 }
 
@@ -41,7 +43,7 @@ section {
   display: grid;
   grid-template-columns: 3fr 2fr;
   gap: 40px;
-  align-items: center;
+  align-items: start;
 }
 
 .about-content h2 {
@@ -56,10 +58,40 @@ section {
   line-height: 1.6;
 }
 
+.about-image {
+  width: 100%;
+  max-width: 480px;
+  justify-self: end;
+}
+
 .about-image img {
   width: 100%;
+  display: block;
+  min-height: 300px;
+  max-height: 420px;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
   border-radius: 10px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.static-page-media {
+  margin: 0 0 40px;
+}
+
+.static-page-media-frame {
+  width: min(100%, 980px);
+  margin: 0 auto;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.static-page-media-frame img {
+  width: 100%;
+  height: clamp(220px, 30vw, 340px);
+  display: block;
+  object-fit: cover;
 }
 
 .values-grid {
@@ -104,11 +136,12 @@ section {
 
 .team-grid2 {
   display: grid;
-  grid-template-columns: repeat(2, minmax(350px, 0.5fr));
+  grid-template-columns: repeat(2, minmax(250px, 1fr));
   align-items: center;
   justify-content: center;
-  margin-left: 100px;
-  margin-right: 100px;
+  max-width: 860px;
+  margin-left: auto;
+  margin-right: auto;
   gap: 30px;
   margin-top: 30px;
 }
@@ -117,6 +150,7 @@ section {
   background-color: #fff;
   border-radius: 10px;
   overflow: hidden;
+  padding: 20px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
   transition: transform 0.3s ease;
 }
@@ -128,6 +162,7 @@ section {
 .member-photo {
   width: 100%;
   height: 250px;
+  display: block;
   object-fit: cover;
 }
 
@@ -138,18 +173,23 @@ section {
 
 .team-member h3 {
   font-size: 1.2rem;
-  margin: 15px 20px 5px;
+  margin: 0 0 6px;
   color: var(--text-primary);
 }
 
 .member-title {
   color: var(--primary);
   font-weight: 500;
-  margin: 0 20px 10px;
+  margin: 0 0 10px;
+}
+
+.member-title:empty {
+  display: none;
 }
 
 .team-member p {
-  padding: 0 20px 20px;
+  padding: 0;
+  margin: 0;
   line-height: 1.6;
 }
 
@@ -361,6 +401,11 @@ section {
     grid-template-columns: 1fr;
     gap: 30px;
   }
+
+  .about-image {
+    max-width: none;
+    justify-self: stretch;
+  }
   
   .contact-grid {
     grid-template-columns: 1fr;
@@ -378,11 +423,11 @@ section {
 }
 
 @media (max-width: 768px) {
-  .page-header {
+  .static-page .page-header {
     padding: 40px 0;
   }
   
-  .page-header h1 {
+  .static-page .page-header h1 {
     font-size: 2rem;
   }
 
@@ -392,6 +437,14 @@ section {
 
   .values-grid {
     grid-template-columns: 1fr;
+  }
+
+  .about-image img {
+    min-height: 220px;
+  }
+
+  .static-page-media {
+    margin-bottom: 28px;
   }
 
   .industries-grid {
