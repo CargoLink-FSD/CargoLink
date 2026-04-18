@@ -735,7 +735,8 @@ const uploadDocuments = async (transporterId, files) => {
 
   // Process vehicle_rcs — files named vehicle_rc_0, vehicle_rc_1, etc.
   const vehicleRcs = [];
-  const fleet = transporter.fleet || [];
+  // Vehicles are stored in the separate Fleet collection, not embedded in Transporter
+  const fleet = await truckRepo.getFleet(transporterId);
   for (let i = 0; i < fleet.length; i++) {
     const fieldName = `vehicle_rc_${i}`;
     if (files[fieldName] && files[fieldName][0]) {

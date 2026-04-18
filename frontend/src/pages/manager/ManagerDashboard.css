@@ -46,6 +46,12 @@
   text-transform: capitalize;
 }
 
+/* Verification category chip variant */
+.mgr-welcome-cat-chip.verification-cat {
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
 .mgr-welcome-stats {
   display: flex;
   flex-direction: column;
@@ -125,6 +131,47 @@
   color: #6b7280;
   margin-top: 4px;
   text-align: center;
+}
+
+/* ─── Filter Tabs ─── */
+.filter-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.filter-tab {
+  padding: 9px 22px;
+  border: 2px solid #e5e7eb;
+  border-radius: 24px;
+  background: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.filter-tab:hover {
+  border-color: #a5b4fc;
+  color: #4f46e5;
+  background: #f5f3ff;
+}
+
+.filter-tab.active {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+  transform: translateY(-1px);
+}
+
+.filter-tab.active:hover {
+  background: linear-gradient(135deg, #4338ca, #4f46e5);
 }
 
 /* Loading / Empty states */
@@ -220,7 +267,6 @@
   font-weight: 600;
 }
 
-.manager-dashboard-container .reject-note {
 /* Entity type badge (Transporter / Driver) */
 .entity-badge {
   display: inline-block;
@@ -231,42 +277,7 @@
   white-space: nowrap;
 }
 
-/* Verification category chip variant */
-.mgr-welcome-cat-chip.verification-cat {
-  background: rgba(255, 255, 255, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-}
-
-/* Filter Tabs */
-.filter-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.filter-tab {
-  padding: 8px 18px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: white;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.filter-tab:hover {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.filter-tab.active {
-  background: #4f46e5;
-  color: white;
-  border-color: #4f46e5;
-}
-
+/* Reject note */
 .reject-note {
   font-size: 0.75rem;
   color: #991b1b;
@@ -433,46 +444,6 @@
   cursor: not-allowed;
 }
 
-/* File preview styles (for document upload step) */
-.manager-dashboard-container .file-preview {
-  margin-top: 8px;
-}
-
-.manager-dashboard-container .file-preview-img {
-  width: 100px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 4px;
-  border: 1px solid #e5e7eb;
-}
-
-.manager-dashboard-container .file-preview-name {
-  font-size: 0.85rem;
-  color: #4f46e5;
-}
-
-/* RC Preview styles in signup vehicle box */
-.manager-dashboard-container .rc-upload-group {
-  margin-top: 0.25rem;
-}
-
-.manager-dashboard-container .rc-preview {
-  margin-top: 8px;
-}
-
-.manager-dashboard-container .rc-preview-img {
-  width: 100px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 4px;
-  border: 1px solid #e5e7eb;
-}
-
-.manager-dashboard-container .rc-file-name {
-  font-size: 0.85rem;
-  color: #4f46e5;
-}
-
 /* Verify-against reference data chips */
 .manager-dashboard-container .ref-data-list {
   display: flex;
@@ -513,6 +484,10 @@
   .manager-dashboard-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .filter-tabs {
+    flex-wrap: wrap;
   }
 
   .manager-dashboard-container .verification-table th,

@@ -285,25 +285,25 @@ export default function ManagerSupport() {
                         )}
 
                         {!loading && pagination && pagination.totalPages > 1 && (
-                            <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10 }}>
+                            <div className="mgr-pagination">
                                 <button
                                     className="mgr-send-btn"
-                                    style={{ width: 'auto', padding: '8px 12px' }}
+                                    style={{ padding: '8px 16px', fontSize: '0.82rem' }}
                                     disabled={page <= 1}
                                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                                 >
-                                    Previous
+                                    ← Previous
                                 </button>
-                                <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#6b7280', fontWeight: 600 }}>
                                     Page {pagination.page} of {pagination.totalPages}
                                 </span>
                                 <button
                                     className="mgr-send-btn"
-                                    style={{ width: 'auto', padding: '8px 12px' }}
+                                    style={{ padding: '8px 16px', fontSize: '0.82rem' }}
                                     disabled={page >= pagination.totalPages}
                                     onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
                                 >
-                                    Next
+                                    Next →
                                 </button>
                             </div>
                         )}
