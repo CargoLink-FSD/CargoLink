@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import http from '../../api/http';
+import { toApiUrl } from '../../utils/apiBase';
 
 export function StarRating({ rating = 0, size = 16 }) {
   const stars = [];
@@ -106,7 +107,7 @@ export default function TransporterProfileModal({ transporterId, transporterName
               <div className="tpm-avatar-row">
                 {profile.profile_photo ? (
                   <img
-                    src={`http://localhost:3000${profile.profile_photo}`}
+                    src={toApiUrl(profile.profile_photo)}
                     alt={profile.company_name || profile.name}
                     className="tpm-avatar"
                   />

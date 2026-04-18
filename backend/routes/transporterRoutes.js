@@ -6,6 +6,7 @@ import { validationSchema } from "../middlewares/validator.js";
 import transporterController from "../controllers/transporterController.js";
 import profileUpload from "../config/profileMulter.js";
 import documentUpload from "../config/documentMulter.js";
+import gcsUpload from "../middlewares/gcsUpload.js";
 
 const transporterRouter = Router();
 
@@ -35,6 +36,7 @@ transporterRouter.post(
     { name: 'vehicle_rc_6', maxCount: 1 },
     { name: 'vehicle_rc_7', maxCount: 1 },
   ]),
+  gcsUpload('transporter-docs'),
   invalidateCacheOnSuccess(['transporters', 'drivers', 'admin', 'manager']),
   transporterController.uploadDocuments
 );
@@ -47,7 +49,7 @@ transporterRouter.get("/dashboard-stats", cacheResponse({ domain: 'transporters'
 
 // Profile
 transporterRouter.get("/profile", cacheResponse({ domain: 'transporters', ttlSeconds: 20 }), transporterController.getTransporterProfile); // Get profile
-transporterRouter.put("/profile", profileUpload.single('profilePicture'), validate(validationSchema.updateTransporter), invalidateCacheOnSuccess(['transporters', 'admin']), transporterController.updateTransporterProfile); // Update profile
+transporterRouter.put("/profile", profileUpload.single('profilePicture'), gcsUpload('profile-pictures'), validate(validationSchema.updateTransporter), invalidateCacheOnSuccess(['transporters', 'admin']), transporterController.updateTransporterProfile); // Update profile
 transporterRouter.delete("/profile", invalidateCacheOnSuccess(['transporters', 'admin']), transporterController.deleteTransporter); // Soft delete
 transporterRouter.patch("/password", validate(validationSchema.password), invalidateCacheOnSuccess(['transporters']), transporterController.updatePassword); // Change password
 
@@ -57,7 +59,7 @@ transporterRouter.post("/fleet", validate(validationSchema.truck), invalidateCac
 transporterRouter.get("/fleet/:truckId", cacheResponse({ domain: 'transporters', ttlSeconds: 20 }), transporterController.getTruckDetails); // Get truck details
 transporterRouter.put("/fleet/:truckId", validate(validationSchema.updateTruck), invalidateCacheOnSuccess(['transporters', 'admin']), transporterController.updateTruck); // Update truck
 transporterRouter.delete("/fleet/:truckId", invalidateCacheOnSuccess(['transporters', 'admin']), transporterController.removeTruck); // Delete truck
-transporterRouter.post("/fleet/:vehicleId/upload-rc", documentUpload.single('rc_file'), invalidateCacheOnSuccess(['transporters', 'admin']), transporterController.uploadVehicleRc); // Upload vehicle RC
+transporterRouter.post("/fleet/:vehicleId/upload-rc", documentUpload.single('rc_file'), gcsUpload('transporter-docs'), invalidateCacheOnSuccess(['transporters', 'admin']), transporterController.uploadVehicleRc); // Upload vehicle RC
 
 // // Truck Status Management
 // transporterRouter.post("/fleet/:truckId/set-maintenance", transporterController.setTruckMaintenance); // Set truck to maintenance

@@ -4,9 +4,8 @@ import { useSelector } from 'react-redux';
 import { getTicketDetail, addReply } from '../../api/tickets';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
+import { toApiUrl } from '../../utils/apiBase';
 import './SupportTickets.css';
-
-const API_BASE = 'http://localhost:3000';
 
 export default function TicketDetail() {
     const { id } = useParams();
@@ -31,6 +30,22 @@ export default function TicketDetail() {
     }, [id]);
 
     useEffect(() => { loadTicket(); }, [loadTicket]);
+
+    useEffect(() => {
+        const handleRealtimeNotification = (event) => {
+            const notification = event?.detail;
+            const type = notification?.type || '';
+            const ticketId = notification?.meta?.ticketId;
+            if (!type.startsWith('ticket.')) return;
+            if (!ticketId || ticketId !== id) return;
+            loadTicket();
+        };
+
+        window.addEventListener('cargolink:notification', handleRealtimeNotification);
+        return () => {
+            window.removeEventListener('cargolink:notification', handleRealtimeNotification);
+        };
+    }, [id, loadTicket]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -104,8 +119,8 @@ export default function TicketDetail() {
                                 <div className="msg-sender">{msg.senderName || msg.sender}</div>
                                 <div className="msg-text">{msg.text}</div>
                                 {msg.attachment && (
-                                    <a href={`${API_BASE}${msg.attachment}`} target="_blank" rel="noreferrer" className="msg-photo-link">
-                                        <img src={`${API_BASE}${msg.attachment}`} alt="Attachment" className="msg-photo" />
+                                    <a href={toApiUrl(msg.attachment)} target="_blank" rel="noreferrer" className="msg-photo-link">
+                                        <img src={toApiUrl(msg.attachment)} alt="Attachment" className="msg-photo" />
                                     </a>
                                 )}
                                 <div className="msg-time">

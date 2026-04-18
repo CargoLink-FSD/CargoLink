@@ -9,11 +9,9 @@ import {
   submitOrderBid,
   withdrawOrderBid,
   fetchTransporterBids,
-  setSearchTerm,
-  setStatusFilter,
   clearCurrentOrder,
   clearError,
-  selectFilteredTransporterOrders,
+  selectAllTransporterOrders,
   selectAvailableOrders,
   selectCurrentTransporterOrder,
   selectTransporterBids,
@@ -24,7 +22,7 @@ import {
 export const useTransporterOrders = () => {
   const dispatch = useDispatch();
 
-  const orders = useSelector(selectFilteredTransporterOrders);
+  const orders = useSelector(selectAllTransporterOrders);
   const availableOrders = useSelector(selectAvailableOrders);
   const currentOrder = useSelector(selectCurrentTransporterOrder);
   const bids = useSelector(selectTransporterBids);
@@ -32,8 +30,8 @@ export const useTransporterOrders = () => {
   const error = useSelector(selectTransporterOrdersError);
 
   // Fetch transporter's assigned orders
-  const loadOrders = useCallback(() => {
-    return dispatch(fetchTransporterOrders());
+  const loadOrders = useCallback(({ search = '', status = 'all' } = {}) => {
+    return dispatch(fetchTransporterOrders({ search, status }));
   }, [dispatch]);
 
   // Fetch available orders for bidding
@@ -61,14 +59,9 @@ export const useTransporterOrders = () => {
     return dispatch(fetchTransporterBids());
   }, [dispatch]);
 
-  // Filter orders
-  const filterOrders = useCallback((searchTerm, statusFilter) => {
-    if (searchTerm !== undefined) {
-      dispatch(setSearchTerm(searchTerm));
-    }
-    if (statusFilter !== undefined) {
-      dispatch(setStatusFilter(statusFilter));
-    }
+  // Filter orders – triggers a new server-side fetch with the given params
+  const filterOrders = useCallback((search, status) => {
+    return dispatch(fetchTransporterOrders({ search, status }));
   }, [dispatch]);
 
   // Clear current order

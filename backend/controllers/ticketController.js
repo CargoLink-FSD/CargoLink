@@ -30,7 +30,7 @@ const createTicket = async (req, res, next) => {
 
         // Handle photo attachment from multer
         if (req.file) {
-            ticketData.attachment = `/uploads/ticket-attachments/${req.file.filename}`;
+            ticketData.attachment = req.file.publicUrl || `/uploads/ticket-attachments/${req.file.filename}`;
         }
 
         const ticket = await ticketService.createTicket(userId, role, userName, userEmail, ticketData);
@@ -165,7 +165,7 @@ const managerReply = async (req, res, next) => {
         const manager = await Manager.findById(req.user.id).select('name');
         const managerName = manager?.name || 'Manager';
 
-        const ticket = await ticketService.addManagerReply(req.params.id, req.body.text, managerName);
+        const ticket = await ticketService.addManagerReply(req.params.id, req.body.text, managerName, req.user.id);
         res.status(200).json({ success: true, data: ticket, message: 'Reply sent' });
     } catch (err) {
         next(err);
@@ -174,7 +174,7 @@ const managerReply = async (req, res, next) => {
 
 const managerUpdateStatus = async (req, res, next) => {
     try {
-        const ticket = await ticketService.updateTicketStatus(req.params.id, req.body.status);
+        const ticket = await ticketService.updateTicketStatus(req.params.id, req.body.status, req.user.id);
         res.status(200).json({ success: true, data: ticket, message: 'Status updated' });
     } catch (err) {
         next(err);

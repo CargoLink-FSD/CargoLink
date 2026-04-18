@@ -4,8 +4,7 @@
  */
 
 import tokenStorage from './token';
-
-const API_BASE_URL = 'http://localhost:3000';
+import { toApiUrl } from './apiBase';
 
 let isRefreshing = false;
 let failedQueue = [];
@@ -27,7 +26,7 @@ export const refreshTokenRequest = async () => {
     throw new Error('No refresh token available');
   }
 
-  const res = await fetch(`${API_BASE_URL}/api/auth/refresh-token`, {
+  const res = await fetch(toApiUrl('/api/auth/refresh-token'), {
     method: 'POST',
     credentials: 'include',
     headers: {

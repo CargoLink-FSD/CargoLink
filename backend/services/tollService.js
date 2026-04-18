@@ -1,6 +1,4 @@
 // Toll Service — isolated toll lookup via Google Maps Routes API v2
-
-import { GOOGLE_MAPS_API_KEY } from '../config/index.js';
 import { makeCacheKey, rememberCachedJson } from '../core/cache.js';
 import { CACHE_EXTERNAL_TTL } from '../core/index.js';
 import { logger } from '../utils/misc.js';
@@ -14,6 +12,7 @@ const ROUTES_API_URL = 'https://routes.googleapis.com/directions/v2:computeRoute
  * @returns {Promise<number>} integer toll estimate in INR
  */
 export async function getTollCost(originCoords, destCoords) {
+  const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
   if (!GOOGLE_MAPS_API_KEY) {
     logger.warn('GOOGLE_MAPS_API_KEY not set — toll lookup skipped');
     return 0;

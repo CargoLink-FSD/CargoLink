@@ -7,6 +7,7 @@ import { Truck, Box, User, MessageSquare, Shield, FileText } from "lucide-react"
 import ProfileField from "../../components/profile/ProfileField";
 import SecurityTab from "../../components/profile/SecurityTab";
 import { getVerificationStatus } from "../../api/transporter";
+import { toApiUrl } from '../../utils/apiBase';
 import "../../styles/profile.css";
 import Footer from "../../components/common/Footer";
 // Transporter Profile Page
@@ -100,7 +101,7 @@ const TransporterProfile = () => {
                 <div className="profile-avatar-wrapper">
                   {profile?.profileImage ? (
                     <img
-                      src={`http://localhost:3000${profile.profileImage}`}
+                      src={toApiUrl(profile.profileImage)}
                       alt="Profile"
                       className="profile-avatar-large"
                       onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
@@ -359,8 +360,6 @@ const TransporterInfo = ({ profile, dispatch, updateTransporterField }) => {
 
 // Documents Tab Component
 const DocumentsTab = ({ verificationInfo }) => {
-  const API_BASE = 'http://localhost:3000';
-
   const statusBadge = (status) => {
     const map = {
       approved: { bg: '#d1fae5', color: '#065f46', label: 'Approved' },
@@ -392,7 +391,7 @@ const DocumentsTab = ({ verificationInfo }) => {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {statusBadge(doc.adminStatus || 'pending')}
-          <a href={`${API_BASE}${doc.url}`} target="_blank" rel="noopener noreferrer"
+          <a href={toApiUrl(doc.url)} target="_blank" rel="noopener noreferrer"
             style={{ color: '#4f46e5', fontSize: '0.8rem', fontWeight: 500, textDecoration: 'none' }}>
             View ↗
           </a>

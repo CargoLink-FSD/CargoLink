@@ -397,6 +397,17 @@ const getTicketsOverview = async (req, res, next) => {
   }
 };
 
+// Cashouts Overview
+const getAllCashouts = async (req, res, next) => {
+  try {
+    const { status, search, page, limit, sort } = req.query;
+    const data = await adminService.getAllCashouts({ status, search, page, limit, sort });
+    res.status(200).json({ success: true, data, message: "Cashouts fetched successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // ============================================
 // Manager Management
 // ============================================
@@ -680,6 +691,9 @@ export default {
 
   // Tickets
   getTicketsOverview,
+
+  // Cashouts
+  getAllCashouts,
 
   // Manager Management
   getAllManagers,

@@ -2,6 +2,7 @@ import orderRepo from "../repositories/orderRepo.js"
 import bidRepo from "../repositories/bidRepo.js"
 import Fleet from "../models/fleet.js"
 import { AppError, logger } from "../utils/misc.js"
+import { DOMAIN_EVENTS, emitDomainEvent } from '../utils/eventEmitter.js';
 import {
     evaluateCustomerOrderGate,
     applyCustomerCancellationPolicy,
@@ -82,6 +83,20 @@ const cancelOrder = async (orderId, customerId, { reasonCode, reasonText } = {})
 
     if (!cancelledOrder) {
         throw new AppError(400, "InvalidOperation", "Order cannot be cancelled in current state", "ERR_INVALID_OPERATION");
+    }
+
+    if (order.assigned_transporter_id) {
+        emitDomainEvent(DOMAIN_EVENTS.ORDER_CANCELLED, {
+            type: 'order.cancelled',
+            title: 'Order cancelled',
+            message: `Order ${order._id} was cancelled by customer`,
+            recipients: [{ userId: order.assigned_transporter_id.toString(), role: 'transporter' }],
+            actor: { userId: customerId, role: 'customer' },
+            meta: {
+                orderId: order._id.toString(),
+                reasonCode: reasonCode || 'customer_requested',
+            },
+        });
     }
 
     return {
@@ -166,6 +181,19 @@ const acceptBid = async (customerId, orderId, bidId) => {
 
     await bidRepo.deleteBidsForOrder(orderId);
 
+    emitDomainEvent(DOMAIN_EVENTS.BID_ACCEPTED, {
+        type: 'bid.accepted',
+        title: 'Bid accepted',
+        message: `Your bid was accepted for order ${orderId}`,
+        recipients: [{ userId: bid.transporter_id?._id?.toString?.() || bid.transporter_id?.toString(), role: 'transporter' }],
+        actor: { userId: customerId, role: 'customer' },
+        meta: {
+            orderId,
+            bidId,
+            finalPrice: bid.bid_amount,
+        },
+    });
+
     return;
 };
 
@@ -232,6 +260,22 @@ const submitBid = async (transporterId, orderId, bidAmount, notes, quoteBreakdow
     }
 
     const bid = await bidRepo.createBid(bidData);
+
+    const order = await orderRepo.getOrderById(orderId);
+    if (order?.customer_id) {
+        emitDomainEvent(DOMAIN_EVENTS.BID_PLACED, {
+            type: 'bid.placed',
+            title: 'New bid received',
+            message: `A transporter placed a bid of ₹${bidAmount} on order ${orderId}`,
+            recipients: [{ userId: order.customer_id.toString(), role: 'customer' }],
+            actor: { userId: transporterId, role: 'transporter' },
+            meta: {
+                orderId,
+                bidId: bid._id.toString(),
+                bidAmount,
+            },
+        });
+    }
 
     return bid;
 };

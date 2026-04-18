@@ -10,6 +10,7 @@ import {
     Ticket,
     Truck,
     Users,
+    Banknote,
 } from 'lucide-react';
 import { logoutUser } from '../../store/slices/authSlice';
 import './AdminLayout.css';
@@ -20,7 +21,8 @@ const NAV_ITEMS = [
     { to: '/admin/orders', icon: Package, label: 'Orders' },
     { to: '/admin/fleet', icon: Truck, label: 'Fleet' },
     { to: '/admin/tickets', icon: Ticket, label: 'Tickets' },
-    { to: '/admin/managers', icon: '👔', label: 'Managers' },
+    { to: '/admin/managers', icon: User, label: 'Managers' },
+    { to: '/admin/cashouts', icon: Banknote, label: 'Cashouts' },
 ];
 
 export default function AdminLayout() {

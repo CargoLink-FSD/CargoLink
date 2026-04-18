@@ -10,6 +10,7 @@ import Modal from './Modal';
 export default function Header() {
   const dispatch = useDispatch();
   const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const unreadCount = useSelector((state) => state.notifications?.unreadCount || 0);
   const userType = user?.role || user?.type;
 
 
@@ -61,6 +62,10 @@ export default function Header() {
                 <div className="profile-dropdown">
                   <span className="profile-name">Customer</span>
                   <div className="dropdown-content">
+                    <Link to="/notifications" className="dropdown-link notification-link" onClick={handleLinkClick}>
+                      Notifications
+                      {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+                    </Link>
                     <Link to="/support/tickets" className="dropdown-link" onClick={handleLinkClick}>Need Help?</Link>
                     <button onClick={handleLogout} className="logout-link">Logout</button>
                   </div>
@@ -75,12 +80,20 @@ export default function Header() {
                 <Link className="underline-link" to="/transporter/bid" onClick={handleLinkClick}>Place Bid</Link>
                 <Link className="underline-link" to="/transporter/orders" onClick={handleLinkClick}>My Orders</Link>
                 <Link className="underline-link" to="/transporter/trips" onClick={handleLinkClick}>Trips</Link>
+                <Link className="underline-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }} to="/transporter/wallet" onClick={handleLinkClick}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                  Wallet
+                </Link>
                 <Link className="underline-link" to="/transporter/fleet" onClick={handleLinkClick}>Manage Fleet</Link>
                 <Link className="underline-link" to="/transporter/drivers" onClick={handleLinkClick}>Manage Drivers</Link>
                 <Link className="underline-link" to="/transporter/profile" onClick={handleLinkClick}>Profile</Link>
                 <div className="profile-dropdown">
                   <span className="profile-name">Transporter</span>
                   <div className="dropdown-content">
+                    <Link to="/notifications" className="dropdown-link notification-link" onClick={handleLinkClick}>
+                      Notifications
+                      {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+                    </Link>
                     <Link to="/support/tickets" className="dropdown-link" onClick={handleLinkClick}>Need Help?</Link>
                     <button onClick={handleLogout} className="logout-link">Logout</button>
                   </div>
@@ -98,6 +111,10 @@ export default function Header() {
                 <div className="profile-dropdown">
                   <span className="profile-name">Driver</span>
                   <div className="dropdown-content">
+                    <Link to="/notifications" className="dropdown-link notification-link" onClick={handleLinkClick}>
+                      Notifications
+                      {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+                    </Link>
                     <Link to="/support/tickets" className="dropdown-link" onClick={handleLinkClick}>Need Help?</Link>
                     <button onClick={handleLogout} className="logout-link">Logout</button>
                   </div>
@@ -113,9 +130,14 @@ export default function Header() {
                 <Link className="underline-link" to="/admin/fleet" onClick={handleLinkClick}>Fleet</Link>
                 <Link className="underline-link" to="/admin/tickets" onClick={handleLinkClick}>Tickets</Link>
                 <Link className="underline-link" to="/admin/managers" onClick={handleLinkClick}>Managers</Link>
+                <Link className="underline-link" to="/admin/cashouts" onClick={handleLinkClick}>Cashouts</Link>
                 <div className="profile-dropdown">
                   <span className="profile-name">Admin</span>
                   <div className="dropdown-content">
+                    <Link to="/notifications" className="dropdown-link notification-link" onClick={handleLinkClick}>
+                      Notifications
+                      {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+                    </Link>
                     <button onClick={handleLogout} className="logout-link">Logout</button>
                   </div>
                 </div>
@@ -129,6 +151,10 @@ export default function Header() {
                 <div className="profile-dropdown">
                   <span className="profile-name">Manager</span>
                   <div className="dropdown-content">
+                    <Link to="/notifications" className="dropdown-link notification-link" onClick={handleLinkClick}>
+                      Notifications
+                      {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+                    </Link>
                     <button onClick={handleLogout} className="logout-link">Logout</button>
                   </div>
                 </div>

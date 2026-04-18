@@ -11,9 +11,8 @@ import {
 import { getManagerProfile } from '../../api/manager';
 import { useNotification } from '../../context/NotificationContext';
 import Header from '../../components/common/Header';
+import { toApiUrl } from '../../utils/apiBase';
 import './ManagerSupport.css';
-
-const API_BASE = 'http://localhost:3000';
 
 const STATUS_OPTIONS = ['open', 'in_progress', 'closed'];
 const ROLE_OPTIONS = ['customer', 'transporter', 'driver'];
@@ -90,6 +89,31 @@ export default function ManagerSupport() {
     }, [filters, page]);
 
     useEffect(() => { loadData(); }, [loadData]);
+
+    useEffect(() => {
+        const handleRealtimeNotification = async (event) => {
+            const notification = event?.detail;
+            const type = notification?.type || '';
+            if (!type.startsWith('ticket.')) return;
+
+            await loadData();
+
+            const updatedTicketId = notification?.meta?.ticketId;
+            if (selectedTicket?._id && updatedTicketId && selectedTicket._id === updatedTicketId) {
+                try {
+                    const data = await managerGetTicket(selectedTicket._id);
+                    setSelectedTicket(data.ticket || data);
+                } catch {
+                    // Ignore detail refresh failures from realtime path
+                }
+            }
+        };
+
+        window.addEventListener('cargolink:notification', handleRealtimeNotification);
+        return () => {
+            window.removeEventListener('cargolink:notification', handleRealtimeNotification);
+        };
+    }, [loadData, selectedTicket?._id]);
 
     useEffect(() => {
         setPage(1);
@@ -377,8 +401,8 @@ export default function ManagerSupport() {
                                                 <span className="mgr-msg-sender">{msg.senderName || msg.sender}</span>
                                                 <div className="mgr-msg-text">{msg.text}</div>
                                                 {msg.attachment && (
-                                                    <a href={`${API_BASE}${msg.attachment}`} target="_blank" rel="noreferrer" className="mgr-msg-photo">
-                                                        <img src={`${API_BASE}${msg.attachment}`} alt="Attachment" />
+                                                    <a href={toApiUrl(msg.attachment)} target="_blank" rel="noreferrer" className="mgr-msg-photo">
+                                                        <img src={toApiUrl(msg.attachment)} alt="Attachment" />
                                                     </a>
                                                 )}
                                                 <span className="mgr-msg-time">{formatDate(msg.createdAt)}</span>

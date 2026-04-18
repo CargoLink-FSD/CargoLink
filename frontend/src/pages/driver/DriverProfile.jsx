@@ -9,6 +9,7 @@ import { uploadDriverDocuments, getDriverVerificationStatus } from '../../api/dr
 import Header from '../../components/common/Header';
 import ProfileField from '../../components/profile/ProfileField';
 import SecurityTab from '../../components/profile/SecurityTab';
+import { toApiUrl } from '../../utils/apiBase';
 import '../../styles/profile.css';
 import Footer from '../../components/common/Footer';
 
@@ -78,7 +79,7 @@ const DriverProfile = () => {
                 <div className="profile-avatar-wrapper">
                   {profile.profileImage ? (
                     <img
-                      src={`http://localhost:3000${profile.profileImage}`}
+                      src={toApiUrl(profile.profileImage)}
                       alt="Profile"
                       className="profile-avatar-large"
                       onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
@@ -388,7 +389,7 @@ const DocumentsTab = ({ profile, dispatch, fetchDriverProfile }) => {
           </span>
         </div>
         <a
-          href={`http://localhost:3000${doc.url}`}
+          href={toApiUrl(doc.url)}
           target="_blank"
           rel="noopener noreferrer"
           className="doc-preview-link"

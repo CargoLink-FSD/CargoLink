@@ -1,31 +1,9 @@
 import multer from 'multer';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
-import { createNoopTestStorage } from './testUploadStorage.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, '..', 'uploads', 'driver-docs');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Configure storage
-const storage = process.env.NODE_ENV === 'test'
-    ? createNoopTestStorage('driver-doc')
-    : multer.diskStorage({
-        destination: function (req, file, cb) {
-            cb(null, uploadsDir);
-        },
-        filename: function (req, file, cb) {
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-            const ext = path.extname(file.originalname);
-            cb(null, `driver-${file.fieldname}-${uniqueSuffix}${ext}`);
-        },
-    });
+// Use in-memory storage — files are buffered and then uploaded to GCS
+// by the gcsUpload middleware (or kept in memory for local dev).
+const storage = multer.memoryStorage();
 
 // File filter to accept images and PDFs
 const fileFilter = (req, file, cb) => {

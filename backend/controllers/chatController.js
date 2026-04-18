@@ -1,6 +1,7 @@
 import chatModel from '../models/chat.js';
 import orderModel from '../models/order.js';
 import { AppError, logger } from '../utils/misc.js';
+import { DOMAIN_EVENTS, emitDomainEvent } from '../utils/eventEmitter.js';
 
 // Send message
 const sendMessage = async (req, res, next) => {
@@ -44,6 +45,27 @@ const sendMessage = async (req, res, next) => {
     });
 
     await chat.save();
+
+    const recipientId = userType === 'customer'
+      ? order.assigned_transporter_id?.toString()
+      : order.customer_id?.toString();
+
+    const recipientRole = userType === 'customer' ? 'transporter' : 'customer';
+
+    if (recipientId) {
+      emitDomainEvent(DOMAIN_EVENTS.CHAT_MESSAGE_SENT, {
+        type: 'chat.message',
+        title: 'New chat message',
+        message: `You have a new message for order ${orderId}`,
+        recipients: [{ userId: recipientId, role: recipientRole }],
+        actor: { userId, role: userType },
+        meta: {
+          orderId,
+          chatId: chat._id?.toString(),
+          senderType: userType,
+        },
+      });
+    }
 
     res.status(200).json({ 
       success: true, 

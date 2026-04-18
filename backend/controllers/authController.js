@@ -1,9 +1,9 @@
 import authService from '../services/authService.js';
 import { AppError } from '../utils/misc.js';
 import { OAuth2Client } from 'google-auth-library';
-import { GOOGLE_CLIENT_ID } from '../config/index.js';
 
-const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+// Create client at call time so we get the secret loaded by loadAllSecrets()
+const getGoogleClient = () => new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Helper to standardize responses
 function send(res, statusCode, payload) {
@@ -137,9 +137,10 @@ const googleLogin = async (req, res, next) => {
     }
 
     // Verify the Google token
-    const ticket = await googleClient.verifyIdToken({
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const ticket = await getGoogleClient().verifyIdToken({
       idToken: credential,
-      audience: GOOGLE_CLIENT_ID,
+      audience: clientId,
     });
 
     const payload = ticket.getPayload();
@@ -173,10 +174,10 @@ const googleVerify = async (req, res, next) => {
       throw new AppError(400, 'AuthError', 'Google credential required', 'ERR_GOOGLE_INPUT');
     }
 
-    // Verify the Google token
-    const ticket = await googleClient.verifyIdToken({
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const ticket = await getGoogleClient().verifyIdToken({
       idToken: credential,
-      audience: GOOGLE_CLIENT_ID,
+      audience: clientId,
     });
 
     const payload = ticket.getPayload();

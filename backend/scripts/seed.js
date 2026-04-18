@@ -28,23 +28,26 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // ─── Models ────────────────────────────────────────────────────────────────────
-import Customer from "./models/customer.js";
-import Transporter from "./models/transporter.js";
-import Driver from "./models/driver.js";
-import Fleet from "./models/fleet.js";
-import Order from "./models/order.js";
-import Bid from "./models/bids.js";
-import Trip from "./models/trip.js";
-import Payment from "./models/payment.js";
-import Review from "./models/review.js";
-import Chat from "./models/chat.js";
-import Manager from "./models/manager.js";
-import InvitationCode from "./models/invitationCode.js";
-import Ticket from "./models/ticket.js";
-import ThresholdConfig from "./models/thresholdConfig.js";
-import DriverApplication from "./models/driverApplication.js";
+import Customer from "../models/customer.js";
+import Transporter from "../models/transporter.js";
+import Driver from "../models/driver.js";
+import Fleet from "../models/fleet.js";
+import Order from "../models/order.js";
+import Bid from "../models/bids.js";
+import Trip from "../models/trip.js";
+import Payment from "../models/payment.js";
+import Review from "../models/review.js";
+import Chat from "../models/chat.js";
+import Manager from "../models/manager.js";
+import InvitationCode from "../models/invitationCode.js";
+import Ticket from "../models/ticket.js";
+import ThresholdConfig from "../models/thresholdConfig.js";
+import DriverApplication from "../models/driverApplication.js";
+import Wallet from "../models/wallet.js";
+import WalletTransaction from "../models/walletTransaction.js";
+import CashoutRequest from "../models/cashoutRequest.js";
 
-const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/CargoLink_V2";
+const MONGO_URI ="mongodb://127.0.0.1:27017/CargoLink_V2";
 const DEFAULT_PASSWORD = "Password@123";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -219,6 +222,12 @@ function buildTransporters() {
       primary_contact: `97${String(2000000 + i * 111111).slice(0, 8)}`,
       verificationStatus: "approved",
       isVerified: true,
+      bankDetails: {
+        accountNumber: `000${1000 + i}45678`,
+        ifsc: "HDFC0001234",
+        upiId: `transporter${i + 1}@upi`,
+        beneficiaryName: COMPANY_NAMES[i],
+      },
       documents: {
         pan_card: { url: "/uploads/transporter-docs/pan-sample.jpg", adminStatus: "approved", autoVerified: false },
         driving_license: { url: "/uploads/transporter-docs/dl-sample.jpg", adminStatus: "approved", autoVerified: false },
@@ -444,7 +453,7 @@ function buildTrips(orders, transporters, drivers, fleets) {
   // Group assigned/in-transit/completed orders by transporter
   const transporterOrders = {};
   orders
-    .filter((o) => ["Assigned", "In Transit", "Completed"].includes(o.status))
+    .filter((o) => ["Scheduled", "Active", "Completed"].includes(o.status))
     .forEach((o) => {
       const tid = o.assigned_transporter_id.toString();
       if (!transporterOrders[tid]) transporterOrders[tid] = [];
@@ -474,10 +483,10 @@ function buildTrips(orders, transporters, drivers, fleets) {
 
       // Determine trip status from orders
       const hasCompleted = tripOrders.some((o) => o.status === "Completed");
-      const hasInTransit = tripOrders.some((o) => o.status === "In Transit");
-      let tripStatus = "Planned";
+      const hasInTransit = tripOrders.some((o) => ["Started", "In Transit"].includes(o.status));
+      let tripStatus = "Scheduled";
       if (hasCompleted && !hasInTransit) tripStatus = "Completed";
-      else if (hasInTransit) tripStatus = "In Transit";
+      else if (hasInTransit) tripStatus = "Active";
       else tripStatus = "Scheduled";
 
       // Build stops from order pickup/delivery in sequence
@@ -495,7 +504,7 @@ function buildTrips(orders, transporters, drivers, fleets) {
             pin: order.pickup.pin,
             coordinates: order.pickup.coordinates,
           },
-          status: tripStatus === "Completed" ? "Completed" : oi === 0 && tripStatus === "In Transit" ? "Completed" : "Pending",
+          status: tripStatus === "Completed" ? "Completed" : oi === 0 && tripStatus === "Active" ? "Completed" : "Pending",
         });
       });
       tripOrders.forEach((order) => {
@@ -541,13 +550,13 @@ function buildTrips(orders, transporters, drivers, fleets) {
         order_ids: tripOrders.map((o) => o._id),
         status: tripStatus,
         stops,
-        current_stop_index: tripStatus === "Completed" ? stops.length - 1 : tripStatus === "In Transit" ? Math.floor(stops.length / 2) : 0,
+        current_stop_index: tripStatus === "Completed" ? stops.length - 1 : tripStatus === "Active" ? Math.floor(stops.length / 2) : 0,
         current_location: {
           coordinates: tripOrders[0].pickup.coordinates,
           updated_at: new Date(),
         },
         planned_start_at: startDate,
-        actual_start_at: ["In Transit", "Completed"].includes(tripStatus) ? startDate : undefined,
+        actual_start_at: ["Active", "Completed"].includes(tripStatus) ? startDate : undefined,
         planned_end_at: endDate,
         actual_end_at: tripStatus === "Completed" ? endDate : undefined,
         total_distance_km: totalDist,
@@ -734,7 +743,7 @@ async function seed() {
   const collections = [
     Customer, Transporter, Driver, Fleet, Order, Bid, Trip,
     Payment, Review, Chat, Manager, InvitationCode, Ticket,
-    ThresholdConfig, DriverApplication,
+    ThresholdConfig, DriverApplication, Wallet, WalletTransaction, CashoutRequest,
   ];
   for (const Model of collections) {
     try {
@@ -846,6 +855,82 @@ async function seed() {
   );
   console.log(`   ✅ ${thresholdCategories.length} Threshold Configs`);
 
+  // Build Wallets, Transactions, and Cashouts after orders
+  console.log("\n💳 Seeding Wallets and Cashouts...");
+  const walletsData = transporters.map(t => ({
+    _id: new mongoose.Types.ObjectId(),
+    transporter_id: t._id,
+    balance: 0
+  }));
+  const insertedWallets = await Wallet.insertMany(walletsData);
+  
+  const transactions = [];
+  const cashouts = [];
+  const walletMap = {};
+  insertedWallets.forEach(w => { walletMap[w.transporter_id.toString()] = w; });
+
+  const completedOrders = orders.filter(o => o.status === "Completed");
+  for (const o of completedOrders) {
+    const w = walletMap[o.assigned_transporter_id.toString()];
+    if (!w) continue;
+    w.balance += o.final_price;
+    transactions.push({
+      _id: new mongoose.Types.ObjectId(),
+      wallet_id: w._id,
+      transporter_id: o.assigned_transporter_id,
+      order_id: o._id,
+      amount: o.final_price,
+      type: "credit",
+      description: `Earnings for order #${o._id}`,
+      createdAt: o.order_date
+    });
+  }
+
+  // Create a cashout request for half of the transporters that have a balance > 5000
+  for (const tid of Object.keys(walletMap)) {
+    const w = walletMap[tid];
+    if (w.balance > 5000 && Math.random() > 0.5) {
+      const amountToCashout = w.balance; // They withdraw everything
+      w.balance = 0;
+      const commission = Math.round(amountToCashout * 0.1);
+      const payable = amountToCashout - commission;
+      const cashoutId = new mongoose.Types.ObjectId();
+      
+      const tDoc = transporters.find(tr => tr._id.toString() === tid);
+
+      cashouts.push({
+        _id: cashoutId,
+        transporter_id: tid,
+        wallet_id: w._id,
+        requested_amount: amountToCashout,
+        commission_amount: commission,
+        payable_amount: payable,
+        status: "Processed",
+        bank_details_snapshot: tDoc ? tDoc.bankDetails : null,
+      });
+
+      transactions.push({
+        _id: new mongoose.Types.ObjectId(),
+        wallet_id: w._id,
+        transporter_id: tid,
+        amount: amountToCashout,
+        type: "debit",
+        description: `Cashout request #${cashoutId} — commission ₹${commission} applied`,
+        reference_id: cashoutId,
+      });
+    }
+  }
+
+  // Update balances
+  for (const w of insertedWallets) {
+    await Wallet.updateOne({ _id: w._id }, { balance: w.balance });
+  }
+
+  if (transactions.length > 0) await WalletTransaction.insertMany(transactions);
+  console.log(`   ✅ ${transactions.length} Wallet Transactions`);
+  if (cashouts.length > 0) await CashoutRequest.insertMany(cashouts);
+  console.log(`   ✅ ${cashouts.length} Cashout Requests`);
+
   // ── Summary ──
   console.log("\n" + "═".repeat(60));
   console.log("  🎉  SEED COMPLETE  ");
@@ -863,6 +948,9 @@ async function seed() {
   Chats:           ${chats.length}
   Tickets:         ${tickets.length}
   Manager:         1
+  Wallets:         ${insertedWallets.length}
+  Transactions:    ${transactions.length}
+  Cashouts:        ${cashouts.length}
   
   🔑 Default credentials:
      All users:     Password@123

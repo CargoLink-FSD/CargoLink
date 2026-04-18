@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useNotification } from '../../context/NotificationContext';
@@ -7,6 +7,7 @@ import { paymentAPI } from '../../api/payment';
 import Header from '../../components/common/Header';
 import TransporterProfileModal, { StarRating } from '../../components/common/TransporterProfileModal';
 import ReviewModal from '../../components/customer/ReviewModal';
+import { toApiUrl } from '../../utils/apiBase';
 import './OrderDetails.css';
 
 function QuoteBreakdownTable({ breakdown, total }) {
@@ -89,9 +90,49 @@ export default function OrderDetails() {
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [orderReview, setOrderReview] = useState(null);
 
+  const fetchOrderDetails = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await http.get(`/api/orders/${orderId}`);
+      setOrder(response.data);
+    } catch (err) {
+      console.error('Error fetching order details:', err);
+      showNotification({ message: 'Failed to load order details', type: 'error' });
+      navigate(-1);
+    } finally {
+      setLoading(false);
+    }
+  }, [navigate, orderId, showNotification]);
+
   useEffect(() => {
     fetchOrderDetails();
-  }, [orderId]);
+  }, [fetchOrderDetails]);
+
+  useEffect(() => {
+    const relevantTypes = new Set([
+      'bid.accepted',
+      'trip.created',
+      'trip.started',
+      'trip.pickup.confirmed',
+      'trip.delivery.confirmed',
+      'order.cancelled',
+      'payment.completed',
+      'chat.message',
+    ]);
+
+    const handleRealtimeNotification = (event) => {
+      const notification = event?.detail;
+      const type = notification?.type || '';
+      if (!relevantTypes.has(type)) return;
+      if (notification?.meta?.orderId !== orderId) return;
+      fetchOrderDetails();
+    };
+
+    window.addEventListener('cargolink:notification', handleRealtimeNotification);
+    return () => {
+      window.removeEventListener('cargolink:notification', handleRealtimeNotification);
+    };
+  }, [fetchOrderDetails, orderId]);
 
   // Fetch review details (if already reviewed)
   useEffect(() => {
@@ -126,20 +167,6 @@ export default function OrderDetails() {
         .catch(() => {});
     }
   }, [order, userType]);
-
-  const fetchOrderDetails = async () => {
-    try {
-      setLoading(true);
-      const response = await http.get(`/api/orders/${orderId}`);
-      setOrder(response.data);
-    } catch (err) {
-      console.error('Error fetching order details:', err);
-      showNotification({ message: 'Failed to load order details', type: 'error' });
-      navigate(-1);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -295,7 +322,7 @@ export default function OrderDetails() {
                 <span className="label">Cargo Photo</span>
                 <div className="cargo-photo-display">
                   <img
-                    src={`http://localhost:3000${order.cargo_photo}`}
+                    src={toApiUrl(order.cargo_photo)}
                     alt="Cargo"
                     className="cargo-photo-full"
                     onError={(e) => { e.target.style.display = 'none'; }}

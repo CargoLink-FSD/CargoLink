@@ -8,6 +8,7 @@ import Home from '../pages/common/Home';
 import Login from '../pages/common/login';
 import ForgotPassword from '../pages/common/ForgotPassword';
 import NotFound from '../pages/common/NotFound';
+import NotificationsPage from '../pages/common/NotificationsPage';
 import ProtectedRoute from './ProtectedRoute';
 
 import CustomerSignupForm from '../pages/customer/CustomerSignupForm';
@@ -34,6 +35,7 @@ import DriverManagement from '../pages/transporter/DriverManagement';
 import TripPlanner from '../pages/transporter/TripPlanner';
 import TripManagement from '../pages/transporter/TripManagement';
 import TripInfo from '../pages/transporter/TripInfo';
+import TransporterWallet from '../pages/transporter/TransporterWallet';
 
 import DriverSignupForm from '../pages/driver/DriverSignupForm';
 import DriverDashboard from '../pages/driver/DriverDashboard';
@@ -57,6 +59,7 @@ import Dashboard from '../pages/admin/Dashboard';
 
 import FleetOverview from '../pages/admin/FleetOverview';
 import TicketsOverview from '../pages/admin/TicketsOverview';
+import AdminCashouts from '../pages/admin/AdminCashouts';
 
 
 
@@ -131,6 +134,7 @@ export default function AppRoutes() {
         <Route path="/transporter/trips" element={<TripManagement />} />
         <Route path="/transporter/trips/create" element={<TripPlanner />} />
         <Route path="/transporter/trips/:tripId" element={<TripInfo />} />
+        <Route path="/transporter/wallet" element={<TransporterWallet />} />
       </Route>
 
 
@@ -164,6 +168,7 @@ export default function AppRoutes() {
         <Route path="/admin/fleet" element={<FleetOverview />} />
         <Route path="/admin/tickets" element={<TicketsOverview />} />
         <Route path="/admin/managers" element={<ManagerManagement />} />
+        <Route path="/admin/cashouts" element={<AdminCashouts />} />
       </Route>
 
 
@@ -187,6 +192,10 @@ export default function AppRoutes() {
         <Route path="/chat/orders/:orderId" element={placeholder('Chat: Order Conversation')} />
         <Route path="/support/tickets" element={<SupportTickets />} />
         <Route path="/support/tickets/:id" element={<TicketDetail />} />
+      </Route>
+
+      <Route element={<ProtectedRoute allowedRoles={['customer', 'transporter', 'driver', 'admin', 'manager']} />}>
+        <Route path="/notifications" element={<NotificationsPage />} />
       </Route>
 
 

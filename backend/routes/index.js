@@ -11,6 +11,8 @@ import managerRoutes from "./managerRoutes.js";
 import chatRoutes from "./chatRoutes.js";
 import ticketRoutes from "./ticketRoutes.js";
 import locationRoutes from "./locationRoutes.js";
+import notificationRoutes from './notificationRoutes.js';
+import walletRoutes from "./walletRoutes.js";
 
 const router = Router();
 
@@ -26,6 +28,8 @@ router.use("/api/manager", managerRoutes);
 router.use("/api/chat", chatRoutes);
 router.use("/api/tickets", ticketRoutes);
 router.use("/api/location", locationRoutes);
+router.use('/api/notifications', notificationRoutes);
+router.use("/api/wallets", walletRoutes);
 
 router.use((req, res, next) => {
   res.status(404).json({
