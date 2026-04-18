@@ -141,16 +141,23 @@ steps:
   - id: fetch-frontend-secrets
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
-    waitFor: ["-"]
+    waitFor: ["deploy-backend"]
     args:
       - -ceu
       - |
         CLIENT_ID="$$(gcloud secrets versions access latest --secret=GOOGLE_CLIENT_ID | tr -d '\n')"
         MAPS_KEY="$$(gcloud secrets versions access latest --secret=GOOGLE_MAPS_API_KEY | tr -d '\n')"
+        BACKEND_URL="$$(cat /workspace/.backend-url 2>/dev/null | tr -d '\n')"
+
         echo "" >> frontend/.env
         echo "VITE_GOOGLE_CLIENT_ID=$${CLIENT_ID}" >> frontend/.env
         echo "VITE_GOOGLE_MAPS_API_KEY=$${MAPS_KEY}" >> frontend/.env
-        echo "Frontend secrets fetched."
+        if [ -n "$${BACKEND_URL}" ]; then
+          echo "VITE_API_BASE_URL=$${BACKEND_URL}" >> frontend/.env
+          echo "Frontend secrets fetched and API base URL injected."
+        else
+          echo "WARN: Backend URL not found (likely non-deploy branch). Using relative API paths."
+        fi
 
   # ── 7: Build frontend ─────────────────────────────────────────────────────
   - id: frontend-build

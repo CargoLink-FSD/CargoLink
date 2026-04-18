@@ -19,6 +19,19 @@ const toWsUrl = (baseUrl) => {
   return `${baseUrl.replace('http://', 'ws://')}/ws`;
 };
 
+const resolveWsBaseUrl = () => {
+  const baseUrl = getBaseUrl();
+  if (baseUrl) return toWsUrl(baseUrl);
+
+  // In production split-deploy mode, websocket must target the backend domain.
+  // If API base URL is missing, avoid noisy reconnect loops and let polling continue.
+  if (!import.meta.env.DEV) {
+    return null;
+  }
+
+  return 'ws://localhost:3000/ws';
+};
+
 const shouldRefreshOrders = (type = '') => {
   return [
     'bid.placed',
@@ -56,7 +69,12 @@ export function useRealtimeNotifications() {
     let isDisposed = false;
 
     const connect = () => {
-      const wsBase = toWsUrl(getBaseUrl());
+      const wsBase = resolveWsBaseUrl();
+      if (!wsBase) {
+        dispatch(pollNotifications());
+        return;
+      }
+
       const wsUrl = `${wsBase}?token=${encodeURIComponent(accessToken)}`;
       const ws = new WebSocket(wsUrl);
       socketRef.current = ws;
