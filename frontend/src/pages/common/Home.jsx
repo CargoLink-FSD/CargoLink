@@ -28,7 +28,7 @@ function Home() {
             <h1>Connecting Customers and Transporters</h1>
             <p>
               CargoLink brings businesses and transporters together on one seamless platform,
-              making logistics simpler, faster, and more efficient.
+              making logistics simpler, faster, and more efficient
             </p>
             
             <div className="button-group">
