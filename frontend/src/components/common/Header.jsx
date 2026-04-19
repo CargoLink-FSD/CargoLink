@@ -40,7 +40,7 @@ export default function Header() {
         <div className="header-container">
           <Link to="/" className="logo">
             <img src={logo} alt="CargoLink Logo" width="75" height="50" />
-            <span>CargoLink</span>
+            <span>Cargo</span>
           </Link>
 
           <nav className="nav-links">
