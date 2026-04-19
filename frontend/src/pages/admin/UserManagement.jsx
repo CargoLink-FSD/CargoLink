@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNotification } from '../../context/NotificationContext';
 import http from '../../api/http';
 import Header from '../../components/common/Header';
@@ -65,7 +65,9 @@ export default function UserManagement() {
     try {
       const endpoint = tab === 'customer'
         ? `/api/admin/users/customer/${userId}`
-        : `/api/admin/users/transporter/${userId}`;
+        : tab === 'driver'
+          ? `/api/admin/users/driver/${userId}`
+          : `/api/admin/users/transporter/${userId}`;
       const res = await http.get(endpoint);
       setDetail(res.data);
     } catch (err) {
@@ -83,7 +85,7 @@ export default function UserManagement() {
       <div className="admin-container">
         <div className="adm-page-header">
           <h1 className="adm-page-title">User Management</h1>
-          <p className="adm-page-subtitle">Manage customers and transporters</p>
+          <p className="adm-page-subtitle">Manage customers, transporters and drivers</p>
         </div>
 
         {/* Tabs */}
@@ -93,6 +95,9 @@ export default function UserManagement() {
           </button>
           <button className={`adm-tab ${tab === 'transporter' ? 'active' : ''}`} onClick={() => { setTab('transporter'); setSearch(''); setPage(1); }}>
             Transporters
+          </button>
+          <button className={`adm-tab ${tab === 'driver' ? 'active' : ''}`} onClick={() => { setTab('driver'); setSearch(''); setPage(1); }}>
+            Drivers
           </button>
         </div>
 
@@ -121,10 +126,10 @@ export default function UserManagement() {
               <table className="adm-table">
                 <thead>
                   <tr>
-                    <th>{tab === 'customer' ? 'Name' : 'Company'}</th>
+                    <th>{tab === 'customer' ? 'Name' : tab === 'driver' ? 'Driver Name' : 'Company'}</th>
                     <th>Email</th>
-                    <th>Phone</th>
-                    <th>Orders</th>
+                    <th>{tab === 'driver' ? 'License No.' : 'Phone'}</th>
+                    {tab === 'driver' ? <th>Status</th> : <th>Orders</th>}
                     <th>Joined</th>
                     <th style={{ textAlign: 'center' }}>Actions</th>
                   </tr>
@@ -134,14 +139,19 @@ export default function UserManagement() {
                     <tr><td colSpan={6} className="adm-empty">No users found</td></tr>
                   ) : (
                     users.map((u) => {
-                      const id = u.customer_id || u.transporter_id || u._id;
-                      const name = tab === 'customer' ? `${u.first_name} ${u.last_name}` : u.name;
+                      const id = u.customer_id || u.transporter_id || u.driver_id || u._id;
+                      const name = tab === 'customer' ? `${u.first_name} ${u.last_name}`
+                        : tab === 'driver' ? `${u.first_name} ${u.last_name}`
+                        : u.name;
                       return (
                         <tr key={id}>
                           <td style={{ fontWeight: 600 }}>{name}</td>
                           <td>{u.email}</td>
-                          <td>{u.phone || u.primary_contact || '—'}</td>
-                          <td>{u.noOfOrders || 0}</td>
+                          <td>{tab === 'driver' ? (u.licenseNumber || '—') : (u.phone || u.primary_contact || '—')}</td>
+                          <td>{tab === 'driver'
+                            ? <span className={`adm-badge ${u.status === 'Available' ? 'green' : u.status === 'Assigned' ? 'blue' : 'orange'}`}>{u.status || '—'}</span>
+                            : (u.noOfOrders || 0)}
+                          </td>
                           <td>{formatDate(u.createdAt)}</td>
                           <td style={{ textAlign: 'center' }}>
                             <button className="adm-btn adm-btn-primary adm-btn-sm" style={{ marginRight: 8 }} onClick={() => openDetail(id)}>View</button>
@@ -176,7 +186,7 @@ export default function UserManagement() {
           <div className="adm-modal-overlay" onClick={() => { setDetail(null); setDetailLoading(false); }}>
             <div className="adm-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 900 }}>
               <div className="adm-modal-header">
-                <h3>{tab === 'customer' ? 'Customer Details' : 'Transporter Details'}</h3>
+                <h3>{tab === 'customer' ? 'Customer Details' : tab === 'driver' ? 'Driver Details' : 'Transporter Details'}</h3>
                 <button className="adm-modal-close" onClick={() => { setDetail(null); setDetailLoading(false); }}>&times;</button>
               </div>
               <div className="adm-modal-body">
@@ -249,6 +259,57 @@ export default function UserManagement() {
                       </>
                     )}
                   </>
+                ) : detail && tab === 'driver' ? (
+                  <div className="adm-detail-grid">
+                    <div className="adm-detail-field">
+                      <span className="adm-detail-label">Name</span>
+                      <span className="adm-detail-value">{detail.firstName} {detail.lastName}</span>
+                    </div>
+                    <div className="adm-detail-field">
+                      <span className="adm-detail-label">Email</span>
+                      <span className="adm-detail-value">{detail.email}</span>
+                    </div>
+                    <div className="adm-detail-field">
+                      <span className="adm-detail-label">Phone</span>
+                      <span className="adm-detail-value">{detail.phone || '—'}</span>
+                    </div>
+                    <div className="adm-detail-field">
+                      <span className="adm-detail-label">License No.</span>
+                      <span className="adm-detail-value">{detail.licenseNumber || '—'}</span>
+                    </div>
+                    <div className="adm-detail-field">
+                      <span className="adm-detail-label">License Expiry</span>
+                      <span className="adm-detail-value">{detail.licenseExpiry ? formatDate(detail.licenseExpiry) : '—'}</span>
+                    </div>
+                    <div className="adm-detail-field">
+                      <span className="adm-detail-label">Status</span>
+                      <span className="adm-detail-value">
+                        <span className={`adm-badge ${detail.status === 'Available' ? 'green' : detail.status === 'Assigned' ? 'blue' : 'orange'}`}>
+                          {detail.status || '—'}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="adm-detail-field">
+                      <span className="adm-detail-label">Verification</span>
+                      <span className="adm-detail-value">
+                        <span className={`adm-badge ${detail.verificationStatus === 'approved' ? 'green' : detail.verificationStatus === 'rejected' ? 'red' : 'orange'}`}>
+                          {detail.verificationStatus || 'pending'}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="adm-detail-field">
+                      <span className="adm-detail-label">Transporter</span>
+                      <span className="adm-detail-value">{detail.transporter_id?.name || '—'}</span>
+                    </div>
+                    <div className="adm-detail-field">
+                      <span className="adm-detail-label">Employment</span>
+                      <span className="adm-detail-value">{detail.employment_type || '—'}</span>
+                    </div>
+                    <div className="adm-detail-field">
+                      <span className="adm-detail-label">Joined</span>
+                      <span className="adm-detail-value">{formatDate(detail.createdAt)}</span>
+                    </div>
+                  </div>
                 ) : detail && tab === 'transporter' ? (
                   <>
                     <div className="adm-detail-grid">
