@@ -178,6 +178,7 @@ export default function UserManagement() {
               <table className="adm-table">
                 <thead>
                   <tr>
+                    <th style={{ width: 70 }}>#</th>
                     <th>{tab === 'customer' ? 'Name' : tab === 'driver' ? 'Driver Name' : 'Company'}</th>
                     <th>Email</th>
                     <th>{tab === 'driver' ? 'License No.' : 'Phone'}</th>
@@ -188,16 +189,18 @@ export default function UserManagement() {
                 </thead>
                 <tbody>
                   {users.length === 0 ? (
-                    <tr><td colSpan={6} className="adm-empty">No users found</td></tr>
+                    <tr><td colSpan={7} className="adm-empty">No users found</td></tr>
                   ) : (
                     users.map((u, idx) => {
                       const id = getUserRowId(u, tab);
                       const rowKey = id || normalizeEntityId(u._id) || `${tab}-${u.email || 'user'}-${idx}`;
+                      const serial = (((pagination?.page || page) - 1) * (pagination?.limit || limit)) + idx + 1;
                       const name = tab === 'customer' ? `${u.first_name} ${u.last_name}`
                         : tab === 'driver' ? `${u.first_name} ${u.last_name}`
                         : u.name;
                       return (
                         <tr key={rowKey}>
+                          <td style={{ color: '#64748b', fontWeight: 600 }}>{serial}</td>
                           <td style={{ fontWeight: 600 }}>{name}</td>
                           <td>{u.email}</td>
                           <td>{tab === 'driver' ? (u.licenseNumber || '—') : (u.phone || u.primary_contact || '—')}</td>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNotification } from '../../context/NotificationContext';
 import http from '../../api/http';
 import Header from '../../components/common/Header';
@@ -15,6 +15,7 @@ export default function TicketsOverview() {
     const listStartRef = useRef(null);
     const [tickets, setTickets] = useState([]);
     const [stats, setStats] = useState({});
+    const [pagination, setPagination] = useState(null);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
@@ -24,15 +25,27 @@ export default function TicketsOverview() {
     const [selected, setSelected] = useState(null);
     const [page, setPage] = useState(1);
 
-    useEffect(() => { fetchTickets(); }, []);
-
     const fetchTickets = async () => {
         try {
             setLoading(true);
-            const res = await http.get('/api/admin/tickets');
-            setTickets(res.data.tickets || []);
-            setStats(res.data.stats || {});
-            setPage(1);
+            const params = new URLSearchParams();
+            params.set('page', String(page));
+            params.set('limit', String(PAGE_SIZE));
+            if (search.trim()) params.set('search', search.trim());
+            if (statusFilter) params.set('status', statusFilter);
+            if (priorityFilter) params.set('priority', priorityFilter);
+            if (categoryFilter) params.set('category', categoryFilter);
+            if (roleFilter) params.set('role', roleFilter);
+
+            const res = await http.get(`/api/admin/tickets?${params.toString()}`);
+            const payload = res?.data || {};
+            setTickets(payload.tickets || []);
+            setStats(payload.stats || {});
+            const nextPagination = res?.pagination || payload?.pagination || null;
+            setPagination(nextPagination);
+            if (nextPagination?.totalPages && page > nextPagination.totalPages) {
+                setPage(nextPagination.totalPages);
+            }
         } catch {
             showNotification({ message: 'Failed to load tickets', type: 'error' });
         } finally {
@@ -40,40 +53,21 @@ export default function TicketsOverview() {
         }
     };
 
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            fetchTickets();
+        }, search.trim() ? 250 : 0);
+
+        return () => clearTimeout(timeout);
+    }, [page, search, statusFilter, priorityFilter, categoryFilter, roleFilter]);
+
     const categories = [...new Set(tickets.map(t => t.category).filter(Boolean))];
-
-    const filtered = useMemo(() => (
-        tickets.filter((t) => {
-            if (statusFilter && t.status !== statusFilter) return false;
-            if (priorityFilter && t.priority !== priorityFilter) return false;
-            if (categoryFilter && t.category !== categoryFilter) return false;
-            if (roleFilter && t.userRole !== roleFilter) return false;
-            if (search) {
-                const s = search.toLowerCase();
-                return (
-                    t.ticketId?.toLowerCase().includes(s) ||
-                    t.userName?.toLowerCase().includes(s) ||
-                    t.userEmail?.toLowerCase().includes(s) ||
-                    t.subject?.toLowerCase().includes(s)
-                );
-            }
-            return true;
-        })
-    ), [tickets, statusFilter, priorityFilter, categoryFilter, roleFilter, search]);
-
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    const safePage = Math.min(page, totalPages);
-    const pagedTickets = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-
-    useEffect(() => {
-        setPage(1);
-    }, [search, statusFilter, priorityFilter, categoryFilter, roleFilter]);
-
-    useEffect(() => {
-        if (page > totalPages) {
-            setPage(totalPages);
-        }
-    }, [page, totalPages]);
+    const totalItems = pagination?.total ?? tickets.length;
+    const totalPages = pagination?.totalPages ?? 1;
+    const currentPage = pagination?.page ?? page;
+    const currentLimit = pagination?.limit ?? PAGE_SIZE;
+    const visibleStart = totalItems === 0 ? 0 : ((currentPage - 1) * currentLimit) + 1;
+    const visibleEnd = Math.min(currentPage * currentLimit, totalItems);
 
     const scrollToListStart = () => {
         const anchor = listStartRef.current;
@@ -84,7 +78,7 @@ export default function TicketsOverview() {
     };
 
     const goToPage = (nextPage) => {
-        if (nextPage === safePage) return;
+        if (nextPage === currentPage) return;
         setPage(nextPage);
         requestAnimationFrame(scrollToListStart);
     };
@@ -131,25 +125,25 @@ export default function TicketsOverview() {
                         className="adm-search-input"
                         placeholder="Search by ticket ID, user, subject..."
                         value={search}
-                        onChange={(e) => setSearch(e.target.value)}
+                        onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                     />
-                    <select className="adm-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                    <select className="adm-select" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
                         <option value="">All Status</option>
                         <option value="open">Open</option>
                         <option value="in_progress">In Progress</option>
                         <option value="closed">Closed</option>
                     </select>
-                    <select className="adm-select" value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
+                    <select className="adm-select" value={priorityFilter} onChange={(e) => { setPriorityFilter(e.target.value); setPage(1); }}>
                         <option value="">All Priority</option>
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
                         <option value="high">High</option>
                     </select>
-                    <select className="adm-select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+                    <select className="adm-select" value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}>
                         <option value="">All Categories</option>
                         {categories.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
-                    <select className="adm-select" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+                    <select className="adm-select" value={roleFilter} onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}>
                         <option value="">All Roles</option>
                         <option value="customer">Customer</option>
                         <option value="transporter">Transporter</option>
@@ -177,10 +171,10 @@ export default function TicketsOverview() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filtered.length === 0 ? (
+                                {tickets.length === 0 ? (
                                     <tr><td colSpan={10} className="adm-empty">No tickets found</td></tr>
                                 ) : (
-                                    pagedTickets.map(t => (
+                                    tickets.map(t => (
                                         <tr key={t._id}>
                                             <td style={{ fontWeight: 700, color: '#6366f1' }}>{t.ticketId}</td>
                                             <td>{t.userName}</td>
@@ -219,26 +213,25 @@ export default function TicketsOverview() {
                 </div>
 
                 <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: 12 }}>
-                    Showing {filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1}
-                    {' '}to {Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length} tickets
+                    Showing {visibleStart} to {visibleEnd} of {totalItems} tickets
                 </p>
 
-                {filtered.length > PAGE_SIZE && (
+                {totalPages > 1 && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
                         <button
                             className="adm-btn adm-btn-outline"
-                            onClick={() => goToPage(Math.max(1, safePage - 1))}
-                            disabled={safePage <= 1}
+                            onClick={() => goToPage(Math.max(1, currentPage - 1))}
+                            disabled={currentPage <= 1}
                         >
                             Previous
                         </button>
                         <span style={{ color: '#64748b', fontSize: '0.9rem' }}>
-                            Page {safePage} of {totalPages}
+                            Page {currentPage} of {totalPages}
                         </span>
                         <button
                             className="adm-btn adm-btn-outline"
-                            onClick={() => goToPage(Math.min(totalPages, safePage + 1))}
-                            disabled={safePage >= totalPages}
+                            onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
+                            disabled={currentPage >= totalPages}
                         >
                             Next
                         </button>

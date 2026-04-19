@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchWallet,
@@ -35,6 +35,7 @@ const StatusBadge = ({ status }) => {
 
 export default function TransporterWallet() {
   const dispatch = useDispatch();
+  const listStartRef = useRef(null);
   const {
     wallet, bankDetails,
     transactions, transactionsMeta, txLoading,
@@ -109,8 +110,27 @@ export default function TransporterWallet() {
     dispatch(saveBankDetails(bankForm));
   };
 
-  const changeTxPage = (p) => { setTxPage(p); dispatch(fetchTransactions({ page: p })); };
-  const changeCoPage = (p) => { setCoPage(p); dispatch(fetchCashoutHistory({ page: p })); };
+  const scrollToListStart = () => {
+    const anchor = listStartRef.current;
+    if (!anchor) return;
+
+    const y = anchor.getBoundingClientRect().top + window.scrollY - 90;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+  };
+
+  const changeTxPage = (p) => {
+    if (p === txPage) return;
+    setTxPage(p);
+    dispatch(fetchTransactions({ page: p }));
+    requestAnimationFrame(scrollToListStart);
+  };
+
+  const changeCoPage = (p) => {
+    if (p === coPage) return;
+    setCoPage(p);
+    dispatch(fetchCashoutHistory({ page: p }));
+    requestAnimationFrame(scrollToListStart);
+  };
 
   if (loading && !wallet) {
     return (
@@ -129,7 +149,7 @@ export default function TransporterWallet() {
   return (
     <>
       <Header />
-      <div className="wallet-page">
+      <div ref={listStartRef} className="wallet-page">
         {/* ── Header ── */}
       <div className="wallet-header">
         <div className="wallet-header-left">

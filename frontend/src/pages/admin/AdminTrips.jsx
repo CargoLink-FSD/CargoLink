@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
 import { useNotification } from '../../context/NotificationContext';
@@ -10,6 +10,7 @@ const STATUS_OPTIONS = ['Scheduled', 'Active', 'Completed', 'Cancelled'];
 
 export default function AdminTrips() {
   const { showNotification } = useNotification();
+  const listStartRef = useRef(null);
   const [trips, setTrips] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [stats, setStats] = useState({ total: 0, active: 0, scheduled: 0, completed: 0 });
@@ -78,6 +79,21 @@ export default function AdminTrips() {
     });
   };
 
+  const scrollToListStart = () => {
+    const anchor = listStartRef.current;
+    if (!anchor) return;
+
+    const y = anchor.getBoundingClientRect().top + window.scrollY - 90;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+  };
+
+  const goToPage = (nextPage) => {
+    const currentPage = pagination?.page || page;
+    if (nextPage === currentPage) return;
+    setPage(nextPage);
+    requestAnimationFrame(scrollToListStart);
+  };
+
   return (
     <>
       <Header />
@@ -114,7 +130,7 @@ export default function AdminTrips() {
           <button className="admxr-refresh" onClick={loadTrips} disabled={loading}>{loading ? 'Loading...' : 'Refresh'}</button>
         </div>
 
-        <div className="admxr-table-wrap">
+        <div ref={listStartRef} className="admxr-table-wrap">
           <table className="admxr-table">
             <thead>
               <tr>
@@ -155,9 +171,9 @@ export default function AdminTrips() {
 
         {!loading && pagination?.totalPages > 1 && (
           <div className="admxr-pagination">
-            <button className="admxr-page-btn" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={page <= 1}>Previous</button>
+            <button className="admxr-page-btn" onClick={() => goToPage(Math.max(1, (pagination?.page || page) - 1))} disabled={(pagination?.page || page) <= 1}>Previous</button>
             <span className="admxr-page-label">Page {pagination.page} of {pagination.totalPages}</span>
-            <button className="admxr-page-btn" onClick={() => setPage((prev) => Math.min(pagination.totalPages, prev + 1))} disabled={page >= pagination.totalPages}>Next</button>
+            <button className="admxr-page-btn" onClick={() => goToPage(Math.min(pagination.totalPages, (pagination?.page || page) + 1))} disabled={(pagination?.page || page) >= pagination.totalPages}>Next</button>
           </div>
         )}
       </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAdminCashouts } from '../../store/slices/adminCashoutsSlice';
 import { useNotification } from '../../context/NotificationContext';
@@ -11,6 +11,7 @@ import './AdminCashoutsActions.css';
 export default function AdminCashouts() {
   const dispatch = useDispatch();
   const { showNotification } = useNotification();
+  const listStartRef = useRef(null);
   
   const { cashouts, stats, pagination, loading, error } = useSelector((state) => state.adminCashouts);
   
@@ -73,6 +74,21 @@ export default function AdminCashouts() {
     setRejectNote('');
   };
 
+  const scrollToListStart = () => {
+    const anchor = listStartRef.current;
+    if (!anchor) return;
+
+    const y = anchor.getBoundingClientRect().top + window.scrollY - 90;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+  };
+
+  const goToPage = (nextPage) => {
+    const currentPage = pagination?.page || page;
+    if (nextPage === currentPage) return;
+    setPage(nextPage);
+    requestAnimationFrame(scrollToListStart);
+  };
+
   return (
     <>
       <Header />
@@ -131,7 +147,7 @@ export default function AdminCashouts() {
         {loading ? (
           <div className="adm-loading"><div className="adm-spinner" /><p>Loading cashouts...</p></div>
         ) : (
-          <div className="adm-card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div ref={listStartRef} className="adm-card" style={{ padding: 0, overflow: 'hidden' }}>
             <div className="adm-table-wrap">
               <table className="adm-table">
                 <thead>
@@ -209,13 +225,13 @@ export default function AdminCashouts() {
 
         {!loading && pagination && pagination.totalPages > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
-            <button className="adm-btn adm-btn-outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+            <button className="adm-btn adm-btn-outline" onClick={() => goToPage(Math.max(1, (pagination?.page || page) - 1))} disabled={(pagination?.page || page) <= 1}>
               Previous
             </button>
             <span style={{ color: '#64748b', fontSize: '0.9rem' }}>
               Page {pagination.page} of {pagination.totalPages}
             </span>
-            <button className="adm-btn adm-btn-outline" onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))} disabled={page >= pagination.totalPages}>
+            <button className="adm-btn adm-btn-outline" onClick={() => goToPage(Math.min(pagination.totalPages, (pagination?.page || page) + 1))} disabled={(pagination?.page || page) >= pagination.totalPages}>
               Next
             </button>
           </div>

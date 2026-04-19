@@ -481,28 +481,107 @@ const deleteUser = async (role, userId) => {
 };
 
 // Fleet Overview
-const getFleetOverview = async () => {
-    const vehicles = await adminRepo.getAllFleetVehicles();
+const getFleetOverview = async (filters = {}) => {
+    const { search, status, rcStatus, truckType, page, limit, sort = 'date' } = filters;
+    const query = {};
+    let sortOptions = { createdAt: -1 };
+
+    if (status) {
+        query.status = status;
+    }
+
+    if (rcStatus) {
+        query.rc_status = rcStatus;
+    }
+
+    if (truckType) {
+        query.truck_type = truckType;
+    }
+
+    if (sort === 'name') {
+        sortOptions = { name: 1 };
+    } else if (sort === 'registration') {
+        sortOptions = { registration: 1 };
+    }
+
+    if (search) {
+        const regex = new RegExp(escapeRegex(search), 'i');
+        const transporterIds = await adminRepo.searchTransporterIds(search);
+        const orConditions = [
+            { name: { $regex: regex } },
+            { registration: { $regex: regex } },
+            { truck_type: { $regex: regex } },
+        ];
+
+        if (transporterIds.length > 0) {
+            orConditions.push({ transporter_id: { $in: transporterIds } });
+        }
+
+        query.$or = orConditions;
+    }
+
+    const fleetResult = await adminRepo.getAllFleetVehicles(query, sortOptions, { page, limit });
+    const vehicles = fleetResult.items || fleetResult;
+    const allVehicles = await adminRepo.getAllFleetVehicles();
     const stats = {
-        total: vehicles.length,
-        available: vehicles.filter(v => v.status === 'Available').length,
-        assigned: vehicles.filter(v => v.status === 'Assigned').length,
-        maintenance: vehicles.filter(v => v.status === 'In Maintenance').length,
-        unavailable: vehicles.filter(v => v.status === 'Unavailable').length,
-        rcApproved: vehicles.filter(v => v.rc_status === 'approved').length,
-        rcPending: vehicles.filter(v => v.rc_status === 'pending').length,
-        rcRejected: vehicles.filter(v => v.rc_status === 'rejected').length,
+        total: allVehicles.length,
+        available: allVehicles.filter(v => v.status === 'Available').length,
+        assigned: allVehicles.filter(v => v.status === 'Assigned').length,
+        maintenance: allVehicles.filter(v => v.status === 'In Maintenance').length,
+        unavailable: allVehicles.filter(v => v.status === 'Unavailable').length,
+        rcApproved: allVehicles.filter(v => v.rc_status === 'approved').length,
+        rcPending: allVehicles.filter(v => v.rc_status === 'pending').length,
+        rcRejected: allVehicles.filter(v => v.rc_status === 'rejected').length,
     };
-    return { vehicles, stats };
+    return { vehicles, stats, pagination: fleetResult.pagination };
 };
 
 // Tickets Overview
-const getTicketsOverview = async () => {
-    const [tickets, stats] = await Promise.all([
-        adminRepo.getAllTickets(),
+const getTicketsOverview = async (filters = {}) => {
+    const { search, status, priority, category, role, page, limit, sort = 'date' } = filters;
+    const query = {};
+    let sortOptions = { createdAt: -1 };
+
+    if (status) {
+        query.status = status;
+    }
+
+    if (priority) {
+        query.priority = priority;
+    }
+
+    if (category) {
+        query.category = category;
+    }
+
+    if (role) {
+        query.userRole = role;
+    }
+
+    if (sort === 'status') {
+        sortOptions = { status: 1, createdAt: -1 };
+    }
+
+    if (search) {
+        const regex = new RegExp(escapeRegex(search), 'i');
+        query.$or = [
+            { ticketId: { $regex: regex } },
+            { userName: { $regex: regex } },
+            { userEmail: { $regex: regex } },
+            { subject: { $regex: regex } },
+        ];
+    }
+
+    const [ticketsResult, stats] = await Promise.all([
+        adminRepo.getAllTickets(query, sortOptions, { page, limit }),
         adminRepo.getTicketStats()
     ]);
-    return { tickets, stats };
+
+    return {
+        tickets: ticketsResult.items || ticketsResult,
+        pagination: ticketsResult.pagination,
+        stats,
+    };
 };
 
 const getTicketDetail = async (ticketId) => {

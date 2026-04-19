@@ -927,35 +927,33 @@ const getPendingVerifications = async () => {
 };
 
 // ΓöÇΓöÇΓöÇ Fleet Overview ΓöÇΓöÇΓöÇ
-const getAllFleetVehicles = async () => {
-    const fleetVehicles = await Fleet.find({})
-        .populate('transporter_id', 'name email primary_contact city state')
-        .lean();
+const mapFleetVehicle = (vehicle = {}) => {
+    const transporter = vehicle.transporter_id && typeof vehicle.transporter_id === 'object'
+        ? vehicle.transporter_id
+        : null;
 
-    if (fleetVehicles.length > 0) {
-        return fleetVehicles.map((vehicle) => {
-            const transporter = vehicle.transporter_id && typeof vehicle.transporter_id === 'object'
-                ? vehicle.transporter_id
-                : null;
+    return {
+        ...vehicle,
+        transporter_id: transporter?._id || vehicle.transporter_id || null,
+        transporter_name: transporter?.name || vehicle.transporter_name || null,
+        transporter_email: transporter?.email || vehicle.transporter_email || null,
+        transporter_contact: transporter?.primary_contact || vehicle.transporter_contact || null,
+        transporter_location: [
+            transporter?.city,
+            transporter?.state,
+        ].filter(Boolean).join(', ') || vehicle.transporter_location || '',
+    };
+};
 
-            return {
-                ...vehicle,
-                transporter_id: transporter?._id || vehicle.transporter_id || null,
-                transporter_name: transporter?.name || null,
-                transporter_email: transporter?.email || null,
-                transporter_contact: transporter?.primary_contact || null,
-                transporter_location: [transporter?.city, transporter?.state].filter(Boolean).join(', '),
-            };
-        });
-    }
-
+const getLegacyFleetVehicles = async () => {
     const transporters = await Transporter.find(
         { 'fleet.0': { $exists: true } },
         'name email primary_contact city state fleet'
     ).lean();
+
     const vehicles = [];
-    transporters.forEach(t => {
-        t.fleet.forEach(v => {
+    transporters.forEach((t) => {
+        t.fleet.forEach((v) => {
             vehicles.push({
                 ...v,
                 transporter_id: t._id,
@@ -966,14 +964,81 @@ const getAllFleetVehicles = async () => {
             });
         });
     });
+
     return vehicles;
 };
 
+const getAllFleetVehicles = async (query = {}, sortOptions = { createdAt: -1 }, options = {}) => {
+    const pagination = parsePaginationParams(options, { defaultLimit: 20, maxLimit: 100 });
+    const findQuery = Fleet.find(query)
+        .populate('transporter_id', 'name email primary_contact city state')
+        .sort(sortOptions);
+
+    if (pagination) {
+        const [items, total] = await Promise.all([
+            findQuery.skip(pagination.skip).limit(pagination.limit).lean(),
+            Fleet.countDocuments(query),
+        ]);
+
+        if (total > 0) {
+            return {
+                items: items.map(mapFleetVehicle),
+                pagination: {
+                    page: pagination.page,
+                    limit: pagination.limit,
+                    total,
+                    totalPages: Math.ceil(total / pagination.limit) || 1,
+                },
+            };
+        }
+
+        const legacyVehicles = await getLegacyFleetVehicles();
+        const legacyTotal = legacyVehicles.length;
+        const legacyItems = legacyVehicles.slice(pagination.skip, pagination.skip + pagination.limit);
+
+        return {
+            items: legacyItems,
+            pagination: {
+                page: pagination.page,
+                limit: pagination.limit,
+                total: legacyTotal,
+                totalPages: Math.ceil(legacyTotal / pagination.limit) || 1,
+            },
+        };
+    }
+
+    const fleetVehicles = await findQuery.lean();
+    if (fleetVehicles.length > 0) {
+        return fleetVehicles.map(mapFleetVehicle);
+    }
+
+    return getLegacyFleetVehicles();
+};
+
 // ΓöÇΓöÇΓöÇ Tickets Overview ΓöÇΓöÇΓöÇ
-const getAllTickets = async () => {
-    return Ticket.find()
-        .sort({ createdAt: -1 })
-        .lean();
+const getAllTickets = async (query = {}, sortOptions = { createdAt: -1 }, options = {}) => {
+    const pagination = parsePaginationParams(options, { defaultLimit: 20, maxLimit: 100 });
+    const findQuery = Ticket.find(query)
+        .sort(sortOptions);
+
+    if (pagination) {
+        const [items, total] = await Promise.all([
+            findQuery.skip(pagination.skip).limit(pagination.limit).lean(),
+            Ticket.countDocuments(query),
+        ]);
+
+        return {
+            items,
+            pagination: {
+                page: pagination.page,
+                limit: pagination.limit,
+                total,
+                totalPages: Math.ceil(total / pagination.limit) || 1,
+            },
+        };
+    }
+
+    return findQuery.lean();
 };
 
 const getTicketStats = async () => {

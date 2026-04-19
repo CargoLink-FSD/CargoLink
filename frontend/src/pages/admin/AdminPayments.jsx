@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
 import { useNotification } from '../../context/NotificationContext';
@@ -11,6 +11,7 @@ const TYPE_OPTIONS = ['final', 'cancellation_due'];
 
 export default function AdminPayments() {
   const { showNotification } = useNotification();
+  const listStartRef = useRef(null);
   const [payments, setPayments] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [stats, setStats] = useState({ total: 0, totalAmount: 0, completed: 0, pending: 0, failed: 0, refunded: 0 });
@@ -80,6 +81,21 @@ export default function AdminPayments() {
     maximumFractionDigits: 2,
   }).format(Number(amount || 0));
 
+  const scrollToListStart = () => {
+    const anchor = listStartRef.current;
+    if (!anchor) return;
+
+    const y = anchor.getBoundingClientRect().top + window.scrollY - 90;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+  };
+
+  const goToPage = (nextPage) => {
+    const currentPage = pagination?.page || page;
+    if (nextPage === currentPage) return;
+    setPage(nextPage);
+    requestAnimationFrame(scrollToListStart);
+  };
+
   return (
     <>
       <Header />
@@ -123,7 +139,7 @@ export default function AdminPayments() {
           <button className="admxp-refresh" onClick={loadPayments} disabled={loading}>{loading ? 'Loading...' : 'Refresh'}</button>
         </div>
 
-        <div className="admxp-table-wrap">
+        <div ref={listStartRef} className="admxp-table-wrap">
           <table className="admxp-table">
             <thead>
               <tr>
@@ -158,9 +174,9 @@ export default function AdminPayments() {
 
         {!loading && pagination?.totalPages > 1 && (
           <div className="admxp-pagination">
-            <button className="admxp-page-btn" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={page <= 1}>Previous</button>
+            <button className="admxp-page-btn" onClick={() => goToPage(Math.max(1, (pagination?.page || page) - 1))} disabled={(pagination?.page || page) <= 1}>Previous</button>
             <span className="admxp-page-label">Page {pagination.page} of {pagination.totalPages}</span>
-            <button className="admxp-page-btn" onClick={() => setPage((prev) => Math.min(pagination.totalPages, prev + 1))} disabled={page >= pagination.totalPages}>Next</button>
+            <button className="admxp-page-btn" onClick={() => goToPage(Math.min(pagination.totalPages, (pagination?.page || page) + 1))} disabled={(pagination?.page || page) >= pagination.totalPages}>Next</button>
           </div>
         )}
       </div>

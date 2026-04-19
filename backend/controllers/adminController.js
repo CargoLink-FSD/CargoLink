@@ -398,8 +398,24 @@ const deleteUser = async (req, res, next) => {
 // Fleet Overview
 const getFleetOverview = async (req, res, next) => {
   try {
-    const data = await adminService.getFleetOverview();
-    res.status(200).json({ success: true, data, message: "Fleet overview fetched successfully" });
+    const { search, status, rcStatus, truckType, page, limit, sort } = req.query;
+    const data = await adminService.getFleetOverview({ search, status, rcStatus, truckType, page, limit, sort });
+
+    const response = {
+      success: true,
+      data: {
+        vehicles: data.vehicles || [],
+        stats: data.stats || {},
+        pagination: data.pagination,
+      },
+      message: "Fleet overview fetched successfully"
+    };
+
+    if (data?.pagination) {
+      response.pagination = data.pagination;
+    }
+
+    res.status(200).json(response);
   } catch (err) {
     next(err);
   }
@@ -408,8 +424,24 @@ const getFleetOverview = async (req, res, next) => {
 // Tickets Overview
 const getTicketsOverview = async (req, res, next) => {
   try {
-    const data = await adminService.getTicketsOverview();
-    res.status(200).json({ success: true, data, message: "Tickets overview fetched successfully" });
+    const { search, status, priority, category, role, page, limit, sort } = req.query;
+    const data = await adminService.getTicketsOverview({ search, status, priority, category, role, page, limit, sort });
+
+    const response = {
+      success: true,
+      data: {
+        tickets: data.tickets || [],
+        stats: data.stats || {},
+        pagination: data.pagination,
+      },
+      message: "Tickets overview fetched successfully"
+    };
+
+    if (data?.pagination) {
+      response.pagination = data.pagination;
+    }
+
+    res.status(200).json(response);
   } catch (err) {
     next(err);
   }

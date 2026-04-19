@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { Camera, ClipboardList, X } from 'lucide-react';
@@ -25,6 +25,7 @@ const ORDER_CATEGORIES = ['Shipment Issue', 'Payment Issue', 'Transporter Compla
 
 export default function SupportTickets() {
     const navigate = useNavigate();
+    const listStartRef = useRef(null);
     const { user } = useSelector((state) => state.auth);
 
     // Filter out self-referencing complaint categories
@@ -160,6 +161,21 @@ export default function SupportTickets() {
         return map[p] || map.medium;
     };
 
+    const scrollToListStart = () => {
+        const anchor = listStartRef.current;
+        if (!anchor) return;
+
+        const y = anchor.getBoundingClientRect().top + window.scrollY - 90;
+        window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    };
+
+    const goToPage = (nextPage) => {
+        const currentPage = pagination?.page || page;
+        if (nextPage === currentPage) return;
+        setPage(nextPage);
+        requestAnimationFrame(scrollToListStart);
+    };
+
     return (
         <>
             <Header />
@@ -282,7 +298,7 @@ export default function SupportTickets() {
                 )}
 
                 {!loading && tickets.length > 0 && (
-                    <div className="tickets-list">
+                    <div ref={listStartRef} className="tickets-list">
                         {tickets.map((t) => (
                             <div
                                 key={t._id}
@@ -320,8 +336,8 @@ export default function SupportTickets() {
                         <button
                             className="raise-ticket-btn"
                             style={{ padding: '8px 14px' }}
-                            disabled={page <= 1}
-                            onClick={() => setPage((p) => Math.max(1, p - 1))}
+                            disabled={(pagination?.page || page) <= 1}
+                            onClick={() => goToPage(Math.max(1, (pagination?.page || page) - 1))}
                         >
                             Previous
                         </button>
@@ -331,8 +347,8 @@ export default function SupportTickets() {
                         <button
                             className="raise-ticket-btn"
                             style={{ padding: '8px 14px' }}
-                            disabled={page >= pagination.totalPages}
-                            onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                            disabled={(pagination?.page || page) >= pagination.totalPages}
+                            onClick={() => goToPage(Math.min(pagination.totalPages, (pagination?.page || page) + 1))}
                         >
                             Next
                         </button>

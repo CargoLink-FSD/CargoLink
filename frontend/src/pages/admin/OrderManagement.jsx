@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useNotification } from '../../context/NotificationContext';
 import http from '../../api/http';
 import Header from '../../components/common/Header';
@@ -9,6 +9,7 @@ const STATUS_COLORS = { Placed: 'blue', Assigned: 'green', 'In Transit': 'cyan',
 
 export default function OrderManagement() {
   const { showNotification } = useNotification();
+  const listStartRef = useRef(null);
   const [orders, setOrders] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [page, setPage] = useState(1);
@@ -63,6 +64,21 @@ export default function OrderManagement() {
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
+  const scrollToListStart = () => {
+    const anchor = listStartRef.current;
+    if (!anchor) return;
+
+    const y = anchor.getBoundingClientRect().top + window.scrollY - 90;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+  };
+
+  const goToPage = (nextPage) => {
+    const currentPage = pagination?.page || page;
+    if (nextPage === currentPage) return;
+    setPage(nextPage);
+    requestAnimationFrame(scrollToListStart);
+  };
+
   if (loading) {
     return (<><Header /><div className="admin-container"><div className="adm-loading"><div className="adm-spinner" /><p>Loading orders...</p></div></div><Footer /></>);
   }
@@ -101,7 +117,7 @@ export default function OrderManagement() {
         </div>
 
         {/* Table */}
-        <div className="adm-card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div ref={listStartRef} className="adm-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div className="adm-table-wrap">
             <table className="adm-table">
               <thead>
@@ -148,13 +164,13 @@ export default function OrderManagement() {
 
         {pagination && pagination.totalPages > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
-            <button className="adm-btn adm-btn-outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+            <button className="adm-btn adm-btn-outline" onClick={() => goToPage(Math.max(1, (pagination?.page || page) - 1))} disabled={(pagination?.page || page) <= 1}>
               Previous
             </button>
             <span style={{ color: '#64748b', fontSize: '0.9rem' }}>
               Page {pagination.page} of {pagination.totalPages}
             </span>
-            <button className="adm-btn adm-btn-outline" onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))} disabled={page >= pagination.totalPages}>
+            <button className="adm-btn adm-btn-outline" onClick={() => goToPage(Math.min(pagination.totalPages, (pagination?.page || page) + 1))} disabled={(pagination?.page || page) >= pagination.totalPages}>
               Next
             </button>
           </div>

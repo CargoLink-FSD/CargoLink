@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Package } from 'lucide-react';
 import {
@@ -43,6 +43,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('en-IN', {
 export default function ManagerSupport() {
     const navigate = useNavigate();
     const { showSuccess, showError } = useNotification();
+    const listStartRef = useRef(null);
 
     // ─── List view state ───
     const [tickets, setTickets] = useState([]);
@@ -173,6 +174,21 @@ export default function ManagerSupport() {
         }
     };
 
+    const scrollToListStart = () => {
+        const anchor = listStartRef.current;
+        if (!anchor) return;
+
+        const y = anchor.getBoundingClientRect().top + window.scrollY - 90;
+        window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    };
+
+    const goToPage = (nextPage) => {
+        const currentPage = pagination?.page || page;
+        if (nextPage === currentPage) return;
+        setPage(nextPage);
+        requestAnimationFrame(scrollToListStart);
+    };
+
     // ─── Auto-scroll messages ───
     useEffect(() => {
         const box = document.querySelector('.mgr-conversation-box');
@@ -225,7 +241,7 @@ export default function ManagerSupport() {
 
                 <div className="mgr-support-layout">
                     {/* ══════════ LEFT: Ticket list ══════════ */}
-                    <div className="mgr-ticket-list-panel">
+                    <div ref={listStartRef} className="mgr-ticket-list-panel">
                         <h2 className="mgr-panel-title">Support Tickets</h2>
 
                         {/* Filters */}
@@ -289,8 +305,8 @@ export default function ManagerSupport() {
                                 <button
                                     className="mgr-send-btn"
                                     style={{ padding: '8px 16px', fontSize: '0.82rem' }}
-                                    disabled={page <= 1}
-                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                    disabled={(pagination?.page || page) <= 1}
+                                    onClick={() => goToPage(Math.max(1, (pagination?.page || page) - 1))}
                                 >
                                     ← Previous
                                 </button>
@@ -300,8 +316,8 @@ export default function ManagerSupport() {
                                 <button
                                     className="mgr-send-btn"
                                     style={{ padding: '8px 16px', fontSize: '0.82rem' }}
-                                    disabled={page >= pagination.totalPages}
-                                    onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                                    disabled={(pagination?.page || page) >= pagination.totalPages}
+                                    onClick={() => goToPage(Math.min(pagination.totalPages, (pagination?.page || page) + 1))}
                                 >
                                     Next →
                                 </button>

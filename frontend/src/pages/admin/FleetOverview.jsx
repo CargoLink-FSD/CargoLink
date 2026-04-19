@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNotification } from '../../context/NotificationContext';
 import http from '../../api/http';
 import Header from '../../components/common/Header';
@@ -16,6 +16,7 @@ export default function FleetOverview() {
     const listStartRef = useRef(null);
     const [vehicles, setVehicles] = useState([]);
     const [stats, setStats] = useState({});
+    const [pagination, setPagination] = useState(null);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
@@ -23,13 +24,19 @@ export default function FleetOverview() {
     const [typeFilter, setTypeFilter] = useState('');
     const [page, setPage] = useState(1);
 
-    useEffect(() => { fetchFleet(); }, []);
-
     const fetchFleet = async () => {
         try {
             setLoading(true);
-            const res = await http.get('/api/admin/fleet');
-            const payload = res?.data?.data || res?.data || res || {};
+            const params = new URLSearchParams();
+            params.set('page', String(page));
+            params.set('limit', String(PAGE_SIZE));
+            if (search.trim()) params.set('search', search.trim());
+            if (statusFilter) params.set('status', statusFilter);
+            if (rcFilter) params.set('rcStatus', rcFilter);
+            if (typeFilter) params.set('truckType', typeFilter);
+
+            const res = await http.get(`/api/admin/fleet?${params.toString()}`);
+            const payload = res?.data || {};
             const nextVehicles = Array.isArray(payload.vehicles)
                 ? payload.vehicles
                 : Array.isArray(payload.fleet)
@@ -38,7 +45,11 @@ export default function FleetOverview() {
 
             setVehicles(nextVehicles);
             setStats(payload.stats || {});
-            setPage(1);
+            const nextPagination = res?.pagination || payload?.pagination || null;
+            setPagination(nextPagination);
+            if (nextPagination?.totalPages && page > nextPagination.totalPages) {
+                setPage(nextPagination.totalPages);
+            }
         } catch {
             showNotification({ message: 'Failed to load fleet data', type: 'error' });
         } finally {
@@ -46,39 +57,21 @@ export default function FleetOverview() {
         }
     };
 
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            fetchFleet();
+        }, search.trim() ? 250 : 0);
+
+        return () => clearTimeout(timeout);
+    }, [page, search, statusFilter, rcFilter, typeFilter]);
+
     const truckTypes = [...new Set(vehicles.map(v => v.truck_type).filter(Boolean))];
-
-    const filtered = useMemo(() => (
-        vehicles.filter((v) => {
-            if (statusFilter && v.status !== statusFilter) return false;
-            if (rcFilter && v.rc_status !== rcFilter) return false;
-            if (typeFilter && v.truck_type !== typeFilter) return false;
-            if (search) {
-                const s = search.toLowerCase();
-                return (
-                    v.name?.toLowerCase().includes(s) ||
-                    v.registration?.toLowerCase().includes(s) ||
-                    v.transporter_name?.toLowerCase().includes(s) ||
-                    v.truck_type?.toLowerCase().includes(s)
-                );
-            }
-            return true;
-        })
-    ), [vehicles, statusFilter, rcFilter, typeFilter, search]);
-
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    const safePage = Math.min(page, totalPages);
-    const pagedVehicles = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-
-    useEffect(() => {
-        setPage(1);
-    }, [search, statusFilter, rcFilter, typeFilter]);
-
-    useEffect(() => {
-        if (page > totalPages) {
-            setPage(totalPages);
-        }
-    }, [page, totalPages]);
+    const totalItems = pagination?.total ?? vehicles.length;
+    const totalPages = pagination?.totalPages ?? 1;
+    const currentPage = pagination?.page ?? page;
+    const currentLimit = pagination?.limit ?? PAGE_SIZE;
+    const visibleStart = totalItems === 0 ? 0 : ((currentPage - 1) * currentLimit) + 1;
+    const visibleEnd = Math.min(currentPage * currentLimit, totalItems);
 
     const scrollToListStart = () => {
         const anchor = listStartRef.current;
@@ -89,7 +82,7 @@ export default function FleetOverview() {
     };
 
     const goToPage = (nextPage) => {
-        if (nextPage === safePage) return;
+        if (nextPage === currentPage) return;
         setPage(nextPage);
         requestAnimationFrame(scrollToListStart);
     };
@@ -149,22 +142,22 @@ export default function FleetOverview() {
                         className="adm-search-input"
                         placeholder="Search by vehicle name, reg no., transporter..."
                         value={search}
-                        onChange={(e) => setSearch(e.target.value)}
+                        onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                     />
-                    <select className="adm-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                    <select className="adm-select" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
                         <option value="">All Status</option>
                         <option value="Available">Available</option>
                         <option value="Assigned">Assigned</option>
                         <option value="In Maintenance">In Maintenance</option>
                         <option value="Unavailable">Unavailable</option>
                     </select>
-                    <select className="adm-select" value={rcFilter} onChange={(e) => setRcFilter(e.target.value)}>
+                    <select className="adm-select" value={rcFilter} onChange={(e) => { setRcFilter(e.target.value); setPage(1); }}>
                         <option value="">All RC Status</option>
                         <option value="approved">Approved</option>
                         <option value="pending">Pending</option>
                         <option value="rejected">Rejected</option>
                     </select>
-                    <select className="adm-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                    <select className="adm-select" value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}>
                         <option value="">All Types</option>
                         {truckTypes.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
@@ -189,10 +182,10 @@ export default function FleetOverview() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filtered.length === 0 ? (
+                                {vehicles.length === 0 ? (
                                     <tr><td colSpan={9} className="adm-empty">No vehicles found</td></tr>
                                 ) : (
-                                    pagedVehicles.map((v, i) => (
+                                    vehicles.map((v, i) => (
                                         <tr key={v._id || i}>
                                             <td style={{ fontWeight: 600 }}>{v.name}</td>
                                             <td>{v.registration}</td>
@@ -220,26 +213,25 @@ export default function FleetOverview() {
                 </div>
 
                 <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: 12 }}>
-                    Showing {filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1}
-                    {' '}to {Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length} vehicles
+                    Showing {visibleStart} to {visibleEnd} of {totalItems} vehicles
                 </p>
 
-                {filtered.length > PAGE_SIZE && (
+                {totalPages > 1 && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
                         <button
                             className="adm-btn adm-btn-outline"
-                            onClick={() => goToPage(Math.max(1, safePage - 1))}
-                            disabled={safePage <= 1}
+                            onClick={() => goToPage(Math.max(1, currentPage - 1))}
+                            disabled={currentPage <= 1}
                         >
                             Previous
                         </button>
                         <span style={{ color: '#64748b', fontSize: '0.9rem' }}>
-                            Page {safePage} of {totalPages}
+                            Page {currentPage} of {totalPages}
                         </span>
                         <button
                             className="adm-btn adm-btn-outline"
-                            onClick={() => goToPage(Math.min(totalPages, safePage + 1))}
-                            disabled={safePage >= totalPages}
+                            onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
+                            disabled={currentPage >= totalPages}
                         >
                             Next
                         </button>
