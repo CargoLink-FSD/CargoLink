@@ -9,6 +9,8 @@ import managerService from './services/managerService.js';
 import { initializeNotificationService } from './services/notificationService.js';
 import { resolveMongoUri, loadAllSecrets } from './core/secrets.js';
 
+const STARTUP_RETRY_DELAY_MS = 15000;
+
 // Handle uncaught exceptions (synchronous errors outside request cycle)
 process.on('uncaughtException', (err) => {
   errorHandler.handleError(err, 'uncaughtException');
@@ -19,51 +21,58 @@ process.on('unhandledRejection', (reason, promise) => {
   errorHandler.handleError(reason, 'unhandledRejection');
 });
 
-// Connect to DB then start server and ws
-(async () => {
+// Bind the Cloud Run port immediately; initialize external dependencies in the background.
+const server = app.listen(PORT, '0.0.0.0', () => {
+  logger.info(`Server running on http://localhost:${PORT}`);
+});
+
+let bootstrapped = false;
+
+const bootstrapDependencies = async () => {
+  if (bootstrapped) return;
+
   try {
-    // 1. Bootstrap secrets from Secret Manager first — must run before any
-    //    config module reads process.env values (all imports above are fine
-    //    because they only read env vars lazily when their functions are called).
+    // Bootstrap secrets before resolving config values that depend on env vars.
     await loadAllSecrets();
 
+    // Cache is optional. If unavailable, API continues with DB-only behavior.
     await initCache();
 
-    // resolveMongoUri respects process.env.MONGO_URI which was just set above
     const mongoUri = await resolveMongoUri(MONGO_URI);
     await connectDB(mongoUri);
 
-    // Seed default manager if not exists
     await managerService.seedDefaultManager();
 
-    const server = app.listen(PORT, '0.0.0.0', () =>
-      logger.info(`Server running on http://localhost:${PORT}`),
-    );
-
-    // Initialize automated jobs
     startCronJobs();
-
-    // Initialize WebSocket server attached to the same HTTP server
-    // `createWebsocketServer` now handles its own errors and returns null on failure.
     createWebsocketServer(server);
     initializeNotificationService();
 
-    const shutdown = async (signal) => {
-      logger.info(`Received ${signal}, shutting down server...`);
-      await closeCache();
-      server.close(() => {
-        process.exit(0);
-      });
-    };
-
-    process.on('SIGINT', () => {
-      void shutdown('SIGINT');
-    });
-
-    process.on('SIGTERM', () => {
-      void shutdown('SIGTERM');
-    });
+    bootstrapped = true;
+    logger.info('Dependency bootstrap completed');
   } catch (err) {
-    errorHandler.handleError(err, 'startup');
+    errorHandler.handleError(err, { source: 'startup' });
+    logger.warn(`Dependency bootstrap failed; retrying in ${STARTUP_RETRY_DELAY_MS}ms`);
+
+    setTimeout(() => {
+      void bootstrapDependencies();
+    }, STARTUP_RETRY_DELAY_MS);
   }
-})();
+};
+
+void bootstrapDependencies();
+
+const shutdown = async (signal) => {
+  logger.info(`Received ${signal}, shutting down server...`);
+  await closeCache();
+  server.close(() => {
+    process.exit(0);
+  });
+};
+
+process.on('SIGINT', () => {
+  void shutdown('SIGINT');
+});
+
+process.on('SIGTERM', () => {
+  void shutdown('SIGTERM');
+});
