@@ -38,6 +38,7 @@ const getActiveManagersByCategory = async (category) => {
     return Manager.find({
         status: 'active',
         categories: category,
+        isDefault: { $ne: true }, // Exclude default manager — used only as fallback
     }).sort({ openTicketCount: 1 }); // Least-load first
 };
 

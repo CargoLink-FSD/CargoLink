@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { getTicketDetail, addReply } from '../../api/tickets';
+import { getTicketDetail, addReply, reopenTicket } from '../../api/tickets';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
 import { toApiUrl } from '../../utils/apiBase';
@@ -14,6 +14,7 @@ export default function TicketDetail() {
     const [loading, setLoading] = useState(true);
     const [replyText, setReplyText] = useState('');
     const [sending, setSending] = useState(false);
+    const [reopening, setReopening] = useState(false);
     const [error, setError] = useState('');
     const messagesEndRef = useRef(null);
 
@@ -62,6 +63,19 @@ export default function TicketDetail() {
             setError(err.message || 'Failed to send reply');
         } finally {
             setSending(false);
+        }
+    };
+
+    const handleReopen = async () => {
+        setReopening(true);
+        setError('');
+        try {
+            const updated = await reopenTicket(id);
+            setTicket(updated);
+        } catch (err) {
+            setError(err.message || 'Failed to reopen ticket');
+        } finally {
+            setReopening(false);
         }
     };
 
@@ -149,7 +163,14 @@ export default function TicketDetail() {
                 ) : (
                     <div className="ticket-closed-notice">
                         <p>This ticket has been closed by the manager.</p>
-                        <p className="reopen-hint">If you still have an issue, please raise a new ticket.</p>
+                        <p className="reopen-hint">If you still have an issue, you can reopen this ticket.</p>
+                        <button
+                            className="reopen-btn"
+                            onClick={handleReopen}
+                            disabled={reopening}
+                        >
+                            {reopening ? 'Reopening...' : 'Reopen Ticket'}
+                        </button>
                     </div>
                 )}
 
