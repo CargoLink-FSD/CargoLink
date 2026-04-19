@@ -12,7 +12,7 @@ export default function Header() {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const unreadCount = useSelector((state) => state.notifications?.unreadCount || 0);
   const userType = user?.role || user?.type;
-
+  const userType = user?.role || user?.type;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
