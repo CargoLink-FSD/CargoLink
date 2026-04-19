@@ -43,6 +43,8 @@ const getDashboardStats = async () => {
                 adminRepo.getPendingVerifications()
             ]);
 
+            const totalDrivers = await adminRepo.getTotalDrivers();
+
             return {
                 totalOrders: ordersPerDay.reduce((sum, day) => sum + day.total_orders, 0),
                 totalRevenue: revenuePerDay.reduce((sum, day) => sum + day.total_revenue, 0),
@@ -51,6 +53,7 @@ const getDashboardStats = async () => {
                 newCustomers: newCustomersPerMonth.reduce((sum, month) => sum + month.new_customers, 0),
                 totalCustomers,
                 totalTransporters,
+                totalDrivers,
                 totalVehicles,
                 openTickets,
                 pendingVerifications,
@@ -163,7 +166,7 @@ const getBidCountForOrder = async (orderId) => {
 const getAllUsers = async (role, filters = {}) => {
     const { search, sort = 'date', page, limit } = filters;
 
-    if (!['customer', 'transporter'].includes(role.toLowerCase())) {
+    if (!['customer', 'transporter', 'driver'].includes(role.toLowerCase())) {
         throw new AppError(400, "ValidationError", "Invalid role specified", "ERR_VALIDATION");
     }
 
@@ -217,7 +220,7 @@ const getAllUsers = async (role, filters = {}) => {
         }
 
         return formattedUsers;
-    } else {
+    } else if (role.toLowerCase() === 'transporter') {
         // Search filter for transporters
         if (search) {
             query = {
@@ -262,25 +265,57 @@ const getAllUsers = async (role, filters = {}) => {
         }
 
         return formattedUsers;
+    } else if (role.toLowerCase() === 'driver') {
+        if (search) {
+            query = {
+                $or: [
+                    { firstName: { $regex: search, $options: 'i' } },
+                    { lastName: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } }
+                ]
+            };
+        }
+        switch (sort) {
+            case 'name': sortOptions = { firstName: 1, lastName: 1 }; break;
+            case 'id': sortOptions = { _id: 1 }; break;
+            default: sortOptions = { createdAt: -1 };
+        }
+        const driverResult = await adminRepo.getAllDrivers(query, sortOptions, { page, limit });
+        const drivers = Array.isArray(driverResult) ? driverResult : driverResult.items;
+        const formattedDrivers = drivers.map(d => ({
+            _id: d._id,
+            driver_id: d._id,
+            first_name: d.firstName,
+            last_name: d.lastName,
+            email: d.email,
+            phone: d.phone,
+            licenseNumber: d.licenseNumber,
+            verificationStatus: d.verificationStatus,
+            status: d.status,
+            transporter: d.transporter_id,
+            createdAt: d.createdAt,
+        }));
+        if (!Array.isArray(driverResult)) {
+            return { items: formattedDrivers, pagination: driverResult.pagination };
+        }
+        return formattedDrivers;
     }
 };
 
 const deleteUser = async (role, userId) => {
-    if (!['customer', 'transporter'].includes(role.toLowerCase())) {
+    if (!['customer', 'transporter', 'driver'].includes(role.toLowerCase())) {
         throw new AppError(400, "ValidationError", "Invalid role specified", "ERR_VALIDATION");
     }
 
-    let result;
     if (role.toLowerCase() === 'customer') {
-        result = await adminRepo.deleteCustomerById(userId);
-        if (!result) {
-            throw new AppError(404, "NotFound", "Customer not found", "ERR_NOT_FOUND");
-        }
+        const result = await adminRepo.deleteCustomerById(userId);
+        if (!result) throw new AppError(404, "NotFound", "Customer not found", "ERR_NOT_FOUND");
+    } else if (role.toLowerCase() === 'transporter') {
+        const result = await adminRepo.deleteTransporterById(userId);
+        if (!result) throw new AppError(404, "NotFound", "Transporter not found", "ERR_NOT_FOUND");
     } else {
-        result = await adminRepo.deleteTransporterById(userId);
-        if (!result) {
-            throw new AppError(404, "NotFound", "Transporter not found", "ERR_NOT_FOUND");
-        }
+        const result = await adminRepo.deleteDriverById(userId);
+        if (!result) throw new AppError(404, "NotFound", "Driver not found", "ERR_NOT_FOUND");
     }
 
     return { message: `${role} deleted successfully` };
@@ -360,6 +395,10 @@ const getUserDetail = async (role, userId) => {
     if (role === 'customer') {
         const detail = await adminRepo.getCustomerDetail(userId);
         if (!detail) throw new AppError(404, 'NotFound', 'Customer not found', 'ERR_NOT_FOUND');
+        return detail;
+    } else if (role === 'driver') {
+        const detail = await adminRepo.getDriverDetail(userId);
+        if (!detail) throw new AppError(404, 'NotFound', 'Driver not found', 'ERR_NOT_FOUND');
         return detail;
     } else {
         const detail = await adminRepo.getTransporterDetail(userId);

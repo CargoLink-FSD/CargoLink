@@ -1,6 +1,7 @@
 import Order from '../models/order.js';
 import Customer from '../models/customer.js';
 import Transporter from '../models/transporter.js';
+import Driver from '../models/driver.js';
 import Fleet from '../models/fleet.js';
 import Bid from '../models/bids.js';
 import Ticket from '../models/ticket.js';
@@ -309,6 +310,44 @@ const getAllTransporters = async (query = {}, sortOptions = { createdAt: -1 }, o
     return await findQuery.lean();
 };
 
+// ─── Driver queries ───
+const getAllDrivers = async (query = {}, sortOptions = { createdAt: -1 }, options = {}) => {
+    const pagination = parsePaginationParams(options, { defaultLimit: 20, maxLimit: 100 });
+    const findQuery = Driver.find(query)
+        .select('firstName lastName email phone licenseNumber verificationStatus status createdAt transporter_id')
+        .populate('transporter_id', 'name')
+        .sort(sortOptions);
+
+    if (pagination) {
+        const [items, total] = await Promise.all([
+            findQuery.skip(pagination.skip).limit(pagination.limit).lean(),
+            Driver.countDocuments(query),
+        ]);
+        return {
+            items,
+            pagination: {
+                page: pagination.page,
+                limit: pagination.limit,
+                total,
+                totalPages: Math.ceil(total / pagination.limit) || 1,
+            },
+        };
+    }
+    return await findQuery.lean();
+};
+
+const getDriverDetail = async (driverId) => {
+    const driver = await Driver.findById(driverId)
+        .populate('transporter_id', 'name email primary_contact')
+        .lean();
+    if (!driver) return null;
+    return driver;
+};
+
+const deleteDriverById = async (driverId) => {
+    return await Driver.findByIdAndDelete(driverId);
+};
+
 const searchCustomerIds = async (search) => {
     const regex = new RegExp(escapeRegex(search), 'i');
     const customers = await Customer.find({
@@ -407,38 +446,21 @@ const getOrderCountByTransporter = async (transporterIds = []) => {
 // ─── Extra counts for dashboard ───
 const getTotalCustomers = async () => Customer.countDocuments();
 const getTotalTransporters = async () => Transporter.countDocuments();
+const getTotalDrivers = async () => Driver.countDocuments();
 
-const getTotalVehicles = async () => {
-    const result = await Transporter.aggregate([
-        { $unwind: "$fleet" },
-        { $count: "total" }
-    ]);
-    return result[0]?.total || 0;
-};
+// Uses the Fleet collection (separate documents), not the old embedded array
+const getTotalVehicles = async () => Fleet.countDocuments();
 
 const getOpenTickets = async () => Ticket.countDocuments({ status: { $in: ['open', 'in_progress'] } });
 const getPendingVerifications = async () => Transporter.countDocuments({ verificationStatus: 'under_review' });
 
 // ─── Fleet Overview ───
 const getAllFleetVehicles = async () => {
-    const transporters = await Transporter.find(
-        { 'fleet.0': { $exists: true } },
-        'name email primary_contact city state fleet'
-    ).lean();
-    const vehicles = [];
-    transporters.forEach(t => {
-        t.fleet.forEach(v => {
-            vehicles.push({
-                ...v,
-                transporter_id: t._id,
-                transporter_name: t.name,
-                transporter_email: t.email,
-                transporter_contact: t.primary_contact,
-                transporter_location: [t.city, t.state].filter(Boolean).join(', '),
-            });
-        });
-    });
-    return vehicles;
+    // Fleet vehicles are stored in a separate Fleet collection, not embedded in Transporter
+    return Fleet.find()
+        .populate('transporter_id', 'name email primary_contact city state')
+        .sort({ createdAt: -1 })
+        .lean();
 };
 
 // ─── Tickets Overview ───
@@ -544,6 +566,7 @@ export default {
     getAverageBidAmount,
     getTotalCustomers,
     getTotalTransporters,
+    getTotalDrivers,
     getTotalVehicles,
     getOpenTickets,
     getPendingVerifications,
@@ -557,16 +580,19 @@ export default {
     // User Management
     getAllCustomers,
     getAllTransporters,
+    getAllDrivers,
     searchCustomerIds,
     searchTransporterIds,
     getCustomerById,
     getTransporterById,
     deleteCustomerById,
     deleteTransporterById,
+    deleteDriverById,
     getOrderCountByCustomer,
     getOrderCountByTransporter,
     getCustomerDetail,
     getTransporterDetail,
+    getDriverDetail,
 
     // Fleet Overview
     getAllFleetVehicles,
