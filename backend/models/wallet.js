@@ -13,6 +13,7 @@ const WalletSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-WalletSchema.index({ transporter_id: 1 });
+// NOTE: transporter_id has unique: true in the field definition, which already
+// creates a single-field index. Do NOT add a redundant schema.index() here.
 
 export default mongoose.model('Wallet', WalletSchema);
