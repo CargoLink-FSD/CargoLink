@@ -267,7 +267,7 @@ export default function ManagerDashboard() {
                         {row.note && <div className="reject-note" title={row.note}>Note: {row.note}</div>}
                       </td>
                       <td className="actions-cell">
-                        {row.status !== 'approved' && (
+                        {row.status === 'pending' && (
                           <button
                             className="action-btn approve-btn"
                             onClick={() => handleApprove(row._id, row.docType, row.entityType)}
@@ -276,7 +276,7 @@ export default function ManagerDashboard() {
                             {isActionLoading ? '...' : 'Approve'}
                           </button>
                         )}
-                        {row.status !== 'rejected' && (
+                        {row.status === 'pending' && (
                           <button
                             className="action-btn reject-btn"
                             onClick={() =>
