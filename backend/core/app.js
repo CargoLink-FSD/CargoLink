@@ -168,4 +168,3 @@ app.use((err, req, res, next) => {
   res.status(errorResponse.statusCode || 500).json(errorResponse);
 });
 
-export default app;
