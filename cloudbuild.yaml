@@ -3,10 +3,10 @@
 # Trigger: Push to main branch
 #
 # Pipeline:
-#   1. Build & push backend Docker image → Artifact Registry
-#   2. Deploy backend to Cloud Run (asia-south1)
-#   3. Build frontend (Vite) → deploy to App Engine (frontend service)
-#   4. Update dispatch rules
+#   0. Detect changed paths and select deploy scope
+#   1. Build/test/deploy backend only when backend changed
+#   2. Build/test/deploy frontend only when frontend changed
+#   3. Skip untouched side automatically
 # ═══════════════════════════════════════════════════════════════════════════════
 
 timeout: 1200s
@@ -17,6 +17,7 @@ options:
 
 substitutions:
   _REGION: asia-south1
+  _DEPLOY_SCOPE: auto
   _BACKEND_IMAGE: "asia-south1-docker.pkg.dev/${PROJECT_ID}/cargolink-docker/cargolink-backend"
   _CLOUD_RUN_SERVICE: cargolink-backend
   _GCS_BUCKET: cargolink-uploads-489712
@@ -24,55 +25,143 @@ substitutions:
   _REDIS_HOST: "10.14.52.243"   # Memorystore Redis IP (asia-south1)
 
 steps:
+  # ── 0: Detect changed paths & resolve deploy scope ─────────────────────────
+  - id: detect-changes
+    name: gcr.io/cloud-builders/git
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        SCOPE="${_DEPLOY_SCOPE:-auto}"
+        BACKEND_CHANGED=0
+        FRONTEND_CHANGED=0
+
+        if [ "$${SCOPE}" = "backend" ]; then
+          BACKEND_CHANGED=1
+        elif [ "$${SCOPE}" = "frontend" ]; then
+          FRONTEND_CHANGED=1
+        elif [ "$${SCOPE}" = "both" ]; then
+          BACKEND_CHANGED=1
+          FRONTEND_CHANGED=1
+        elif [ "$${SCOPE}" = "auto" ] || [ -z "$${SCOPE}" ]; then
+          CHANGED_FILES="$$(git show --name-only --pretty='' "${COMMIT_SHA:-HEAD}" | sed '/^$/d' || true)"
+          echo "$${CHANGED_FILES}" > /workspace/.changed-files
+
+          if [ -z "$${CHANGED_FILES}" ]; then
+            BACKEND_CHANGED=1
+            FRONTEND_CHANGED=1
+          fi
+
+          if echo "$${CHANGED_FILES}" | grep -Eq '^backend/'; then
+            BACKEND_CHANGED=1
+          fi
+          if echo "$${CHANGED_FILES}" | grep -Eq '^frontend/'; then
+            FRONTEND_CHANGED=1
+          fi
+
+          # Shared deployment files affect both sides.
+          if echo "$${CHANGED_FILES}" | grep -Eq '^(cloudbuild.yaml|dispatch.yaml)$'; then
+            BACKEND_CHANGED=1
+            FRONTEND_CHANGED=1
+          fi
+        else
+          echo "Invalid _DEPLOY_SCOPE=$${SCOPE}. Use auto|backend|frontend|both"
+          exit 1
+        fi
+
+        echo -n "$${BACKEND_CHANGED}" > /workspace/.backend-changed
+        echo -n "$${FRONTEND_CHANGED}" > /workspace/.frontend-changed
+        echo "Deploy scope: $${SCOPE}"
+        echo "backend_changed=$${BACKEND_CHANGED} frontend_changed=$${FRONTEND_CHANGED}"
+
   # ── 0.1: Install backend deps & Test ───────────────────────────────────────
   - id: backend-install-test
     name: node:22
-    entrypoint: npm
+    entrypoint: bash
     dir: backend
-    args: ["install", "--prefer-offline", "--no-audit"]
+    waitFor: ["detect-changes"]
+    args:
+      - -ceu
+      - |
+        if [ "$$(cat /workspace/.backend-changed 2>/dev/null || echo 0)" != "1" ]; then
+          echo "Skipping backend install (no backend changes)."
+          exit 0
+        fi
+        npm install --prefer-offline --no-audit
 
   - id: backend-test
     name: node:22
-    entrypoint: npm
+    entrypoint: bash
     dir: backend
-    args: ["test"]
     waitFor: ["backend-install-test"]
+    args:
+      - -ceu
+      - |
+        if [ "$$(cat /workspace/.backend-changed 2>/dev/null || echo 0)" != "1" ]; then
+          echo "Skipping backend tests (no backend changes)."
+          exit 0
+        fi
+        npm test
 
   # ── 0.2: Install frontend deps & Test ──────────────────────────────────────
   - id: frontend-install-test
     name: node:22
-    entrypoint: npm
+    entrypoint: bash
     dir: frontend
-    args: ["install", "--prefer-offline", "--no-audit"]
-    waitFor: ["-"]
+    waitFor: ["detect-changes"]
+    args:
+      - -ceu
+      - |
+        if [ "$$(cat /workspace/.frontend-changed 2>/dev/null || echo 0)" != "1" ]; then
+          echo "Skipping frontend install (no frontend changes)."
+          exit 0
+        fi
+        npm install --prefer-offline --no-audit
 
   - id: frontend-test
     name: node:22
-    entrypoint: npm
+    entrypoint: bash
     dir: frontend
-    args: ["test"]
     waitFor: ["frontend-install-test"]
+    args:
+      - -ceu
+      - |
+        if [ "$$(cat /workspace/.frontend-changed 2>/dev/null || echo 0)" != "1" ]; then
+          echo "Skipping frontend tests (no frontend changes)."
+          exit 0
+        fi
+        npm test
 
   # ── 1: Build backend Docker image ──────────────────────────────────────────
   - id: build-backend
     name: gcr.io/cloud-builders/docker
+    entrypoint: bash
     dir: backend
-    waitFor: ["backend-test", "frontend-test"]
+    waitFor: ["backend-test"]
     args:
-      - build
-      - -t
-      - "${_BACKEND_IMAGE}:${SHORT_SHA}"
-      - -t
-      - "${_BACKEND_IMAGE}:latest"
-      - .
+      - -ceu
+      - |
+        if [ "$$(cat /workspace/.backend-changed 2>/dev/null || echo 0)" != "1" ]; then
+          echo "Skipping backend image build (no backend changes)."
+          exit 0
+        fi
+        docker build \
+          -t "${_BACKEND_IMAGE}:${SHORT_SHA}" \
+          -t "${_BACKEND_IMAGE}:latest" \
+          .
 
   # ── 2: Push backend image to Artifact Registry ─────────────────────────────
   - id: push-backend
     name: gcr.io/cloud-builders/docker
+    entrypoint: bash
     args:
-      - push
-      - --all-tags
-      - "${_BACKEND_IMAGE}"
+      - -ceu
+      - |
+        if [ "$$(cat /workspace/.backend-changed 2>/dev/null || echo 0)" != "1" ]; then
+          echo "Skipping backend image push (no backend changes)."
+          exit 0
+        fi
+        docker push --all-tags "${_BACKEND_IMAGE}"
     waitFor: ["build-backend"]
 
   # ── 3: Fetch Redis IP for Cloud Run deployment ─────────────────────────────
@@ -102,6 +191,16 @@ steps:
       - |
         if [ "${BRANCH_NAME:-main}" != "main" ] && [ "${BRANCH_NAME:-main}" != "master" ] && [ "${BRANCH_NAME:-main}" != "ci/cd" ]; then
           echo "Skipping backend deployment for branch: ${BRANCH_NAME:-unknown}"
+          exit 0
+        fi
+
+        if [ "$$(cat /workspace/.backend-changed 2>/dev/null || echo 0)" != "1" ]; then
+          echo "Skipping backend deployment (no backend changes)."
+          URL=$$(gcloud run services describe ${_CLOUD_RUN_SERVICE} \
+            --region=${_REGION} --format="get(status.url)" 2>/dev/null || echo "")
+          if [ -n "$${URL}" ]; then
+            echo -n "$${URL}" > /workspace/.backend-url
+          fi
           exit 0
         fi
 
@@ -141,11 +240,20 @@ steps:
     args:
       - -ceu
       - |
+        if [ "$$(cat /workspace/.frontend-changed 2>/dev/null || echo 0)" != "1" ]; then
+          echo "Skipping frontend secret preparation (no frontend changes)."
+          exit 0
+        fi
+
         CLIENT_ID="$$(gcloud secrets versions access latest --secret=GOOGLE_CLIENT_ID | tr -d '\n')"
         MAPS_KEY="$$(gcloud secrets versions access latest --secret=GOOGLE_MAPS_API_KEY | tr -d '\n')"
-        BACKEND_URL="$$(cat /workspace/.backend-url 2>/dev/null | tr -d '\n')"
 
-        echo "" >> frontend/.env
+        BACKEND_URL="$$(cat /workspace/.backend-url 2>/dev/null | tr -d '\n')"
+        if [ -z "$${BACKEND_URL}" ]; then
+          BACKEND_URL="$$(gcloud run services describe ${_CLOUD_RUN_SERVICE} --region=${_REGION} --format='get(status.url)' 2>/dev/null | tr -d '\n')"
+        fi
+
+        : > frontend/.env
         echo "VITE_GOOGLE_CLIENT_ID=$${CLIENT_ID}" >> frontend/.env
         echo "VITE_GOOGLE_MAPS_API_KEY=$${MAPS_KEY}" >> frontend/.env
         if [ -n "$${BACKEND_URL}" ]; then
@@ -158,10 +266,17 @@ steps:
   # ── 6: Build frontend ─────────────────────────────────────────────────────
   - id: frontend-build
     name: node:22
-    entrypoint: npm
+    entrypoint: bash
     dir: frontend
-    args: ["run", "build"]
     waitFor: ["frontend-test", "fetch-frontend-secrets"]
+    args:
+      - -ceu
+      - |
+        if [ "$$(cat /workspace/.frontend-changed 2>/dev/null || echo 0)" != "1" ]; then
+          echo "Skipping frontend build (no frontend changes)."
+          exit 0
+        fi
+        npm run build
 
   # ── 7: Deploy frontend to App Engine (MAIN ONLY) ───────────────────────────
   - id: deploy-frontend
@@ -171,6 +286,11 @@ steps:
     args:
       - -ceu
       - |
+        if [ "$$(cat /workspace/.frontend-changed 2>/dev/null || echo 0)" != "1" ]; then
+          echo "Skipping frontend deployment (no frontend changes)."
+          exit 0
+        fi
+
         if [ "${BRANCH_NAME:-main}" != "main" ] && [ "${BRANCH_NAME:-main}" != "master" ] && [ "${BRANCH_NAME:-main}" != "ci/cd" ]; then
           echo "Skipping frontend deployment for branch: ${BRANCH_NAME:-unknown}"
           exit 0
@@ -187,6 +307,11 @@ steps:
     args:
       - -ceu
       - |
+        if [ "$$(cat /workspace/.frontend-changed 2>/dev/null || echo 0)" != "1" ]; then
+          echo "Skipping frontend traffic promotion (no frontend changes)."
+          exit 0
+        fi
+
         if [ "${BRANCH_NAME:-main}" != "main" ] && [ "${BRANCH_NAME:-main}" != "master" ] && [ "${BRANCH_NAME:-main}" != "ci/cd" ]; then
           echo "Skipping traffic shift for branch: ${BRANCH_NAME:-unknown}"
           exit 0
@@ -200,7 +325,3 @@ steps:
         echo "  Backend:  $${BACKEND_URL}"
         echo "  Frontend: https://cargolink.muthuraja.tech"
         echo "========================================"
-
-images:
-  - "${_BACKEND_IMAGE}:${SHORT_SHA}"
-  - "${_BACKEND_IMAGE}:latest"
