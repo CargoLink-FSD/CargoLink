@@ -4,7 +4,7 @@ import Ticket from '../../../models/ticket.js';
 import Manager from '../../../models/manager.js';
 import InvitationCode from '../../../models/invitationCode.js';
 import { clearInMemoryDb, connectInMemoryDb, disconnectInMemoryDb } from '../../utils/inMemoryDb.js';
-import { bootstrapCustomerAuth } from '../../utils/auth-flow.js';
+import { bootstrapAdminAuth, bootstrapCustomerAuth } from '../../utils/auth-flow.js';
 
 describe('Ticket + Manager Pipeline', () => {
   beforeAll(async () => {
@@ -20,16 +20,8 @@ describe('Ticket + Manager Pipeline', () => {
   });
 
   it('admin invite -> manager register -> customer ticket -> manager handles -> customer reopens', async () => {
-    const adminLogin = await request(app)
-      .post('/api/auth/login')
-      .send({
-        email: 'admin@cargolink.com',
-        password: 'admin@123',
-        role: 'admin',
-      })
-      .expect(200);
-
-    const adminToken = adminLogin.body.data.accessToken;
+    const admin = await bootstrapAdminAuth(app);
+    const adminToken = admin.token;
 
     const inviteRes = await request(app)
       .post('/api/admin/managers/invite')

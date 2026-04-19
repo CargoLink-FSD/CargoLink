@@ -16,9 +16,17 @@ const BASE_DRIVER = {
 
 export const createMockDriverInput = (overrides = {}) => ({
   ...BASE_DRIVER,
+  street: BASE_DRIVER.address.street,
+  city: BASE_DRIVER.address.city,
+  state: BASE_DRIVER.address.state,
+  pin: BASE_DRIVER.address.pin,
+  ...overrides,
   address: {
     ...BASE_DRIVER.address,
     ...(overrides.address || {}),
   },
-  ...overrides,
+  street: overrides.street ?? overrides.address?.street ?? BASE_DRIVER.address.street,
+  city: overrides.city ?? overrides.address?.city ?? BASE_DRIVER.address.city,
+  state: overrides.state ?? overrides.address?.state ?? BASE_DRIVER.address.state,
+  pin: overrides.pin ?? overrides.address?.pin ?? BASE_DRIVER.address.pin,
 });
