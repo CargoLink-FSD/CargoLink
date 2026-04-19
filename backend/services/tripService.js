@@ -9,6 +9,7 @@ import {
   assertTransporterCanOperate,
 } from "./cancellationPolicyService.js";
 import { DOMAIN_EVENTS, emitDomainEvent } from '../utils/eventEmitter.js';
+import { sendToUser } from '../core/ws.js';
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 const LOADING_DELAY_MINUTES = 30; // fixed delay per pickup/dropoff for loading/unloading
@@ -551,6 +552,14 @@ const clearDelay = async (driverId, tripId, stopId) => {
 // ─── Driver: Location ──────────────────────────────────────────────────────────
 
 const updateTripLocation = async (driverId, tripId, coordinates) => {
+  if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+    throw new AppError(400, 'ValidationError', 'Coordinates must be [lng, lat]', 'ERR_VALIDATION');
+  }
+  const lng = Number(coordinates[0]);
+  const lat = Number(coordinates[1]);
+  if (Number.isNaN(lng) || Number.isNaN(lat)) {
+    throw new AppError(400, 'ValidationError', 'Coordinates must be numbers', 'ERR_VALIDATION');
+  }
   const trip = await tripRepo.getTripById(tripId);
   if (!trip || (trip.assigned_driver_id?._id || trip.assigned_driver_id)?.toString() !== driverId) {
     throw new AppError(404, "NotFound", "Trip not found", "ERR_NOT_FOUND");
@@ -558,7 +567,31 @@ const updateTripLocation = async (driverId, tripId, coordinates) => {
   if (trip.status !== 'Active') {
     throw new AppError(400, "InvalidOperation", "Trip must be active", "ERR_INVALID_OPERATION");
   }
-  return await tripRepo.updateTripLocation(tripId, coordinates);
+  const updatedAt = new Date();
+  const updated = await tripRepo.updateTripLocation(tripId, [lng, lat]);
+
+  const payload = {
+    type: 'trip.location.updated',
+    data: {
+      tripId: tripId.toString(),
+      coordinates: [lng, lat],
+      updatedAt: updatedAt.toISOString(),
+      orderIds: (trip.order_ids || []).map((id) => id.toString()),
+    },
+  };
+
+  if (trip.transporter_id) {
+    sendToUser(trip.transporter_id.toString(), payload);
+  }
+
+  for (const orderId of trip.order_ids || []) {
+    const order = await orderRepo.getOrderById(orderId);
+    if (order?.customer_id) {
+      sendToUser(order.customer_id.toString(), payload);
+    }
+  }
+
+  return updated;
 };
 
 // ─── Customer: Track Order ─────────────────────────────────────────────────────

@@ -19,7 +19,7 @@ import CustomerOrders from '../pages/customer/CustomerOrders';
 import OrderBids from '../pages/customer/OrderBids';
 import PlaceOrder from '../pages/customer/PlaceOrder';
 import PayNow from '../pages/customer/PayNow';
-import TrackOrder from '../pages/TrackOrder'
+import TrackOrder from '../pages/customer/TrackOrder'
 import OrderDetails from '../pages/common/OrderDetails';
 
 import TransporterSignupForm from '../pages/transporter/TransporterSignupForm';

@@ -1,7 +1,5 @@
 // src/components/trackOrder/CustomerActions.jsx
 import React, { useState } from 'react';
-import { CircleCheck } from 'lucide-react';
-import { useNotification } from '../../context/NotificationContext';
 
 
 
@@ -22,53 +20,10 @@ const CustomerActions = ({ order }) => {
     }
   };
 
+  console.log("CustomerActions order:", order);
+
   return (
     <>
-      {order.status === 'Started' ? (
-        <div className="card update-status-card">
-          <div className="card-header">
-            <h2 className="card-title">Confirm Pickup</h2>
-          </div>
-          <div className="action-buttons">
-            <h3>OTP: {order.otp || "0000"}</h3>
-          </div>
-        </div>
-      ) : order.payment_status === 'Paid' ? (
-        <div className="card update-status-card">
-          <div className="card-header">
-            <h2 className="card-title">Delivery Complete</h2>
-          </div>
-          <div className="action-buttons" style={{ justifyContent: 'center', padding: '12px 0' }}>
-            <span style={{ color: '#2e7d32', fontWeight: 600, fontSize: '1rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-              <CircleCheck size={18} aria-hidden="true" />
-              <span>Payment Completed</span>
-            </span>
-          </div>
-        </div>
-      ) : order.status === 'Payment Pending' ? (
-        <div className="card update-status-card">
-          <div className="card-header">
-            <h2 className="card-title">Payment Pending</h2>
-          </div>
-          <div className="action-buttons" style={{ justifyContent: 'center', padding: '12px 0' }}>
-            <span style={{ color: '#555', fontSize: '0.95rem' }}>
-              Please complete payment from the My Orders page.
-            </span>
-          </div>
-        </div>
-      ) : (
-        <div className="card update-status-card">
-          <div className="card-header">
-            <h2 className="card-title">Order In Progress</h2>
-          </div>
-          <div className="action-buttons" style={{ justifyContent: 'center', padding: '12px 0' }}>
-            <span style={{ color: '#555', fontSize: '0.95rem' }}>
-              Payment becomes available after delivery confirmation.
-            </span>
-          </div>
-        </div>
-      )}
-
       <div className="card customer-info-card">
         <div className="card-header">
           <h2 className="card-title">Transporter Information</h2>
@@ -100,30 +55,45 @@ const CustomerActions = ({ order }) => {
           </button>
         </div>
       </div>
+
+      <div className="card customer-info-card">
+      <div className="card-header">
+          <h2 className="card-title">Driver Information</h2>
+        </div>
+        <div className="detail-group">
+          <p className="detail-label">Driver Name</p>
+          <p className="detail-value">{`${order.scheduled_assignment?.driver?.firstName} ${order.scheduled_assignment?.driver?.lastName}`}</p>
+        </div>
+        <div className="detail-group">
+          <p className="detail-label">Contact Phone</p>
+          <p className="detail-value">{order.scheduled_assignment?.driver?.phone || "N/A"}</p>
+        </div>
+        <div className="detail-group">
+          <p className="detail-label">Vehicle</p>
+          <p className="detail-value">
+            {order.scheduled_assignment?.vehicle?.registration
+              ? order.scheduled_assignment.vehicle.registration.replace(
+                  /^([A-Z]{2})(\d{2})([A-Z]{2})(\d{4})$/,
+                  "$1 $2 $3 $4"
+                )
+              : "N/A"}
+          </p>        </div>
+        <div className="action-buttons">
+          <button 
+            className="btn btn-primary" 
+            onClick={() => handleCall(order.scheduled_assignment?.driver?.phone )}
+          >
+            Call Driver
+          </button>
+      </div>
+      </div>
+
     </>
   );
 };
 
 
 const TransporterActions = ({ order }) => {
-  const [otp, setOtp] = useState('');
-  const { showNotification } = useNotification();
-  
-
-  const handleConfirmPickup = async () => {
-    if (!otp) {
-      alert('Please enter the OTP');
-      return;
-    }
-
-    try {
-      // OTP confirmation is now handled at the trip level via ActiveTrip page
-      showNotification({ message: 'Please use the Active Trip page to confirm pickup with OTP', type: 'info' });
-      setOtp('');
-    } catch (err) {
-      showNotification({ message: 'Incorrect OTP', type: 'error' });
-    }
-  };
 
   const handleCall = (phone) => {
     if (phone && phone !== "N/A") {
@@ -143,36 +113,6 @@ const TransporterActions = ({ order }) => {
 
   return (
     <>
-      {order.status === 'Started' ? (
-        <div className="card update-status-card">
-          <div className="card-header">
-            <h2 className="card-title">Confirm Pickup</h2>
-          </div>
-          <div className="action-buttons">
-            <input
-              id="otp_input"
-              type="number"
-              max="9999"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              placeholder="Enter OTP"
-            />
-            <button className="btn btn-success" onClick={handleConfirmPickup}>
-              Confirm OTP
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="card update-status-card">
-          <div className="card-header">
-            <h2 className="card-title">In Progress</h2>
-          </div>
-          <div className="action-buttons" style={{ justifyContent: 'center', padding: '12px 0' }}>
-            <span style={{ color: '#555', fontSize: '0.95rem' }}>Order is in transit</span>
-          </div>
-        </div>
-      )}
-
       <div className="card customer-info-card">
         <div className="card-header">
           <h2 className="card-title">Customer Information</h2>

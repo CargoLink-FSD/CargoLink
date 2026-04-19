@@ -1,16 +1,30 @@
-// src/pages/driver/ActiveTrip.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
+import MapDisplay from '../../components/common/MapDisplay';
 import {
   getDriverTripDetails, startTrip, arriveAtStop, confirmPickup,
   confirmDelivery, departFromStop, declareDelay, clearDelay, updateTripLocation,
 } from '../../api/trips';
 import '../../styles/ActiveTrip.css';
 
-// Normalize coords to Leaflet [lat, lng]
-// Backend stores GeoJSON [lng, lat]; some records may have [lat, lng]
+const STATUS_COLORS = {
+  Scheduled: '#1976d2', Active: '#388e3c',
+  Completed: '#00796b', Cancelled: '#757575',
+};
+
+const formatTime = (iso) => iso ? new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—';
+const formatDate = (iso) => iso ? new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+
+const formatDateTime = (iso) => {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+};
+
+
 const toLatLng = (coords) => {
   if (!coords || coords.length < 2) return null;
   const a = Number(coords[0]), b = Number(coords[1]);
@@ -20,20 +34,11 @@ const toLatLng = (coords) => {
   return [a, b];
 };
 
-// Convert coords to OSRM "lng,lat" string
 const toOsrmCoord = (coords) => {
   const ll = toLatLng(coords);
   if (!ll) return null;
   return `${ll[1]},${ll[0]}`;
 };
-
-const STATUS_COLORS = {
-  Scheduled: '#1976d2', Active: '#388e3c',
-  Completed: '#00796b', Cancelled: '#757575',
-};
-
-const formatTime = (iso) => iso ? new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—';
-const formatDate = (iso) => iso ? new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
 
 const ActiveTrip = () => {
   const { tripId } = useParams();
@@ -48,31 +53,25 @@ const ActiveTrip = () => {
   // OTP
   const [otpValue, setOtpValue] = useState('');
   const [showOtpModal, setShowOtpModal] = useState(false);
-  const [otpAction, setOtpAction] = useState(null); // { type, stopId }
+  const [otpAction, setOtpAction] = useState(null);
 
   // Delay
   const [showDelayModal, setShowDelayModal] = useState(false);
   const [delayMinutes, setDelayMinutes] = useState(30);
   const [delayReason, setDelayReason] = useState('');
 
-  // Map
-  const [mapReady, setMapReady] = useState(false);
-  const [mapInitialized, setMapInitialized] = useState(false);
-  const [driverLocationReady, setDriverLocationReady] = useState(false);
-  const mapRef = useRef(null);
-  const leafletMap = useRef(null);
-  const markersRef = useRef([]);
-  const polylineRef = useRef(null);
-  const driverMarkerRef = useRef(null);
+  // Driver live location for geolocation + map display
+  const [driverLocation, setDriverLocation] = useState(null);
+  const [etaToNext, setEtaToNext] = useState(null);
   const driverLocationRef = useRef(null);
-  const locationWatchRef = useRef(null);
+  const etaThrottleRef = useRef(0);
 
   const showToast = (msg, type = 'error') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
   };
 
-  // ─── Load Trip ───
+  // Load Trip
   const loadTrip = useCallback(async () => {
     try {
       setLoading(true);
@@ -87,210 +86,80 @@ const ActiveTrip = () => {
 
   useEffect(() => { loadTrip(); }, [loadTrip]);
 
-  // ─── Get Driver Location ───
+  // Get driver live location via geolocation
   useEffect(() => {
-    if (!navigator.geolocation) { setDriverLocationReady(true); return; }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        driverLocationRef.current = [pos.coords.latitude, pos.coords.longitude];
-        setDriverLocationReady(true);
-      },
-      () => setDriverLocationReady(true),
-      { enableHighAccuracy: true, timeout: 8000 },
-    );
-  }, []);
+    if (!navigator.geolocation) return;
 
-  // ─── Load Leaflet ───
-  useEffect(() => {
-    if (!document.getElementById('leaflet-css')) {
-      const link = document.createElement('link');
-      link.id = 'leaflet-css'; link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-    }
-    if (window.L) { setMapReady(true); return; }
-    if (!document.getElementById('leaflet-js')) {
-      const script = document.createElement('script');
-      script.id = 'leaflet-js';
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = () => setMapReady(true);
-      document.head.appendChild(script);
-    } else {
-      const check = setInterval(() => { if (window.L) { setMapReady(true); clearInterval(check); } }, 100);
-      return () => clearInterval(check);
-    }
-  }, []);
-
-  // ─── Init Map (retry until container is available) ───
-  useEffect(() => {
-    if (!mapReady) return;
-    let intervalId = null;
-
-    const tryInit = () => {
-      if (leafletMap.current || !mapRef.current) return !!leafletMap.current;
-      const L = window.L;
-      if (!L) return false;
-      const map = L.map(mapRef.current, { zoomControl: true });
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18, attribution: '© OpenStreetMap',
-      }).addTo(map);
-      map.setView([20.5, 78.9], 5);
-      leafletMap.current = map;
-      setTimeout(() => map.invalidateSize(), 300);
-      setMapInitialized(true);
-      return true;
+    const success = (pos) => {
+      const loc = [pos.coords.latitude, pos.coords.longitude];
+      driverLocationRef.current = loc;
+      setDriverLocation(loc);
     };
 
-    if (!tryInit()) {
-      intervalId = setInterval(() => {
-        if (tryInit() && intervalId) { clearInterval(intervalId); intervalId = null; }
-      }, 200);
-    }
-
-    return () => { if (intervalId) clearInterval(intervalId); };
-  }, [mapReady]);
-
-  // ─── Driver Location Marker ───
-  useEffect(() => {
-    if (!driverLocationReady || !mapInitialized) return;
-    const L = window.L;
-    const map = leafletMap.current;
-    if (!L || !map || !driverLocationRef.current) return;
-    const [lat, lng] = driverLocationRef.current;
-    const icon = L.divIcon({
-      className: '',
-      html: '<div class="at-driver-marker"><span class="at-driver-icon">T</span><div class="at-driver-pulse"></div></div>',
-      iconSize: [40, 40], iconAnchor: [20, 20],
-    });
-    if (driverMarkerRef.current) {
-      driverMarkerRef.current.setLatLng([lat, lng]);
-    } else {
-      driverMarkerRef.current = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).addTo(map);
-      driverMarkerRef.current.bindPopup('Your location');
-    }
-    return () => {
-      if (driverMarkerRef.current) { driverMarkerRef.current.remove(); driverMarkerRef.current = null; }
+    const error = (err) => {
+      console.error("Geo error:", err);
     };
-  }, [driverLocationReady, mapInitialized]);
 
-  // ─── Update Map Markers ───
-  useEffect(() => {
-    const L = window.L;
-    const map = leafletMap.current;
-    if (!L || !map || !trip?.stops) return;
-
-    markersRef.current.forEach(m => m.remove());
-    markersRef.current = [];
-    if (polylineRef.current) { polylineRef.current.remove(); polylineRef.current = null; }
-
-    const currentIdx = trip.current_stop_index || 0;
-    const validStops = trip.stops.filter(s => s.address?.coordinates?.length === 2);
-
-    validStops.forEach((stop, idx) => {
-      const ll = toLatLng(stop.address.coordinates);
-      if (!ll) return;
-      const isPickup = stop.type === 'Pickup';
-      const isDone = stop.status === 'Completed';
-      const isCurrent = idx === currentIdx;
-      const icon = L.divIcon({
-        className: '',
-        html: `<div class="at-map-marker ${isPickup ? 'pickup' : 'drop'} ${isDone ? 'done' : ''} ${isCurrent ? 'current' : ''}"><span>${idx + 1}</span></div>`,
-        iconSize: [32, 32], iconAnchor: [16, 16],
-      });
-      const marker = L.marker(ll, { icon }).addTo(map);
-      marker.bindPopup(`<b>${idx + 1}. ${stop.address.city || 'Stop'}</b><br/>${stop.type}`);
-      markersRef.current.push(marker);
+    navigator.geolocation.getCurrentPosition(success, error, {
+      enableHighAccuracy: true,
+      timeout: 10000,
     });
 
-    const remainingStops = trip.stops.filter(
-      (s, i) => i >= currentIdx && s.address?.coordinates?.length === 2 && s.status !== 'Completed',
-    );
-    const stopsForRoute = remainingStops.length >= 1 ? remainingStops : validStops;
-
-    // Build OSRM coordinate string (lng,lat format)
-    const osrmParts = [];
-    if (driverLocationRef.current) {
-      const [dLat, dLng] = driverLocationRef.current;
-      osrmParts.push(`${dLng},${dLat}`);
-    }
-    stopsForRoute.forEach(s => {
-      const coord = toOsrmCoord(s.address.coordinates);
-      if (coord) osrmParts.push(coord);
+    const watchId = navigator.geolocation.watchPosition(success, error, {
+      enableHighAccuracy: true,
+      maximumAge: 5000,
+      timeout: 10000,
     });
 
-    if (osrmParts.length >= 2) {
-      fetch(`https://router.project-osrm.org/route/v1/driving/${osrmParts.join(';')}?overview=full&geometries=geojson`)
-        .then(r => r.json())
-        .then(data => {
-          if (data.code === 'Ok' && data.routes?.[0]) {
-            const routeCoords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-            polylineRef.current = L.polyline(routeCoords, { color: '#6366f1', weight: 4, opacity: 0.8 }).addTo(map);
-            const allPoints = [
-              ...(driverLocationRef.current ? [driverLocationRef.current] : []),
-              ...routeCoords,
-            ];
-            map.fitBounds(L.latLngBounds(allPoints), { padding: [50, 50], maxZoom: 13 });
-          }
-        })
-        .catch(() => { });
-    } else if (markersRef.current.length > 0) {
-      const bounds = L.latLngBounds(markersRef.current.map(m => m.getLatLng()));
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
-    }
-  }, [trip, mapInitialized, driverLocationReady]);
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
 
-  // ─── Live Location ───
+  // Update trip location on backend when driver location changes (only if trip is active)
   useEffect(() => {
-    if (!trip || trip.status !== 'Active') return;
+    if (!trip || trip.status !== 'Active' || !driverLocation) return;
     const tripId = trip._id;
 
-    const sendLocation = (pos) => {
-      const { latitude, longitude } = pos.coords;
-      driverLocationRef.current = [latitude, longitude];
-      // Send as [lng, lat] array for GeoJSON storage
-      updateTripLocation(tripId, [longitude, latitude]).catch(() => { });
-      if (driverMarkerRef.current) {
-        driverMarkerRef.current.setLatLng([latitude, longitude]);
-      }
+    const sendLocation = () => {
+      const [lat, lng] = driverLocation;
+      updateTripLocation(tripId, [lng, lat]).catch(() => { });
     };
 
-    if (navigator.geolocation) {
-      locationWatchRef.current = navigator.geolocation.watchPosition(sendLocation, () => { }, {
-        enableHighAccuracy: true, maximumAge: 10000, timeout: 15000,
-      });
+    sendLocation();
+    const interval = setInterval(sendLocation, 3000);
+    return () => clearInterval(interval);
+  }, [trip, driverLocation]);
+
+  // Calculate ETA to next stop
+  useEffect(() => {
+    if (!trip?.stops?.length || !driverLocation) return;
+    const now = Date.now();
+    if (now - etaThrottleRef.current < 15000) return;
+    etaThrottleRef.current = now;
+
+    const currentIdx = trip.current_stop_index || 0;
+    const nextStop = trip.stops.find((s, i) => i >= currentIdx && s.status !== 'Completed' && s.address?.coordinates?.length === 2);
+
+    if (!nextStop) {
+      setEtaToNext(null);
+      return;
     }
 
-    const interval = setInterval(() => {
-      navigator.geolocation?.getCurrentPosition(sendLocation, () => { });
-    }, 30000);
+    const coord = toOsrmCoord(nextStop.address.coordinates);
+    if (!coord) return;
 
-    return () => {
-      if (locationWatchRef.current) navigator.geolocation.clearWatch(locationWatchRef.current);
-      clearInterval(interval);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trip?._id, trip?.status]);
+    const [lat, lng] = driverLocation;
+    const from = `${lng},${lat}`;
+    fetch(`https://router.project-osrm.org/route/v1/driving/${from};${coord}?overview=false`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.code === 'Ok' && data.routes?.[0]) {
+          const durationMin = Math.max(1, Math.round(data.routes[0].duration / 60));
+          setEtaToNext(durationMin);
+        }
+      })
+      .catch(() => { });
+  }, [trip, driverLocation]);
 
-  // ─── Trip Actions ───
-  const handleStartTrip = async () => {
-    setActionLoading(true);
-    try {
-      await startTrip(tripId);
-      showToast('Trip started!', 'success');
-      loadTrip();
-    } catch (err) { showToast(err.message); }
-    finally { setActionLoading(false); }
-  };
-
-  const handleArriveAtStop = async (stopId) => {
-    setActionLoading(true);
-    try {
-      await arriveAtStop(tripId, stopId);
-      showToast('Arrived at stop!', 'success');
-      loadTrip();
-    } catch (err) { showToast(err.message); }
-    finally { setActionLoading(false); }
-  };
 
   const handleOtpSubmit = async () => {
     if (!otpValue || otpValue.length < 4) { showToast('Enter a valid OTP'); return; }
@@ -318,28 +187,6 @@ const ActiveTrip = () => {
     finally { setActionLoading(false); }
   };
 
-  const handleDeclareDelay = async () => {
-    if (!delayReason.trim()) { showToast('Provide a reason'); return; }
-    setActionLoading(true);
-    try {
-      await declareDelay(tripId, { delay_minutes: delayMinutes, delay_reason: delayReason });
-      showToast('Delay declared', 'success');
-      setShowDelayModal(false); setDelayReason('');
-      loadTrip();
-    } catch (err) { showToast(err.message); }
-    finally { setActionLoading(false); }
-  };
-
-  const handleClearDelay = async () => {
-    setActionLoading(true);
-    try {
-      await clearDelay(tripId);
-      showToast('Delay cleared', 'success');
-      loadTrip();
-    } catch (err) { showToast(err.message); }
-    finally { setActionLoading(false); }
-  };
-
   // ─── Open modals safely (no setTimeout, no stopPropagation needed) ───
   const openOtpModal = (type, stopId) => {
     setOtpAction({ type, stopId });
@@ -347,13 +194,8 @@ const ActiveTrip = () => {
     setShowOtpModal(true);
   };
 
-  const openDelayModal = () => {
-    setShowDelayModal(true);
-  };
-
   const currentStopIndex = trip?.current_stop_index ?? 0;
 
-  console.log("rendering");
 
   // ─── Render ───
   if (loading) {
@@ -377,7 +219,6 @@ const ActiveTrip = () => {
   }
 
   const isActive = trip.status === 'Active';
-  const isScheduled = trip.status === 'Scheduled';
   const isDone = ['Completed', 'Cancelled'].includes(trip.status);
   const statusColor = STATUS_COLORS[trip.status] || '#6366f1';
 
@@ -386,9 +227,9 @@ const ActiveTrip = () => {
       <Header />
       {toast && <div className={`at-toast at-toast--${toast.type}`}>{toast.msg}</div>}
 
-      <div className="at-shell">
+      <div className="at-page">
         {/* Header Bar */}
-        <div className="at-header-bar">
+        <div className="at-header">
           <div className="at-header-left">
             <button className="btn btn-outline btn-sm" onClick={() => navigate('/driver/trips')}>← Trips</button>
             <div>
@@ -398,36 +239,34 @@ const ActiveTrip = () => {
               </span>
             </div>
           </div>
-          <div className="at-header-right">
-            {isScheduled && (
-              <button className="btn btn-primary" onClick={handleStartTrip} disabled={actionLoading}>
-                {actionLoading ? 'Starting...' : 'Start Trip'}
-              </button>
-            )}
-            {trip.is_delayed && isActive && (
-              <button className="btn btn-outline btn-sm" onClick={handleClearDelay} disabled={actionLoading}>Clear Delay</button>
-            )}
-            {isActive && (
-              <button
-                className="btn btn-outline btn-sm btn-danger-outline"
-                onClick={openDelayModal}
-              >
-                Report Delay
-              </button>
-            )}
-          </div>
         </div>
 
         {/* Main layout */}
         <div className="at-layout">
-          {/* Map */}
-          <div className="at-map-section">
-            <div ref={mapRef} className="at-leaflet-map" />
-            <div className="at-map-info">
-              <div className="at-info-item"><span className="at-info-label">Vehicle</span><span>{trip.assigned_vehicle_id?.registration || '—'}</span></div>
-              <div className="at-info-item"><span className="at-info-label">Distance</span><span>{trip.total_distance_km || 0} km</span></div>
-              <div className="at-info-item"><span className="at-info-label">Stops</span><span>{trip.stops?.length || 0}</span></div>
-              <div className="at-info-item"><span className="at-info-label">Depart</span><span>{formatTime(trip.planned_start_at)}</span></div>
+          {/* Map with stats */}
+          <div className="at-map-panel">
+            <div className="at-card">
+              <div className="at-card-header">
+                <h2>Route Map</h2>
+              </div>
+              <div className="at-map-section">
+                <div style={{ height: '600px'}}>
+                  <MapDisplay 
+                    stops={trip.stops} 
+                    currentLocation={driverLocation}
+                    tripStatus={trip.status}
+                    showLive={isActive}
+                    routeMode="active"
+                    stats={{
+                      vehicle: trip.assigned_vehicle_id?.registration,
+                      distance: trip.total_distance_km ? `${trip.total_distance_km} km` : '—',
+                      stops: trip.stops?.length || 0,
+                      nextEta: etaToNext ? `${etaToNext} min` : '—',
+                      startedAt: formatDateTime(trip.actual_start_at || trip.planned_start_at),
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -435,7 +274,7 @@ const ActiveTrip = () => {
           <div className="at-stops-panel">
             <div className="at-panel-header">
               <h2>Stops</h2>
-              <span className="at-panel-badge">{currentStopIndex + 1} / {trip.stops?.length}</span>
+              <span className="at-panel-badge">{currentStopIndex} / {trip.stops?.length}</span>
             </div>
 
             <div className="at-stops-list">
@@ -443,6 +282,12 @@ const ActiveTrip = () => {
                 const isCurrent = idx === currentStopIndex && isActive;
                 const isDoneStop = stop.status === 'Completed';
                 const isArrived = stop.status === 'Arrived';
+                const completedTime = stop.actual_departure_at || stop.actual_arrival_at || stop.completed_at;
+                const etaLabel = isDoneStop
+                  ? formatTime(completedTime)
+                  : isCurrent
+                    ? 'Now'
+                    : formatTime(stop.eta_at);
 
                 return (
                   <div key={stop._id || idx} className={`at-stop-card ${isCurrent ? 'current' : ''} ${isDoneStop ? 'done' : ''}`}>
@@ -457,7 +302,7 @@ const ActiveTrip = () => {
                         <span className={`at-stop-type-pill ${stop.type === 'Pickup' ? 'pickup' : stop.type === 'Dropoff' ? 'drop' : 'waypoint'}`}>
                           {stop.type === 'Pickup' ? '↑ Pickup' : stop.type === 'Dropoff' ? '↓ Dropoff' : '● Waypoint'}
                         </span>
-                        <span className="at-stop-eta">{formatTime(stop.eta_at)}</span>
+                        <span className="at-stop-eta">{etaLabel}</span>
                       </div>
                       <div className="at-stop-address">
                         {stop.address?.street && <span>{stop.address.street}, </span>}
@@ -466,7 +311,6 @@ const ActiveTrip = () => {
                       </div>
                       {stop.order_id && <div className="at-stop-ref">Order #{typeof stop.order_id === 'string' ? stop.order_id.slice(-6) : stop.order_id._id?.slice(-6)}</div>}
 
-                      {/* FIX: removed e.stopPropagation() and setTimeout from button click */}
                       {isCurrent && (stop.type === 'Pickup' || stop.type === 'Dropoff') && (
                         <button
                           className="btn btn-primary btn-sm at-stop-action"
@@ -484,8 +328,8 @@ const ActiveTrip = () => {
                       {stop.status === 'Arrived' && !isCurrent && (
                         <span className="at-stop-status-badge arrived">Arrived</span>
                       )}
-                      {isDoneStop && stop.completed_at && (
-                        <span className="at-stop-status-badge completed">Done {formatTime(stop.completed_at)}</span>
+                      {isDoneStop && completedTime && (
+                        <span className="at-stop-status-badge completed">Done {formatTime(completedTime)}</span>
                       )}
                     </div>
                   </div>

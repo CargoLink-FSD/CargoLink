@@ -110,6 +110,12 @@ export function useRealtimeNotifications() {
       ws.onmessage = (event) => {
         try {
           const payload = JSON.parse(event.data);
+
+          if (payload?.type === 'trip.location.updated') {
+            window.dispatchEvent(new CustomEvent('cargolink:trip.location.updated', { detail: payload }));
+            return;
+          }
+
           if (payload?.type !== 'notification:new') return;
 
           const notification = payload?.data;

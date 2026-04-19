@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
-import { Building2, UserRound, Truck } from 'lucide-react';
+import { Building2, Truck, Package, Weight, IndianRupee, UserRound } from 'lucide-react';
 import { toApiUrl } from '../../utils/apiBase';
 import './OrderCard.css';
 
@@ -118,21 +118,41 @@ export default function OrderCard({
           </div>
         </div>
 
-        <ul className="order-list">
-          <li>
-            <Building2 size={18} className="li-icon" aria-hidden="true" />
-            {assignedTransporterName}
-          </li>
-          <li>
-            <UserRound size={18} className="li-icon" aria-hidden="true" />
-            {assignedDriverName}
-          </li>
-          <li>
-            <Truck size={18} className="li-icon" aria-hidden="true" />
-            {assignedVehicleNumber}
-          </li>
-        </ul>
 
+        <ul className="order-list">
+          {variant === 'customer' ? (
+            <>
+              <li>
+                <Building2 size={18} className="li-icon" />
+                {assignedTransporterName}
+              </li>
+              <li>
+                <UserRound size={18} className="li-icon" />
+                {assignedDriverName}
+              </li>
+              <li>
+                <Truck size={18} className="li-icon" />
+                {assignedVehicleNumber}
+              </li>
+            </>
+          ) : (
+            <>
+              <li>
+                <Package size={18} className="li-icon" />
+                {order.goods_type}
+              </li>
+              <li>
+                <Weight size={18} className="li-icon" />
+                {`${order.weight || 'N/A'} Kg`}
+              </li>
+              <li>
+                <IndianRupee size={18} className="li-icon" />
+                {Number(order.max_price).toLocaleString('en-IN')}
+              </li>
+            </>
+          )}
+
+      </ul>
         {/* Cargo Photo Display */}
         {order.cargo_photo && (
           <div className="cargo-photo-thumbnail">

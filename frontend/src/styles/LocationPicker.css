@@ -6,6 +6,8 @@
   border-radius: 10px;
   overflow: hidden;
   background: #f8fafc;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  contain: content;
 }
 
 .lp-header {
@@ -21,6 +23,14 @@
   font-weight: 600;
   font-size: 0.85rem;
   color: #334155;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.lp-pin {
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .lp-coords {
@@ -48,7 +58,7 @@
 
 .lp-search-input {
   width: 100%;
-  padding: 0.45rem 0.75rem;
+  padding: 0.55rem 2.4rem 0.55rem 0.75rem;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 0.85rem;
@@ -56,70 +66,41 @@
   transition: border-color 0.2s;
 }
 
+.lp-search-btn {
+  position: absolute;
+  right: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: #e2e8f0;
+  color: #334155;
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.2s;
+}
+
+.lp-search-btn:hover {
+  background: #cbd5f5;
+}
+
+.lp-search-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .lp-search-input:focus {
   border-color: #6366f1;
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
 }
 
-.lp-suggestions {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  background: #fff;
-  border: 1px solid #d1d5db;
-  border-top: none;
-  border-radius: 0 0 6px 6px;
-  max-height: 200px;
-  overflow-y: auto;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.lp-suggestions li {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.82rem;
-  color: #334155;
-  cursor: pointer;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.lp-suggestions li:hover {
-  background: #f1f5f9;
-}
-
-.lp-suggestions li:last-child {
-  border-bottom: none;
-}
-
-.lp-find-btn {
-  padding: 0.45rem 0.9rem;
-  background: #6366f1;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.82rem;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.2s;
-}
-
-.lp-find-btn:hover {
-  background: #4f46e5;
-}
-
-.lp-find-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 
 .lp-map {
-  height: 220px;
+  height: 260px;
   width: 100%;
+  background: #e2e8f0;
+  will-change: transform;
 }
 
 .lp-hint {
@@ -129,6 +110,12 @@
   text-align: center;
   margin: 0;
   background: #f8fafc;
+}
+
+@media (max-width: 768px) {
+  .lp-map {
+    height: 220px;
+  }
 }
 
 .lp-marker {

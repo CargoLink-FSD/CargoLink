@@ -10,6 +10,7 @@ import Header from '../../components/common/Header';
 import ProfileField from '../../components/profile/ProfileField';
 import SecurityTab from '../../components/profile/SecurityTab';
 import { toApiUrl } from '../../utils/apiBase';
+import LocationPicker from '../../components/common/LocationPicker';
 import '../../styles/profile.css';
 import Footer from '../../components/common/Footer';
 
@@ -301,6 +302,7 @@ const AddressesTab = ({ addresses, showAddressForm, setShowAddressForm, dispatch
     state: '',
     pin: '',
     phone: '',
+    coordinates: null,
   });
 
   const [fieldErrors, setFieldErrors] = useState({});
@@ -355,9 +357,27 @@ const AddressesTab = ({ addresses, showAddressForm, setShowAddressForm, dispatch
       state: '',
       pin: '',
       phone: '',
+      coordinates: null,
     });
     setFieldErrors({});
     setTouched({});
+  };
+
+  const handleLocationSet = (payload) => {
+    if (!payload) return;
+    setAddressFormData((prev) => {
+      const updated = { ...prev };
+      if (payload.coordinates) {
+        updated.coordinates = payload.coordinates;
+      }
+      if (payload.address) {
+        updated.street = payload.address.street || updated.street;
+        updated.city = payload.address.city || updated.city;
+        updated.state = payload.address.state || updated.state;
+        updated.pin = payload.address.pin || updated.pin;
+      }
+      return updated;
+    });
   };
 
   const handleAddressSubmit = async (e) => {
@@ -513,6 +533,14 @@ const AddressesTab = ({ addresses, showAddressForm, setShowAddressForm, dispatch
                   )}
                 </div>
               </div>
+              <LocationPicker
+                label="Address"
+                address={addressFormData}
+                coordinates={addressFormData.coordinates}
+                onLocationSet={handleLocationSet}
+                autoSearch
+                searchHint="We will auto-locate your address. Drag the pin to fine-tune."
+              />
               <div className="form-actions">
                 <button type="submit" className="btn btn-primary">
                   Save Address

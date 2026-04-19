@@ -27,7 +27,6 @@ export default function PlaceOrder() {
     touched,
     loading,
     savedAddresses,
-    cargoPhoto,
     cargoPhotoPreview,
     distanceLoading,
     durationMin,
@@ -74,7 +73,7 @@ export default function PlaceOrder() {
                     <option value="">Select a saved address</option>
                     {savedAddresses.map((addr, idx) => (
                       <option key={idx} value={idx}>
-                        {addr.address_label || 'Address'}
+                        {addr.address_label || 'Address'} — {addr.city || ''}{addr.state ? `, ${addr.state}` : ''}
                       </option>
                     ))}
                   </select>
@@ -93,43 +92,48 @@ export default function PlaceOrder() {
                   <span className="error-message">{errors['pickup.street']}</span>
                 )}
 
-                <div className="address-wrapper">
-                  <input
-                    type="text"
-                    id="pickup-city"
-                    className={`input-field ${errors['pickup.city'] && touched['pickup.city'] ? 'error' : ''}`}
-                    value={formData.pickup.city}
-                    onChange={(e) => handleInputChange('pickup', 'city', e.target.value)}
-                    onBlur={() => setFieldTouched('pickup.city')}
-                    placeholder="City"
-                  />
-                  <input
-                    type="text"
-                    id="pickup-state"
-                    className={`input-field ${errors['pickup.state'] && touched['pickup.state'] ? 'error' : ''}`}
-                    value={formData.pickup.state}
-                    onChange={(e) => handleInputChange('pickup', 'state', e.target.value)}
-                    onBlur={() => setFieldTouched('pickup.state')}
-                    placeholder="State"
-                  />
+                <div className="form-row" style={{ marginTop: '1rem' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <input
+                      type="text"
+                      className={`input-field ${errors['pickup.city'] && touched['pickup.city'] ? 'error' : ''}`}
+                      value={formData.pickup.city}
+                      onChange={(e) => handleInputChange('pickup', 'city', e.target.value)}
+                      onBlur={() => setFieldTouched('pickup.city')}
+                      placeholder="City"
+                    />
+                    {errors['pickup.city'] && touched['pickup.city'] && (
+                      <span className="error-message">{errors['pickup.city']}</span>
+                    )}
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <input
+                      type="text"
+                      className={`input-field ${errors['pickup.state'] && touched['pickup.state'] ? 'error' : ''}`}
+                      value={formData.pickup.state}
+                      onChange={(e) => handleInputChange('pickup', 'state', e.target.value)}
+                      onBlur={() => setFieldTouched('pickup.state')}
+                      placeholder="State"
+                    />
+                    {errors['pickup.state'] && touched['pickup.state'] && (
+                      <span className="error-message">{errors['pickup.state']}</span>
+                    )}
+                  </div>
                 </div>
-                {(errors['pickup.city'] || errors['pickup.state']) && (touched['pickup.city'] || touched['pickup.state']) && (
-                  <span className="error-message">{errors['pickup.city'] || errors['pickup.state']}</span>
-                )}
 
-                <input
-                  type="text"
-                  id="pickup-zip"
-                  className={`input-field ${errors['pickup.pin'] && touched['pickup.pin'] ? 'error' : ''}`}
-                  value={formData.pickup.pin}
-                  onChange={(e) => handleInputChange('pickup', 'pin', e.target.value)}
-                  onBlur={() => setFieldTouched('pickup.pin')}
-                  placeholder="ZIP Code"
-                  maxLength="6"
-                />
-                {errors['pickup.pin'] && touched['pickup.pin'] && (
-                  <span className="error-message">{errors['pickup.pin']}</span>
-                )}
+                <div className="form-group" style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+                    <input
+                      type="text"
+                      className={`input-field ${errors['pickup.pin'] && touched['pickup.pin'] ? 'error' : ''}`}
+                      value={formData.pickup.pin}
+                      onChange={(e) => handleInputChange('pickup', 'pin', e.target.value)}
+                      onBlur={() => setFieldTouched('pickup.pin')}
+                      placeholder="Pincode"
+                    />
+                    {errors['pickup.pin'] && touched['pickup.pin'] && (
+                      <span className="error-message">{errors['pickup.pin']}</span>
+                    )}
+                </div>
 
                 <LocationPicker
                   label="Pickup"
@@ -153,7 +157,7 @@ export default function PlaceOrder() {
                     <option value="">Select a saved address</option>
                     {savedAddresses.map((addr, idx) => (
                       <option key={idx} value={idx}>
-                        {addr.address_label || 'Address'}
+                        {addr.address_label || 'Address'} — {addr.city || ''}{addr.state ? `, ${addr.state}` : ''}
                       </option>
                     ))}
                   </select>
@@ -172,43 +176,48 @@ export default function PlaceOrder() {
                   <span className="error-message">{errors['delivery.street']}</span>
                 )}
 
-                <div className="city-state-wrapper">
-                  <input
-                    type="text"
-                    id="dropoff-city"
-                    className={`input-field ${errors['delivery.city'] && touched['delivery.city'] ? 'error' : ''}`}
-                    value={formData.delivery.city}
-                    onChange={(e) => handleInputChange('delivery', 'city', e.target.value)}
-                    onBlur={() => setFieldTouched('delivery.city')}
-                    placeholder="City"
-                  />
-                  <input
-                    type="text"
-                    id="dropoff-state"
-                    className={`input-field ${errors['delivery.state'] && touched['delivery.state'] ? 'error' : ''}`}
-                    value={formData.delivery.state}
-                    onChange={(e) => handleInputChange('delivery', 'state', e.target.value)}
-                    onBlur={() => setFieldTouched('delivery.state')}
-                    placeholder="State"
-                  />
+                <div className="form-row" style={{ marginTop: '1rem' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <input
+                      type="text"
+                      className={`input-field ${errors['delivery.city'] && touched['delivery.city'] ? 'error' : ''}`}
+                      value={formData.delivery.city}
+                      onChange={(e) => handleInputChange('delivery', 'city', e.target.value)}
+                      onBlur={() => setFieldTouched('delivery.city')}
+                      placeholder="City"
+                    />
+                    {errors['delivery.city'] && touched['delivery.city'] && (
+                      <span className="error-message">{errors['delivery.city']}</span>
+                    )}
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <input
+                      type="text"
+                      className={`input-field ${errors['delivery.state'] && touched['delivery.state'] ? 'error' : ''}`}
+                      value={formData.delivery.state}
+                      onChange={(e) => handleInputChange('delivery', 'state', e.target.value)}
+                      onBlur={() => setFieldTouched('delivery.state')}
+                      placeholder="State"
+                    />
+                    {errors['delivery.state'] && touched['delivery.state'] && (
+                      <span className="error-message">{errors['delivery.state']}</span>
+                    )}
+                  </div>
                 </div>
-                {(errors['delivery.city'] || errors['delivery.state']) && (touched['delivery.city'] || touched['delivery.state']) && (
-                  <span className="error-message">{errors['delivery.city'] || errors['delivery.state']}</span>
-                )}
 
-                <input
-                  type="text"
-                  id="dropoff-zip"
-                  className={`input-field ${errors['delivery.pin'] && touched['delivery.pin'] ? 'error' : ''}`}
-                  value={formData.delivery.pin}
-                  onChange={(e) => handleInputChange('delivery', 'pin', e.target.value)}
-                  onBlur={() => setFieldTouched('delivery.pin')}
-                  placeholder="ZIP Code"
-                  maxLength="6"
-                />
-                {errors['delivery.pin'] && touched['delivery.pin'] && (
-                  <span className="error-message">{errors['delivery.pin']}</span>
-                )}
+                <div className="form-group" style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+                    <input
+                      type="text"
+                      className={`input-field ${errors['delivery.pin'] && touched['delivery.pin'] ? 'error' : ''}`}
+                      value={formData.delivery.pin}
+                      onChange={(e) => handleInputChange('delivery', 'pin', e.target.value)}
+                      onBlur={() => setFieldTouched('delivery.pin')}
+                      placeholder="Pincode"
+                    />
+                    {errors['delivery.pin'] && touched['delivery.pin'] && (
+                      <span className="error-message">{errors['delivery.pin']}</span>
+                    )}
+                </div>
 
                 <LocationPicker
                   label="Delivery"

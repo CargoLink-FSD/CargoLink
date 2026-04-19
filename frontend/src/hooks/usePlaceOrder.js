@@ -44,7 +44,18 @@ export function usePlaceOrder() {
     const loadAddresses = async () => {
       try {
         const addresses = await getCustomerAddresses();
-        setSavedAddresses(addresses || []);
+        const normalized = Array.isArray(addresses)
+          ? addresses
+          : Array.isArray(addresses?.data)
+            ? addresses.data
+            : Array.isArray(addresses?.data?.addresses)
+              ? addresses.data.addresses
+              : Array.isArray(addresses?.customerAddresses?.addresses)
+                ? addresses.customerAddresses.addresses
+                : Array.isArray(addresses?.addresses)
+                  ? addresses.addresses
+                  : [];
+        setSavedAddresses(normalized);
       } catch (error) {
         console.error('Failed to load addresses:', error);
       }
@@ -268,10 +279,20 @@ export function usePlaceOrder() {
 
   // Handle input changes
   const handleInputChange = (section, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [section]: { ...prev[section], [field]: value }
-    }));
+    setFormData(prev => {
+      const isLocationSection = section === 'pickup' || section === 'delivery';
+      const isGeocodeTrigger = field === 'city' || field === 'state';
+      const shouldClearCoords = isLocationSection && isGeocodeTrigger && prev[section][field] !== value;
+      
+      return {
+        ...prev,
+        [section]: { 
+          ...prev[section], 
+          [field]: value,
+          ...(shouldClearCoords ? { coordinates: null } : {})
+        }
+      };
+    });
 
     setTouched(prev => ({
       ...prev,

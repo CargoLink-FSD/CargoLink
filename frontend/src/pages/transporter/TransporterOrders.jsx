@@ -1,8 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useTransporterOrders } from '../../hooks/useTransporterOrders';
 import OrderCard from '../../components/common/OrderCard';
-import AssignVehicleModal from '../../components/common/AssignVehicleModal';
-import { PackageOpen } from 'lucide-react';
 import './TransporterOrders.css';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
@@ -10,7 +8,6 @@ import Footer from '../../components/common/Footer';
 const TransporterOrders = () => {
   const {
     orders,
-    vehicles,
     loading,
     error,
     loadOrders,
@@ -19,8 +16,7 @@ const TransporterOrders = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null);
+
   const debounceRef = useRef(null);
 
   useEffect(() => {
@@ -53,6 +49,7 @@ const TransporterOrders = () => {
     window.location.href = `/transporter/orders/${orderId}`;
   };
 
+  console.log('TransporterOrders render', { orders, loading, error });
 
   return (
     <>

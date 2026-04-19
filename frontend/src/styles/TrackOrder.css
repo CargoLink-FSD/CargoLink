@@ -669,3 +669,208 @@
   border-radius: 4px;
   margin-top: 0.25rem;
 }
+
+/* ─── Modern Track Order Layout (2026 refresh) ───────────────────────────── */
+
+.to-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 5.5rem 1.5rem 2.5rem;
+    min-height: 80vh;
+}
+
+.to-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.to-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.to-status {
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.to-error {
+    color: #ef4444;
+}
+
+.to-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+.to-card,
+.to-map-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+}
+
+.to-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.to-card-header h3 {
+    margin: 0 0 0.35rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.to-card-header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.to-meta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: #334155;
+}
+
+.to-meta span {
+    display: block;
+    font-size: 0.7rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.to-route {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+}
+
+.to-route-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+    color: #0f172a;
+}
+
+.to-route-from {
+    font-weight: 600;
+}
+
+.to-route-to {
+    color: #64748b;
+    margin-top: 0.2rem;
+}
+
+.to-route-right {
+    display: flex;
+    gap: 1.25rem;
+    font-size: 0.85rem;
+    color: #334155;
+}
+
+.to-route-right span {
+    display: block;
+    font-size: 0.7rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.to-map-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.to-map-header h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.to-map-header span {
+    font-size: 0.78rem;
+    color: #64748b;
+}
+
+.to-map {
+    height: 420px;
+    width: 100%;
+    background: #e2e8f0;
+}
+
+.to-map-marker {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    border: 2px solid #fff;
+}
+
+.to-map-marker.pickup { background: #22c55e; }
+.to-map-marker.drop { background: #ef4444; }
+.to-map-marker.completed { opacity: 0.5; }
+
+.to-current-loc {
+    font-size: 28px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    animation: to-pulse 2s ease-in-out infinite;
+}
+
+@keyframes to-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+@media (max-width: 768px) {
+    .to-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .to-route {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .to-route-right {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .to-map {
+        height: 320px;
+    }
+}

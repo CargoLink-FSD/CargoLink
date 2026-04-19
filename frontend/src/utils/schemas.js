@@ -185,6 +185,7 @@ export const addressSchema = z.object({
   state: z.string().min(1, 'State is required').regex(/^[a-zA-Z\s-]+$/, 'State name can only contain letters, spaces, and hyphens'),
   pin: pinSchema,
   phone: phoneSchema,
+  coordinates: z.array(z.number()).length(2).optional().nullable(),
 });
 
 // Password update schema

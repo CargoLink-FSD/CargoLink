@@ -39,7 +39,7 @@
 /* Layout */
 .ti-layout {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: 2.5fr 1fr;
   gap: 1.5rem;
   align-items: start;
 }
@@ -91,6 +91,8 @@
 .ti-map {
   height: 420px;
   width: 100%;
+  background: #e2e8f0;
+  will-change: transform;
 }
 
 .ti-map-marker {
