@@ -136,9 +136,23 @@ const saveDocuments = async (driverId, docData) => {
   );
 };
 
-const getDriversForVerification = async () => {
+const getDriversForVerification = async (includeAllStatuses = false) => {
+  if (includeAllStatuses) {
+    return await Driver.find({
+      $or: [
+        { 'documents.pan_card': { $exists: true } },
+        { 'documents.driving_license': { $exists: true } },
+        { verificationStatus: { $in: ['under_review', 'approved', 'rejected'] } },
+      ],
+    }).select('firstName lastName email phone licenseNumber documents verificationStatus city state createdAt');
+  }
+
   return await Driver.find({
-    verificationStatus: { $in: ['under_review', 'rejected'] }
+    $or: [
+      { verificationStatus: { $in: ['under_review', 'rejected'] } },
+      { 'documents.pan_card.adminStatus': { $in: ['pending', 'rejected'] } },
+      { 'documents.driving_license.adminStatus': { $in: ['pending', 'rejected'] } },
+    ],
   }).select('firstName lastName email phone licenseNumber documents verificationStatus city state createdAt');
 };
 

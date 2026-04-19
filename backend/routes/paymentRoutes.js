@@ -62,6 +62,7 @@ paymentRouter.get(
 paymentRouter.get(
   "/:paymentId/invoice",
   authMiddleware(["customer"], ["transporter"]),
+  cacheResponse({ domain: 'orders', ttlSeconds: 30 }),
   paymentController.downloadInvoice
 ); // Download invoice
 

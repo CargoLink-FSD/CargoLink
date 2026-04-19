@@ -2,9 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAdminCashouts } from '../../store/slices/adminCashoutsSlice';
 import { useNotification } from '../../context/NotificationContext';
+import { updateAdminCashoutStatus } from '../../api/adminOps';
 import Header from '../../components/common/Header';
 import Footer from '../../components/common/Footer';
 import './AdminStyles.css';
+import './AdminCashoutsActions.css';
 
 export default function AdminCashouts() {
   const dispatch = useDispatch();
@@ -16,6 +18,9 @@ export default function AdminCashouts() {
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('date');
   const [page, setPage] = useState(1);
+  const [actionLoadingId, setActionLoadingId] = useState('');
+  const [rejectTarget, setRejectTarget] = useState(null);
+  const [rejectNote, setRejectNote] = useState('');
   const limit = 20;
 
   const loadCashouts = useCallback(() => {
@@ -43,6 +48,30 @@ export default function AdminCashouts() {
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
   const formatCurrency = (amt) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amt || 0);
+
+  const handleStatusUpdate = async (cashoutId, status, note = '') => {
+    try {
+      setActionLoadingId(cashoutId);
+      await updateAdminCashoutStatus(cashoutId, { status, note });
+      showNotification({ message: `Cashout marked as ${status}`, type: 'success' });
+      loadCashouts();
+    } catch (err) {
+      showNotification({ message: err?.message || 'Failed to update cashout status', type: 'error' });
+    } finally {
+      setActionLoadingId('');
+    }
+  };
+
+  const submitReject = async () => {
+    if (!rejectTarget) return;
+    if (!rejectNote.trim()) {
+      showNotification({ message: 'Please provide a rejection reason', type: 'error' });
+      return;
+    }
+    await handleStatusUpdate(rejectTarget._id, 'Rejected', rejectNote.trim());
+    setRejectTarget(null);
+    setRejectNote('');
+  };
 
   return (
     <>
@@ -113,13 +142,15 @@ export default function AdminCashouts() {
                     <th>Transfer (Payable)</th>
                     <th>Status</th>
                     <th>Date Requested</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {cashouts.length === 0 ? (
-                    <tr><td colSpan={6} className="adm-empty">No cashout requests found</td></tr>
+                    <tr><td colSpan={7} className="adm-empty">No cashout requests found</td></tr>
                   ) : (
                     cashouts.map((co) => {
+                      const isBusy = actionLoadingId === co._id;
                       return (
                         <tr key={co._id}>
                           <td>
@@ -135,6 +166,37 @@ export default function AdminCashouts() {
                             </span>
                           </td>
                           <td>{formatDate(co.createdAt)}</td>
+                          <td>
+                            {co.status === 'Processed' ? (
+                              <span className="admxco-done">Completed</span>
+                            ) : (
+                              <div className="admxco-actions">
+                                {co.status !== 'Processing' && (
+                                  <button
+                                    className="admxco-btn admxco-btn-neutral"
+                                    onClick={() => handleStatusUpdate(co._id, 'Processing')}
+                                    disabled={isBusy}
+                                  >
+                                    {isBusy ? '...' : 'Set Processing'}
+                                  </button>
+                                )}
+                                <button
+                                  className="admxco-btn admxco-btn-success"
+                                  onClick={() => handleStatusUpdate(co._id, 'Processed')}
+                                  disabled={isBusy}
+                                >
+                                  {isBusy ? '...' : 'Set Processed'}
+                                </button>
+                                <button
+                                  className="admxco-btn admxco-btn-danger"
+                                  onClick={() => setRejectTarget(co)}
+                                  disabled={isBusy}
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            )}
+                          </td>
                         </tr>
                       );
                     })
@@ -160,6 +222,32 @@ export default function AdminCashouts() {
         )}
 
       </div>
+
+      {rejectTarget && (
+        <div className="admxco-modal-backdrop" onClick={() => setRejectTarget(null)}>
+          <div className="admxco-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="admxco-modal-title">Reject Cashout</h3>
+            <p className="admxco-modal-text">
+              Reject cashout request for {rejectTarget.transporter_id?.name || 'Unknown transporter'}
+            </p>
+            <textarea
+              className="admxco-modal-input"
+              rows={4}
+              value={rejectNote}
+              onChange={(e) => setRejectNote(e.target.value)}
+              placeholder="Reason for rejection"
+            />
+            <div className="admxco-modal-actions">
+              <button className="admxco-btn admxco-btn-neutral" onClick={() => { setRejectTarget(null); setRejectNote(''); }}>
+                Cancel
+              </button>
+              <button className="admxco-btn admxco-btn-danger" onClick={submitReject}>
+                Confirm Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <Footer />
     </>
   );

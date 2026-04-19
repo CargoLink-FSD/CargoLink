@@ -22,6 +22,8 @@ const CashoutRequestSchema = new mongoose.Schema(
     },
     // Populated when RazorpayX payout is initiated
     razorpay_payout_id: { type: String, default: null },
+    // Admin decision context (e.g., rejection reason, manual review note)
+    admin_note: { type: String, default: null },
     // Snapshot of bank/UPI details used at request time
     bank_details_snapshot: {
       type: mongoose.Schema.Types.Mixed,

@@ -60,6 +60,11 @@ export const googleVerify = async ({ credential }) => {
   return data.data;
 };
 
+export const verify2FA = async ({ tempToken, otp }) => {
+  const data = await http.post('/api/auth/verify-2fa', { tempToken, otp });
+  return data.data;
+};
+
 export default {
   login,
   requestSignupOtp,
@@ -71,5 +76,6 @@ export default {
   resetPassword,
   googleLogin,
   googleVerify,
+  verify2FA,
 };
 

@@ -135,9 +135,25 @@ const saveDocuments = async (transporterId, docData) => {
   return transporter;
 };
 
-const getTransportersForVerification = async () => {
+const getTransportersForVerification = async (includeAllStatuses = false) => {
+  if (includeAllStatuses) {
+    return await Transporter.find({
+      $or: [
+        { 'documents.pan_card': { $exists: true } },
+        { 'documents.driving_license': { $exists: true } },
+        { 'documents.vehicle_rcs.0': { $exists: true } },
+        { verificationStatus: { $in: ['under_review', 'approved', 'rejected'] } },
+      ],
+    }).select('name email pan gst_in primary_contact city state documents verificationStatus fleet createdAt');
+  }
+
   return await Transporter.find({
-    verificationStatus: { $in: ['under_review', 'rejected'] }
+    $or: [
+      { verificationStatus: { $in: ['under_review', 'rejected'] } },
+      { 'documents.pan_card.adminStatus': { $in: ['pending', 'rejected'] } },
+      { 'documents.driving_license.adminStatus': { $in: ['pending', 'rejected'] } },
+      { 'documents.vehicle_rcs': { $elemMatch: { adminStatus: { $in: ['pending', 'rejected'] } } } },
+    ],
   }).select('name email pan gst_in primary_contact city state documents verificationStatus fleet createdAt');
 };
 

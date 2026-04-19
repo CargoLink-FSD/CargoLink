@@ -1,0 +1,287 @@
+.admxt-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.admxt-stat {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admxt-stat span {
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.admxt-stat strong {
+  color: #0f172a;
+  font-size: 1.1rem;
+}
+
+.admxt-filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 170px 120px;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.admxt-search,
+.admxt-select,
+.admxt-reply-input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+}
+
+.admxt-refresh,
+.admxt-send {
+  border: 1px solid #1d4ed8;
+  background: #1d4ed8;
+  color: #ffffff;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admxt-layout {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 12px;
+  min-height: 62vh;
+}
+
+.admxt-list-panel,
+.admxt-detail-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.admxt-list-panel {
+  max-height: 72vh;
+  overflow-y: auto;
+}
+
+.admxt-ticket-item {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid #f1f5f9;
+  background: #ffffff;
+  text-align: left;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.admxt-ticket-item.active {
+  background: #eef2ff;
+}
+
+.admxt-ticket-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admxt-ticket-id {
+  font-size: 0.73rem;
+  color: #64748b;
+  font-family: Consolas, monospace;
+}
+
+.admxt-ticket-status {
+  display: inline-block;
+  font-size: 0.75rem;
+  border-radius: 999px;
+  padding: 3px 9px;
+  text-transform: capitalize;
+}
+
+.admxt-ticket-status-open {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.admxt-ticket-status-in_progress {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.admxt-ticket-status-closed {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.admxt-ticket-subject {
+  margin-top: 6px;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.admxt-ticket-meta,
+.admxt-ticket-time,
+.admxt-detail-user,
+.admxt-message-time,
+.admxt-empty {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.admxt-ticket-time {
+  margin-top: 6px;
+}
+
+.admxt-empty {
+  padding: 20px;
+  text-align: center;
+}
+
+.admxt-detail-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.admxt-detail-header {
+  padding: 14px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admxt-detail-id {
+  font-size: 0.74rem;
+  color: #64748b;
+  font-family: Consolas, monospace;
+}
+
+.admxt-detail-title {
+  margin: 5px 0;
+  color: #0f172a;
+}
+
+.admxt-order-card {
+  margin: 12px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  border-radius: 10px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admxt-order-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.84rem;
+}
+
+.admxt-order-row span {
+  color: #334155;
+}
+
+.admxt-order-row strong {
+  color: #0f172a;
+  text-align: right;
+}
+
+.admxt-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admxt-message {
+  max-width: 72%;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.admxt-message-user {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  align-self: flex-start;
+}
+
+.admxt-message-admin {
+  background: #1e40af;
+  color: #ffffff;
+  align-self: flex-end;
+}
+
+.admxt-message-sender {
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.admxt-message-text {
+  margin-top: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.88rem;
+}
+
+.admxt-message-attachment {
+  display: inline-block;
+  margin-top: 6px;
+  color: inherit;
+  text-decoration: underline;
+  font-size: 0.8rem;
+}
+
+.admxt-reply-box {
+  padding: 12px;
+  border-top: 1px solid #f1f5f9;
+  display: grid;
+  grid-template-columns: 1fr 130px;
+  gap: 10px;
+}
+
+.admxt-reply-input {
+  resize: vertical;
+  min-height: 76px;
+}
+
+@media (max-width: 1024px) {
+  .admxt-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admxt-list-panel {
+    max-height: 320px;
+  }
+}
+
+@media (max-width: 900px) {
+  .admxt-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admxt-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .admxt-order-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admxt-reply-box {
+    grid-template-columns: 1fr;
+  }
+}

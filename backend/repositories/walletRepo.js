@@ -58,6 +58,34 @@ const debitWallet = async (walletId, amount, referenceId, description) => {
 };
 
 /**
+ * Credit a wallet for non-order flows (for example, admin rejected cashout refunds).
+ * Idempotent by reference_id + credit type.
+ */
+const creditWallet = async (walletId, transporterId, amount, referenceId, description) => {
+  const existing = await WalletTransaction.findOne({
+    wallet_id: walletId,
+    reference_id: referenceId,
+    type: 'credit',
+  });
+
+  if (existing) {
+    return existing;
+  }
+
+  const transaction = await WalletTransaction.create({
+    wallet_id: walletId,
+    transporter_id: transporterId,
+    amount,
+    type: 'credit',
+    description,
+    reference_id: referenceId,
+  });
+
+  await Wallet.findByIdAndUpdate(walletId, { $inc: { balance: amount } });
+  return transaction;
+};
+
+/**
  * Paginated transaction list for a wallet.
  */
 const getTransactions = async (transporterId, { page = 1, limit = 20 } = {}) => {
@@ -74,4 +102,4 @@ const getTransactions = async (transporterId, { page = 1, limit = 20 } = {}) => 
   return { items, total, page, limit, pages: Math.ceil(total / limit) };
 };
 
-export default { findOrCreateWallet, creditOrderEarnings, debitWallet, getTransactions };
+export default { findOrCreateWallet, creditOrderEarnings, debitWallet, creditWallet, getTransactions };

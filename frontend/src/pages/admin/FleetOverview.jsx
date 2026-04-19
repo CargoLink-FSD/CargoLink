@@ -26,8 +26,15 @@ export default function FleetOverview() {
         try {
             setLoading(true);
             const res = await http.get('/api/admin/fleet');
-            setVehicles(res.data.vehicles || []);
-            setStats(res.data.stats || {});
+            const payload = res?.data?.data || res?.data || res || {};
+            const nextVehicles = Array.isArray(payload.vehicles)
+                ? payload.vehicles
+                : Array.isArray(payload.fleet)
+                    ? payload.fleet
+                    : [];
+
+            setVehicles(nextVehicles);
+            setStats(payload.stats || {});
         } catch {
             showNotification({ message: 'Failed to load fleet data', type: 'error' });
         } finally {

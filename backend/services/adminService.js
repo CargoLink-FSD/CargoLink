@@ -1,12 +1,44 @@
-import adminRepo from '../repositories/adminRepo.js';
+﻿import adminRepo from '../repositories/adminRepo.js';
+import managerService from './managerService.js';
+import ticketService from './ticketService.js';
+import walletRepo from '../repositories/walletRepo.js';
 import { AppError, escapeRegex } from '../utils/misc.js';
 import mongoose from 'mongoose';
 import { CACHE_DEFAULT_TTL } from '../core/index.js';
 import { makeCacheKey, rememberCachedJson } from '../core/cache.js';
 
+const DASHBOARD_RANGE_CONFIG = {
+    '1h': { ms: 60 * 60 * 1000, bucket: 'hour', seriesLimit: 24, label: 'Past 1 hour' },
+    '24h': { ms: 24 * 60 * 60 * 1000, bucket: 'hour', seriesLimit: 48, label: 'Past 24 hours' },
+    '7d': { ms: 7 * 24 * 60 * 60 * 1000, bucket: 'day', seriesLimit: 14, label: 'Past 7 days' },
+    '30d': { ms: 30 * 24 * 60 * 60 * 1000, bucket: 'day', seriesLimit: 40, label: 'Past 30 days' },
+    '90d': { ms: 90 * 24 * 60 * 60 * 1000, bucket: 'week', seriesLimit: 20, label: 'Past 90 days' },
+    '1y': { ms: 365 * 24 * 60 * 60 * 1000, bucket: 'month', seriesLimit: 18, label: 'Past 1 year' },
+    all: { ms: null, bucket: 'month', seriesLimit: 36, label: 'All time' },
+};
+
+const resolveDashboardWindow = (rangeInput) => {
+    const key = String(rangeInput || '30d').toLowerCase();
+    const cfg = DASHBOARD_RANGE_CONFIG[key] || DASHBOARD_RANGE_CONFIG['30d'];
+    const toDate = new Date();
+    const fromDate = cfg.ms ? new Date(toDate.getTime() - cfg.ms) : null;
+
+    return {
+        range: key in DASHBOARD_RANGE_CONFIG ? key : '30d',
+        fromDate,
+        toDate,
+        bucket: cfg.bucket,
+        seriesLimit: cfg.seriesLimit,
+        label: cfg.label,
+    };
+};
+
+const normalizeKey = (value) => String(value || '').toLowerCase();
+
 // Dashboard Statistics
-const getDashboardStats = async () => {
-    const cacheKey = makeCacheKey('svc:admin-dashboard:', { dashboard: 'stats' });
+const getDashboardStats = async (options = {}) => {
+    const window = resolveDashboardWindow(options.range);
+    const cacheKey = makeCacheKey('svc:admin-dashboard:', { dashboard: 'stats', range: window.range });
     const { value } = await rememberCachedJson({
         key: cacheKey,
         ttlSeconds: Math.max(20, Math.floor(CACHE_DEFAULT_TTL / 2)),
@@ -15,6 +47,7 @@ const getDashboardStats = async () => {
                 ordersPerDay,
                 revenuePerDay,
                 topTransporters,
+                topRoutes,
                 orderStatusDistribution,
                 fleetUtilization,
                 newCustomersPerMonth,
@@ -23,29 +56,104 @@ const getDashboardStats = async () => {
                 avgBidAmount,
                 totalCustomers,
                 totalTransporters,
+                totalDrivers,
+                totalManagers,
+                activeManagers,
+                activeTrips,
+                pendingCashouts,
                 totalVehicles,
                 openTickets,
-                pendingVerifications
+                pendingVerifications,
+                paymentStatusDistribution,
+                tripStatusDistribution,
+                ticketCategoryDistribution,
+                ticketPriorityDistribution,
+                resolvedTicketsTrend,
+                managerResolvedTickets,
+                managerOpenTicketLoad,
+                managerStatusDistribution,
             ] = await Promise.all([
-                adminRepo.getOrdersPerDay(),
-                adminRepo.getRevenuePerDay(),
-                adminRepo.getTopTransporters(),
-                adminRepo.getOrderStatusDistribution(),
+                adminRepo.getOrdersPerDay({ fromDate: window.fromDate, toDate: window.toDate, bucket: window.bucket, limit: window.seriesLimit }),
+                adminRepo.getRevenuePerDay({ fromDate: window.fromDate, toDate: window.toDate, bucket: window.bucket, limit: window.seriesLimit }),
+                adminRepo.getTopTransporters({ fromDate: window.fromDate, toDate: window.toDate, limit: 7 }),
+                adminRepo.getTopRoutes({ fromDate: window.fromDate, toDate: window.toDate, limit: 7 }),
+                adminRepo.getOrderStatusDistribution({ fromDate: window.fromDate, toDate: window.toDate }),
                 adminRepo.getFleetUtilization(),
-                adminRepo.getNewCustomersPerMonth(),
-                adminRepo.getMostRequestedTruckTypes(),
-                adminRepo.getPendingVsCompletedOrders(),
-                adminRepo.getAverageBidAmount(),
+                adminRepo.getNewCustomersPerMonth({ fromDate: window.fromDate, toDate: window.toDate, bucket: window.bucket === 'hour' ? 'day' : window.bucket, limit: window.seriesLimit }),
+                adminRepo.getMostRequestedTruckTypes({ fromDate: window.fromDate, toDate: window.toDate, limit: 10 }),
+                adminRepo.getPendingVsCompletedOrders({ fromDate: window.fromDate, toDate: window.toDate }),
+                adminRepo.getAverageBidAmount({ fromDate: window.fromDate, toDate: window.toDate }),
                 adminRepo.getTotalCustomers(),
                 adminRepo.getTotalTransporters(),
+                adminRepo.getTotalDrivers(),
+                adminRepo.getTotalManagers(),
+                adminRepo.getActiveManagers(),
+                adminRepo.getActiveTrips(),
+                adminRepo.getPendingCashouts(),
                 adminRepo.getTotalVehicles(),
                 adminRepo.getOpenTickets(),
-                adminRepo.getPendingVerifications()
+                adminRepo.getPendingVerifications(),
+                adminRepo.getPaymentStatusDistribution({ fromDate: window.fromDate, toDate: window.toDate }),
+                adminRepo.getTripStatusDistribution({ fromDate: window.fromDate, toDate: window.toDate }),
+                adminRepo.getTicketCategoryDistribution({ fromDate: window.fromDate, toDate: window.toDate }),
+                adminRepo.getTicketPriorityDistribution({ fromDate: window.fromDate, toDate: window.toDate }),
+                adminRepo.getResolvedTicketsTrend({ fromDate: window.fromDate, toDate: window.toDate, bucket: window.bucket, limit: window.seriesLimit }),
+                adminRepo.getManagerResolvedTickets({ fromDate: window.fromDate, toDate: window.toDate, limit: 8 }),
+                adminRepo.getManagerOpenTicketLoad({ fromDate: window.fromDate, toDate: window.toDate, limit: 8 }),
+                adminRepo.getManagerStatusDistribution(),
             ]);
 
-            const totalDrivers = await adminRepo.getTotalDrivers();
+            const paymentMetrics = paymentStatusDistribution.reduce((acc, row) => {
+                const count = Number(row?.count || 0);
+                const amount = Number(row?.amount || 0);
+                const key = normalizeKey(row?.status);
+
+                acc.total += count;
+                acc.totalAmount += amount;
+
+                if (key === 'completed') acc.completed += count;
+                if (key === 'failed') acc.failed += count;
+                if (key === 'refunded') acc.refunded += count;
+                if (key === 'created' || key === 'pending') acc.pending += count;
+
+                return acc;
+            }, { total: 0, totalAmount: 0, completed: 0, pending: 0, failed: 0, refunded: 0 });
+
+            const tripMetrics = tripStatusDistribution.reduce((acc, row) => {
+                const count = Number(row?.count || 0);
+                const key = normalizeKey(row?.status);
+
+                acc.total += count;
+                if (key === 'scheduled') acc.scheduled += count;
+                if (key === 'active') acc.active += count;
+                if (key === 'completed') acc.completed += count;
+                if (key === 'cancelled') acc.cancelled += count;
+
+                return acc;
+            }, { total: 0, scheduled: 0, active: 0, completed: 0, cancelled: 0 });
+
+            const ticketsCreatedInRange = ticketCategoryDistribution.reduce(
+                (sum, row) => sum + Number(row?.count || 0),
+                0,
+            );
+            const resolvedTicketsInRange = managerResolvedTickets.reduce(
+                (sum, row) => sum + Number(row?.resolved_tickets || 0),
+                0,
+            );
+            const openAssignedTickets = managerOpenTicketLoad.reduce(
+                (sum, row) => sum + Number(row?.open_tickets || 0),
+                0,
+            );
+            const topResolverManager = managerResolvedTickets[0]?.name || null;
 
             return {
+                window: {
+                    range: window.range,
+                    label: window.label,
+                    bucket: window.bucket,
+                    fromDate: window.fromDate ? window.fromDate.toISOString() : null,
+                    toDate: window.toDate.toISOString(),
+                },
                 totalOrders: ordersPerDay.reduce((sum, day) => sum + day.total_orders, 0),
                 totalRevenue: revenuePerDay.reduce((sum, day) => sum + day.total_revenue, 0),
                 pendingOrders: pendingVsCompletedOrders.pending_orders || 0,
@@ -54,13 +162,41 @@ const getDashboardStats = async () => {
                 totalCustomers,
                 totalTransporters,
                 totalDrivers,
+                totalManagers,
+                activeManagers,
+                activeTrips,
+                pendingCashouts,
                 totalVehicles,
                 openTickets,
                 pendingVerifications,
+                ticketsCreatedInRange,
+                resolvedTicketsInRange,
+                openAssignedTickets,
+                topResolverManager,
+                totalPayments: paymentMetrics.total,
+                totalPaymentAmount: paymentMetrics.totalAmount,
+                successfulPayments: paymentMetrics.completed,
+                failedPayments: paymentMetrics.failed,
+                refundedPayments: paymentMetrics.refunded,
+                pendingPayments: paymentMetrics.pending,
+                totalTrips: tripMetrics.total,
+                scheduledTrips: tripMetrics.scheduled,
+                activeTripsInRange: tripMetrics.active,
+                completedTrips: tripMetrics.completed,
+                cancelledTrips: tripMetrics.cancelled,
                 ordersPerDay,
                 revenuePerDay,
                 topTransporters,
+                topRoutes,
                 orderStatusDistribution,
+                paymentStatusDistribution,
+                tripStatusDistribution,
+                ticketCategoryDistribution,
+                ticketPriorityDistribution,
+                resolvedTicketsTrend,
+                managerResolvedTickets,
+                managerOpenTicketLoad,
+                managerStatusDistribution,
                 fleetUtilization,
                 newCustomersPerMonth,
                 truckTypes: mostRequestedTruckTypes,
@@ -166,7 +302,7 @@ const getBidCountForOrder = async (orderId) => {
 const getAllUsers = async (role, filters = {}) => {
     const { search, sort = 'date', page, limit } = filters;
 
-    if (!['customer', 'transporter', 'driver'].includes(role.toLowerCase())) {
+    if (!['customer', 'transporter'].includes(role.toLowerCase())) {
         throw new AppError(400, "ValidationError", "Invalid role specified", "ERR_VALIDATION");
     }
 
@@ -174,11 +310,15 @@ const getAllUsers = async (role, filters = {}) => {
     let sortOptions = {};
 
     if (role.toLowerCase() === 'customer') {
-        // $text search uses the text index (O(log n)) vs $regex (O(n) collection scan)
+        // Search filter for customers
         if (search) {
-            query = { $text: { $search: search } };
-            // When using $text, sort by relevance unless user picks a specific sort
-            if (sort === 'date') sortOptions = { score: { $meta: 'textScore' } };
+            query = {
+                $or: [
+                    { firstName: { $regex: search, $options: 'i' } },
+                    { lastName: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } }
+                ]
+            };
         }
 
         // Sort options for customers
@@ -216,11 +356,15 @@ const getAllUsers = async (role, filters = {}) => {
         }
 
         return formattedUsers;
-    } else if (role.toLowerCase() === 'transporter') {
-        // $text search uses the text index (O(log n)) vs $regex (O(n) collection scan)
+    } else {
+        // Search filter for transporters
         if (search) {
-            query = { $text: { $search: search } };
-            if (sort === 'date') sortOptions = { score: { $meta: 'textScore' } };
+            query = {
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } }
+                ]
+            };
         }
 
         // Sort options for transporters
@@ -257,53 +401,25 @@ const getAllUsers = async (role, filters = {}) => {
         }
 
         return formattedUsers;
-    } else if (role.toLowerCase() === 'driver') {
-        // $text search uses the text index (O(log n)) vs $regex (O(n) collection scan)
-        if (search) {
-            query = { $text: { $search: search } };
-            if (sort === 'date') sortOptions = { score: { $meta: 'textScore' } };
-        }
-        switch (sort) {
-            case 'name': sortOptions = { firstName: 1, lastName: 1 }; break;
-            case 'id': sortOptions = { _id: 1 }; break;
-            default: sortOptions = { createdAt: -1 };
-        }
-        const driverResult = await adminRepo.getAllDrivers(query, sortOptions, { page, limit });
-        const drivers = Array.isArray(driverResult) ? driverResult : driverResult.items;
-        const formattedDrivers = drivers.map(d => ({
-            _id: d._id,
-            driver_id: d._id,
-            first_name: d.firstName,
-            last_name: d.lastName,
-            email: d.email,
-            phone: d.phone,
-            licenseNumber: d.licenseNumber,
-            verificationStatus: d.verificationStatus,
-            status: d.status,
-            transporter: d.transporter_id,
-            createdAt: d.createdAt,
-        }));
-        if (!Array.isArray(driverResult)) {
-            return { items: formattedDrivers, pagination: driverResult.pagination };
-        }
-        return formattedDrivers;
     }
 };
 
 const deleteUser = async (role, userId) => {
-    if (!['customer', 'transporter', 'driver'].includes(role.toLowerCase())) {
+    if (!['customer', 'transporter'].includes(role.toLowerCase())) {
         throw new AppError(400, "ValidationError", "Invalid role specified", "ERR_VALIDATION");
     }
 
+    let result;
     if (role.toLowerCase() === 'customer') {
-        const result = await adminRepo.deleteCustomerById(userId);
-        if (!result) throw new AppError(404, "NotFound", "Customer not found", "ERR_NOT_FOUND");
-    } else if (role.toLowerCase() === 'transporter') {
-        const result = await adminRepo.deleteTransporterById(userId);
-        if (!result) throw new AppError(404, "NotFound", "Transporter not found", "ERR_NOT_FOUND");
+        result = await adminRepo.deleteCustomerById(userId);
+        if (!result) {
+            throw new AppError(404, "NotFound", "Customer not found", "ERR_NOT_FOUND");
+        }
     } else {
-        const result = await adminRepo.deleteDriverById(userId);
-        if (!result) throw new AppError(404, "NotFound", "Driver not found", "ERR_NOT_FOUND");
+        result = await adminRepo.deleteTransporterById(userId);
+        if (!result) {
+            throw new AppError(404, "NotFound", "Transporter not found", "ERR_NOT_FOUND");
+        }
     }
 
     return { message: `${role} deleted successfully` };
@@ -332,6 +448,176 @@ const getTicketsOverview = async () => {
         adminRepo.getTicketStats()
     ]);
     return { tickets, stats };
+};
+
+const getTicketDetail = async (ticketId) => {
+    const ticket = await adminRepo.getTicketById(ticketId);
+    if (!ticket) {
+        throw new AppError(404, 'NotFound', 'Ticket not found', 'ERR_NOT_FOUND');
+    }
+
+    const ticketData = { ...ticket };
+    if (ticketData.orderId) {
+        const order = await adminRepo.getOrderById(ticketData.orderId);
+        if (order) {
+            ticketData.orderDetails = {
+                _id: order._id,
+                pickup: order.pickup,
+                delivery: order.delivery,
+                status: order.status,
+                goods_type: order.goods_type,
+                weight: order.weight,
+                truck_type: order.truck_type,
+                max_price: order.max_price,
+                final_price: order.final_price,
+                scheduled_at: order.scheduled_at,
+                customer: order.customer_id
+                    ? {
+                        name: `${order.customer_id.firstName || ''} ${order.customer_id.lastName || ''}`.trim(),
+                        email: order.customer_id.email,
+                        phone: order.customer_id.phone,
+                    }
+                    : null,
+                transporter: order.assigned_transporter_id
+                    ? {
+                        name: order.assigned_transporter_id.name,
+                        email: order.assigned_transporter_id.email,
+                        contact: order.assigned_transporter_id.primary_contact,
+                    }
+                    : null,
+            };
+        }
+    }
+
+    return ticketData;
+};
+
+const replyToTicket = async (ticketId, text) => {
+    if (!text || !text.trim()) {
+        throw new AppError(400, 'ValidationError', 'Reply text is required', 'ERR_VALIDATION');
+    }
+
+    return ticketService.addManagerReply(ticketId, text.trim(), 'Admin', null);
+};
+
+const updateTicketStatus = async (ticketId, status) => {
+    const allowedStatuses = ['open', 'in_progress', 'closed'];
+    if (!allowedStatuses.includes(status)) {
+        throw new AppError(400, 'ValidationError', 'Invalid ticket status', 'ERR_VALIDATION');
+    }
+
+    return ticketService.updateTicketStatus(ticketId, status, null);
+};
+
+const getVerificationQueue = async () => {
+    return managerService.getVerificationQueue(null, { includeAllStatuses: true });
+};
+
+const approveVerificationDocument = async (entityId, entityType, docType) => {
+    return managerService.approveDocument(entityId, entityType || 'transporter', docType, null);
+};
+
+const rejectVerificationDocument = async (entityId, entityType, docType, note) => {
+    if (!note || !note.trim()) {
+        throw new AppError(400, 'ValidationError', 'Rejection reason is required', 'ERR_VALIDATION');
+    }
+
+    return managerService.rejectDocument(entityId, entityType || 'transporter', docType, note.trim(), null);
+};
+
+const getAllTrips = async (filters = {}) => {
+    const { status, transporterId, driverId, search, page, limit, sort = 'date' } = filters;
+    const query = {};
+    let sortOptions = { createdAt: -1 };
+
+    if (status) {
+        query.status = status;
+    }
+
+    if (transporterId && mongoose.Types.ObjectId.isValid(transporterId)) {
+        query.transporter_id = new mongoose.Types.ObjectId(transporterId);
+    }
+
+    if (driverId && mongoose.Types.ObjectId.isValid(driverId)) {
+        query.assigned_driver_id = new mongoose.Types.ObjectId(driverId);
+    }
+
+    if (sort === 'start_time') {
+        sortOptions = { planned_start_at: -1, createdAt: -1 };
+    }
+
+    if (search) {
+        const regex = new RegExp(escapeRegex(search), 'i');
+        const orConditions = [
+            { 'stops.address.city': regex },
+            { status: regex },
+        ];
+
+        if (mongoose.Types.ObjectId.isValid(search)) {
+            orConditions.push({ _id: new mongoose.Types.ObjectId(search) });
+        }
+
+        query.$or = orConditions;
+    }
+
+    return adminRepo.getAllTrips(query, sortOptions, { page, limit });
+};
+
+const getTripDetail = async (tripId) => {
+    const trip = await adminRepo.getTripByIdDetailed(tripId);
+    if (!trip) {
+        throw new AppError(404, 'NotFound', 'Trip not found', 'ERR_NOT_FOUND');
+    }
+    return trip;
+};
+
+const getAllPayments = async (filters = {}) => {
+    const { status, paymentType, search, page, limit, sort = 'date' } = filters;
+    const query = {};
+    let sortOptions = { createdAt: -1 };
+
+    if (status) {
+        query.status = status;
+    }
+
+    if (paymentType) {
+        query.payment_type = paymentType;
+    }
+
+    if (sort === 'amount_desc') sortOptions = { amount: -1, createdAt: -1 };
+    if (sort === 'amount_asc') sortOptions = { amount: 1, createdAt: -1 };
+
+    if (search) {
+        const regex = new RegExp(escapeRegex(search), 'i');
+        const orConditions = [
+            { razorpay_order_id: regex },
+            { razorpay_payment_id: regex },
+        ];
+
+        if (mongoose.Types.ObjectId.isValid(search)) {
+            const oid = new mongoose.Types.ObjectId(search);
+            orConditions.push({ _id: oid }, { order_id: oid }, { customer_id: oid });
+        }
+
+        query.$or = orConditions;
+    }
+
+    const paymentsResult = await adminRepo.getAllPayments(query, sortOptions, { page, limit });
+    const stats = await adminRepo.getPaymentStats();
+
+    return {
+        payments: paymentsResult.items || paymentsResult,
+        pagination: paymentsResult.pagination,
+        stats,
+    };
+};
+
+const getPaymentDetail = async (paymentId) => {
+    const payment = await adminRepo.getPaymentById(paymentId);
+    if (!payment) {
+        throw new AppError(404, 'NotFound', 'Payment not found', 'ERR_NOT_FOUND');
+    }
+    return payment;
 };
 
 // Cashouts Overview
@@ -378,15 +664,56 @@ const getAllCashouts = async (filters = {}) => {
     return { cashouts: cashoutsResult.items || cashoutsResult, pagination: cashoutsResult.pagination, stats };
 };
 
+const updateCashoutStatus = async (cashoutId, { status, note, razorpayPayoutId } = {}) => {
+    const allowedStatuses = ['Pending', 'Processing', 'Processed', 'Rejected'];
+    if (!allowedStatuses.includes(status)) {
+        throw new AppError(400, 'ValidationError', 'Invalid cashout status', 'ERR_VALIDATION');
+    }
+
+    const cashout = await adminRepo.getCashoutById(cashoutId);
+    if (!cashout) {
+        throw new AppError(404, 'NotFound', 'Cashout request not found', 'ERR_NOT_FOUND');
+    }
+
+    const transitions = {
+        Pending: ['Pending', 'Processing', 'Processed', 'Rejected'],
+        Processing: ['Processing', 'Processed', 'Rejected'],
+        Processed: ['Processed'],
+        Rejected: ['Rejected'],
+    };
+
+    const current = cashout.status;
+    if (!transitions[current]?.includes(status)) {
+        throw new AppError(400, 'ValidationError', `Invalid status transition: ${current} -> ${status}`, 'ERR_INVALID_OPERATION');
+    }
+
+    if (current !== 'Rejected' && status === 'Rejected') {
+        const transporterId = cashout.transporter_id?._id || cashout.transporter_id;
+        const wallet = await walletRepo.findOrCreateWallet(transporterId);
+        await walletRepo.creditWallet(
+            wallet._id,
+            transporterId,
+            cashout.requested_amount,
+            cashout._id,
+            `Cashout #${cashout._id} rejected by admin${note ? `: ${note}` : ''}`
+        );
+    }
+
+    const extras = {
+        admin_note: note?.trim() || null,
+    };
+    if (status === 'Processed' && razorpayPayoutId) {
+        extras.razorpay_payout_id = razorpayPayoutId;
+    }
+
+    return adminRepo.updateCashoutStatus(cashoutId, status, extras);
+};
+
 // Individual User Detail
 const getUserDetail = async (role, userId) => {
     if (role === 'customer') {
         const detail = await adminRepo.getCustomerDetail(userId);
         if (!detail) throw new AppError(404, 'NotFound', 'Customer not found', 'ERR_NOT_FOUND');
-        return detail;
-    } else if (role === 'driver') {
-        const detail = await adminRepo.getDriverDetail(userId);
-        if (!detail) throw new AppError(404, 'NotFound', 'Driver not found', 'ERR_NOT_FOUND');
         return detail;
     } else {
         const detail = await adminRepo.getTransporterDetail(userId);
@@ -415,7 +742,24 @@ export default {
 
     // Tickets
     getTicketsOverview,
+    getTicketDetail,
+    replyToTicket,
+    updateTicketStatus,
+
+    // Verification
+    getVerificationQueue,
+    approveVerificationDocument,
+    rejectVerificationDocument,
+
+    // Trips
+    getAllTrips,
+    getTripDetail,
+
+    // Payments
+    getAllPayments,
+    getPaymentDetail,
 
     // Cashouts
-    getAllCashouts
+    getAllCashouts,
+    updateCashoutStatus,
 };

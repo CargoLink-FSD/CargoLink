@@ -1,0 +1,79 @@
+.admxco-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.admxco-btn {
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admxco-btn-neutral {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.admxco-btn-success {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.admxco-btn-danger {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.admxco-done {
+  color: #15803d;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+
+.admxco-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 1200;
+}
+
+.admxco-modal {
+  width: min(520px, calc(100vw - 24px));
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  padding: 18px;
+}
+
+.admxco-modal-title {
+  margin: 0;
+  color: #0f172a;
+}
+
+.admxco-modal-text {
+  margin: 8px 0 0;
+  color: #475569;
+}
+
+.admxco-modal-input {
+  width: 100%;
+  margin-top: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.admxco-modal-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

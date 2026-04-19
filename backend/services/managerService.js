@@ -5,9 +5,10 @@ import { AppError, logger, sendMail } from '../utils/misc.js';
 
 // ─── Verification Queue (combined: transporters + drivers) ─────────
 
-const getVerificationQueue = async (managerId = null) => {
-    const transporters = await transporterRepo.getTransportersForVerification();
-    const drivers = await driverRepo.getDriversForVerification();
+const getVerificationQueue = async (managerId = null, options = {}) => {
+    const { includeAllStatuses = false } = options;
+    const transporters = await transporterRepo.getTransportersForVerification(includeAllStatuses);
+    const drivers = await driverRepo.getDriversForVerification(includeAllStatuses);
 
     // Format into a unified list
     const queue = [];

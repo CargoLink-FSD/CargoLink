@@ -15,6 +15,7 @@ adminRouter.get("/dashboard/stats", cacheResponse({ domain: 'admin', ttlSeconds:
 adminRouter.get("/dashboard/orders-per-day", cacheResponse({ domain: 'admin', ttlSeconds: 30 }), adminController.getOrdersPerDay); // Get orders per day
 adminRouter.get("/dashboard/revenue-per-day", cacheResponse({ domain: 'admin', ttlSeconds: 30 }), adminController.getRevenuePerDay); // Get revenue per day
 adminRouter.get("/dashboard/top-transporters", cacheResponse({ domain: 'admin', ttlSeconds: 30 }), adminController.getTopTransporters); // Get top transporters
+adminRouter.get("/dashboard/top-routes", cacheResponse({ domain: 'admin', ttlSeconds: 30 }), adminController.getTopRoutes); // Get top pickup/drop routes
 adminRouter.get("/dashboard/order-status", cacheResponse({ domain: 'admin', ttlSeconds: 30 }), adminController.getOrderStatusDistribution); // Get order status distribution
 adminRouter.get("/dashboard/fleet-utilization", cacheResponse({ domain: 'admin', ttlSeconds: 30 }), adminController.getFleetUtilization); // Get fleet utilization
 adminRouter.get("/dashboard/new-customers", cacheResponse({ domain: 'admin', ttlSeconds: 30 }), adminController.getNewCustomersPerMonth); // Get new customers per month
@@ -46,11 +47,30 @@ adminRouter.get("/fleet", cacheResponse({ domain: 'admin', ttlSeconds: 30 }), ad
 // Tickets Overview Routes
 // ============================================
 adminRouter.get("/tickets", cacheResponse({ domain: 'admin', ttlSeconds: 20 }), adminController.getTicketsOverview); // Get all support tickets (read-only)
+adminRouter.get("/tickets/:id", cacheResponse({ domain: 'admin', ttlSeconds: 15 }), adminController.getTicketDetail); // Get ticket detail with conversation
+
+// ============================================
+// Verification Oversight Routes
+// ============================================
+adminRouter.get("/verification-queue", adminController.getVerificationQueue); // Get all verification docs without stale cache
+
+// ============================================
+// Trips Oversight Routes
+// ============================================
+adminRouter.get("/trips", cacheResponse({ domain: 'admin', ttlSeconds: 20 }), adminController.getAllTrips); // Get all trips with filters
+adminRouter.get("/trips/:tripId", cacheResponse({ domain: 'admin', ttlSeconds: 15 }), adminController.getTripDetail); // Get trip detail by ID
+
+// ============================================
+// Payments Oversight Routes
+// ============================================
+adminRouter.get("/payments", cacheResponse({ domain: 'admin', ttlSeconds: 20 }), adminController.getAllPayments); // Get all payment records with filters
+adminRouter.get("/payments/:paymentId", cacheResponse({ domain: 'admin', ttlSeconds: 20 }), adminController.getPaymentDetail); // Get payment detail by ID
 
 // ============================================
 // Cashouts Overview Routes
 // ============================================
 adminRouter.get("/cashouts", cacheResponse({ domain: 'admin', ttlSeconds: 20 }), adminController.getAllCashouts);
+adminRouter.patch("/cashouts/:cashoutId/status", invalidateCacheOnSuccess(['admin', 'wallets']), adminController.updateCashoutStatus); // Process/reject cashout request
 
 // ============================================
 // Manager Management Routes

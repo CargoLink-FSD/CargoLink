@@ -61,6 +61,8 @@ import Dashboard from '../pages/admin/Dashboard';
 import FleetOverview from '../pages/admin/FleetOverview';
 import TicketsOverview from '../pages/admin/TicketsOverview';
 import AdminCashouts from '../pages/admin/AdminCashouts';
+import AdminTrips from '../pages/admin/AdminTrips';
+import AdminPayments from '../pages/admin/AdminPayments';
 
 
 
@@ -169,6 +171,8 @@ export default function AppRoutes() {
         <Route path="/admin/users" element={<UserManagement />} />
         <Route path="/admin/fleet" element={<FleetOverview />} />
         <Route path="/admin/tickets" element={<TicketsOverview />} />
+        <Route path="/admin/trips" element={<AdminTrips />} />
+        <Route path="/admin/payments" element={<AdminPayments />} />
         <Route path="/admin/managers" element={<ManagerManagement />} />
         <Route path="/admin/cashouts" element={<AdminCashouts />} />
       </Route>

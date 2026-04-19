@@ -129,6 +129,8 @@ export default function Header() {
                 <Link className="underline-link" to="/admin/orders" onClick={handleLinkClick}>Orders</Link>
                 <Link className="underline-link" to="/admin/fleet" onClick={handleLinkClick}>Fleet</Link>
                 <Link className="underline-link" to="/admin/tickets" onClick={handleLinkClick}>Tickets</Link>
+                <Link className="underline-link" to="/admin/trips" onClick={handleLinkClick}>Trips</Link>
+                <Link className="underline-link" to="/admin/payments" onClick={handleLinkClick}>Payments</Link>
                 <Link className="underline-link" to="/admin/managers" onClick={handleLinkClick}>Managers</Link>
                 <Link className="underline-link" to="/admin/cashouts" onClick={handleLinkClick}>Cashouts</Link>
                 <div className="profile-dropdown">

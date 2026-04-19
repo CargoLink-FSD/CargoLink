@@ -4,10 +4,14 @@ import mongoose from "mongoose";
 import Fleet from "../models/fleet.js";
 import { AppError } from "../utils/misc.js";
 
+const getDashboardOptions = (req) => ({
+  range: req?.query?.range,
+});
+
 // Dashboard Analytics
 const getDashboardStats = async (req, res, next) => {
   try {
-    const stats = await adminService.getDashboardStats();
+    const stats = await adminService.getDashboardStats(getDashboardOptions(req));
 
     res.status(200).json({
       success: true,
@@ -21,7 +25,7 @@ const getDashboardStats = async (req, res, next) => {
 
 const getOrdersPerDay = async (req, res, next) => {
   try {
-    const stats = await adminService.getDashboardStats();
+    const stats = await adminService.getDashboardStats(getDashboardOptions(req));
 
     res.status(200).json({
       success: true,
@@ -35,7 +39,7 @@ const getOrdersPerDay = async (req, res, next) => {
 
 const getRevenuePerDay = async (req, res, next) => {
   try {
-    const stats = await adminService.getDashboardStats();
+    const stats = await adminService.getDashboardStats(getDashboardOptions(req));
 
     res.status(200).json({
       success: true,
@@ -49,7 +53,7 @@ const getRevenuePerDay = async (req, res, next) => {
 
 const getTopTransporters = async (req, res, next) => {
   try {
-    const stats = await adminService.getDashboardStats();
+    const stats = await adminService.getDashboardStats(getDashboardOptions(req));
 
     res.status(200).json({
       success: true,
@@ -61,9 +65,23 @@ const getTopTransporters = async (req, res, next) => {
   }
 };
 
+const getTopRoutes = async (req, res, next) => {
+  try {
+    const stats = await adminService.getDashboardStats(getDashboardOptions(req));
+
+    res.status(200).json({
+      success: true,
+      data: stats.topRoutes,
+      message: "Top routes fetched successfully"
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const getOrderStatusDistribution = async (req, res, next) => {
   try {
-    const stats = await adminService.getDashboardStats();
+    const stats = await adminService.getDashboardStats(getDashboardOptions(req));
 
     res.status(200).json({
       success: true,
@@ -77,7 +95,7 @@ const getOrderStatusDistribution = async (req, res, next) => {
 
 const getFleetUtilization = async (req, res, next) => {
   try {
-    const stats = await adminService.getDashboardStats();
+    const stats = await adminService.getDashboardStats(getDashboardOptions(req));
 
     res.status(200).json({
       success: true,
@@ -91,7 +109,7 @@ const getFleetUtilization = async (req, res, next) => {
 
 const getNewCustomersPerMonth = async (req, res, next) => {
   try {
-    const stats = await adminService.getDashboardStats();
+    const stats = await adminService.getDashboardStats(getDashboardOptions(req));
 
     res.status(200).json({
       success: true,
@@ -105,7 +123,7 @@ const getNewCustomersPerMonth = async (req, res, next) => {
 
 const getMostRequestedTruckTypes = async (req, res, next) => {
   try {
-    const stats = await adminService.getDashboardStats();
+    const stats = await adminService.getDashboardStats(getDashboardOptions(req));
 
     res.status(200).json({
       success: true,
@@ -119,7 +137,7 @@ const getMostRequestedTruckTypes = async (req, res, next) => {
 
 const getPendingVsCompletedOrders = async (req, res, next) => {
   try {
-    const stats = await adminService.getDashboardStats();
+    const stats = await adminService.getDashboardStats(getDashboardOptions(req));
 
     res.status(200).json({
       success: true,
@@ -133,7 +151,7 @@ const getPendingVsCompletedOrders = async (req, res, next) => {
 
 const getAverageBidAmount = async (req, res, next) => {
   try {
-    const stats = await adminService.getDashboardStats();
+    const stats = await adminService.getDashboardStats(getDashboardOptions(req));
 
     res.status(200).json({
       success: true,
@@ -397,12 +415,163 @@ const getTicketsOverview = async (req, res, next) => {
   }
 };
 
+const getTicketDetail = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError(400, "ValidationError", "Invalid ticket ID", "ERR_VALIDATION");
+    }
+
+    const data = await adminService.getTicketDetail(id);
+    res.status(200).json({ success: true, data, message: "Ticket detail fetched successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const replyToTicket = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { text } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError(400, "ValidationError", "Invalid ticket ID", "ERR_VALIDATION");
+    }
+
+    const data = await adminService.replyToTicket(id, text);
+    res.status(200).json({ success: true, data, message: "Reply sent successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateTicketStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError(400, "ValidationError", "Invalid ticket ID", "ERR_VALIDATION");
+    }
+
+    const data = await adminService.updateTicketStatus(id, status);
+    res.status(200).json({ success: true, data, message: "Ticket status updated successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getVerificationQueue = async (req, res, next) => {
+  try {
+    const data = await adminService.getVerificationQueue();
+    res.status(200).json({ success: true, data, message: "Verification queue fetched successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const approveVerificationDocument = async (req, res, next) => {
+  try {
+    const { id, docType } = req.params;
+    const { entityType } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError(400, "ValidationError", "Invalid entity ID", "ERR_VALIDATION");
+    }
+
+    const data = await adminService.approveVerificationDocument(id, entityType || 'transporter', docType);
+    res.status(200).json({ success: true, data, message: "Document approved successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const rejectVerificationDocument = async (req, res, next) => {
+  try {
+    const { id, docType } = req.params;
+    const { entityType, note } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError(400, "ValidationError", "Invalid entity ID", "ERR_VALIDATION");
+    }
+
+    const data = await adminService.rejectVerificationDocument(id, entityType || 'transporter', docType, note);
+    res.status(200).json({ success: true, data, message: "Document rejected successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getAllTrips = async (req, res, next) => {
+  try {
+    const { status, transporterId, driverId, search, page, limit, sort } = req.query;
+    const data = await adminService.getAllTrips({ status, transporterId, driverId, search, page, limit, sort });
+    res.status(200).json({ success: true, data, message: "Trips fetched successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getTripDetail = async (req, res, next) => {
+  try {
+    const { tripId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(tripId)) {
+      throw new AppError(400, "ValidationError", "Invalid trip ID", "ERR_VALIDATION");
+    }
+
+    const data = await adminService.getTripDetail(tripId);
+    res.status(200).json({ success: true, data, message: "Trip detail fetched successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getAllPayments = async (req, res, next) => {
+  try {
+    const { status, paymentType, search, page, limit, sort } = req.query;
+    const data = await adminService.getAllPayments({ status, paymentType, search, page, limit, sort });
+    res.status(200).json({ success: true, data, message: "Payments fetched successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getPaymentDetail = async (req, res, next) => {
+  try {
+    const { paymentId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(paymentId)) {
+      throw new AppError(400, "ValidationError", "Invalid payment ID", "ERR_VALIDATION");
+    }
+
+    const data = await adminService.getPaymentDetail(paymentId);
+    res.status(200).json({ success: true, data, message: "Payment detail fetched successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // Cashouts Overview
 const getAllCashouts = async (req, res, next) => {
   try {
     const { status, search, page, limit, sort } = req.query;
     const data = await adminService.getAllCashouts({ status, search, page, limit, sort });
     res.status(200).json({ success: true, data, message: "Cashouts fetched successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateCashoutStatus = async (req, res, next) => {
+  try {
+    const { cashoutId } = req.params;
+    const { status, note, razorpayPayoutId } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(cashoutId)) {
+      throw new AppError(400, "ValidationError", "Invalid cashout ID", "ERR_VALIDATION");
+    }
+
+    const data = await adminService.updateCashoutStatus(cashoutId, { status, note, razorpayPayoutId });
+    res.status(200).json({ success: true, data, message: "Cashout status updated successfully" });
   } catch (err) {
     next(err);
   }
@@ -668,6 +837,7 @@ export default {
   getOrdersPerDay,
   getRevenuePerDay,
   getTopTransporters,
+  getTopRoutes,
   getOrderStatusDistribution,
   getFleetUtilization,
   getNewCustomersPerMonth,
@@ -691,9 +861,26 @@ export default {
 
   // Tickets
   getTicketsOverview,
+  getTicketDetail,
+  replyToTicket,
+  updateTicketStatus,
+
+  // Verification
+  getVerificationQueue,
+  approveVerificationDocument,
+  rejectVerificationDocument,
+
+  // Trips
+  getAllTrips,
+  getTripDetail,
+
+  // Payments
+  getAllPayments,
+  getPaymentDetail,
 
   // Cashouts
   getAllCashouts,
+  updateCashoutStatus,
 
   // Manager Management
   getAllManagers,
@@ -709,3 +896,4 @@ export default {
   resetThresholdAlert,
   getTicketVolumeByCategory,
 };
+
