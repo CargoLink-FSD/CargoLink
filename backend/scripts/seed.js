@@ -47,7 +47,7 @@ import Wallet from "../models/wallet.js";
 import WalletTransaction from "../models/walletTransaction.js";
 import CashoutRequest from "../models/cashoutRequest.js";
 
-const MONGO_URI ="mongodb://127.0.0.1:27017/CargoLink_V2";
+const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/CargoLink";
 const DEFAULT_PASSWORD = "Password@123";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -659,9 +659,13 @@ function buildManager() {
   return {
     _id: oid(),
     name: "Default Manager",
-    email: "manager@cargolink.test",
-    password: hashedPw,
-    categories: ["Shipment Issue", "Payment Issue", "Transporter Complaint", "Customer Complaint", "Technical Issue", "Account Issue", "Other"],
+    email: "manager@cargolink.com",
+    password: "manager@123",
+    categories: [
+      "Shipment Issue", "Payment Issue", "Transporter Complaint",
+      "Customer Complaint", "Driver Complaint", "Technical Issue",
+      "Account Issue", "Other"
+    ],
     verificationCategories: ["transporter_verification", "driver_verification", "vehicle_verification"],
     status: "active",
     isDefault: true,
@@ -829,7 +833,7 @@ async function seed() {
 
   // Manager (use save to trigger password hash via pre-save hook — already hashed so insertMany is fine)
   inserted.manager = await Manager.create(manager);
-  console.log(`   ✅ 1 Manager (manager@cargolink.test / ${DEFAULT_PASSWORD})`);
+  console.log(`   ✅ 1 Manager (manager@cargolink.com / ${DEFAULT_PASSWORD})`);
 
   // Invitation code for new managers
   const invCode = await InvitationCode.create({
@@ -844,6 +848,15 @@ async function seed() {
 
   inserted.tickets = await Ticket.insertMany(tickets);
   console.log(`   ✅ ${inserted.tickets.length} Tickets`);
+
+  // Update manager's openTicketCount to match seeded open/in_progress tickets
+  const openCount = tickets.filter(t => t.status === 'open' || t.status === 'in_progress').length;
+  const resolvedCount = tickets.filter(t => t.status === 'closed').length;
+  await Manager.updateOne(
+    { _id: inserted.manager._id },
+    { $set: { openTicketCount: openCount, totalResolved: resolvedCount } }
+  );
+  console.log(`   ✅ Manager openTicketCount set to ${openCount}, totalResolved to ${resolvedCount}`);
 
   inserted.driverApps = await DriverApplication.insertMany(driverApps);
   console.log(`   ✅ ${inserted.driverApps.length} Driver Applications`);
@@ -954,7 +967,7 @@ async function seed() {
   
   🔑 Default credentials:
      All users:     Password@123
-     Manager:       manager@cargolink.test / Password@123
+     Manager:       manager@cargolink.com / manager@123
      Customers:     customer1@cargolink.test  …  customer10@cargolink.test
      Transporters:  transporter1@cargolink.test  …  transporter10@cargolink.test
      Drivers:       driver1@cargolink.test  …  driver20@cargolink.test
