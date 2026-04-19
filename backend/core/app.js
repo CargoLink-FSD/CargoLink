@@ -148,13 +148,12 @@ app.use(requestLogger);
 if (!process.env.GCS_BUCKET) {
   app.use('/uploads', express.static(uploadsRoot));
 } else {
-  app.get('/uploads/*', (req, res) => {
-    const objectPath = req.params[0];
-    if (!objectPath) {
-      res.status(404).json({ success: false, message: 'File not found' });
-      return;
-    }
+  app.get('/uploads', (_req, res) => {
+    res.status(404).json({ success: false, message: 'File not found' });
+  });
 
+  app.get(/^\/uploads\/(.+)$/, (req, res) => {
+    const objectPath = req.params[0];
     const gcsUrl = `https://storage.googleapis.com/${process.env.GCS_BUCKET}/${objectPath}`;
     res.redirect(302, gcsUrl);
   });
