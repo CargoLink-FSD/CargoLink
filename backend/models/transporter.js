@@ -106,6 +106,8 @@ TransporterSchema.methods.updatePassword = async function (newPassword) {
 
 TransporterSchema.index({ createdAt: -1 });
 TransporterSchema.index({ verificationStatus: 1, createdAt: -1 });
+// Text index: enables $text search (O(log n)) instead of $regex (O(n) collection scan)
+TransporterSchema.index({ name: 'text', email: 'text' }, { name: 'transporter_text_search' });
 
 const transporterModel = mongoose.model("Transporter", TransporterSchema);
 export default transporterModel;

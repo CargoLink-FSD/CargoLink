@@ -109,6 +109,9 @@ DriverSchema.methods.updatePassword = async function (newPassword) {
 
 DriverSchema.index({ transporter_id: 1, status: 1 });
 DriverSchema.index({ verificationStatus: 1, createdAt: -1 });
+DriverSchema.index({ licenseNumber: 1 });
+// Text index for admin search: O(log n) instead of O(n) regex scan
+DriverSchema.index({ firstName: 'text', lastName: 'text', email: 'text' }, { name: 'driver_text_search' });
 
 const driverModel = mongoose.model("Driver", DriverSchema);
 export default driverModel;

@@ -174,15 +174,11 @@ const getAllUsers = async (role, filters = {}) => {
     let sortOptions = {};
 
     if (role.toLowerCase() === 'customer') {
-        // Search filter for customers
+        // $text search uses the text index (O(log n)) vs $regex (O(n) collection scan)
         if (search) {
-            query = {
-                $or: [
-                    { firstName: { $regex: search, $options: 'i' } },
-                    { lastName: { $regex: search, $options: 'i' } },
-                    { email: { $regex: search, $options: 'i' } }
-                ]
-            };
+            query = { $text: { $search: search } };
+            // When using $text, sort by relevance unless user picks a specific sort
+            if (sort === 'date') sortOptions = { score: { $meta: 'textScore' } };
         }
 
         // Sort options for customers
@@ -221,14 +217,10 @@ const getAllUsers = async (role, filters = {}) => {
 
         return formattedUsers;
     } else if (role.toLowerCase() === 'transporter') {
-        // Search filter for transporters
+        // $text search uses the text index (O(log n)) vs $regex (O(n) collection scan)
         if (search) {
-            query = {
-                $or: [
-                    { name: { $regex: search, $options: 'i' } },
-                    { email: { $regex: search, $options: 'i' } }
-                ]
-            };
+            query = { $text: { $search: search } };
+            if (sort === 'date') sortOptions = { score: { $meta: 'textScore' } };
         }
 
         // Sort options for transporters
@@ -266,14 +258,10 @@ const getAllUsers = async (role, filters = {}) => {
 
         return formattedUsers;
     } else if (role.toLowerCase() === 'driver') {
+        // $text search uses the text index (O(log n)) vs $regex (O(n) collection scan)
         if (search) {
-            query = {
-                $or: [
-                    { firstName: { $regex: search, $options: 'i' } },
-                    { lastName: { $regex: search, $options: 'i' } },
-                    { email: { $regex: search, $options: 'i' } }
-                ]
-            };
+            query = { $text: { $search: search } };
+            if (sort === 'date') sortOptions = { score: { $meta: 'textScore' } };
         }
         switch (sort) {
             case 'name': sortOptions = { firstName: 1, lastName: 1 }; break;

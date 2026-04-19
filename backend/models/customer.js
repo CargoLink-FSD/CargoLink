@@ -58,7 +58,10 @@ CustomerSchema.methods.updatePassword = async function (newPassword) {
   await this.save({ validateModifiedOnly: true });
 };
 
+// B-Tree index on createdAt for dashboard aggregation queries
 CustomerSchema.index({ createdAt: -1 });
+// Text index: enables $text search (O(log n)) instead of $regex (O(n) collection scan)
+CustomerSchema.index({ firstName: 'text', lastName: 'text', email: 'text' }, { name: 'customer_text_search' });
 
 const customerModel = mongoose.model("Customer", CustomerSchema);
 export default customerModel;

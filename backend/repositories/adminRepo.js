@@ -12,7 +12,11 @@ import { escapeRegex, parsePaginationParams } from '../utils/misc.js';
 
 // Dashboard Analytics Queries
 const getOrdersPerDay = async () => {
+    // $match first → uses the { createdAt: -1 } index, avoids full collection scan
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const result = await Order.aggregate([
+        { $match: { createdAt: { $gte: thirtyDaysAgo } } },
         {
             $group: {
                 _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
@@ -20,7 +24,6 @@ const getOrdersPerDay = async () => {
             }
         },
         { $sort: { _id: -1 } },
-        { $limit: 30 },
         {
             $project: {
                 order_day: "$_id",
@@ -33,8 +36,11 @@ const getOrdersPerDay = async () => {
 };
 
 const getRevenuePerDay = async () => {
+    // $match status + date first → hits { status:1, createdAt:-1 } compound index
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const result = await Order.aggregate([
-        { $match: { status: "Completed" } },
+        { $match: { status: "Completed", createdAt: { $gte: thirtyDaysAgo } } },
         {
             $group: {
                 _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
@@ -42,7 +48,6 @@ const getRevenuePerDay = async () => {
             }
         },
         { $sort: { _id: -1 } },
-        { $limit: 30 },
         {
             $project: {
                 order_day: "$_id",
@@ -124,7 +129,11 @@ const getFleetUtilization = async () => {
 };
 
 const getNewCustomersPerMonth = async () => {
+    // $match last 12 months first → hits the { createdAt: -1 } index
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
     const result = await Customer.aggregate([
+        { $match: { createdAt: { $gte: twelveMonthsAgo } } },
         {
             $group: {
                 _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
@@ -132,7 +141,6 @@ const getNewCustomersPerMonth = async () => {
             }
         },
         { $sort: { _id: -1 } },
-        { $limit: 12 },
         {
             $project: {
                 month: "$_id",
@@ -349,26 +357,21 @@ const deleteDriverById = async (driverId) => {
 };
 
 const searchCustomerIds = async (search) => {
-    const regex = new RegExp(escapeRegex(search), 'i');
-    const customers = await Customer.find({
-        $or: [
-            { firstName: { $regex: regex } },
-            { lastName: { $regex: regex } },
-            { email: { $regex: regex } },
-        ]
-    }).select('_id').limit(1000).lean();
+    // Use $text index (defined on CustomerSchema) for O(log n) search instead of O(n) regex scan
+    const customers = await Customer.find(
+        { $text: { $search: search } },
+        { score: { $meta: 'textScore' }, _id: 1 }
+    ).sort({ score: { $meta: 'textScore' } }).limit(200).lean();
 
     return customers.map((customer) => customer._id);
 };
 
 const searchTransporterIds = async (search) => {
-    const regex = new RegExp(escapeRegex(search), 'i');
-    const transporters = await Transporter.find({
-        $or: [
-            { name: { $regex: regex } },
-            { email: { $regex: regex } },
-        ]
-    }).select('_id').limit(1000).lean();
+    // Use $text index (defined on TransporterSchema) for O(log n) search instead of O(n) regex scan
+    const transporters = await Transporter.find(
+        { $text: { $search: search } },
+        { score: { $meta: 'textScore' }, _id: 1 }
+    ).sort({ score: { $meta: 'textScore' } }).limit(200).lean();
 
     return transporters.map((transporter) => transporter._id);
 };
@@ -456,17 +459,20 @@ const getPendingVerifications = async () => Transporter.countDocuments({ verific
 
 // ─── Fleet Overview ───
 const getAllFleetVehicles = async () => {
-    // Fleet vehicles are stored in a separate Fleet collection, not embedded in Transporter
+    // Hard limit of 500 to prevent Node.js memory exhaustion on large fleets
     return Fleet.find()
         .populate('transporter_id', 'name email primary_contact city state')
         .sort({ createdAt: -1 })
+        .limit(500)
         .lean();
 };
 
 // ─── Tickets Overview ───
 const getAllTickets = async () => {
+    // Hard limit of 500 to prevent loading unbounded ticket sets into memory
     return Ticket.find()
         .sort({ createdAt: -1 })
+        .limit(500)
         .lean();
 };
 

@@ -41,5 +41,11 @@ const FleetSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// Explicit schema-level indexes (do NOT also set index:true on the field — causes Mongoose duplicate index warning)
+FleetSchema.index({ transporter_id: 1, status: 1 });
+FleetSchema.index({ status: 1 });
+FleetSchema.index({ rc_status: 1 });
+FleetSchema.index({ createdAt: -1 });
+
 const Fleet = mongoose.model("Fleet", FleetSchema);
 export default Fleet;
