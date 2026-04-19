@@ -32,7 +32,16 @@ steps:
     args:
       - -ceu
       - |
-        SCOPE="${_DEPLOY_SCOPE:-auto}"
+        SCOPE="${_DEPLOY_SCOPE}"
+        if [ -z "$${SCOPE}" ]; then
+          SCOPE="auto"
+        fi
+
+        TARGET_COMMIT="${COMMIT_SHA}"
+        if [ -z "$${TARGET_COMMIT}" ]; then
+          TARGET_COMMIT="HEAD"
+        fi
+
         BACKEND_CHANGED=0
         FRONTEND_CHANGED=0
 
@@ -43,9 +52,22 @@ steps:
         elif [ "$${SCOPE}" = "both" ]; then
           BACKEND_CHANGED=1
           FRONTEND_CHANGED=1
-        elif [ "$${SCOPE}" = "auto" ] || [ -z "$${SCOPE}" ]; then
-          CHANGED_FILES="$$(git show --name-only --pretty='' "${COMMIT_SHA:-HEAD}" | sed '/^$/d' || true)"
+        elif [ "$${SCOPE}" = "auto" ]; then
+          CHANGED_FILES="$$(git show --name-only --pretty='' "$${TARGET_COMMIT}" 2>/dev/null | sed '/^$/d' || true)"
+
+          # Fallback for odd trigger contexts where COMMIT_SHA cannot be resolved.
+          if [ -z "$${CHANGED_FILES}" ] && [ "$${TARGET_COMMIT}" != "HEAD" ]; then
+            CHANGED_FILES="$$(git show --name-only --pretty='' HEAD 2>/dev/null | sed '/^$/d' || true)"
+          fi
+
           echo "$${CHANGED_FILES}" > /workspace/.changed-files
+          echo "Target commit: $${TARGET_COMMIT}"
+          echo "Changed files detected:"
+          if [ -n "$${CHANGED_FILES}" ]; then
+            echo "$${CHANGED_FILES}"
+          else
+            echo "(none)"
+          fi
 
           if [ -z "$${CHANGED_FILES}" ]; then
             BACKEND_CHANGED=1
@@ -168,10 +190,15 @@ steps:
   - id: fetch-redis-ip
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
-    waitFor: ["-"]
+    waitFor: ["detect-changes"]
     args:
       - -ceu
       - |
+        if [ "$$(cat /workspace/.backend-changed 2>/dev/null || echo 0)" != "1" ]; then
+          echo "Skipping Redis lookup (no backend changes)."
+          exit 0
+        fi
+
         REDIS_IP=$$(gcloud redis instances describe cargolink-redis \
           --region=${_REGION} --format="get(host)" 2>/dev/null || echo "")
         echo -n "$${REDIS_IP}" > /workspace/.redis-ip
@@ -185,7 +212,7 @@ steps:
   - id: deploy-backend
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
-    waitFor: ["push-backend", "backend-test"]
+    waitFor: ["push-backend", "backend-test", "fetch-redis-ip"]
     args:
       - -ceu
       - |
