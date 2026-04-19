@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNotification } from '../../context/NotificationContext';
 import http from '../../api/http';
 import Header from '../../components/common/Header';
@@ -9,9 +9,11 @@ const STATUS_COLOR = {
     Available: 'green', Assigned: 'blue', 'In Maintenance': 'orange', Unavailable: 'gray',
 };
 const RC_COLOR = { approved: 'green', pending: 'orange', rejected: 'red' };
+const PAGE_SIZE = 20;
 
 export default function FleetOverview() {
     const { showNotification } = useNotification();
+    const listStartRef = useRef(null);
     const [vehicles, setVehicles] = useState([]);
     const [stats, setStats] = useState({});
     const [loading, setLoading] = useState(true);
@@ -19,6 +21,7 @@ export default function FleetOverview() {
     const [statusFilter, setStatusFilter] = useState('');
     const [rcFilter, setRcFilter] = useState('');
     const [typeFilter, setTypeFilter] = useState('');
+    const [page, setPage] = useState(1);
 
     useEffect(() => { fetchFleet(); }, []);
 
@@ -35,6 +38,7 @@ export default function FleetOverview() {
 
             setVehicles(nextVehicles);
             setStats(payload.stats || {});
+            setPage(1);
         } catch {
             showNotification({ message: 'Failed to load fleet data', type: 'error' });
         } finally {
@@ -44,21 +48,51 @@ export default function FleetOverview() {
 
     const truckTypes = [...new Set(vehicles.map(v => v.truck_type).filter(Boolean))];
 
-    const filtered = vehicles.filter(v => {
-        if (statusFilter && v.status !== statusFilter) return false;
-        if (rcFilter && v.rc_status !== rcFilter) return false;
-        if (typeFilter && v.truck_type !== typeFilter) return false;
-        if (search) {
-            const s = search.toLowerCase();
-            return (
-                v.name?.toLowerCase().includes(s) ||
-                v.registration?.toLowerCase().includes(s) ||
-                v.transporter_name?.toLowerCase().includes(s) ||
-                v.truck_type?.toLowerCase().includes(s)
-            );
+    const filtered = useMemo(() => (
+        vehicles.filter((v) => {
+            if (statusFilter && v.status !== statusFilter) return false;
+            if (rcFilter && v.rc_status !== rcFilter) return false;
+            if (typeFilter && v.truck_type !== typeFilter) return false;
+            if (search) {
+                const s = search.toLowerCase();
+                return (
+                    v.name?.toLowerCase().includes(s) ||
+                    v.registration?.toLowerCase().includes(s) ||
+                    v.transporter_name?.toLowerCase().includes(s) ||
+                    v.truck_type?.toLowerCase().includes(s)
+                );
+            }
+            return true;
+        })
+    ), [vehicles, statusFilter, rcFilter, typeFilter, search]);
+
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const safePage = Math.min(page, totalPages);
+    const pagedVehicles = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+    useEffect(() => {
+        setPage(1);
+    }, [search, statusFilter, rcFilter, typeFilter]);
+
+    useEffect(() => {
+        if (page > totalPages) {
+            setPage(totalPages);
         }
-        return true;
-    });
+    }, [page, totalPages]);
+
+    const scrollToListStart = () => {
+        const anchor = listStartRef.current;
+        if (!anchor) return;
+
+        const y = anchor.getBoundingClientRect().top + window.scrollY - 90;
+        window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    };
+
+    const goToPage = (nextPage) => {
+        if (nextPage === safePage) return;
+        setPage(nextPage);
+        requestAnimationFrame(scrollToListStart);
+    };
 
     if (loading) {
         return (<><Header /><div className="admin-container"><div className="adm-loading"><div className="adm-spinner" /><p>Loading fleet data...</p></div></div><Footer /></>);
@@ -115,22 +149,22 @@ export default function FleetOverview() {
                         className="adm-search-input"
                         placeholder="Search by vehicle name, reg no., transporter..."
                         value={search}
-                        onChange={e => setSearch(e.target.value)}
+                        onChange={(e) => setSearch(e.target.value)}
                     />
-                    <select className="adm-select" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+                    <select className="adm-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                         <option value="">All Status</option>
                         <option value="Available">Available</option>
                         <option value="Assigned">Assigned</option>
                         <option value="In Maintenance">In Maintenance</option>
                         <option value="Unavailable">Unavailable</option>
                     </select>
-                    <select className="adm-select" value={rcFilter} onChange={e => setRcFilter(e.target.value)}>
+                    <select className="adm-select" value={rcFilter} onChange={(e) => setRcFilter(e.target.value)}>
                         <option value="">All RC Status</option>
                         <option value="approved">Approved</option>
                         <option value="pending">Pending</option>
                         <option value="rejected">Rejected</option>
                     </select>
-                    <select className="adm-select" value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+                    <select className="adm-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
                         <option value="">All Types</option>
                         {truckTypes.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
@@ -138,7 +172,7 @@ export default function FleetOverview() {
                 </div>
 
                 {/* Table */}
-                <div className="adm-card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div ref={listStartRef} className="adm-card" style={{ padding: 0, overflow: 'hidden' }}>
                     <div className="adm-table-wrap">
                         <table className="adm-table">
                             <thead>
@@ -158,7 +192,7 @@ export default function FleetOverview() {
                                 {filtered.length === 0 ? (
                                     <tr><td colSpan={9} className="adm-empty">No vehicles found</td></tr>
                                 ) : (
-                                    filtered.map((v, i) => (
+                                    pagedVehicles.map((v, i) => (
                                         <tr key={v._id || i}>
                                             <td style={{ fontWeight: 600 }}>{v.name}</td>
                                             <td>{v.registration}</td>
@@ -186,8 +220,31 @@ export default function FleetOverview() {
                 </div>
 
                 <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: 12 }}>
-                    Showing {filtered.length} of {vehicles.length} vehicles
+                    Showing {filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1}
+                    {' '}to {Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length} vehicles
                 </p>
+
+                {filtered.length > PAGE_SIZE && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+                        <button
+                            className="adm-btn adm-btn-outline"
+                            onClick={() => goToPage(Math.max(1, safePage - 1))}
+                            disabled={safePage <= 1}
+                        >
+                            Previous
+                        </button>
+                        <span style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                            Page {safePage} of {totalPages}
+                        </span>
+                        <button
+                            className="adm-btn adm-btn-outline"
+                            onClick={() => goToPage(Math.min(totalPages, safePage + 1))}
+                            disabled={safePage >= totalPages}
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
             </div>
             <Footer />
         </>

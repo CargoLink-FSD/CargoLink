@@ -751,6 +751,33 @@ const getAllTransporters = async (query = {}, sortOptions = { createdAt: -1 }, o
     return await findQuery.lean();
 };
 
+const getAllDrivers = async (query = {}, sortOptions = { createdAt: -1 }, options = {}) => {
+    const pagination = parsePaginationParams(options, { defaultLimit: 20, maxLimit: 100 });
+    const findQuery = Driver.find(query)
+        .select('firstName lastName email phone licenseNumber status verificationStatus employment_type transporter_id createdAt')
+        .populate('transporter_id', 'name email')
+        .sort(sortOptions);
+
+    if (pagination) {
+        const [items, total] = await Promise.all([
+            findQuery.skip(pagination.skip).limit(pagination.limit).lean(),
+            Driver.countDocuments(query),
+        ]);
+
+        return {
+            items,
+            pagination: {
+                page: pagination.page,
+                limit: pagination.limit,
+                total,
+                totalPages: Math.ceil(total / pagination.limit) || 1,
+            },
+        };
+    }
+
+    return await findQuery.lean();
+};
+
 const searchCustomerIds = async (search) => {
     const regex = new RegExp(escapeRegex(search), 'i');
     const customers = await Customer.find({
@@ -784,12 +811,20 @@ const getTransporterById = async (transporterId) => {
     return await Transporter.findById(transporterId);
 };
 
+const getDriverById = async (driverId) => {
+    return await Driver.findById(driverId).populate('transporter_id', 'name email');
+};
+
 const deleteCustomerById = async (customerId) => {
     return await Customer.findByIdAndDelete(customerId);
 };
 
 const deleteTransporterById = async (transporterId) => {
     return await Transporter.findByIdAndDelete(transporterId);
+};
+
+const deleteDriverById = async (driverId) => {
+    return await Driver.findByIdAndDelete(driverId);
 };
 
 const getOrderCountByCustomer = async (customerIds = []) => {
@@ -1187,6 +1222,34 @@ const getTransporterDetail = async (transporterId) => {
     };
 };
 
+const getDriverDetail = async (driverId) => {
+    const driver = await Driver.findById(driverId)
+        .populate('transporter_id', 'name email primary_contact city state')
+        .lean();
+
+    if (!driver) return null;
+
+    const trips = await Trip.find({ assigned_driver_id: driverId })
+        .populate('transporter_id', 'name email primary_contact city state')
+        .populate('assigned_vehicle_id', 'name registration truck_type status')
+        .sort({ createdAt: -1 })
+        .lean();
+
+    const tripStats = {
+        totalTrips: trips.length,
+        scheduledTrips: trips.filter((trip) => trip.status === 'Scheduled').length,
+        activeTrips: trips.filter((trip) => trip.status === 'Active').length,
+        completedTrips: trips.filter((trip) => trip.status === 'Completed').length,
+        cancelledTrips: trips.filter((trip) => trip.status === 'Cancelled').length,
+    };
+
+    return {
+        ...driver,
+        trips,
+        ...tripStats,
+    };
+};
+
 export default {
     // Dashboard Analytics
     getOrdersPerDay,
@@ -1227,16 +1290,20 @@ export default {
     // User Management
     getAllCustomers,
     getAllTransporters,
+    getAllDrivers,
     searchCustomerIds,
     searchTransporterIds,
     getCustomerById,
     getTransporterById,
+    getDriverById,
     deleteCustomerById,
     deleteTransporterById,
+    deleteDriverById,
     getOrderCountByCustomer,
     getOrderCountByTransporter,
     getCustomerDetail,
     getTransporterDetail,
+    getDriverDetail,
 
     // Fleet Overview
     getAllFleetVehicles,

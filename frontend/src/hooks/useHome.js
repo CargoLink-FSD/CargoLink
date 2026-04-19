@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 
+const HEADER_MOBILE_BREAKPOINT = 1100;
+
 export function useHeaderScroll() {
   useEffect(() => {
     let lastScroll = 0;
@@ -47,7 +49,7 @@ export function useMobileMenu() {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth > 768) setIsOpen(false);
+      if (window.innerWidth > HEADER_MOBILE_BREAKPOINT) setIsOpen(false);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);

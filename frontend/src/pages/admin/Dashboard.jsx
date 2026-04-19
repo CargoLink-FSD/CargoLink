@@ -43,6 +43,9 @@ export default function Dashboard() {
   const [data, setData] = useState(null);
   const [range, setRange] = useState('30d');
   const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
+  const [viewportWidth, setViewportWidth] = useState(
+    typeof window !== 'undefined' ? window.innerWidth : 1440,
+  );
 
   const fetchData = useCallback(async (nextRange = range) => {
     try {
@@ -62,6 +65,31 @@ export default function Dashboard() {
   useEffect(() => {
     fetchData(range);
   }, [range, fetchData]);
+
+  useEffect(() => {
+    let rafId;
+
+    const handleResize = () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+
+      rafId = requestAnimationFrame(() => {
+        setViewportWidth(window.innerWidth);
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.visualViewport?.addEventListener('resize', handleResize);
+
+    return () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+      window.removeEventListener('resize', handleResize);
+      window.visualViewport?.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   const windowLabel = data?.window?.label || getRangeLabel(range);
 
@@ -247,11 +275,22 @@ export default function Dashboard() {
     },
   };
 
-  const pieOpts = {
+  const isCompactChartViewport = viewportWidth <= 1280;
+
+  const pieOpts = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { position: 'right', labels: { font: { size: 12 }, padding: 12 } } },
-  };
+    plugins: {
+      legend: {
+        position: isCompactChartViewport ? 'bottom' : 'right',
+        labels: {
+          font: { size: isCompactChartViewport ? 11 : 12 },
+          padding: isCompactChartViewport ? 10 : 12,
+          boxWidth: isCompactChartViewport ? 12 : 14,
+        },
+      },
+    },
+  }), [isCompactChartViewport]);
 
   const topRoutesOpts = {
     ...chartOpts,

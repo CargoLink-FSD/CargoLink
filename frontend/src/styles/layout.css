@@ -123,7 +123,7 @@
 
 /* Hides Navlinks and displays hamburger bar  */
 
-@media (max-width: 768px) {
+@media (max-width: 1100px) {
   .nav-links {
     display: none;
   }

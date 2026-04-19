@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNotification } from '../../context/NotificationContext';
 import http from '../../api/http';
 import Header from '../../components/common/Header';
@@ -6,8 +6,36 @@ import Footer from '../../components/common/Footer';
 import { toApiUrl } from '../../utils/apiBase';
 import './AdminStyles.css';
 
+const normalizeEntityId = (value) => {
+  if (!value) return null;
+  if (typeof value === 'string') return value;
+
+  if (typeof value === 'object') {
+    if (typeof value._id === 'string') return value._id;
+    if (value._id && typeof value._id.toString === 'function') {
+      const nested = value._id.toString();
+      if (nested && nested !== '[object Object]') return nested;
+    }
+    if (typeof value.id === 'string') return value.id;
+  }
+
+  if (typeof value.toString === 'function') {
+    const converted = value.toString();
+    if (converted && converted !== '[object Object]') return converted;
+  }
+
+  return null;
+};
+
+const getUserRowId = (user, role) => {
+  if (role === 'customer') return normalizeEntityId(user.customer_id || user._id);
+  if (role === 'driver') return normalizeEntityId(user.driver_id || user._id);
+  return normalizeEntityId(user.transporter_id || user._id);
+};
+
 export default function UserManagement() {
   const { showNotification } = useNotification();
+  const listStartRef = useRef(null);
   const [tab, setTab] = useState('customer');
   const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState(null);
@@ -79,6 +107,29 @@ export default function UserManagement() {
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
+  const getTripRoute = (trip) => {
+    if (!trip?.stops?.length) return '—';
+    const firstStop = trip.stops[0];
+    const lastStop = trip.stops[trip.stops.length - 1];
+    const fromCity = firstStop?.address?.city || firstStop?.address?.state || '—';
+    const toCity = lastStop?.address?.city || lastStop?.address?.state || '—';
+    return `${fromCity} → ${toCity}`;
+  };
+
+  const scrollToListStart = () => {
+    const anchor = listStartRef.current;
+    if (!anchor) return;
+
+    const y = anchor.getBoundingClientRect().top + window.scrollY - 90;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+  };
+
+  const goToPage = (nextPage) => {
+    if (nextPage === page) return;
+    setPage(nextPage);
+    requestAnimationFrame(scrollToListStart);
+  };
+
   return (
     <>
       <Header />
@@ -118,6 +169,7 @@ export default function UserManagement() {
         </div>
 
         {/* Table */}
+        <div ref={listStartRef}>
         {loading ? (
           <div className="adm-loading"><div className="adm-spinner" /><p>Loading users...</p></div>
         ) : (
@@ -138,13 +190,14 @@ export default function UserManagement() {
                   {users.length === 0 ? (
                     <tr><td colSpan={6} className="adm-empty">No users found</td></tr>
                   ) : (
-                    users.map((u) => {
-                      const id = u.customer_id || u.transporter_id || u.driver_id || u._id;
+                    users.map((u, idx) => {
+                      const id = getUserRowId(u, tab);
+                      const rowKey = id || normalizeEntityId(u._id) || `${tab}-${u.email || 'user'}-${idx}`;
                       const name = tab === 'customer' ? `${u.first_name} ${u.last_name}`
                         : tab === 'driver' ? `${u.first_name} ${u.last_name}`
                         : u.name;
                       return (
-                        <tr key={id}>
+                        <tr key={rowKey}>
                           <td style={{ fontWeight: 600 }}>{name}</td>
                           <td>{u.email}</td>
                           <td>{tab === 'driver' ? (u.licenseNumber || '—') : (u.phone || u.primary_contact || '—')}</td>
@@ -154,8 +207,21 @@ export default function UserManagement() {
                           </td>
                           <td>{formatDate(u.createdAt)}</td>
                           <td style={{ textAlign: 'center' }}>
-                            <button className="adm-btn adm-btn-primary adm-btn-sm" style={{ marginRight: 8 }} onClick={() => openDetail(id)}>View</button>
-                            <button className="adm-btn adm-btn-danger adm-btn-sm" onClick={() => deleteUser(id)}>Delete</button>
+                            <button
+                              className="adm-btn adm-btn-primary adm-btn-sm"
+                              style={{ marginRight: 8 }}
+                              onClick={() => id && openDetail(id)}
+                              disabled={!id}
+                            >
+                              View
+                            </button>
+                            <button
+                              className="adm-btn adm-btn-danger adm-btn-sm"
+                              onClick={() => id && deleteUser(id)}
+                              disabled={!id}
+                            >
+                              Delete
+                            </button>
                           </td>
                         </tr>
                       );
@@ -166,16 +232,17 @@ export default function UserManagement() {
             </div>
           </div>
         )}
+        </div>
 
         {!loading && pagination && pagination.totalPages > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
-            <button className="adm-btn adm-btn-outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+            <button className="adm-btn adm-btn-outline" onClick={() => goToPage(Math.max(1, page - 1))} disabled={page <= 1}>
               Previous
             </button>
             <span style={{ color: '#64748b', fontSize: '0.9rem' }}>
               Page {pagination.page} of {pagination.totalPages}
             </span>
-            <button className="adm-btn adm-btn-outline" onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))} disabled={page >= pagination.totalPages}>
+            <button className="adm-btn adm-btn-outline" onClick={() => goToPage(Math.min(pagination.totalPages, page + 1))} disabled={page >= pagination.totalPages}>
               Next
             </button>
           </div>
@@ -260,56 +327,118 @@ export default function UserManagement() {
                     )}
                   </>
                 ) : detail && tab === 'driver' ? (
-                  <div className="adm-detail-grid">
-                    <div className="adm-detail-field">
-                      <span className="adm-detail-label">Name</span>
-                      <span className="adm-detail-value">{detail.firstName} {detail.lastName}</span>
-                    </div>
-                    <div className="adm-detail-field">
-                      <span className="adm-detail-label">Email</span>
-                      <span className="adm-detail-value">{detail.email}</span>
-                    </div>
-                    <div className="adm-detail-field">
-                      <span className="adm-detail-label">Phone</span>
-                      <span className="adm-detail-value">{detail.phone || '—'}</span>
-                    </div>
-                    <div className="adm-detail-field">
-                      <span className="adm-detail-label">License No.</span>
-                      <span className="adm-detail-value">{detail.licenseNumber || '—'}</span>
-                    </div>
-                    <div className="adm-detail-field">
-                      <span className="adm-detail-label">License Expiry</span>
-                      <span className="adm-detail-value">{detail.licenseExpiry ? formatDate(detail.licenseExpiry) : '—'}</span>
-                    </div>
-                    <div className="adm-detail-field">
-                      <span className="adm-detail-label">Status</span>
-                      <span className="adm-detail-value">
-                        <span className={`adm-badge ${detail.status === 'Available' ? 'green' : detail.status === 'Assigned' ? 'blue' : 'orange'}`}>
-                          {detail.status || '—'}
+                  <>
+                    <div className="adm-detail-grid">
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Name</span>
+                        <span className="adm-detail-value">{detail.firstName} {detail.lastName}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Email</span>
+                        <span className="adm-detail-value">{detail.email}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Phone</span>
+                        <span className="adm-detail-value">{detail.phone || '—'}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">License No.</span>
+                        <span className="adm-detail-value">{detail.licenseNumber || '—'}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">License Expiry</span>
+                        <span className="adm-detail-value">{detail.licenseExpiry ? formatDate(detail.licenseExpiry) : '—'}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Status</span>
+                        <span className="adm-detail-value">
+                          <span className={`adm-badge ${detail.status === 'Available' ? 'green' : detail.status === 'Assigned' ? 'blue' : 'orange'}`}>
+                            {detail.status || '—'}
+                          </span>
                         </span>
-                      </span>
-                    </div>
-                    <div className="adm-detail-field">
-                      <span className="adm-detail-label">Verification</span>
-                      <span className="adm-detail-value">
-                        <span className={`adm-badge ${detail.verificationStatus === 'approved' ? 'green' : detail.verificationStatus === 'rejected' ? 'red' : 'orange'}`}>
-                          {detail.verificationStatus || 'pending'}
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Verification</span>
+                        <span className="adm-detail-value">
+                          <span className={`adm-badge ${detail.verificationStatus === 'approved' ? 'green' : detail.verificationStatus === 'rejected' ? 'red' : 'orange'}`}>
+                            {detail.verificationStatus || 'pending'}
+                          </span>
                         </span>
-                      </span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Transporter</span>
+                        <span className="adm-detail-value">{detail.transporter_id?.name || '—'}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Transporter Email</span>
+                        <span className="adm-detail-value">{detail.transporter_id?.email || '—'}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Transporter Contact</span>
+                        <span className="adm-detail-value">{detail.transporter_id?.primary_contact || '—'}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Employment</span>
+                        <span className="adm-detail-value">{detail.employment_type || '—'}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Joined</span>
+                        <span className="adm-detail-value">{formatDate(detail.createdAt)}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Total Trips</span>
+                        <span className="adm-detail-value">{detail.totalTrips || 0}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Completed Trips</span>
+                        <span className="adm-detail-value">{detail.completedTrips || 0}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Active Trips</span>
+                        <span className="adm-detail-value">{detail.activeTrips || 0}</span>
+                      </div>
+                      <div className="adm-detail-field">
+                        <span className="adm-detail-label">Cancelled Trips</span>
+                        <span className="adm-detail-value">{detail.cancelledTrips || 0}</span>
+                      </div>
                     </div>
-                    <div className="adm-detail-field">
-                      <span className="adm-detail-label">Transporter</span>
-                      <span className="adm-detail-value">{detail.transporter_id?.name || '—'}</span>
-                    </div>
-                    <div className="adm-detail-field">
-                      <span className="adm-detail-label">Employment</span>
-                      <span className="adm-detail-value">{detail.employment_type || '—'}</span>
-                    </div>
-                    <div className="adm-detail-field">
-                      <span className="adm-detail-label">Joined</span>
-                      <span className="adm-detail-value">{formatDate(detail.createdAt)}</span>
-                    </div>
-                  </div>
+
+                    {detail.trips?.length > 0 && (
+                      <>
+                        <h4 style={{ margin: '16px 0 8px', color: '#1e293b' }}>Trip History ({detail.trips.length})</h4>
+                        <div className="adm-table-wrap">
+                          <table className="adm-table">
+                            <thead>
+                              <tr>
+                                <th>Route</th>
+                                <th>Transporter</th>
+                                <th>Vehicle</th>
+                                <th>Status</th>
+                                <th>Start</th>
+                                <th>End</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {detail.trips.slice(0, 20).map((trip, idx) => (
+                                <tr key={normalizeEntityId(trip._id) || `trip-${idx}`}>
+                                  <td>{getTripRoute(trip)}</td>
+                                  <td>{trip.transporter_id?.name || detail.transporter_id?.name || '—'}</td>
+                                  <td>{trip.assigned_vehicle_id?.registration || trip.assigned_vehicle_id?.name || '—'}</td>
+                                  <td>
+                                    <span className={`adm-badge ${trip.status === 'Completed' ? 'green' : trip.status === 'Cancelled' ? 'red' : trip.status === 'Active' ? 'blue' : 'orange'}`}>
+                                      {trip.status}
+                                    </span>
+                                  </td>
+                                  <td>{formatDate(trip.actual_start_at || trip.planned_start_at || trip.createdAt)}</td>
+                                  <td>{formatDate(trip.actual_end_at || trip.planned_end_at)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    )}
+                  </>
                 ) : detail && tab === 'transporter' ? (
                   <>
                     <div className="adm-detail-grid">

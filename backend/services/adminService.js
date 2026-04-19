@@ -302,7 +302,7 @@ const getBidCountForOrder = async (orderId) => {
 const getAllUsers = async (role, filters = {}) => {
     const { search, sort = 'date', page, limit } = filters;
 
-    if (!['customer', 'transporter'].includes(role.toLowerCase())) {
+    if (!['customer', 'transporter', 'driver'].includes(role.toLowerCase())) {
         throw new AppError(400, "ValidationError", "Invalid role specified", "ERR_VALIDATION");
     }
 
@@ -356,6 +356,56 @@ const getAllUsers = async (role, filters = {}) => {
         }
 
         return formattedUsers;
+    } else if (role.toLowerCase() === 'driver') {
+        if (search) {
+            query = {
+                $or: [
+                    { firstName: { $regex: search, $options: 'i' } },
+                    { lastName: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } },
+                    { phone: { $regex: search, $options: 'i' } },
+                    { licenseNumber: { $regex: search, $options: 'i' } },
+                ],
+            };
+        }
+
+        switch (sort) {
+            case 'name':
+                sortOptions = { firstName: 1, lastName: 1 };
+                break;
+            case 'id':
+                sortOptions = { _id: 1 };
+                break;
+            default:
+                sortOptions = { createdAt: -1 };
+        }
+
+        const driverResult = await adminRepo.getAllDrivers(query, sortOptions, { page, limit });
+        const users = Array.isArray(driverResult) ? driverResult : driverResult.items;
+
+        const formattedUsers = users.map((user) => ({
+            _id: user._id,
+            driver_id: user._id,
+            first_name: user.firstName,
+            last_name: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            licenseNumber: user.licenseNumber,
+            status: user.status,
+            verificationStatus: user.verificationStatus,
+            employment_type: user.employment_type,
+            transporter_id: user.transporter_id,
+            createdAt: user.createdAt,
+        }));
+
+        if (!Array.isArray(driverResult)) {
+            return {
+                items: formattedUsers,
+                pagination: driverResult.pagination,
+            };
+        }
+
+        return formattedUsers;
     } else {
         // Search filter for transporters
         if (search) {
@@ -405,7 +455,7 @@ const getAllUsers = async (role, filters = {}) => {
 };
 
 const deleteUser = async (role, userId) => {
-    if (!['customer', 'transporter'].includes(role.toLowerCase())) {
+    if (!['customer', 'transporter', 'driver'].includes(role.toLowerCase())) {
         throw new AppError(400, "ValidationError", "Invalid role specified", "ERR_VALIDATION");
     }
 
@@ -414,6 +464,11 @@ const deleteUser = async (role, userId) => {
         result = await adminRepo.deleteCustomerById(userId);
         if (!result) {
             throw new AppError(404, "NotFound", "Customer not found", "ERR_NOT_FOUND");
+        }
+    } else if (role.toLowerCase() === 'driver') {
+        result = await adminRepo.deleteDriverById(userId);
+        if (!result) {
+            throw new AppError(404, "NotFound", "Driver not found", "ERR_NOT_FOUND");
         }
     } else {
         result = await adminRepo.deleteTransporterById(userId);
@@ -711,15 +766,27 @@ const updateCashoutStatus = async (cashoutId, { status, note, razorpayPayoutId }
 
 // Individual User Detail
 const getUserDetail = async (role, userId) => {
-    if (role === 'customer') {
+    const normalizedRole = (role || '').toLowerCase();
+
+    if (normalizedRole === 'customer') {
         const detail = await adminRepo.getCustomerDetail(userId);
         if (!detail) throw new AppError(404, 'NotFound', 'Customer not found', 'ERR_NOT_FOUND');
         return detail;
-    } else {
+    }
+
+    if (normalizedRole === 'driver') {
+        const detail = await adminRepo.getDriverDetail(userId);
+        if (!detail) throw new AppError(404, 'NotFound', 'Driver not found', 'ERR_NOT_FOUND');
+        return detail;
+    }
+
+    if (normalizedRole === 'transporter') {
         const detail = await adminRepo.getTransporterDetail(userId);
         if (!detail) throw new AppError(404, 'NotFound', 'Transporter not found', 'ERR_NOT_FOUND');
         return detail;
     }
+
+    throw new AppError(400, 'ValidationError', 'Invalid role specified', 'ERR_VALIDATION');
 };
 
 export default {
