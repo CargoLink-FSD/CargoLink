@@ -10,7 +10,9 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "test": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest --silent --noStackTrace",
-    "test:coverage": "cross-env NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest --coverage",
+    "test:verbose": "cross-env NODE_OPTIONS='--experimental-vm-modules' jest --verbose",
+
+    "test:coverage": "cross-env NODE_OPTIONS='--experimental-vm-modules' jest --coverage",
     "test:watch": "cross-env NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest --watch",
     "coverage:routes": "node scripts/route-coverage-report.mjs",
     "lint": "eslint",

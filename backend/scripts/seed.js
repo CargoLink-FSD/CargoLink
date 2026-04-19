@@ -485,6 +485,7 @@ function buildTrips(orders, transporters, drivers, fleets) {
       const hasCompleted = tripOrders.some((o) => o.status === "Completed");
       const hasInTransit = tripOrders.some((o) => ["Started", "In Transit"].includes(o.status));
       let tripStatus = "Scheduled";
+      log
       if (hasCompleted && !hasInTransit) tripStatus = "Completed";
       else if (hasInTransit) tripStatus = "Active";
       else tripStatus = "Scheduled";
