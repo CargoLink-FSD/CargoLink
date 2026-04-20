@@ -309,7 +309,7 @@ export const invalidateByPrefix = async (prefix) => {
   if (!isCacheAvailable()) return 0;
 
   const pattern = scopedKey(`${prefix}*`);
-  let cursor = 0; // FIX 2: number not string — node-redis returns cursor as number
+  let cursor = '0';
   let deleted = 0;
 
   try {
@@ -319,13 +319,13 @@ export const invalidateByPrefix = async (prefix) => {
         COUNT: 100,
       });
 
-      cursor = reply.cursor;
+      cursor = String(reply.cursor);
       const keys = reply.keys || [];
 
       if (keys.length > 0) {
         deleted += await redisClient.del(keys);
       }
-    } while (cursor !== 0); // FIX 2: compare number to number, not string
+    } while (cursor !== '0');
 
     return deleted;
   } catch (err) {
