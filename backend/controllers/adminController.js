@@ -193,6 +193,7 @@ const getAllOrders = async (req, res, next) => {
       truck_type: order.truck_type,
       status: order.status,
       final_price: order.final_price,
+      accepted_quote_breakdown: order.accepted_quote_breakdown || null,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt
     }));
@@ -205,6 +206,10 @@ const getAllOrders = async (req, res, next) => {
 
     if (orderResult?.pagination) {
       response.pagination = orderResult.pagination;
+    }
+
+    if (orderResult?.summary) {
+      response.summary = orderResult.summary;
     }
 
     res.status(200).json(response);
@@ -289,10 +294,12 @@ const getBidsForOrder = async (req, res, next) => {
     const bids = await adminService.getBidsForOrder(orderId);
 
     const formattedBids = await Promise.all(bids.map(async (bid) => {
+      const transporter = bid.transporter_id || null;
+      const transporterId = transporter?._id || transporter;
       let truckInfo = null;
-      if (bid.transporter_id) {
+      if (transporterId) {
         const truck = await Fleet.findOne({
-          transporter_id: bid.transporter_id._id,
+          transporter_id: transporterId,
           current_trip_id: orderId
         });
         if (truck) {
@@ -305,15 +312,16 @@ const getBidsForOrder = async (req, res, next) => {
 
       return {
         bid_id: bid._id,
-        transporter: {
-          id: bid.transporter_id._id,
-          name: bid.transporter_id.name,
-          email: bid.transporter_id.email,
-          contact: bid.transporter_id.primary_contact
-        },
+        transporter: transporter ? {
+          id: transporter._id || transporter,
+          name: transporter.name || 'Unknown Transporter',
+          email: transporter.email || 'N/A',
+          contact: transporter.primary_contact || 'N/A'
+        } : null,
         truck: truckInfo,
         bid_amount: bid.bid_amount,
         notes: bid.notes,
+        quote_breakdown: bid.quote_breakdown || null,
         createdAt: bid.createdAt
       };
     }));
