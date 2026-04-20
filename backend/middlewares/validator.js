@@ -37,7 +37,7 @@ const customer = [
   body('firstName')
     .trim()
     .notEmpty().withMessage('First name is required')
-    .isLength({ min: 2, max: 50 }).withMessage('First name must be 2-50 characters')
+    .isLength({ min: 2, max: 50 }).withMessage('First name must be 2-55 characters')
     .matches(/^[A-Za-z\s'-]+$/).withMessage('First name can only contain letters, spaces, hyphens and apostrophes'),
   body('lastName')
     .trim()
