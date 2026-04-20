@@ -85,7 +85,7 @@ adminRouter.delete("/managers/:id", invalidateCacheOnSuccess(['admin', 'manager'
 // ============================================
 // Threshold Configuration Routes
 // ============================================
-adminRouter.get("/thresholds", cacheResponse({ domain: 'admin', ttlSeconds: 30 }), adminController.getThresholdConfigs); // Get all threshold configs
+adminRouter.get("/thresholds", adminController.getThresholdConfigs); // Keep uncached so admin updates are reflected immediately
 adminRouter.put("/thresholds", invalidateCacheOnSuccess(['admin', 'manager']), adminController.updateThresholdConfig); // Update a threshold config
 adminRouter.post("/thresholds/reset-alert", invalidateCacheOnSuccess(['admin', 'manager']), adminController.resetThresholdAlert); // Reset alert for a category
 adminRouter.get("/ticket-volume", cacheResponse({ domain: 'admin', ttlSeconds: 20 }), adminController.getTicketVolumeByCategory); // Get ticket volume analytics

@@ -62,13 +62,13 @@ export default function ManagerManagement() {
     const [editCats, setEditCats] = useState([]);
     const [editVerifCats, setEditVerifCats] = useState([]);
 
-    const loadData = useCallback(async () => {
+    const loadData = useCallback(async ({ freshThresholds = false } = {}) => {
         setLoading(true);
         try {
             const [mgrData, invData, threshData, volData] = await Promise.all([
                 getAllManagers(),
                 getAllInvitationCodes(),
-                getThresholdConfigs(),
+                getThresholdConfigs({ bypassCache: freshThresholds }),
                 getTicketVolumeByCategory(),
             ]);
             setManagers(mgrData.managers || []);
@@ -143,11 +143,34 @@ export default function ManagerManagement() {
 
     const handleUpdateThreshold = async () => {
         if (!editThreshold) return;
+        const parsedValue = parseInt(thresholdValue, 10);
+        if (Number.isNaN(parsedValue) || parsedValue < 1) {
+            showNotification({ message: 'Enter a valid threshold (minimum 1)', type: 'error' });
+            return;
+        }
+
         try {
-            await updateThresholdConfig(editThreshold.category, parseInt(thresholdValue));
+            const updatedConfig = await updateThresholdConfig(editThreshold.category, parsedValue);
+
+            setThresholds((prev) => {
+                const next = Array.isArray(prev) ? [...prev] : [];
+                const idx = next.findIndex((item) => item.category === editThreshold.category);
+                const normalized = updatedConfig?.category
+                    ? updatedConfig
+                    : { category: editThreshold.category, maxTicketsPerHour: parsedValue, alertSent: false };
+
+                if (idx >= 0) {
+                    next[idx] = normalized;
+                } else {
+                    next.push(normalized);
+                }
+
+                return next;
+            });
+
             showNotification({ message: 'Threshold updated', type: 'success' });
             setEditThreshold(null);
-            loadData();
+            await loadData({ freshThresholds: true });
         } catch (err) {
             showNotification({ message: err?.message || 'Failed to update threshold', type: 'error' });
         }
@@ -156,8 +179,11 @@ export default function ManagerManagement() {
     const handleResetAlert = async (category) => {
         try {
             await resetThresholdAlert(category);
+            setThresholds((prev) => (Array.isArray(prev)
+                ? prev.map((item) => (item.category === category ? { ...item, alertSent: false } : item))
+                : prev));
             showNotification({ message: 'Alert reset', type: 'success' });
-            loadData();
+            await loadData({ freshThresholds: true });
         } catch (err) {
             showNotification({ message: err?.message || 'Failed to reset alert', type: 'error' });
         }

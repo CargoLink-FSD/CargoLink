@@ -1,4 +1,4 @@
-﻿import Order from '../models/order.js';
+import Order from '../models/order.js';
 import Customer from '../models/customer.js';
 import Transporter from '../models/transporter.js';
 import Driver from '../models/driver.js';

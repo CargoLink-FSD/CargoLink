@@ -38,8 +38,11 @@ export const deleteManager = async (id) => {
 };
 
 // Get threshold configs
-export const getThresholdConfigs = async () => {
-    const res = await http.get('/api/admin/thresholds');
+export const getThresholdConfigs = async ({ bypassCache = false } = {}) => {
+    const endpoint = bypassCache
+        ? '/api/admin/thresholds?__cacheBypass=1'
+        : '/api/admin/thresholds';
+    const res = await http.get(endpoint, bypassCache ? { headers: { 'x-cache-bypass': '1' } } : undefined);
     return res.data;
 };
 
