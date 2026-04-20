@@ -660,10 +660,25 @@ const getAllOrders = async (query = {}, sortOptions = { createdAt: -1 }, options
         .sort(sortOptions);
 
     if (pagination) {
-        const [items, total] = await Promise.all([
+        const [items, total, statusBreakdownRows] = await Promise.all([
             findQuery.skip(pagination.skip).limit(pagination.limit).lean(),
             Order.countDocuments(query),
+            Order.aggregate([
+                { $match: query },
+                {
+                    $group: {
+                        _id: '$status',
+                        count: { $sum: 1 },
+                    },
+                },
+            ]),
         ]);
+
+        const byStatus = statusBreakdownRows.reduce((acc, row) => {
+            if (!row?._id) return acc;
+            acc[row._id] = Number(row.count || 0);
+            return acc;
+        }, {});
 
         return {
             items,
@@ -672,6 +687,10 @@ const getAllOrders = async (query = {}, sortOptions = { createdAt: -1 }, options
                 limit: pagination.limit,
                 total,
                 totalPages: Math.ceil(total / pagination.limit) || 1,
+            },
+            summary: {
+                total,
+                byStatus,
             },
         };
     }
